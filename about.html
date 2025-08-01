@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>SMDI | The Highest Levels of Service </title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <link rel="icon" href="img/smdi_logosmall.png" type="image/png">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@600;800&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-size: 1rem;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .about, .about1, .about2, .about3 {
+            width: 100%;
+            padding: 50px 0;
+        }
+
+        .about {
+            background-color: rgb(0, 0, 112);
+        }
+
+        .about1, .about3 {
+            background-color: rgb(196, 217, 255);
+        }
+
+        .about2 {
+            background-color:rgb(0, 0, 112);
+        }
+
+        .about-text, .about1-text, .about2-text, .about3-text {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .main, .main1, .main2, .main3 {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            text-align: justify;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .about-text h3, .about1-text h3, .about2-text h3, .about3-text h3 {
+            color: white;
+            text-align: center;
+            font-size: 2rem;
+            text-transform: capitalize;
+            margin-bottom: 20px;
+        }
+
+        .about-text h3, .about2-text h3, .about3-text h3 {
+            text-shadow: 2px 2px 4px #000000;
+        }
+
+        .about1-text h3, .about3-text h3, .about1-text li {
+            color: rgb(0, 0, 0);
+            text-shadow: 2px 2px 4px #ffffff;
+        }
+
+        .about2-text h4 , .about2-text h5{
+            color: #ffffff;
+            text-shadow: 2px 2px 4px #000000;
+        }
+
+        .about-text p1, .about-text p2, .about2-text p1, .about2-text li, .about3-text h5 {
+            color: white;
+            text-shadow: 2px 2px 4px #000000;
+            text-align: justify;
+            font-size: 1.125rem;
+            margin-bottom: 20px;
+        }
+
+        .about-text p2, .about2-text li {
+            font-weight: bold;
+        }
+
+        /* Media Queries for Responsive Design */
+        @media (max-width: 1200px) {
+            .about-text, .about1-text, .about2-text, .about3-text {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .main, .main1, .main2, .main3 {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .about-text h3, .about1-text h3, .about2-text h3, .about3-text h3 {
+                font-size: 1.75rem;
+            }
+
+            .about-text p1, .about-text p2, .about1-text li, .about2-text p1, .about2-text li, .about3-text h5 {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .about-text h3, .about1-text h3, .about2-text h3, .about3-text h3 {
+                font-size: 1.5rem;
+            }
+
+            .about-text p1, .about-text p2, .about1-text li, .about2-text p1, .about2-text li, .about3-text h5 {
+                font-size: 0.875rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .about-text h3, .about1-text h3, .about2-text h3, .about3-text h3 {
+                font-size: 1.25rem;
+            }
+
+            .about-text p1, .about-text p2, .about1-text li, .about2-text p1, .about2-text li, .about3-text h5 {
+                font-size: 0.75rem;
+            }
+        }
+
+        @keyframes dropdown {
+    0% {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.about, .about1, .about2, .about3 {
+    opacity: 0;
+    transform: translateY(-50px);
+    transition: opacity 0.5s, transform 0.5s;
+}
+
+.about.visible, .about1.visible, .about2.visible, .about3.visible {
+    opacity: 1;
+    transform: translateY(0);
+    animation: dropdown 0.5s ease-out forwards;
+}
+
+    </style>
+</head>
+
+<body>
+
+   <!-- navbar -->
+ <div class="container-fluid fixed-top">
+    <div class="container topbar bg-primary d-none d-lg-block">
+        <div class="d-flex justify-content-between">
+            <div class="top-info ps-2">
+                <small class="me-3"><i class="fas fa-map-marker-alt me-2 text-primary"></i> <a href="inquiry_form.html"
+                        class="text-white">1031, Victoria Building, Roxas Avenue, Roxas City, 5800</a></small>
+            </div>
+            <div class="top-link pe-2">
+            </div>
+        </div>
+    </div>
+    <div class="container px-0">
+        <nav class="navbar navbar-light bg-white navbar-expand-lg">
+            <a href="index.html" class="navbar-brand">
+                <img src="img/smdi_logo.jpg" alt="Company Logo" class="logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <div class="navbar-nav">
+                    <a href="index.html" class="nav-item nav-link active">Home</a>
+                    <div class="nav-item dropdown">
+                        <a href="inquiry_form.html" class="nav-link dropdown-toggle" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            Motorcycles
+                        </a>
+                        <ul class="dropdown-menu bg-primary rounded-0 motorcycle-dropdown"
+                            aria-labelledby="navbarDropdown">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-secondary">Brands</h6>
+                                        <li><a class="dropdown-item text-dark"
+                                                href="honda_motorcyles.html">Honda</a></li>
+                                        <li><a class="dropdown-item text-dark"
+                                                href="suzuki_motorcyles.html">Suzuki</a></li>
+                                        <li><a class="dropdown-item text-dark"
+                                                href="kawasaki_motorcyles.html">Kawasaki</a></li>
+                                        <li><a class="dropdown-item text-dark"
+                                                href="yamaha_motorcyles.html">Yamaha</a></li>
+                                         
+                                    </div> 
+                                    <div class="col-md-6">
+                                        <h6 class="text-secondary">Types</h6>
+                                        <li><a class="dropdown-item text-dark" href="Big_bikes.html">Big
+                                                Bikes</a>
+                                        </li>
+                                    </div>
+                                </div>
+                            </div>
+                        </ul>
+                    </div>
+                    <a href="about.html" class="nav-item nav-link">About Us</a>
+                    <a href="parts.html" class="nav-item nav-link">Parts</a>
+                    <a href="careers.html" class="nav-item nav-link">Careers</a>
+                    <a href="branches.html" class="nav-item nav-link">Branches</a>
+                    <a href="register.html" class="nav-item nav-link">LTO Reg Inquiry</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+</div>
+<!-- navbar -->
+
+    <!-- Main Content -->
+    <div class="container-fluid py-5" style="margin-top: 80px;">
+        <!-- About Section -->
+        <section class="about">
+            <div class="main">
+                <div class="about-text">
+                    <h3>COMPANY PROFILE</h3>
+                    <p1>Solid Motorcycle Distributors, Inc. originated from Roxas City Solid Merchandising which was founded in 1969 with the effort of Mr. Pablo & Mrs. Monica Chu. The business started with a small capital and they personally managed the business coupled with hard work, perseverance, self-discipline and above all, faith in God. It all started with small items like AM/FM transistors radios, bicycle and its parts and with small item of motorcycle spare parts. Many years had passed and the business grows in capital.</p1>
+                    <p1>With the good condition of spare parts business, Mr. Chu tried to sell (1) unit of Suzuki and Yamaha Motorcycle Units in the year 1986 which then became the start of Solid Motorcycle Distributors, Inc. and was formally registered and approved last March 16, 1996 under SEC Reg No. 003075 with the primary purpose</p1>
+                    <p2>“to engage in, operate and maintain in the business of importing, exporting, buying selling, trading, servicing or otherwise dealing in, all kinds of goods, wares and merchandise which or may become articles of commerce but not limited to motorcycle and its parts and accessories.”</p2>
+                    <p1>Also the same year SMDI expanded its operations and the first branch was established in Antique then followed by Kalibo and Iloilo. With the remarkable growth of the business that in 1998 it expanded in Cebu particularly in AC Cortez, Mandaue City, Cebu which was managed by Mr. Hiram S. Chu son of Mr. Pablo Chu and later assumed by the late Mr. Henrik S. Chu, the youngest son of Mr. Pablo Chu who was then the Managing Director of Cebu operation. At present, SMDI has 12 branches in Panay, and (1) newly opened satellite office in Balasan, Iloilo and (12) branches in Cebu and (4) Satellite Offices.</p1>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vision and Mission Section -->
+        <section class="about2">
+            <div class="main2">
+                <div class="about2-text">
+                    <h3>VISION</h3>
+                    <h5>To become One (1) of the BEST Motorcycle dealers in the Philippines.</h5>
+
+                    <h3>MISSION</h3>
+                    <h5>To give our customers “The Highest Levels of Service” at all times through up-to-date and outstanding customer service.</h5>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slogan Section -->
+        <section class="about3">
+            <div class="main3">
+                <div class="about3-text">
+                    <h3>CORPORATE SLOGAN</h3>
+                    <h5 class="text-center">“The Highest Levels of Service”</h5>
+                </div>
+            </div>
+        </section>
+    </div>
+    <!-- Main Content -->
+
+    <!-- Footer -->
+    <div class="container-fluid bg-dark text-white-50 footer pt-5 mt-5">
+        <div class="container py-5">
+            <div class="pb-4 mb-4" style="border-bottom: 1px solid rgba(226, 175, 24, 0.5);">
+                <div class="row g-4">
+                    <div class="col-lg-3">
+                        <a href="#">
+                            <h1 class="text-primary mb-0">SMDI</h1>
+                            <p class="text-primary mb-0">The Highest Levels of Service</p>
+                        </a>
+                    </div>
+                    <div class="col-lg-3"></div>
+                </div>
+            </div>
+            <div class="row g-5">
+                <div class="col-lg-3 col-md-6">
+                    <div class="footer-item">
+                        <h4 class="text-light mb-3">Contact</h4>
+                        <p>Address: 1031, Victoria Building, Roxas Avenue, Roxas City, 5800</p>
+                        <p>Email: smdi_headoffice@yahoo.com</p>
+                        <p>Phone: 0999 994 5063</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer -->
+
+    <!-- Copyright -->
+    <div class="container-fluid copyright bg-dark py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    <p>Copyright © 2024 Solid Motorcycle Distributors Incorporated | Powered by MBC Creations/Mikah Layno</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Top -->
+    <a href="#" class="btn btn-white border-3 border-primary rounded-circle back-to-top"><i class="fa fa-arrow-up"></i></a>
+
+    <!-- Libraries -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/easing/easing.min.js"></script>
+    <script src="lib/waypoints/waypoints.min.js"></script>
+    <script src="lib/lightbox/js/lightbox.min.js"></script>
+    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+
+</html>

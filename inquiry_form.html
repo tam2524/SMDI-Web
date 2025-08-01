@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>SMDI | Inquiry Form </title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@600;800&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+     <!-- Template Stylesheet -->
+     <link href="css/style.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+        }
+        form {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: navy;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .close-btn {
+            display: block;
+            margin-top: 20px;
+            cursor: pointer;
+            color: navy;
+        }
+
+       
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const mcbrand = document.getElementById("mcbrand");
+            const mcmodel = document.getElementById("mcmodel");
+
+            const models = {
+                Suzuki: ["BURGMAN STREET 125 EX", "BURGMAN STREET","AVENIS", "SKYDRIVE CROSSOVER", "SKYDRIVE SPORT", "SMASH FI", "SMASH CARB", "RAIDER R150 FI", "RAIDER R150 CARB", "RAIDER J CROSSOVER", "V-STROM 250SX", "GIXXER250", "GIXXER SF250", "GIXXER FI", "GSX-8R", "GSX-S1000 GX", "GSX-8S", "V-STROM 800 DE", "V-STROM 1050 DE", "GSX-S1000GT", "GSX-S1000", "GSX-S750", "SV650", "BURGMAN 400", "HAYABUSA", "KATANA", "GSX-R 1000R", "GSX-R1000", "RM-Z450", "RM-Z250"],
+                Yamaha: ["MIO SPORTY", "MIO I125", "MIO FAZZIO", "MIO SOULI125", "MIO GEAR", "MIO GRAVIS", "MIO AEROX", "MT-15", "MT-03", "XSR155", "NMAX", "XMAX", "SNIPER155", "YZF-R15M", "YZF-R3", "WR155R", "SEROW250", "XTZ125", "MT-10 SP", "MT-09", "MT-07", "XSR900", "XSR700", "BOLT R-SPEC", "SR400", "TMAX", "TMAX TECH MAX", "TRACER 9 GT", "SUPER TENERE ES", "TENERE 700", "YZF-R1M", "YZF-R7"],
+                Kawasaki: ["NINJA H2 CARBON", "ZH2", "NINJA ZX-10RR", "NINJA ZX-10R", "NINJA NINJA ZX-6R", "NINJA ZX-25R SE", "NINJA ZX-4RR", "NINJA ZX-25R STANDARD", "NINJA ZX-4RR 40TH ANNIVERSARY EDITION","NINJA ZX-6R 40TH ANNIVERSARY EDITION","NINJA ZX-10R 40TH ANNIVERSARY EDITION", "NINJ 1000SX", "Z1000 R EDITION", "Z900 SE", "Z900 STANDARD", "NINJA 650", "Z650", "NINJA 400", "Z500", "Z500 SE", "KLX230", "KLX150", "KLX150S", "KLX300", "KLX300 SM", "KX450X", "KX250X", "KX450", "KX250", "KX65", "KLX300R", "KLX140", "KLX230R S", "BARAKO II", "BARAKO III", "ROUSER NS160FI", "RS200 WITH ABS", "NS200 FI WITH ABS", "NS125 FI", "CT100", "CT100B", "CT150", "CT125", "W800 CAFE", "W800 STREET", "VERSYS 1000 SE", "VERSYS 650", "VULCAN 1700 VAQUERO", "VULCAN 900 CUSTOM", "VULCAN S", "ELIMINATOR", "ELIMINATOR SE", "DOMINAR 400 UG2", "PULSAR NS250"],
+                Honda: ["DIO", "BEAT (PLAYFUL)", "BEAT(PREMIUM)", "BEAT(LIMITED EDITION)", "CLICK125", "CLICK160", "CLICK125(SPECIAL EDITION)", "AIRBLADE 160", "PCX160-CBS", "PCX160-ABS", "ADV160", "CB150X", "CB150R", "XR150L", "CRF150L", "CRF300L", "CRF300 RALLY", "WAVE RSX (DRUM)", "WAVE RSX (DISC)", "XRM125DS", "XRM125 DSX", "XRM125 MOTARD", "RS125", "WINNER X (STANDARD)", "WINNER X(ABS PREMIUM)", "WINNER X(ABS RACING TYPE)", "TMX125 ALPHA", "TMX SUPREMO", "XL750 TRANSALP", "X-ADV", "NX500", "CRF1100L AFRICA TWIN", "CRF1100L ADVENTURE SPORTS", "CB500F", "CBR650R", "CBR1000RR-R FIREBLADE SP", "REBEL", "CL500", "REBEL 1100", "GOLD WING" ]
+            };
+
+            mcbrand.addEventListener("change", function() {
+                const selectedBrand = mcbrand.value;
+                const options = models[selectedBrand] || [];
+                
+                mcmodel.innerHTML = "<option value='' disabled selected>Select Model</option>"; 
+                options.forEach(function(model) {
+                    const option = document.createElement("option");
+                    option.value = model;
+                    option.textContent = model;
+                    mcmodel.appendChild(option);
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+ <!-- Navbar-->
+ <div class="container-fluid fixed-top">
+     <div class="container topbar bg-primary d-none d-lg-block">
+         <div class="d-flex justify-content-between">
+             <div class="top-info ps-2">
+                 <small class="me-3"><i class="fas fa-map-marker-alt me-2 text-primary"></i> <a href="#"
+                         class="text-white">1031, Victoria Building, Roxas Avenue, Roxas City, 5800</a></small>
+             </div>
+             <div class="top-link pe-2">
+             </div>
+         </div>
+     </div>
+     <div class="container px-0">
+         <nav class="navbar navbar-light bg-white navbar-expand-lg">
+             <a href="index.html" class="navbar-brand">
+                 <img src="img/smdi_logo.jpg" alt="Company Logo" class="logo">
+             </a>
+             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+                 aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                 <span class="navbar-toggler-icon"></span>
+             </button>
+             <div class="collapse navbar-collapse" id="navbarCollapse">
+                 <div class="navbar-nav">
+                     <a href="index.html" class="nav-item nav-link active">Home</a>
+                     <div class="nav-item dropdown">
+                         <a href="#" class="nav-link dropdown-toggle" id="navbarDropdown" role="button"
+                             data-bs-toggle="dropdown" aria-expanded="false">
+                             Motorcycles
+                         </a>
+                         <ul class="dropdown-menu bg-primary rounded-0 motorcycle-dropdown"
+                             aria-labelledby="navbarDropdown">
+                             <div class="container">
+                                 <div class="row">
+                                     <div class="col-md-6">
+                                         <h6 class="text-secondary">Brands</h6>
+                                         <li><a class="dropdown-item text-dark"
+                                                 href="honda_motorcyles.html">Honda</a></li>
+                                         <li><a class="dropdown-item text-dark"
+                                                 href="suzuki_motorcyles.html">Suzuki</a></li>
+                                         <li><a class="dropdown-item text-dark"
+                                                 href="kawasaki_motorcyles.html">Kawasaki</a></li>
+                                         <li><a class="dropdown-item text-dark"
+                                                 href="yamaha_motorcyles.html">Yamaha</a></li>
+                                     </div>
+                                     <div class="col-md-6">
+                                         <h6 class="text-secondary">Types</h6>
+                                         <li><a class="dropdown-item text-dark" href=" regular_bikes.html">Regular
+                                                 Bikes</a></li>
+                                         <li><a class="dropdown-item text-dark" href="Big_bikes.html">Big
+                                                 Bikes</a>
+                                         </li>
+                                     </div>
+                                 </div>
+                             </div>
+                         </ul>
+                     </div>
+                     <a href="about.html" class="nav-item nav-link">About Us</a>
+                     <a href="parts.html" class="nav-item nav-link">Parts</a>
+                     <a href="careers.html" class="nav-item nav-link">Careers</a>
+                     <a href="branches.html" class="nav-item nav-link">Branches</a>
+                     <a href="register.html" class="nav-item nav-link">LTO Reg Inquiry</a>
+                 </div>
+                 <div class="ms-auto d-flex align-items-center">
+                     <button class="btn-search btn border border-primary btn-md-square rounded-circle bg-white me-4"
+                         data-bs-toggle="modal" data-bs-target="#searchModal"><i
+                             class="fas fa-search search-text-primary"></i></button>
+                 </div>
+             </div>
+         </nav>
+     </div>
+
+ </div>
+
+ <!-- Single Page Header start -->
+ <div class="container-fluid page-header py-5">
+
+ </div>
+ <!-- Single Page Header End -->
+ <div class="container-fluid motorcyle py-5 motorcycle-section">
+    <h1 class="text-center">Inquiry Form</h1>
+    <form action="api/inquiry_details.php" method="post">
+        <div class="form-group">
+            
+    <h4 class="text-left">Inquiry Details</h4>
+            <label for="mcbrand">MC Brand:</label>
+            <select id="mcbrand" name="mcbrand" required>
+                <option value="" disabled selected>Select Brand</option>
+                <option value="Suzuki">Suzuki</option>
+                <option value="Yamaha">Yamaha</option>
+                <option value="Kawasaki">Kawasaki</option>
+                <option value="Honda">Honda</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="mcmodel">MC Model:</label>
+            <select id="mcmodel" name="mcmodel" required>
+                <option value="" disabled selected>Select Model</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="nearestbranch">Nearest Branch:</label>
+            <select id="nearestbranch" name="nearestbranch" required>
+                <option value="RoxasSuzuki">Roxas 3s Suzuki</option>
+                <option value="RoxasHonda">Roxas Honda</option>
+                <option value="KridersRoxas">Kriders Roxas</option>
+                <option value="Passi">Passi</option>
+                <option value="Passi2">Passi 2</option>
+                <option value="KaliboHonda">Kalibo Honda</option>
+                <option value="KaliboSuzuki">Kalibo Suzuki</option>
+                <option value="Jaro1">Jaro 1</option>
+                <option value="Jaro2">Jaro 2</option>
+                <option value="Guimaras">Guimaras</option>
+                <option value="DelgadoHonda">Delgado Honda</option>
+                <option value="DelgadoSuzuki">DelgadoSuzuki</option>
+                <option value="Balasan">Balasan</option>
+                <option value="Antique1">Antique1</option>
+                <option value="AntiqueHonda">Antique Honda</option>
+                <option value="Culasi">Culasi</option>
+                <option value="Bacolod">Bacolod</option>
+                <option value="Ajuy">Ajuy</option>
+                <option value="EEMSIGuimaras">EEMSI Guimaras</option>
+                <option value="PEMDIBacolod">PEMDI Bacolod</option>
+                <option value="Numancia">Numancia</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="plandatepurchase">Plan Date to Purchase:</label>
+            <input type="date" id="plandatepurchase" name="plandatepurchase" required>
+        </div>
+        <div class="form-group">
+            <label for="incomesource">Source of Income:</label>
+            <input type="text" id="incomesource" name="incomesource" required>
+        </div>
+        <div class="form-group">
+            <label for="withvalidid">Do you have a valid id?</label>
+            <select id="withvalidid" name="withvalidid" required>
+                <option value="yes">YES</option>
+                <option value="no">NO</option>
+            </select>
+        </div>
+
+        <h4 class="text-left">Customer Details</h4>
+        <div class="form-group">
+            <label for="firstname">First Name:</label>
+            <input type="text" id="firstname" name="firstname" required>
+        </div>
+        <div class="form-group">
+            <label for="middlename">Middle Name:</label>
+            <input type="text" id="middlename" name="middlename" required>
+        </div>
+        <div class="form-group">
+            <label for="lastname">Last Name:</label>
+            <input type="text" id="lastname" name="lastname" required>
+        </div>
+        <div class="form-group">
+            <label for="address">Address:</label>
+            <input type="text" id="address" name="address" required>
+        </div>
+        <div class="form-group">
+            <label for="mobilenumber">Mobile Number:</label>
+            <input type="text" id="mobilenumber" name="mobilenumber" required>
+        </div>
+
+        <button class="align-items-center "type="submit">Submit</button>
+    </form>
+    
+</div>
+</body>
+</html>
