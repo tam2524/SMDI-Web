@@ -202,7 +202,71 @@ document.addEventListener("DOMContentLoaded", function() {
         window.addEventListener('scroll', onScroll);
         onScroll(); 
     });
+
+     async function includeHTML() {
+    const includes = document.querySelectorAll('[data-include]');
     
+    for (const include of includes) {
+        const file = include.getAttribute('data-include');
+        try {
+            const response = await fetch(file);
+            if (response.ok) {
+                include.innerHTML = await response.text();
+            } else {
+                include.innerHTML = 'Page not found.';
+            }
+        } catch (error) {
+            include.innerHTML = 'Error loading page.';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', includeHTML);
+    
+//LTO REG INQUIRY
+
+document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById('inquiryForm');
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const formData = new FormData(form);
+
+                fetch('api/register_details.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())  
+                .then(text => {
+                    try {
+                        const data = JSON.parse(text);
+                        const resultContainer = document.querySelector('.result');
+                        resultContainer.innerHTML = '';
+
+                        if (data.error) {
+                            resultContainer.innerHTML = `<p>${data.error}</p>`;
+                        } else {
+                            resultContainer.innerHTML = `
+                                <h4>Inquiry Results:</h4>
+                                <p><strong>Date Reg:</strong> ${data.date_reg}</p>
+                                <p><strong>Customer Name:</strong> ${data.full_name}</p>
+                                <p><strong>MV File Number:</strong> ${data.mv_file_number}</p>
+                                <p><strong>LTO Plate Number:</strong> ${data.lto_plate_number}</p>
+                            `;
+                        }
+                    } catch (error) {
+                        console.error('Parsing error:', error);
+                        const resultContainer = document.querySelector('.result');
+                        resultContainer.innerHTML = `<p>There was an error parsing the response.</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    const resultContainer = document.querySelector('.result');
+                    resultContainer.innerHTML = `<p>There was an error with the request.</p>`;
+                });
+            });
+        });
 //Liaison DB
 $(document).ready(function() {
     let RecordIdToDelete = null;
@@ -420,4 +484,6 @@ $(document).ready(function() {
             });
         }, 1000); 
     });
+
+   
 });
