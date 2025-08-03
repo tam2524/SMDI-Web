@@ -74,7 +74,7 @@ if ($outputFormat === 'pdf') {
         // Prepare the HTML content for Masterlists
         $html = '
     <div style="text-align: center; margin-bottom: 30px;">
-        <img src="img/smdi_logo.jpg" alt="SMDI_Logo" style="max-width: 150px; margin-bottom: 10px;"/>
+        <img src="assets/img/smdi_logo.jpg" alt="SMDI_Logo" style="max-width: 150px; margin-bottom: 10px;"/>
         <h4 style="font-size: 24px; margin: 0; padding: 0; line-height: 1;">Solid Motorcycle Distributors, Inc.</h4>
         <h2 style="font-size: 15px; font-weight: bold; margin: 0; padding: 0; line-height: 0.5;">Masterlists</h2>
     </div>

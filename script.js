@@ -113,7 +113,7 @@ $(document).ready(function() {
     function printSelectedRecords() {
         const printContent = $('<div></div>');
         const header = $('<div style="text-align: center; margin-bottom: 20px;">' +
-            '<img src="img/smdi_logo.jpg" alt="SMDI_Logo" class="logo-tmdc mb-2" style="max-width: 150px;"/>' +
+            '<img src="assets/img/smdi_logo.jpg" alt="SMDI_Logo" class="logo-tmdc mb-2" style="max-width: 150px;"/>' +
             '<h4 style="font-size: 16px; margin-bottom: 0;">Solid Motorcycle Distributors, Inc. </h4>' +
             '<p style="font-size: 12px; margin-bottom: 0;">1031 Victoria Bldg., Roxas Avenue, Roxas City, Capiz Philippines 5800</p>' +
             '<h2>Masterlists</h2>' +
