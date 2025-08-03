@@ -359,205 +359,244 @@ $('#confirmDeleteBtn').on('click', function() {
         }, 2000);
     }
 });
- $(document).ready(function() {
-        // Load users when the user management tab is shown
-        $('#users-tab').on('click', function() {
-            loadUsers();
-        });
+$(document).ready(function() {
+    // Load users when the user management tab is shown
+    $('#users-tab').on('click', function() {
+        loadUsers();
+    });
 
-        // Add User Form Submission
-        $('#addUserForm').submit(function(e) {
-            e.preventDefault();
-            
-            if ($('#newPassword').val() !== $('#confirmPassword').val()) {
-                $('#userErrorMessage').text('Passwords do not match').show();
-                return;
-            }
-            
-            $.ajax({
-                url: '../api/add_user.php',
-                type: 'POST',
-                data: $(this).serialize(),
-                success: function(response) {
-                    if (response.success) {
-                        $('#userSuccessMessage').text(response.message).show();
-                        $('#addUserForm')[0].reset();
-                        loadUsers();
-                    } else {
-                        $('#userErrorMessage').text(response.message).show();
-                    }
-                },
-                error: function() {
-                    $('#userErrorMessage').text('An error occurred. Please try again.').show();
+    // Add User Form Submission
+    $('#addUserForm').submit(function(e) {
+        e.preventDefault();
+        
+        if ($('#newPassword').val() !== $('#confirmPassword').val()) {
+            $('#userErrorMessage').text('Passwords do not match').show();
+            return;
+        }
+        
+        $.ajax({
+            url: '../api/user_management.php?action=add_user',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    $('#userSuccessMessage').text(response.message).show();
+                    $('#addUserForm')[0].reset();
+                    loadUsers();
+                    setTimeout(() => $('#userSuccessMessage').hide(), 3000);
+                } else {
+                    $('#userErrorMessage').text(response.message).show();
+                    setTimeout(() => $('#userErrorMessage').hide(), 3000);
                 }
-            });
+            },
+            error: function() {
+                $('#userErrorMessage').text('An error occurred. Please try again.').show();
+                setTimeout(() => $('#userErrorMessage').hide(), 3000);
+            }
         });
+    });
 
-        // Edit User Form Submission
-        $('#editUserForm').submit(function(e) {
-            e.preventDefault();
-            
+    // Edit User Form Submission
+    $('#editUserForm').submit(function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: '../api/user_management.php?action=edit_user',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    $('#successMessage').text(response.message);
+                    $('#successModal').modal('show');
+                    $('#editUserModal').modal('hide');
+                    loadUsers();
+                } else {
+                    $('#warningMessage').text(response.message);
+                    $('#warningModal').modal('show');
+                }
+            },
+            error: function() {
+                $('#warningMessage').text('An error occurred. Please try again.');
+                $('#warningModal').modal('show');
+            }
+        });
+    });
+
+    // Load Users Function
+    function loadUsers(page = 1, search = '') {
+        $.ajax({
+            url: '../api/user_management.php?action=get_users',
+            type: 'GET',
+            data: { page: page, search: search },
+            success: function(response) {
+                $('#usersTableBody').empty();
+                
+                if (response.users && response.users.length > 0) {
+                    response.users.forEach(function(user) {
+                        let statusBadge = user.status === 'active' ? 
+                            '<span class="badge bg-success">Active</span>' : 
+                            '<span class="badge bg-danger">Inactive</span>';
+                        
+                        $('#usersTableBody').append(`
+                            <tr>
+                                <td>${user.username}</td>
+                                <td>${user.fullName || 'N/A'}</td>
+                                <td>${user.position || 'N/A'}</td>
+                                <td>${user.branch || 'N/A'}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary edit-user" data-id="${user.id}">Edit</button>
+                                    <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Delete</button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                    
+                    // Update pagination controls
+                    updateUserPagination(response.current_page, response.total_pages);
+                } else {
+                    $('#usersTableBody').append('<tr><td colspan="8" class="text-center">No users found</td></tr>');
+                }
+            },
+            error: function() {
+                $('#usersTableBody').append('<tr><td colspan="8" class="text-center">Error loading users</td></tr>');
+            }
+        });
+    }
+
+    // Update User Pagination
+    function updateUserPagination(currentPage, totalPages) {
+        $('#usersPaginationControls').empty();
+        
+        // Previous button
+        let prevDisabled = currentPage <= 1 ? 'disabled' : '';
+        $('#usersPaginationControls').append(`
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+            </li>
+        `);
+        
+        // Show limited page numbers (1-5 or current page ±2)
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+        
+        if (startPage > 1) {
+            $('#usersPaginationControls').append(`
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="1">1</a>
+                </li>
+                ${startPage > 2 ? '<li class="page-item disabled"><span class="page-link">...</span></li>' : ''}
+            `);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            let active = i === currentPage ? 'active' : '';
+            $('#usersPaginationControls').append(`
+                <li class="page-item ${active}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `);
+        }
+        
+        if (endPage < totalPages) {
+            $('#usersPaginationControls').append(`
+                ${endPage < totalPages - 1 ? '<li class="page-item disabled"><span class="page-link">...</span></li>' : ''}
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a>
+                </li>
+            `);
+        }
+        
+        // Next button
+        let nextDisabled = currentPage >= totalPages ? 'disabled' : '';
+        $('#usersPaginationControls').append(`
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+            </li>
+        `);
+    }
+
+    // Pagination Click Event
+    $(document).on('click', '#usersPaginationControls .page-link', function(e) {
+        e.preventDefault();
+        if ($(this).parent().hasClass('disabled')) return;
+        let page = $(this).data('page');
+        let search = $('#searchUserInput').val();
+        loadUsers(page, search);
+    });
+
+    // Search Users with debounce
+    let searchTimeout;
+    $('#searchUserInput').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            let search = $(this).val();
+            loadUsers(1, search);
+        }, 500);
+    });
+
+    // Edit User Click Event
+    $(document).on('click', '.edit-user', function() {
+        let userId = $(this).data('id');
+        
+        $.ajax({
+            url: '../api/user_management.php?action=get_user',
+            type: 'GET',
+            data: { id: userId },
+            success: function(response) {
+                if (response.success) {
+                    $('#editUserId').val(response.user.id);
+                    $('#editUsername').val(response.user.username);
+                    $('#editFullName').val(response.user.fullName || '');
+                    $('#editPosition').val(response.user.position || '');
+                    $('#editBranch').val(response.user.branch || '');
+                    $('#editRole').val(response.user.role || 'staff');
+                    $('#editStatus').val(response.user.status || 'active');
+                    $('#editUserModal').modal('show');
+                } else {
+                    $('#warningMessage').text(response.message);
+                    $('#warningModal').modal('show');
+                }
+            },
+            error: function() {
+                $('#warningMessage').text('An error occurred. Please try again.');
+                $('#warningModal').modal('show');
+            }
+        });
+    });
+
+    // Delete User Click Event
+    $(document).on('click', '.delete-user', function() {
+        let userId = $(this).data('id');
+        
+        // Set confirmation modal content
+        $('#userConfirmationModal .modal-body').html(`
+            <p>Are you sure you want to delete this user?</p>
+            <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+        `);
+        
+        $('#userConfirmationModal').modal('show');
+        $('#confirmUserActionBtn').off('click').on('click', function() {
             $.ajax({
-                url: '../api/edit_user.php',
+                url: '../api/user_management.php?action=delete_user',
                 type: 'POST',
-                data: $(this).serialize(),
+                data: { id: userId },
                 success: function(response) {
                     if (response.success) {
                         $('#successMessage').text(response.message);
                         $('#successModal').modal('show');
-                        $('#editUserModal').modal('hide');
                         loadUsers();
                     } else {
                         $('#warningMessage').text(response.message);
                         $('#warningModal').modal('show');
                     }
+                    $('#userConfirmationModal').modal('hide');
                 },
                 error: function() {
                     $('#warningMessage').text('An error occurred. Please try again.');
                     $('#warningModal').modal('show');
+                    $('#userConfirmationModal').modal('hide');
                 }
-            });
-        });
-
-        // Load Users Function
-        function loadUsers(page = 1, search = '') {
-            $.ajax({
-                url: '../api/get_users.php',
-                type: 'GET',
-                data: { page: page, search: search },
-                success: function(response) {
-                    $('#usersTableBody').empty();
-                    
-                    if (response.users.length > 0) {
-                        response.users.forEach(function(user) {
-                            let statusBadge = user.status === 'active' ? 
-                                '<span class="badge bg-success">Active</span>' : 
-                                '<span class="badge bg-danger">Inactive</span>';
-                            
-                            $('#usersTableBody').append(`
-                                <tr>
-                                    <td>${user.id}</td>
-                                    <td>${user.username}</td>
-                                    <td>${user.email}</td>
-                                    <td>${user.role}</td>
-                                    <td>${statusBadge}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-primary edit-user" data-id="${user.id}">Edit</button>
-                                        <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Delete</button>
-                                    </td>
-                                </tr>
-                            `);
-                        });
-                        
-                        // Update pagination controls
-                        updateUserPagination(response.current_page, response.total_pages);
-                    } else {
-                        $('#usersTableBody').append('<tr><td colspan="6" class="text-center">No users found</td></tr>');
-                    }
-                }
-            });
-        }
-
-        // Update User Pagination
-        function updateUserPagination(currentPage, totalPages) {
-            $('#usersPaginationControls').empty();
-            
-            // Previous button
-            let prevDisabled = currentPage <= 1 ? 'disabled' : '';
-            $('#usersPaginationControls').append(`
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
-                </li>
-            `);
-            
-            // Page numbers
-            for (let i = 1; i <= totalPages; i++) {
-                let active = i === currentPage ? 'active' : '';
-                $('#usersPaginationControls').append(`
-                    <li class="page-item ${active}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                    </li>
-                `);
-            }
-            
-            // Next button
-            let nextDisabled = currentPage >= totalPages ? 'disabled' : '';
-            $('#usersPaginationControls').append(`
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
-                </li>
-            `);
-        }
-
-        // Pagination Click Event
-        $(document).on('click', '#usersPaginationControls .page-link', function(e) {
-            e.preventDefault();
-            let page = $(this).data('page');
-            let search = $('#searchUserInput').val();
-            loadUsers(page, search);
-        });
-
-        // Search Users
-        $('#searchUserInput').on('keyup', function() {
-            let search = $(this).val();
-            loadUsers(1, search);
-        });
-
-        // Edit User Click Event
-        $(document).on('click', '.edit-user', function() {
-            let userId = $(this).data('id');
-            
-            $.ajax({
-                url: '../api/get_user.php',
-                type: 'GET',
-                data: { id: userId },
-                success: function(response) {
-                    if (response.success) {
-                        $('#editUserId').val(response.user.id);
-                        $('#editUsername').val(response.user.username);
-                        $('#editEmail').val(response.user.email);
-                        $('#editRole').val(response.user.role);
-                        $('#editStatus').val(response.user.status);
-                        $('#editUserModal').modal('show');
-                    } else {
-                        $('#warningMessage').text(response.message);
-                        $('#warningModal').modal('show');
-                    }
-                },
-                error: function() {
-                    $('#warningMessage').text('An error occurred. Please try again.');
-                    $('#warningModal').modal('show');
-                }
-            });
-        });
-
-        // Delete User Click Event
-        $(document).on('click', '.delete-user', function() {
-            let userId = $(this).data('id');
-            
-            $('#userConfirmationModal').modal('show');
-            $('#confirmUserActionBtn').off('click').on('click', function() {
-                $.ajax({
-                    url: '../api/delete_user.php',
-                    type: 'POST',
-                    data: { id: userId },
-                    success: function(response) {
-                        if (response.success) {
-                            $('#successMessage').text(response.message);
-                            $('#successModal').modal('show');
-                            loadUsers();
-                        } else {
-                            $('#warningMessage').text(response.message);
-                            $('#warningModal').modal('show');
-                        }
-                        $('#userConfirmationModal').modal('hide');
-                    },
-                    error: function() {
-                        $('#warningMessage').text('An error occurred. Please try again.');
-                        $('#warningModal').modal('show');
-                        $('#userConfirmationModal').modal('hide');
-                    }
-                });
             });
         });
     });
+});

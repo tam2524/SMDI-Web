@@ -216,11 +216,10 @@
                         <table id="usersTable" class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Username</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
+                                    <th>Full Name</th>
+                                    <th>Position</th>
+                                    <th>Branch</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -419,8 +418,7 @@
     </div>
 </div>
 
- <!-- Add User Modal -->
-    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -432,28 +430,30 @@
                     <div id="userSuccessMessage" class="alert alert-success" style="display: none;"></div>
                     <form id="addUserForm">
                         <div class="mb-3">
-                            <label for="newUsername" class="form-label">Username</label>
+                            <label for="newUsername" class="form-label">Username*</label>
                             <input type="text" class="form-control" id="newUsername" name="username" required>
                         </div>
                         <div class="mb-3">
-                            <label for="newEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="newEmail" name="email" required>
+                            <label for="newFullName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="newFullName" name="fullName">
                         </div>
                         <div class="mb-3">
-                            <label for="newPassword" class="form-label">Password</label>
+                            <label for="newPosition" class="form-label">Position</label>
+                            <input type="text" class="form-control" id="newPosition" name="position">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newBranch" class="form-label">Branch</label>
+                            <input type="text" class="form-control" id="newBranch" name="branch">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Password*</label>
                             <input type="password" class="form-control" id="newPassword" name="password" required>
                         </div>
                         <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">Confirm Password</label>
+                            <label for="confirmPassword" class="form-label">Confirm Password*</label>
                             <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="userRole" class="form-label">Role</label>
-                            <select class="form-select" id="userRole" name="role" required>
-                                <option value="admin">Admin</option>
-                                <option value="staff" selected>Staff</option>
-                            </select>
-                        </div>
+                
                         <button type="submit" class="btn btn-primary text-white">Add User</button>
                     </form>
                 </div>
@@ -473,27 +473,22 @@
                     <form id="editUserForm">
                         <input type="hidden" id="editUserId" name="id">
                         <div class="mb-3">
-                            <label for="editUsername" class="form-label">Username</label>
+                            <label for="editUsername" class="form-label">Username*</label>
                             <input type="text" class="form-control" id="editUsername" name="username" required>
                         </div>
                         <div class="mb-3">
-                            <label for="editEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="editEmail" name="email" required>
+                            <label for="editFullName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="editFullName" name="fullName">
                         </div>
                         <div class="mb-3">
-                            <label for="editRole" class="form-label">Role</label>
-                            <select class="form-select" id="editRole" name="role" required>
-                                <option value="admin">Admin</option>
-                                <option value="staff">Staff</option>
-                            </select>
+                            <label for="editPosition" class="form-label">Position</label>
+                            <input type="text" class="form-control" id="editPosition" name="position">
                         </div>
                         <div class="mb-3">
-                            <label for="editStatus" class="form-label">Status</label>
-                            <select class="form-select" id="editStatus" name="status" required>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+                            <label for="editBranch" class="form-label">Branch</label>
+                            <input type="text" class="form-control" id="editBranch" name="branch">
                         </div>
+                        
                         <div class="mb-3">
                             <label for="editPassword" class="form-label">New Password (leave blank to keep current)</label>
                             <input type="password" class="form-control" id="editPassword" name="password">
