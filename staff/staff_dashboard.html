@@ -9,7 +9,7 @@
         <meta content="" name="keywords">
         <meta content="" name="description">
     
-        <link rel="icon" href="assets/img/smdi_logosmall.png" type="image/png">
+        <link rel="icon" href="../assets/img/smdi_logosmall.png" type="image/png">
     
         <!-- Google Web Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,8 +23,8 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
     
         <!-- Libraries Stylesheet -->
-        <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
-        <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+        <link href="../lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+        <link href="../lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
     
      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -33,10 +33,10 @@
     <link rel="stylesheet" href="https://printjs-4de6.kxcdn.com/print.min.css">
     
         <!-- Customized Bootstrap Stylesheet -->
-        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
     
         <!-- Template Stylesheet -->
-        <link href="css/style.css" rel="stylesheet">
+        <link href="../css/style.css" rel="stylesheet">
     </head>
     
 
@@ -56,8 +56,8 @@
         </div>
         <div class="container px-0">
             <nav class="navbar navbar-light bg-white navbar-expand-lg">
-                <a href="index.html" class="navbar-brand">
-                    <img src="assets/img/smdi_logo.jpg" alt="Company Logo" class="logo">
+                <a href="../staff/staff_dashboard.html" class="navbar-brand">
+                    <img src="../assets/img/smdi_logo.jpg" alt="Company Logo" class="logo">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
                     aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,9 +65,9 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <div class="navbar-nav">
-                        <a href="staffDashboard.html" class="nav-item nav-link active">Home</a>
-                        <a href="api/logout.php" class="nav-item nav-link active">Logout</a>
-                       
+                        <a href="../staff/staff_dashboard.html" class="nav-item nav-link active">Home</a>
+                        <a href="../api/logout.php" class="nav-item nav-link active">Logout</a>
+
                     </div>
                     </div>
                 </div>
@@ -85,7 +85,7 @@
                 <div class="col-lg-6">
                     <h1 class="display">PRINT INQUIRIES AS OF </h1>
                     <h3 class="display"><span id="currentDate"></span></h3>
-                    <a class="btn border-secondary rounded-pill py-3 px-5" href="staffPrintForm.html" class="nav-item nav-link active"
+                    <a class="btn border-secondary rounded-pill py-3 px-5" href="../staff_print_form.html" class="nav-item nav-link active"
                                 onclick="openPrintForm(event)">SELECT BRANCH</a>
                 </div>
             </div>
@@ -151,12 +151,12 @@
             <script src="lib/owlcarousel/owl.carousel.min.js"></script>
 
 
-            <script src="js/main.js"></script>
+            <script src="../js/main.js"></script>
 
             <script>
         function openPrintForm(event) {
             event.preventDefault();
-            window.open('staffPrintForm.html', '_blank', 'width=600,height=600');
+            window.open('staff_print_form.html', '_blank', 'width=600,height=600');
         }
     </script>
 </body>

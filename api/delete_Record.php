@@ -1,5 +1,5 @@
 <?php
-include 'db_config.php';
+include '../api/db_config.php';
 
 $ids = $_POST['ids'] ?? [];
 

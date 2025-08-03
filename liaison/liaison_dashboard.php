@@ -1,4 +1,4 @@
-<?php include 'api/auth.php'; ?>
+<?php include '../api/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,28 +9,28 @@
     <meta content="" name="keywords">
     <meta content="" name="description">
     
-    <link rel="icon" href="assets/img/smdi_logosmall.png" type="image/png">
+    <link rel="icon" href="../assets/img/smdi_logosmall.png" type="image/png">
 
     <!-- Icon Font Stylesheet -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Libraries Stylesheet -->
-    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+    <link href="../lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="../lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
 
     <!-- Bootstrap CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Template Stylesheet -->
-    <link href="css/style.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
     
     <!-- PrintJS -->
     <link rel="stylesheet" href="https://printjs-4de6.kxcdn.com/print.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
-    <script src="js/script.js"></script>
+    <script src="../js/script.js"></script>
 
 <style>
         .table-responsive {
@@ -97,7 +97,7 @@
         <div class="container px-0">
             <nav class="navbar navbar-light bg-white navbar-expand-lg">
                 <a href="index.html" class="navbar-brand">
-                    <img src="assets/img/smdi_logo.jpg" alt="Company Logo" class="logo">
+                    <img src="../assets/img/smdi_logo.jpg" alt="Company Logo" class="logo">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -105,7 +105,7 @@
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <div class="navbar-nav">
                         <a href="staffDashboard.html" class="nav-item nav-link active">Home</a>
-                        <a href="api/logout.php" class="nav-item nav-link active">Logout</a>
+                        <a href="../api/logout.php" class="nav-item nav-link active">Logout</a>
                     </div>
                 </div>
             </nav>
@@ -126,7 +126,7 @@
 <!-- Search and Sort Options -->
 <div class="mb-3 d-flex">
     <input type="text" id="searchInput" class="form-control me-2" placeholder="Search...">
-    <div class="dropdown">
+    <!-- <div class="dropdown">
         <button class="btn btn-primary text-white dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             Sort by
         </button>
@@ -135,7 +135,7 @@
             <li><a class="dropdown-item" href="#" data-sort="batch">Batch</a></li>
             <li><a class="dropdown-item" href="#" data-sort="branch">Branch</a></li>
         </ul>
-    </div>
+    </div> -->
 </div>
 
   <!-- Table of Records -->
@@ -188,7 +188,7 @@
             <div class="modal-body">
                 <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
                 <div id="successMessage" class="alert alert-success" style="display: none;"></div>
-                <form id="addRecordForm" action="api/add_Record.php" method="post">
+                <form id="addRecordForm" action="add_Record.php" method="post">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="familyName" class="form-label">Family Name</label>
@@ -225,8 +225,8 @@
                             <input type="text" class="form-control" id="remarks" name="remarks" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="datereg" class="form-label">DateReg</label>
-                            <input type="text" class="form-control" id="datereg" name="datereg" required>
+                            <label for="date_reg" class="form-label">Date Reg</label>
+                            <input type="text" class="form-control" id="date_reg" name="date_reg" required>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary text-white">Add Record</button>
@@ -246,7 +246,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="editRecordForm" action="api/edit_Record.php" method="post">
+                <form id="editRecordForm" action="edit_Record.php" method="post">
                     <input type="hidden" id="editRecordId" name="Record_id">
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -285,7 +285,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="editDatereg" class="form-label">DateReg</label>
-                            <input type="text" class="form-control" id="editDateReg" name="datereg" required>
+                            <input type="text" class="form-control" id="editDateReg" name="date_reg" required>
                          </div>
                     </div>
                     <button type="submit" class="btn text-white btn-primary ">Save Changes</button>

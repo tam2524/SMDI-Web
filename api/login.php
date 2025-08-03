@@ -23,13 +23,16 @@ if ($result->num_rows > 0) {
 
         // Redirect based on position
         switch ($position) {
-            case 'IT Staff':
-            case 'Head':
+            case 'IT Staff':   
+            case 'Admin': 
+                header("Location: ../admin/admin_dashboard.php");
+                break;
+            case 'Head':   
             case 'Branch Manager':
-                header("Location: ../staffDashboard.html");
+                header("Location: ../staff/staff_dashboard.html");
                 break;
             case 'Liaison':
-                header("Location: ../liason_dashboard.php");
+                header("Location: ../liaison/liaison_dashboard.php");
                 break;
             default:
                 // Fallback if no matching case

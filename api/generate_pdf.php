@@ -1,206 +1,197 @@
 <?php
+ini_set('memory_limit', '4096M');
+ini_set('max_execution_time', 300);
 
-ini_set('memory_limit', '4096M');  // Set the memory limit to 4 GB
-ini_set('max_execution_time', 300);  // Set execution time to 300 seconds (5 minutes)
+require_once '../vendor/autoload.php';
+include '../api/db_config.php';
 
-// Include the Composer autoload file
-require_once '../vendor/autoload.php'; // Adjust the path as necessary
-
-// Include your database configuration
-include '../api/db_config.php'; 
-
-// Get parameters from the URL and decode them
+// Get and sanitize parameters
 $documentType = isset($_GET['documentType']) ? urldecode($_GET['documentType']) : 'default';
 $sortBy = isset($_GET['sortBy']) ? urldecode($_GET['sortBy']) : '';
-$fromBatch = isset($_GET['fromBatch']) ? urldecode($_GET['fromBatch']) : '';
-$toBatch = isset($_GET['toBatch']) ? urldecode($_GET['toBatch']) : '';
+$fromBatch = isset($_GET['fromBatch']) ? $conn->real_escape_string(urldecode($_GET['fromBatch'])) : '';
+$toBatch = isset($_GET['toBatch']) ? $conn->real_escape_string(urldecode($_GET['toBatch'])) : '';
 $outputFormat = isset($_GET['outputFormat']) ? urldecode($_GET['outputFormat']) : 'pdf';
-$fromLetter = isset($_GET['fromLetter']) ? urldecode($_GET['fromLetter']) : '';
-$toLetter = isset($_GET['toLetter']) ? urldecode($_GET['toLetter']) : '';
+$fromLetter = isset($_GET['fromLetter']) ? trim(strtoupper(urldecode($_GET['fromLetter']))) : '';
+$toLetter = isset($_GET['toLetter']) ? trim(strtoupper(urldecode($_GET['toLetter']))) : '';
 
-// Sanitize inputs
-$fromBatch = $conn->real_escape_string($fromBatch);
-$toBatch = $conn->real_escape_string($toBatch);
+// Build query
+$query = "SELECT * FROM records";
 
-// Fetch records from the database based on the selected options
-$query = "SELECT * FROM records"; // Adjust your table name
-
-// Handle sorting by customer batch range
-if ($sortBy === 'customerBatchRange') {
+if ($sortBy === 'customerBatchRange' && !empty($fromBatch) && !empty($toBatch)) {
     $query .= " WHERE batch BETWEEN '$fromBatch' AND '$toBatch'";
+} elseif ($sortBy === 'familyName' && !empty($fromLetter) && !empty($toLetter) && ctype_alpha($fromLetter) && ctype_alpha($toLetter)) {
+    $query .= " WHERE family_name BETWEEN '$fromLetter' AND '$toLetter%' ORDER BY family_name ASC";
 }
 
-// Handle sorting by family name
-$fromLetter = isset($_GET['fromLetter']) ? trim(strtoupper($fromLetter)) : '';
-$toLetter = isset($_GET['toLetter']) ? trim(strtoupper($toLetter)) : '';
-
-if (!empty($fromLetter) && !empty($toLetter) && ctype_alpha($fromLetter) && ctype_alpha($toLetter)) {
-    $fromLetter = $conn->real_escape_string($fromLetter);
-    $toLetter = $conn->real_escape_string($toLetter);
-
-    if ($sortBy === 'familyName') {
-        // Adjust the WHERE clause to consider the letter range
-        $query .= " WHERE family_name BETWEEN '$fromLetter' AND '$toLetter%' ORDER BY family_name ASC";
-    }
-    
-} elseif ($sortBy === 'familyName') {
-    // If invalid input, provide a fallback query
-    die("Invalid letter range provided.");
-}
-
-
-// Execute the query
 $result = $conn->query($query);
 if (!$result) {
     die("Database query failed: " . $conn->error);
 }
 
 if ($outputFormat === 'pdf') {
-    // PDF Generation Logic
     if ($documentType === 'masterlists') {
-        // Create new PDF document in landscape format for Masterlists
+        // Create PDF in landscape
         $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor('SMDI');
         $pdf->SetTitle('Masterlists');
-    
-        // Set header and footer fonts
-        $pdf->setHeaderFont(['helvetica', '', 10]);
-        $pdf->setFooterFont(['helvetica', '', 8]);
-        $pdf->SetMargins(8, 8, 8);
-        $pdf->SetAutoPageBreak(TRUE, 10);
-        $pdf->AddPage(); // Add a new page in landscape format
-    
-        // Prepare the HTML content for Masterlists
+        
+        // Set document properties
+        $pdf->SetMargins(10, 15, 10, true);
+        $pdf->SetHeaderMargin(5);
+        $pdf->SetFooterMargin(10);
+        $pdf->SetAutoPageBreak(TRUE, 15);
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->AddPage();
+
+        // Header with logo
         $html = '
-    <div style="text-align: center; margin-bottom: 30px;">
-        <img src="assets/img/smdi_logo.jpg" alt="SMDI_Logo" style="max-width: 150px; margin-bottom: 10px;"/>
-        <h4 style="font-size: 24px; margin: 0; padding: 0; line-height: 1;">Solid Motorcycle Distributors, Inc.</h4>
-        <h2 style="font-size: 15px; font-weight: bold; margin: 0; padding: 0; line-height: 0.5;">Masterlists</h2>
-    </div>
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #ddd;">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="assets/img/smdi_logo.jpg" alt="SMDI_Logo" style="max-width: 150px; margin-bottom: 5px;"/>
+            <h4 style="font-size: 24px; margin: 0; padding: 0; line-height: 1;">Solid Motorcycle Distributors, Inc.</h4>
+            <h2 style="font-size: 15px; font-weight: bold; margin: 5px 0 15px 0; padding: 0;">Masterlists</h2>
+        </div>';
+
+        // Table styling
+        $html .= '
+        <style>
+            .masterlist-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 9pt;
+                page-break-inside: avoid;
+            }
+            .masterlist-table th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+                text-align: center;
+                padding: 4px;
+                border: 1px solid #ddd;
+            }
+            .masterlist-table td {
+                padding: 3px;
+                border: 1px solid #ddd;
+                word-wrap: break-word;
+            }
+            .remarks-cell {
+                max-width: 50mm;
+                word-break: break-word;
+            }
+        </style>';
+
+        // Table header
+        $html .= '
+        <table class="masterlist-table">
             <thead>
                 <tr>
-                    <th style="width: 20%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">Family Name</th>
-                    <th style="width: 15%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">First Name</th>
-                    <th style="width: 3%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">M.I.</th>
-                    <th style="width: 15%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">Plate Number</th>
-                    <th style="width: 15%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">MV File</th>
-                    <th style="width: 10%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">Branch</th>
-                    <th style="width: 5%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">Batch</th>
-                    <th style="width: 18%; font-size: 10px; background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center; border: 1px solid #ccc;">Remarks</th>
+                    <th>Family Name</th>
+                    <th>First Name</th>
+                    <th>M.I.</th>
+                    <th>Plate Number</th>
+                    <th>MV File</th>
+                    <th>Branch</th>
+                    <th>Batch</th>
+                    <th>Remarks</th>
+                    <th>Date Reg</th>
                 </tr>
             </thead>
             <tbody>';
-        
+
+        // Table rows
         while ($row = $result->fetch_assoc()) {
-            $familyName = isset($row['family_name']) ? htmlspecialchars($row['family_name']) : '';
-            $firstName = isset($row['first_name']) ? htmlspecialchars($row['first_name']) : '';
-            $middleName = isset($row['middle_name']) ? htmlspecialchars($row['middle_name']) : '';
-            $plateNumber = isset($row['plate_number']) ? htmlspecialchars($row['plate_number']) : '';
-            $mvFile = isset($row['mv_file']) ? htmlspecialchars($row['mv_file']) : '';
-            $branch = isset($row['branch']) ? htmlspecialchars($row['branch']) : '';
-            $batch = isset($row['batch']) ? htmlspecialchars($row['batch']) : '';
             $remarks = isset($row['remarks']) ? htmlspecialchars($row['remarks']) : '';
-        
+            if (strlen($remarks) > 50) {
+                $remarks = wordwrap($remarks, 30, "<br>", true);
+            }
+
             $html .= '<tr>
-                <td style="width: 20% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $familyName . '</td>
-                <td style="width: 15% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $firstName . '</td>
-                <td style="width: 3% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $middleName . '</td>
-                <td style="width: 15% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $plateNumber . '</td>
-                <td style="width: 15% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $mvFile . '</td>
-                <td style="width: 10% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $branch . '</td>
-                <td style="width: 5% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $batch . '</td>
-                <td style="width: 18% font-size: 12px; border-bottom: 1px solid #e0e0e0; border: 1px solid #ccc;">' . $remarks . '</td>
+                <td>'.htmlspecialchars($row['family_name']).'</td>
+                <td>'.htmlspecialchars($row['first_name']).'</td>
+                <td>'.htmlspecialchars($row['middle_name']).'</td>
+                <td>'.htmlspecialchars($row['plate_number']).'</td>
+                <td>'.htmlspecialchars($row['mv_file']).'</td>
+                <td>'.htmlspecialchars($row['branch']).'</td>
+                <td>'.htmlspecialchars($row['batch']).'</td>
+                <td class="remarks-cell">'.$remarks.'</td>
+                <td>'.htmlspecialchars($row['date_reg']).'</td>
             </tr>';
         }
-        $html .= '</tbody></table>';
-        
+
+            $html .= '</tbody></table>';
         $pdf->writeHTML($html, true, false, true, false, '');
         $pdf->Output('masterlists.pdf', 'I');
+        exit;
     } 
-    
-    if ($documentType === 'labels') {
+    elseif ($documentType === 'labels') {
         $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor('SMDI');
         $pdf->SetTitle('Labels');
-    
-        // Set header and footer fonts
-        $pdf->setHeaderFont(['helvetica', '', 10]);
-        $pdf->setFooterFont(['helvetica', '', 8]);
         $pdf->SetMargins(8, 8, 8);
         $pdf->SetAutoPageBreak(TRUE, 10);
-        $pdf->AddPage(); // Add a new page in portrait format
-    
-        // Prepare the HTML content for Labels
-        $html = ''; // Start with an empty string for labels
+        $pdf->AddPage();
+
+        $html = '';
         while ($row = $result->fetch_assoc()) {
-            $familyName = isset($row['family_name']) ? htmlspecialchars($row['family_name']) : '';
-            $firstName = isset($row['first_name']) ? htmlspecialchars($row['first_name']) : '';
-            $middleName = isset($row['middle_name']) ? htmlspecialchars($row['middle_name']) : '';
-            $branch = isset($row['branch']) ? htmlspecialchars($row['branch']) : '';
-    
             $html .= '
             <div style="
-                font-size: 14px; /* Font size */
+                font-size: 12px;
                 text-align: left; 
-                padding: 2px; /* Padding */
+                padding: 2px;
                 border: 1px solid #000; 
-                border-radius: 0; /* No border radius */
                 display: inline-block; 
                 width: 50%; 
-                margin: auto; 
-                margin-bottom: 10px; /* Bottom margin */
-                height: 30px; /* Fixed height */
-                overflow: hidden; /* Hide overflow */
-                line-height: 0.78; /* Line height */
+                margin-bottom: 5px;
+                height: 30px;
+                overflow: hidden;
+                line-height: 1.2;
+                box-sizing: border-box;
             ">
                 <p style="margin: 0;">
-                    <span style="font-weight: bold;"> ' . $familyName . ', ' . $firstName . ' ' . $middleName . '</span>
-                    <span style="color: red; font-weight: normal;">Branch:</span> 
-                    <span style="font-weight: bold;">' . $branch . '</span>
+                    <span style="font-weight: bold;">'.htmlspecialchars($row['family_name']).', '.htmlspecialchars($row['first_name']).' '.htmlspecialchars($row['middle_name']).'</span>
+                    <span style="color: red;"> Branch: </span> 
+                    <span style="font-weight: bold;">'.htmlspecialchars($row['branch']).'</span>
                 </p>
             </div>';
         }
         
-         $pdf->writeHTML($html, true, false, true, false, '');
+        $pdf->writeHTML($html, true, false, true, false, '');
         $pdf->Output('labels.pdf', 'I');
     }
-} elseif ($outputFormat === 'excel') {
-    // Excel Generation Logic
+} 
+elseif ($outputFormat === 'excel') {
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
     
     // Set header
-    $sheet->setCellValue('A1', 'Family Name');
-    $sheet->setCellValue('B1', 'First Name');
-    $sheet->setCellValue('C1', 'Middle Name');
-    $sheet->setCellValue('D1', 'Plate Number');
-    $sheet->setCellValue('E1', 'MV File');
-    $sheet->setCellValue('F1', 'Branch');
-    $sheet->setCellValue('G1', 'Batch');
-    $sheet->setCellValue('H1', 'Remarks');
+    $headers = ['Family Name', 'First Name', 'Middle Name', 'Plate Number', 'MV File', 'Branch', 'Batch', 'Remarks', 'Date Registered'];
+    $sheet->fromArray($headers, NULL, 'A1');
 
-    // Add data to the Excel sheet
-    $row = 2; // Start from the second row
+    // Add data
+    $row = 2;
     while ($data = $result->fetch_assoc()) {
-        $sheet->setCellValue('A' . $row, $data['family_name']);
-        $sheet->setCellValue('B' . $row, $data['first_name']);
-        $sheet->setCellValue('C' . $row, $data['middle_name']);
-        $sheet->setCellValue('D' . $row, $data['plate_number']);
-        $sheet->setCellValue('E' . $row, $data['mv_file']);
-        $sheet->setCellValue('F' . $row, $data['branch']);
-        $sheet->setCellValue('G' . $row, $data['batch']);
-        $sheet->setCellValue('H' . $row, $data['remarks']);
+        $sheet->setCellValue('A'.$row, $data['family_name']);
+        $sheet->setCellValue('B'.$row, $data['first_name']);
+        $sheet->setCellValue('C'.$row, $data['middle_name']);
+        $sheet->setCellValue('D'.$row, $data['plate_number']);
+        $sheet->setCellValue('E'.$row, $data['mv_file']);
+        $sheet->setCellValue('F'.$row, $data['branch']);
+        $sheet->setCellValue('G'.$row, $data['batch']);
+        $sheet->setCellValue('H'.$row, $data['remarks']);
+        $sheet->setCellValue('I'.$row, $data['date_reg']);
         $row++;
     }
 
-    // Save and output the Excel file
+    // Auto-size columns
+    foreach(range('A','I') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    // Output Excel
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
     $fileName = ($documentType === 'masterlists') ? 'masterlists.xlsx' : 'labels.xlsx';
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment; filename="' . $fileName . '"');
+    header('Content-Disposition: attachment; filename="'.$fileName.'"');
     $writer->save('php://output');
 }
 ?>
