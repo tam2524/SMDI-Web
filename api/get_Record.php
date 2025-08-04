@@ -1,5 +1,5 @@
 <?php
-include 'db_config.php';
+include '../api/db_config.php';
 
 $recordId = $_GET['id'];
 $sql = "SELECT * FROM records WHERE record_id = '$recordId'";

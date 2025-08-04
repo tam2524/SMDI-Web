@@ -1,119 +1,102 @@
 <?php
-include 'db_config.php';
+include '../api/db_config.php';
 
-$query = isset($_GET['query']) ? $_GET['query'] : '';
+// Get parameters from request
+$query = isset($_GET['query']) ? trim($_GET['query']) : '';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$sort = isset($_GET['sort']) ? $_GET['sort'] : null;
 
-// Define valid sorting columns
-$validSortColumns = ['family_name', 'first_name', 'middle_name', 'plate_number', 'mv_file', 'branch', 'batch'];
-$sort = isset($_GET['sort']) && in_array($_GET['sort'], $validSortColumns) ? $_GET['sort'] : 'family_name'; // Default sorting
+// Validate and sanitize
+$page = max(1, $page);
+$recordsPerPage = 15;
+$offset = ($page - 1) * $recordsPerPage;
 
-// Get batch range parameters
-$fromBatch = isset($_GET['fromBatch']) ? $_GET['fromBatch'] : '';
-$toBatch = isset($_GET['toBatch']) ? $_GET['toBatch'] : '';
-
-$currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$recordsPerPage = 20; // Set the number of records per page
-$offset = ($currentPage - 1) * $recordsPerPage;
-
-// Prepare the base SQL query
-$sql = "SELECT * FROM records WHERE (family_name LIKE ? 
+// Base SQL query
+$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM records 
+        WHERE family_name LIKE ? 
         OR first_name LIKE ? 
         OR middle_name LIKE ? 
         OR plate_number LIKE ? 
         OR mv_file LIKE ? 
         OR branch LIKE ? 
-        OR batch LIKE ?)";
+        OR batch LIKE ?";
 
-// Add batch filtering if provided
-if ($fromBatch !== '' && $toBatch !== '') {
-    $sql .= " AND batch BETWEEN ? AND ?";
-}
-
-// Append sorting and pagination
-$sql .= " ORDER BY $sort LIMIT ?, ?";
-
-$stmt = mysqli_prepare($conn, $sql);
-$searchTerm = "%$query%";
-
-// Prepare parameters
-if ($fromBatch !== '' && $toBatch !== '') {
-    mysqli_stmt_bind_param($stmt, "ssssssssi", $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $fromBatch, $toBatch, $offset, $recordsPerPage);
+// Add sorting
+if ($sort) {
+    $validSortColumns = ['family_name', 'batch', 'branch'];
+    $sortDirection = 'ASC'; // or add logic for DESC if needed
+    
+    if (in_array($sort, $validSortColumns)) {
+        $sql .= " ORDER BY $sort $sortDirection";
+    }
 } else {
-    mysqli_stmt_bind_param($stmt, "ssssssssi", $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $offset, $recordsPerPage);
+    // Default sorting
+    $sql .= " ORDER BY record_id DESC";
 }
 
-mysqli_stmt_execute($stmt);
+// Add pagination
+$sql .= " LIMIT ? OFFSET ?";
+
+// Prepare and execute
+$stmt = mysqli_prepare($conn, $sql);
+if (!$stmt) {
+    die(json_encode(['error' => 'Database error']));
+}
+
+$searchTerm = "%$query%";
+mysqli_stmt_bind_param($stmt, "sssssssii", 
+    $searchTerm, $searchTerm, $searchTerm,
+    $searchTerm, $searchTerm, $searchTerm,
+    $searchTerm, $recordsPerPage, $offset);
+
+if (!mysqli_stmt_execute($stmt)) {
+    die(json_encode(['error' => 'Query execution failed']));
+}
+
 $result = mysqli_stmt_get_result($stmt);
 
-// Fetch the total number of records for pagination
-$totalSql = "SELECT COUNT(*) as total FROM records WHERE (family_name LIKE ? 
-              OR first_name LIKE ? 
-              OR middle_name LIKE ? 
-              OR plate_number LIKE ? 
-              OR mv_file LIKE ? 
-              OR branch LIKE ? 
-              OR batch LIKE ?)";
-
-// Add batch filtering for total count
-if ($fromBatch !== '' && $toBatch !== '') {
-    $totalSql .= " AND batch BETWEEN ? AND ?";
-}
-
-$totalStmt = mysqli_prepare($conn, $totalSql);
-mysqli_stmt_bind_param($totalStmt, "sssssss", $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
-
-if ($fromBatch !== '' && $toBatch !== '') {
-    mysqli_stmt_bind_param($totalStmt, "sssssss", $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $fromBatch, $toBatch);
-}
-
-mysqli_stmt_execute($totalStmt);
-$totalResult = mysqli_stmt_get_result($totalStmt);
-$totalRow = mysqli_fetch_assoc($totalResult);
-$totalRecords = $totalRow['total'];
+// Get total records
+$totalRecordsResult = mysqli_query($conn, "SELECT FOUND_ROWS()");
+$totalRecords = mysqli_fetch_row($totalRecordsResult)[0];
 $totalPages = ceil($totalRecords / $recordsPerPage);
 
+// Generate HTML
+ob_start();
 if (mysqli_num_rows($result) > 0) {
-    while ($record = mysqli_fetch_assoc($result)) {
-        echo "<tr data-id='{$record['record_id']}'>
+    while ($row = mysqli_fetch_assoc($result)) {
+        echo "<tr data-id='{$row['record_id']}'>
                 <td class='no-print'><input type='checkbox' name='recordCheckbox'></td>
-                <td>{$record['family_name']}</td>
-                <td>{$record['first_name']}</td>
-                <td>{$record['middle_name']}</td>
-                <td>{$record['plate_number']}</td>
-                <td>{$record['mv_file']}</td>
-                <td>{$record['branch']}</td>
-                <td>{$record['batch']}</td>
-                <td>{$record['remarks']}</td>
+                <td>{$row['family_name']}</td>
+                <td>{$row['first_name']}</td>
+                <td>{$row['middle_name']}</td>
+                <td>{$row['plate_number']}</td>
+                <td>{$row['mv_file']}</td>
+                <td>{$row['branch']}</td>
+                <td>{$row['batch']}</td>
+                <td>{$row['remarks']}</td>
                 <td class='no-print'>
                     <button class='btn btn-sm text-white btn-primary edit-button'>Edit</button>
+                    <button class='btn btn-sm text-white btn-primary delete-button'>Delete</button>
                 </td>
               </tr>";
     }
 } else {
-    echo "<tr><td colspan='10'>No records found</td></tr>";
+    echo "<tr><td colspan='10' class='text-center'>No records found</td></tr>";
 }
 
-// Display pagination links
-if ($totalPages > 1) {
-    echo "<div class='pagination'>";
-    for ($i = 1; $i <= $totalPages; $i++) {
-        if ($i == $currentPage) {
-            echo "<span>$i</span>"; // Current page
-        } else {
-            echo "<a href='?query=" . urlencode($query) . "&page=$i'>$i</a>";
-        }
-    }
-    echo "</div>";
-}
+$html = ob_get_clean();
+
+// Return JSON response
+header('Content-Type: application/json');
+echo json_encode([
+    'html' => $html,
+    'pagination' => [
+        'totalPages' => $totalPages,
+        'currentPage' => $page,
+        'totalRecords' => $totalRecords
+    ]
+]);
 
 mysqli_stmt_close($stmt);
-mysqli_stmt_close($totalStmt);
 mysqli_close($conn);
-
-header('Content-Type: text/html; charset=utf-8');
-echo "<pre>";
-echo htmlspecialchars($output); // Assuming $output contains the generated HTML
-echo "</pre>";
 ?>
-

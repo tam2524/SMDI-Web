@@ -202,7 +202,96 @@ document.addEventListener("DOMContentLoaded", function() {
         window.addEventListener('scroll', onScroll);
         onScroll(); 
     });
+
+     async function includeHTML() {
+    const includes = document.querySelectorAll('[data-include]');
     
+    for (const include of includes) {
+        const file = include.getAttribute('data-include');
+        try {
+            const response = await fetch(file);
+            if (response.ok) {
+                include.innerHTML = await response.text();
+            } else {
+                include.innerHTML = 'Page not found.';
+            }
+        } catch (error) {
+            include.innerHTML = 'Error loading page.';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', includeHTML);
+    
+//LTO REG INQUIRY
+document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById('inquiryForm');
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const formData = new FormData(form);
+
+                fetch('api/register_details.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())  
+                .then(text => {
+                    try {
+                        const data = JSON.parse(text);
+                        const resultContainer = document.querySelector('.result');
+                        resultContainer.innerHTML = '';
+
+                        if (data.error) {
+                            resultContainer.innerHTML = `<p>${data.error}</p>`;
+                        } else {
+                            resultContainer.innerHTML = `
+                                <h4>Inquiry Results:</h4>
+                                <p><strong>Date Reg:</strong> ${data.date_reg}</p>
+                                <p><strong>Customer Name:</strong> ${data.full_name}</p>
+                                <p><strong>MV File Number:</strong> ${data.mv_file_number}</p>
+                                <p><strong>LTO Plate Number:</strong> ${data.lto_plate_number}</p>
+                            `;
+                        }
+                    } catch (error) {
+                        console.error('Parsing error:', error);
+                        const resultContainer = document.querySelector('.result');
+                        resultContainer.innerHTML = `<p>There was an error parsing the response.</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    const resultContainer = document.querySelector('.result');
+                    resultContainer.innerHTML = `<p>There was an error with the request.</p>`;
+                });
+            });
+        });
+//Motorcycle Inquiry
+
+  document.addEventListener("DOMContentLoaded", function() {
+            const mcbrand = document.getElementById("mcbrand");
+            const mcmodel = document.getElementById("mcmodel");
+
+            const models = {
+                Suzuki: ["BURGMAN STREET 125 EX", "BURGMAN STREET","AVENIS", "SKYDRIVE CROSSOVER", "SKYDRIVE SPORT", "SMASH FI", "SMASH CARB", "RAIDER R150 FI", "RAIDER R150 CARB", "RAIDER J CROSSOVER", "V-STROM 250SX", "GIXXER250", "GIXXER SF250", "GIXXER FI", "GSX-8R", "GSX-S1000 GX", "GSX-8S", "V-STROM 800 DE", "V-STROM 1050 DE", "GSX-S1000GT", "GSX-S1000", "GSX-S750", "SV650", "BURGMAN 400", "HAYABUSA", "KATANA", "GSX-R 1000R", "GSX-R1000", "RM-Z450", "RM-Z250"],
+                Yamaha: ["MIO SPORTY", "MIO I125", "MIO FAZZIO", "MIO SOULI125", "MIO GEAR", "MIO GRAVIS", "MIO AEROX", "MT-15", "MT-03", "XSR155", "NMAX", "XMAX", "SNIPER155", "YZF-R15M", "YZF-R3", "WR155R", "SEROW250", "XTZ125", "MT-10 SP", "MT-09", "MT-07", "XSR900", "XSR700", "BOLT R-SPEC", "SR400", "TMAX", "TMAX TECH MAX", "TRACER 9 GT", "SUPER TENERE ES", "TENERE 700", "YZF-R1M", "YZF-R7"],
+                Kawasaki: ["NINJA H2 CARBON", "ZH2", "NINJA ZX-10RR", "NINJA ZX-10R", "NINJA NINJA ZX-6R", "NINJA ZX-25R SE", "NINJA ZX-4RR", "NINJA ZX-25R STANDARD", "NINJA ZX-4RR 40TH ANNIVERSARY EDITION","NINJA ZX-6R 40TH ANNIVERSARY EDITION","NINJA ZX-10R 40TH ANNIVERSARY EDITION", "NINJ 1000SX", "Z1000 R EDITION", "Z900 SE", "Z900 STANDARD", "NINJA 650", "Z650", "NINJA 400", "Z500", "Z500 SE", "KLX230", "KLX150", "KLX150S", "KLX300", "KLX300 SM", "KX450X", "KX250X", "KX450", "KX250", "KX65", "KLX300R", "KLX140", "KLX230R S", "BARAKO II", "BARAKO III", "ROUSER NS160FI", "RS200 WITH ABS", "NS200 FI WITH ABS", "NS125 FI", "CT100", "CT100B", "CT150", "CT125", "W800 CAFE", "W800 STREET", "VERSYS 1000 SE", "VERSYS 650", "VULCAN 1700 VAQUERO", "VULCAN 900 CUSTOM", "VULCAN S", "ELIMINATOR", "ELIMINATOR SE", "DOMINAR 400 UG2", "PULSAR NS250"],
+                Honda: ["DIO", "BEAT (PLAYFUL)", "BEAT(PREMIUM)", "BEAT(LIMITED EDITION)", "CLICK125", "CLICK160", "CLICK125(SPECIAL EDITION)", "AIRBLADE 160", "PCX160-CBS", "PCX160-ABS", "ADV160", "CB150X", "CB150R", "XR150L", "CRF150L", "CRF300L", "CRF300 RALLY", "WAVE RSX (DRUM)", "WAVE RSX (DISC)", "XRM125DS", "XRM125 DSX", "XRM125 MOTARD", "RS125", "WINNER X (STANDARD)", "WINNER X(ABS PREMIUM)", "WINNER X(ABS RACING TYPE)", "TMX125 ALPHA", "TMX SUPREMO", "XL750 TRANSALP", "X-ADV", "NX500", "CRF1100L AFRICA TWIN", "CRF1100L ADVENTURE SPORTS", "CB500F", "CBR650R", "CBR1000RR-R FIREBLADE SP", "REBEL", "CL500", "REBEL 1100", "GOLD WING" ]
+            };
+
+            mcbrand.addEventListener("change", function() {
+                const selectedBrand = mcbrand.value;
+                const options = models[selectedBrand] || [];
+                
+                mcmodel.innerHTML = "<option value='' disabled selected>Select Model</option>"; 
+                options.forEach(function(model) {
+                    const option = document.createElement("option");
+                    option.value = model;
+                    option.textContent = model;
+                    mcmodel.appendChild(option);
+                });
+            });
+        });
 //Liaison DB
 $(document).ready(function() {
     let RecordIdToDelete = null;
@@ -420,4 +509,6 @@ $(document).ready(function() {
             });
         }, 1000); 
     });
+
+   
 });

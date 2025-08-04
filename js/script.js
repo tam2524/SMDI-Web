@@ -1,74 +1,195 @@
 $(document).ready(function() {
     let selectedRecordIds = [];
     let RecordIdToDelete = null;
-     let currentPage = 1;
+    let currentPage = 1;
+    let totalPages = 1;
 
     // Convert input text to uppercase
     $('#addRecordForm input[type="text"], #editRecordForm input[type="text"]').on('keyup input', function() {
         $(this).val($(this).val().toUpperCase());
     });
 
-function loadRecords(query = '', page = currentPage) {
-    $.ajax({
-        url: 'api/fetch_Records.php',
-        method: 'GET',
-        data: { query: query, page: page },
-        success: function(data) {
-            $('#RecordTableBody').html(data);
-        },
-        error: function(xhr, status, error) {
-            console.error("Error loading records:", error);
+    // Load records with pagination
+    function loadRecords(query = '', page = 1) {
+        $.ajax({
+            url: '../api/fetch_Records.php',
+            method: 'GET',
+            data: { query: query, page: page },
+            dataType: 'json',
+            success: function(response) {
+                $('#RecordTableBody').html(response.html);
+                currentPage = response.pagination.currentPage;
+                totalPages = response.pagination.totalPages;
+                updatePaginationControls();
+                updateSelectedRecords(); // Update checkboxes after loading
+            },
+            error: function(xhr, status, error) {
+                console.error("Error loading records:", error);
+                // Fallback for non-JSON response
+                if (xhr.responseText) {
+                    $('#RecordTableBody').html(xhr.responseText);
+                }
+            }
+        });
+    }
+
+    // Update pagination controls
+    function updatePaginationControls() {
+        let paginationHtml = '';
+        
+        // Previous button
+        paginationHtml += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" id="prevPage">Previous</a>
+        </li>`;
+        
+        // Page numbers (show up to 5 pages around current page)
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+        
+        if (startPage > 1) {
+            paginationHtml += `<li class="page-item"><a class="page-link page-number" href="#" data-page="1">1</a></li>`;
+            if (startPage > 2) {
+                paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
         }
-    });
-}
+        
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHtml += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link page-number" href="#" data-page="${i}">${i}</a>
+            </li>`;
+        }
+        
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            paginationHtml += `<li class="page-item"><a class="page-link page-number" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+        }
+        
+        // Next button
+        paginationHtml += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" id="nextPage">Next</a>
+        </li>`;
+        
+        $('#paginationControls').html(paginationHtml);
+    }
 
     // Initial load of records
     loadRecords();
     
-    // Event delegation for pagination links
+    // Pagination event handlers
     $(document).on('click', '#prevPage', function(e) {
-        e.preventDefault(); // Prevent default link behavior
+        e.preventDefault();
         if (currentPage > 1) {
-            currentPage--; // Decrement the page number
-            loadRecords($('#searchInput').val(), currentPage); // Load records for the previous page
+            loadRecords($('#searchInput').val(), currentPage - 1);
         }
     });
 
     $(document).on('click', '#nextPage', function(e) {
-        e.preventDefault(); // Prevent default link behavior
-        currentPage++; // Increment the page number
-        loadRecords($('#searchInput').val(), currentPage); // Load records for the next page
+        e.preventDefault();
+        if (currentPage < totalPages) {
+            loadRecords($('#searchInput').val(), currentPage + 1);
+        }
     });
 
+    $(document).on('click', '.page-number', function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        loadRecords($('#searchInput').val(), page);
+    });
 
     // Search input event
     $('#searchInput').on('input', function() {
-        const query = $(this).val();
-        loadRecords(query);
+        currentPage = 1; // Reset to first page when searching
+        loadRecords($(this).val());
     });
 
-    // Event delegation for pagination links
-    $(document).on('click', '.pagination a', function(e) {
-        e.preventDefault(); // Prevent default link behavior
-        const query = $('#searchInput').val(); // Get the current search query
-        const page = $(this).attr('href').split('page=')[1]; // Extract page number from link
-        loadRecords(query, page); // Load records for the selected page
-    });
+    // Update selected records array
+    function updateSelectedRecords() {
+        selectedRecordIds = [];
+        $('#RecordTableBody input[name="recordCheckbox"]:checked').each(function() {
+            selectedRecordIds.push($(this).closest('tr').data('id'));
+        });
+    }
 
+    // Select all checkbox
+    $('#selectAll').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', isChecked);
+        updateSelectedRecords();
+    });
+// Delete single record button click
+$('#RecordTableBody').on('click', '.delete-button', function() {
+    RecordIdToDelete = $(this).closest('tr').data('id');
+    selectedRecordIds = [RecordIdToDelete]; // Set the single record to delete
+    // Uncheck all checkboxes and check the current one
+    $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', false);
+    $(this).closest('tr').find('input[name="recordCheckbox"]').prop('checked', true);
+    $('#confirmationModal').modal('show');
+});
+
+// Delete selected records button
+$('#deleteSelectedButton').on('click', function() {
+    updateSelectedRecords(); // Make sure we have the latest selection
+    if (selectedRecordIds.length > 0) {
+        RecordIdToDelete = null; // Clear any single selection
+        $('#confirmationModal').modal('show');
+    } else {
+        showWarningModal('No records selected for deletion.');
+    }
+});
+
+// Unified delete confirmation handler
+$('#confirmDeleteBtn').on('click', function() {
+    const idsToDelete = selectedRecordIds.length > 0 ? selectedRecordIds : 
+                       (RecordIdToDelete ? [RecordIdToDelete] : []);
+    
+    if (idsToDelete.length === 0) {
+        showWarningModal('No records selected for deletion.');
+        return;
+    }
+
+    $.ajax({
+        url: '../api/delete_Record.php',
+        method: 'POST',
+        data: { ids: idsToDelete },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                loadRecords($('#searchInput').val(), currentPage);
+                showSuccessModal(response.message);
+            } else {
+                showErrorModal(response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Error deleting records:", error);
+            showErrorModal('Failed to delete records. Please try again.');
+        },
+        complete: function() {
+            $('#confirmationModal').modal('hide');
+            selectedRecordIds = [];
+            RecordIdToDelete = null;
+            $('#selectAll').prop('checked', false);
+        }
+    });
+});
+
+    // Add record form submission
     $('#addRecordForm').on('submit', function(e) {
         e.preventDefault();
         $.ajax({
-            url: 'api/add_Record.php',
+            url: '../api/add_Record.php',
             method: 'POST',
             data: $(this).serialize(),
             dataType: 'json',
             success: function(response) {
                 if (response.status === 'success') {
-                    loadRecords();
+                    loadRecords($('#searchInput').val(), currentPage);
                     $('#addRecordModal').modal('hide');
                     showSuccessModal(response.message);
-                     $('#addRecordForm')[0].reset();
-                $('#addRecordForm input[type="text"]').val('');
+                    $('#addRecordForm')[0].reset();
+                    $('#addRecordForm input[type="text"]').val('');
                 } else {
                     showErrorModal(response.message);
                 }
@@ -78,147 +199,13 @@ function loadRecords(query = '', page = currentPage) {
             }
         });
     });
-    
-    
- $('#RecordTableBody').on('change', 'input[name="recordCheckbox"]', function() {
-        updateSelectedRecords();
-    });
 
-    $('#selectAll').on('change', function() {
-        const isChecked = $(this).is(':checked');
-        $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', isChecked);
-        updateSelectedRecords();
-    });
-
-    $('#deleteSelectedButton').on('click', function() {
-        if (selectedRecordIds.length > 0) {
-            $('#confirmationModal').modal('show');
-        } else {
-            showWarningModal('No records selected for deletion.');
-        }
-    });
-
-    $('#confirmDeleteBtn').on('click', function() {
-        if (selectedRecordIds.length > 0) {
-            $.ajax({
-                url: 'api/delete_Record.php',
-                method: 'POST',
-                data: { ids: selectedRecordIds },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.status === 'success') {
-                        loadRecords();
-                        showSuccessModal(response.message);
-                    } else {
-                        showErrorModal(response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error("Error deleting records:", error);
-                },
-                complete: function() {
-                    $('#confirmationModal').modal('hide');
-                    selectedRecordIds = [];
-                }
-            });
-        }
-    });
-    
-    
-    $(document).ready(function() {
-    // Show modal when print button is clicked
-    $('#printButton').on('click', function() {
-        $('#printOptionsModal').modal('show');
-    });
-
-    $('#sortBy').on('change', function() {
-        const selectedValue = $(this).val();
-        
-        // Hide both ranges by default
-        $('#batchRange').hide();
-        $('#familyNameRangeContainer').hide();
-
-        // Show the appropriate range based on the selected value
-        if (selectedValue === 'customerBatchRange') {
-            $('#batchRange').show();
-        } else if (selectedValue === 'familyName') {
-            $('#familyNameRange').show(); // Show family name range
-        }
-    });
-
-// Handle print confirmation
-$('#confirmPrint').on('click', function() {
-    const documentType = $('#documentType').val();
-    const sortBy = $('#sortBy').val();
-    const fromBatch = $('#fromBatch').val();
-    const toBatch = $('#toBatch').val();
-    const fromLetter = $('#fromLetter').val(); // Get the starting letter input
-    const toLetter = $('#toLetter').val(); // Get the ending letter input
-    const outputFormat = $('#outputFormat').val(); // Get the selected output format
-
-    // Log the values for debugging
-    console.log('documentType:', documentType);
-    console.log('sortBy:', sortBy);
-    console.log('fromBatch:', fromBatch);
-    console.log('toBatch:', toBatch);
-    console.log('fromLetter:', fromLetter);
-    console.log('toLetter:', toLetter);
-    console.log('outputFormat:', outputFormat); // Log the output format
-
-    // Check if documentType and sortBy are selected
-    if (documentType && sortBy) {
-        // Validate batch range if sorting by customer batch range
-        if (sortBy === 'customerBatchRange' && (fromBatch === '' || toBatch === '')) {
-            alert('Please enter both From and To batch numbers.');
-            return;
-        }
-
-        // Validate letter range if sorting by family name
-        if (sortBy === 'familyName' && (fromLetter === '' || toLetter === '')) {
-            alert('Please enter both From and To letters.');
-            return;
-        }
-
-        // URL encode the parameters to handle special characters
-        const encodedDocumentType = encodeURIComponent(documentType);
-        const encodedSortBy = encodeURIComponent(sortBy);
-        const encodedFromBatch = encodeURIComponent(fromBatch);
-        const encodedToBatch = encodeURIComponent(toBatch);
-        const encodedFromLetter = encodeURIComponent(fromLetter);
-        const encodedToLetter = encodeURIComponent(toLetter);
-        const encodedOutputFormat = encodeURIComponent(outputFormat);
-
-        // Redirect to generate_pdf.php with parameters, including output format
-        window.location.href = `api/generate_pdf.php?documentType=${encodedDocumentType}&sortBy=${encodedSortBy}&fromBatch=${encodedFromBatch}&toBatch=${encodedToBatch}&fromLetter=${encodedFromLetter}&toLetter=${encodedToLetter}&outputFormat=${encodedOutputFormat}`;
-        $('#printOptionsModal').modal('hide');
-    } else {
-        alert('Please select all options.');
-    }
-});
-
-    function showSuccessModal(message) {
-        $('#successMessage').text(message);
-        $('#successModal').modal('show');
-    }
-
-    function showErrorModal(message) {
-        $('#errorMessage').text(message);
-        $('#errorMessage').show();
-        setTimeout(() => {
-            $('#errorMessage').hide();
-        }, 3000);
-    }
-
-    function showWarningModal(message) {
-        $('#warningMessage').text(message);
-        $('#warningModal').modal('show');
-    }
-
+    // Edit record button click
     $('#RecordTableBody').on('click', '.edit-button', function() {
         let recordId = $(this).closest('tr').data('id');
 
         $.ajax({
-            url: 'api/get_Record.php',
+            url: '../api/get_Record.php',
             method: 'GET',
             data: { id: recordId },
             success: function(response) {
@@ -233,6 +220,7 @@ $('#confirmPrint').on('click', function() {
                 $('#editBranch').val(record.branch);
                 $('#editBatch').val(record.batch);
                 $('#editRemarks').val(record.remarks);
+                $('#editDateReg').val(record.date_reg);
 
                 $('#editRecordModal').modal('show');
             },
@@ -242,16 +230,17 @@ $('#confirmPrint').on('click', function() {
         });
     });
 
+    // Edit record form submission
     $('#editRecordForm').on('submit', function(e) {
         e.preventDefault();
         $.ajax({
-            url: 'api/edit_Record.php',
+            url: '../api/edit_Record.php',
             method: 'POST',
             data: $(this).serialize(),
             dataType: 'json',
             success: function(response) {
                 if (response.status === 'success') {
-                    loadRecords();
+                    loadRecords($('#searchInput').val(), currentPage);
                     $('#editRecordModal').modal('hide');
                     showSuccessModal(response.message);
                 } else {
@@ -264,75 +253,350 @@ $('#confirmPrint').on('click', function() {
         });
     });
 
-    $('#RecordTableBody').on('click', '.delete-button', function() {
-        let row = $(this).closest('tr');
-        RecordIdToDelete = row.data('id');
-        $('#confirmationModal').modal('show');
+
+    // Sorting functionality
+    $('.dropdown-item').on('click', function(e) {
+        e.preventDefault();
+        const sortOption = $(this).data('sort');
+        let sortColumn;
+
+        switch (sortOption) {
+            case 'familyName':
+                sortColumn = 'family_name';
+                break;
+            case 'batch':
+                sortColumn = 'batch';
+                break;
+            case 'branch':
+                sortColumn = 'branch';
+                break;
+            default:
+                return;
+        }
+
+        currentPage = 1; // Reset to first page when sorting
+        loadRecords($('#searchInput').val(), currentPage, sortColumn);
     });
 
-    $('#confirmDeleteBtn').click(function() {
-        if (RecordIdToDelete !== null) {
-            $.ajax({
-                url: 'api/delete_Record.php',
-                method: 'POST',
-                data: { id: RecordIdToDelete },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.status === 'success') {
-                        loadRecords();
-                        showSuccessModal(response.message);
-                    } else {
-                        showErrorModal(response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error("Error deleting Record:", error);
-                },
-                complete: function() {
-                    $('#confirmationModal').modal('hide');
-                    RecordIdToDelete = null;
-                }
-            });
+    // Print options modal
+    $('#printButton').on('click', function() {
+        $('#printOptionsModal').modal('show');
+    });
+
+    // Show/hide range inputs based on sort selection
+    $('#sortBy').on('change', function() {
+        const selectedValue = $(this).val();
+        $('#batchRange').hide();
+        $('#familyNameRange').hide();
+
+        if (selectedValue === 'customerBatchRange') {
+            $('#batchRange').show();
+        } else if (selectedValue === 'familyName') {
+            $('#familyNameRange').show();
         }
     });
-    
-   
-// Sorting functionality
-$('.dropdown-item').on('click', function(e) {
-    e.preventDefault();
-    const sortOption = $(this).data('sort');
-    let sortColumn;
 
-    switch (sortOption) {
-        case 'familyName':
-            sortColumn = 'family_name';
-            break;
-        case 'batch':
-            sortColumn = 'batch';
-            break;
-        case 'branch':
-            sortColumn = 'branch';
-            break;
-        default:
-            return;
+    // Handle print confirmation
+    $('#confirmPrint').on('click', function() {
+        const documentType = $('#documentType').val();
+        const sortBy = $('#sortBy').val();
+        const fromBatch = $('#fromBatch').val();
+        const toBatch = $('#toBatch').val();
+        const fromLetter = $('#fromLetter').val();
+        const toLetter = $('#toLetter').val();
+        const outputFormat = $('#outputFormat').val();
+
+        if (documentType && sortBy) {
+            if (sortBy === 'customerBatchRange' && (fromBatch === '' || toBatch === '')) {
+                alert('Please enter both From and To batch numbers.');
+                return;
+            }
+
+            if (sortBy === 'familyName' && (fromLetter === '' || toLetter === '')) {
+                alert('Please enter both From and To letters.');
+                return;
+            }
+
+            const params = new URLSearchParams({
+                documentType: documentType,
+                sortBy: sortBy,
+                fromBatch: fromBatch,
+                toBatch: toBatch,
+                fromLetter: fromLetter,
+                toLetter: toLetter,
+                outputFormat: outputFormat
+            });
+
+            window.location.href = `../api/generate_pdf.php?${params.toString()}`;
+            $('#printOptionsModal').modal('hide');
+        } else {
+            alert('Please select all options.');
+        }
+    });
+
+    // Modal functions
+    function showSuccessModal(message) {
+        $('#successMessage').text(message);
+        $('#successModal').modal('show');
+        setTimeout(() => {
+            $('#successModal').modal('hide');
+        }, 2000);
     }
 
-    sortRecords(sortColumn); // Call the new sortRecords function
-});
+    function showErrorModal(message) {
+        $('#errorMessage').text(message);
+        $('#errorMessage').show();
+        setTimeout(() => {
+            $('#errorMessage').hide();
+        }, 3000);
+    }
 
-function sortRecords(column) {
-    $.ajax({
-        url: 'api/fetch_Records.php',
-        method: 'GET',
-        data: { sort: column }, // Pass the sort parameter to the server
-        success: function(data) {
-            $('#RecordTableBody').html(data);
-            currentPage = 1; // Reset to first page after sorting
-        },
-        error: function(xhr, status, error) {
-            console.error("Error loading sorted records:", error);
-        }
-    });
-}
+    function showWarningModal(message) {
+        $('#warningMessage').text(message);
+        $('#warningModal').modal('show');
+        setTimeout(() => {
+            $('#warningModal').modal('hide');
+        }, 2000);
+    }
 });
+$(document).ready(function() {
+    // Load users when the user management tab is shown
+    $('#users-tab').on('click', function() {
+        loadUsers();
+    });
+
+    // Add User Form Submission
+    $('#addUserForm').submit(function(e) {
+        e.preventDefault();
+        
+        if ($('#newPassword').val() !== $('#confirmPassword').val()) {
+            $('#userErrorMessage').text('Passwords do not match').show();
+            return;
+        }
+        
+        $.ajax({
+            url: '../api/user_management.php?action=add_user',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    $('#userSuccessMessage').text(response.message).show();
+                    $('#addUserForm')[0].reset();
+                    loadUsers();
+                    setTimeout(() => $('#userSuccessMessage').hide(), 3000);
+                } else {
+                    $('#userErrorMessage').text(response.message).show();
+                    setTimeout(() => $('#userErrorMessage').hide(), 3000);
+                }
+            },
+            error: function() {
+                $('#userErrorMessage').text('An error occurred. Please try again.').show();
+                setTimeout(() => $('#userErrorMessage').hide(), 3000);
+            }
+        });
+    });
+
+    // Edit User Form Submission
+    $('#editUserForm').submit(function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: '../api/user_management.php?action=edit_user',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    $('#successMessage').text(response.message);
+                    $('#successModal').modal('show');
+                    $('#editUserModal').modal('hide');
+                    loadUsers();
+                } else {
+                    $('#warningMessage').text(response.message);
+                    $('#warningModal').modal('show');
+                }
+            },
+            error: function() {
+                $('#warningMessage').text('An error occurred. Please try again.');
+                $('#warningModal').modal('show');
+            }
+        });
+    });
+
+    // Load Users Function
+    function loadUsers(page = 1, search = '') {
+        $.ajax({
+            url: '../api/user_management.php?action=get_users',
+            type: 'GET',
+            data: { page: page, search: search },
+            success: function(response) {
+                $('#usersTableBody').empty();
+                
+                if (response.users && response.users.length > 0) {
+                    response.users.forEach(function(user) {
+                        let statusBadge = user.status === 'active' ? 
+                            '<span class="badge bg-success">Active</span>' : 
+                            '<span class="badge bg-danger">Inactive</span>';
+                        
+                        $('#usersTableBody').append(`
+                            <tr>
+                                <td>${user.username}</td>
+                                <td>${user.fullName || 'N/A'}</td>
+                                <td>${user.position || 'N/A'}</td>
+                                <td>${user.branch || 'N/A'}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary edit-user" data-id="${user.id}">Edit</button>
+                                    <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Delete</button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                    
+                    // Update pagination controls
+                    updateUserPagination(response.current_page, response.total_pages);
+                } else {
+                    $('#usersTableBody').append('<tr><td colspan="8" class="text-center">No users found</td></tr>');
+                }
+            },
+            error: function() {
+                $('#usersTableBody').append('<tr><td colspan="8" class="text-center">Error loading users</td></tr>');
+            }
+        });
+    }
+
+    // Update User Pagination
+    function updateUserPagination(currentPage, totalPages) {
+        $('#usersPaginationControls').empty();
+        
+        // Previous button
+        let prevDisabled = currentPage <= 1 ? 'disabled' : '';
+        $('#usersPaginationControls').append(`
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+            </li>
+        `);
+        
+        // Show limited page numbers (1-5 or current page ±2)
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+        
+        if (startPage > 1) {
+            $('#usersPaginationControls').append(`
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="1">1</a>
+                </li>
+                ${startPage > 2 ? '<li class="page-item disabled"><span class="page-link">...</span></li>' : ''}
+            `);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            let active = i === currentPage ? 'active' : '';
+            $('#usersPaginationControls').append(`
+                <li class="page-item ${active}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `);
+        }
+        
+        if (endPage < totalPages) {
+            $('#usersPaginationControls').append(`
+                ${endPage < totalPages - 1 ? '<li class="page-item disabled"><span class="page-link">...</span></li>' : ''}
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a>
+                </li>
+            `);
+        }
+        
+        // Next button
+        let nextDisabled = currentPage >= totalPages ? 'disabled' : '';
+        $('#usersPaginationControls').append(`
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+            </li>
+        `);
+    }
+
+    // Pagination Click Event
+    $(document).on('click', '#usersPaginationControls .page-link', function(e) {
+        e.preventDefault();
+        if ($(this).parent().hasClass('disabled')) return;
+        let page = $(this).data('page');
+        let search = $('#searchUserInput').val();
+        loadUsers(page, search);
+    });
+
+    // Search Users with debounce
+    let searchTimeout;
+    $('#searchUserInput').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            let search = $(this).val();
+            loadUsers(1, search);
+        }, 500);
+    });
+
+    // Edit User Click Event
+    $(document).on('click', '.edit-user', function() {
+        let userId = $(this).data('id');
+        
+        $.ajax({
+            url: '../api/user_management.php?action=get_user',
+            type: 'GET',
+            data: { id: userId },
+            success: function(response) {
+                if (response.success) {
+                    $('#editUserId').val(response.user.id);
+                    $('#editUsername').val(response.user.username);
+                    $('#editFullName').val(response.user.fullName || '');
+                    $('#editPosition').val(response.user.position || '');
+                    $('#editBranch').val(response.user.branch || '');
+                    $('#editRole').val(response.user.role || 'staff');
+                    $('#editStatus').val(response.user.status || 'active');
+                    $('#editUserModal').modal('show');
+                } else {
+                    $('#warningMessage').text(response.message);
+                    $('#warningModal').modal('show');
+                }
+            },
+            error: function() {
+                $('#warningMessage').text('An error occurred. Please try again.');
+                $('#warningModal').modal('show');
+            }
+        });
+    });
+
+    // Delete User Click Event
+    $(document).on('click', '.delete-user', function() {
+        let userId = $(this).data('id');
+        
+        // Set confirmation modal content
+        $('#userConfirmationModal .modal-body').html(`
+            <p>Are you sure you want to delete this user?</p>
+            <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+        `);
+        
+        $('#userConfirmationModal').modal('show');
+        $('#confirmUserActionBtn').off('click').on('click', function() {
+            $.ajax({
+                url: '../api/user_management.php?action=delete_user',
+                type: 'POST',
+                data: { id: userId },
+                success: function(response) {
+                    if (response.success) {
+                        $('#successMessage').text(response.message);
+                        $('#successModal').modal('show');
+                        loadUsers();
+                    } else {
+                        $('#warningMessage').text(response.message);
+                        $('#warningModal').modal('show');
+                    }
+                    $('#userConfirmationModal').modal('hide');
+                },
+                error: function() {
+                    $('#warningMessage').text('An error occurred. Please try again.');
+                    $('#warningModal').modal('show');
+                    $('#userConfirmationModal').modal('hide');
+                }
+            });
+        });
+    });
 });

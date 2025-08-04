@@ -1,5 +1,5 @@
 <?php
-include 'db_config.php';
+include '../api/db_config.php';
 
 $familyName = $_POST['familyName'];
 $firstName = $_POST['firstName'];
@@ -9,6 +9,7 @@ $mvFile = $_POST['mvFile'];
 $branch = $_POST['branch'];
 $batch = $_POST['batch'];
 $remarks = $_POST['remarks'];
+$dateReg = $_POST['date_reg'];
 
 
 if ($plateNumber === "ND") {
@@ -29,11 +30,11 @@ mysqli_stmt_store_result($checkStmt);
 if (mysqli_stmt_num_rows($checkStmt) > 0) {
     echo json_encode(['status' => 'duplicate', 'message' => 'Duplicate MV File or Plate Number found.']);
 } else {
-    $sql = "INSERT INTO records (family_name, first_name, middle_name, plate_number, mv_file, branch, batch, remarks) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO records (family_name, first_name, middle_name, plate_number, mv_file, branch, batch, remarks, date_reg) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "ssssssss", $familyName, $firstName, $middleName, $plateNumber, $mvFile, $branch, $batch, $remarks);
+    mysqli_stmt_bind_param($stmt, "sssssssss", $familyName, $firstName, $middleName, $plateNumber, $mvFile, $branch, $batch, $remarks, $dateReg);
 
     if (mysqli_stmt_execute($stmt)) {
         echo json_encode(['status' => 'success', 'message' => 'Record added successfully.']);
