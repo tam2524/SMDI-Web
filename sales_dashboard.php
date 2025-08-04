@@ -8,7 +8,7 @@
     <meta content="" name="keywords">
     <meta content="" name="description">
     
-    <link rel="icon" href="img/smdi_logosmall.png" type="image/png">
+    <link rel="icon" href="assets/img/smdi_logosmall.png" type="image/png">
 
     <!-- Icon Font Stylesheet -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
@@ -121,7 +121,7 @@ body {
         <div class="container px-0">
             <nav class="navbar navbar-light bg-white navbar-expand-lg">
                 <a href="index.html" class="navbar-brand">
-                    <img src="img/smdi_logo.jpg" alt="Company Logo" class="logo">
+                    <img src="assets/img/smdi_logo.jpg" alt="Company Logo" class="logo">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -142,6 +142,8 @@ body {
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Sales Records</h5>
+                <!-- Add this button near your other buttons -->
+<button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#salesQuotaModal">Set Sales Quotas</button>
                 <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#addSaleModal">Add New Sale</button>
                 <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#printOptionsModal">Print Documents</button>
                 <button id="deleteSelectedButton" class="btn btn-primary text-white mb-3">Delete Selected</button>
@@ -195,6 +197,78 @@ body {
             </div>
         </div>
     </div>
+
+<!-- Sales Quota Modal -->
+<div class="modal fade" id="salesQuotaModal" tabindex="-1" aria-labelledby="salesQuotaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="salesQuotaModalLabel">Sales Quotas Management</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <button id="addQuotaBtn" class="btn btn-primary text-white">Add New Quota</button>
+                    <div class="input-group" style="width: 300px;">
+                        <input type="text" id="quotaSearchInput" class="form-control" placeholder="Search branches...">
+                        <button class="btn btn-outline-secondary" type="button" id="quotaSearchBtn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Add/Edit Quota Form (initially hidden) -->
+                <div id="quotaFormContainer" style="display: none;">
+                    <div id="quotaErrorMessage" class="alert alert-danger" style="display: none;"></div>
+                    <div id="quotaSuccessMessage" class="alert alert-success" style="display: none;"></div>
+                    <form id="salesQuotaForm">
+                        <input type="hidden" id="quotaId">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="quotaYear" class="form-label">Year</label>
+                                <select class="form-select" id="quotaYear" required>
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="quotaBranch" class="form-label">Branch</label>
+                                <select class="form-select" id="quotaBranch" required>
+                                    <!-- Options will be populated from your branch list -->
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="quotaAmount" class="form-label">Quota Amount</label>
+                                <input type="number" class="form-control" id="quotaAmount" min="1" required>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" id="cancelQuotaBtn" class="btn btn-primary text-white me-2">Cancel</button>
+                            <button type="submit" class="btn btn-primary text-white">Save Quota</button>
+                        </div>
+                    </form>
+                    <hr>
+                </div>
+                
+                <h5 class="mt-4">Current Quotas</h5>
+                <div class="table-responsive">
+                    <table id="quotasTable" class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Branch</th>
+                                <th>Quota</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quotasTableBody">
+                            <!-- Quotas will be loaded here by AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Add Sale Modal -->
     <div class="modal fade" id="addSaleModal" tabindex="-1" aria-labelledby="addSaleModalLabel" aria-hidden="true">
@@ -500,6 +574,139 @@ body {
                 });
             }
         }
+
+        // Add these functions to your existing JavaScript code
+
+function populateYearDropdown() {
+    const currentYear = new Date().getFullYear();
+    const $yearDropdown = $('#quotaYear');
+    $yearDropdown.empty();
+    
+    // Add options for current year and next 5 years
+    for (let i = 0; i < 6; i++) {
+        const year = currentYear + i;
+        $yearDropdown.append($('<option>', {
+            value: year,
+            text: year
+        }));
+    }
+}
+
+function loadQuotas() {
+    $.ajax({
+        url: 'api/sales_data_management.php',
+        method: 'GET',
+        data: { action: 'get_quotas' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                $('#quotasTableBody').html(generateQuotaTableRows(response.data));
+            } else {
+                showErrorModal(response.message || 'Failed to load quotas');
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('Error loading quotas: ' + error);
+        }
+    });
+}
+
+function generateQuotaTableRows(quotas) {
+    let rows = '';
+    quotas.forEach(quota => {
+        rows += `
+            <tr data-id="${quota.id}">
+                <td>${quota.year}</td>
+                <td>${quota.branch}</td>
+                <td>${quota.quota}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger delete-quota-button">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    return rows;
+}
+
+// Handle quota form submission
+$('#salesQuotaForm').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        action: 'set_quota',
+        id: $('#quotaId').val(),
+        year: $('#quotaYear').val(),
+        branch: $('#quotaBranch').val(),
+        quota: $('#quotaAmount').val()
+    };
+    
+    $.ajax({
+        url: 'api/sales_data_management.php',
+        method: 'POST',
+        data: formData,
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                $('#quotaSuccessMessage').text(response.message || 'Quota saved successfully!').show();
+                loadQuotas($('#quotaSearchInput').val());
+                
+                // Hide the form after successful save
+                resetQuotaForm();
+                
+                setTimeout(() => {
+                    $('#quotaSuccessMessage').hide();
+                }, 3000);
+            } else {
+                $('#quotaErrorMessage').text(response.message || 'Failed to save quota').show();
+                setTimeout(() => {
+                    $('#quotaErrorMessage').hide();
+                }, 3000);
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#quotaErrorMessage').text('Error: ' + error).show();
+            setTimeout(() => {
+                $('#quotaErrorMessage').hide();
+            }, 3000);
+        }
+    });
+});
+
+// Handle delete quota button click
+$(document).on('click', '.delete-quota-button', function() {
+    const quotaId = $(this).closest('tr').data('id');
+    
+    if (confirm('Are you sure you want to delete this quota?')) {
+        $.ajax({
+            url: 'api/sales_data_management.php',
+            method: 'POST',
+            data: { 
+                action: 'delete_quota',
+                id: quotaId
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    loadQuotas();
+                    showSuccessModal('Quota deleted successfully!');
+                } else {
+                    showErrorModal(response.message || 'Failed to delete quota');
+                }
+            },
+            error: function(xhr, status, error) {
+                showErrorModal('Error deleting quota: ' + error);
+            }
+        });
+    }
+});
+
+// Initialize quota modal when shown
+$('#salesQuotaModal').on('shown.bs.modal', function() {
+    populateYearDropdown();
+    loadQuotas();
+});
 
         // Initialize models dropdown on page load
         updateModelsDropdown($('#brand').val(), $('#model'));
@@ -853,6 +1060,160 @@ body {
             $('#warningModal').modal('show');
         }
     });
+function populateYearDropdown() {
+    const currentYear = new Date().getFullYear();
+    const $yearDropdown = $('#quotaYear');
+    $yearDropdown.empty();
+    
+    // Add options for current year and next 5 years
+    for (let i = 0; i < 6; i++) {
+        const year = currentYear + i;
+        $yearDropdown.append($('<option>', {
+            value: year,
+            text: year
+        }));
+    }
+}
+
+function populateBranchDropdown() {
+    const branches = [
+        "RXS-1", "RXS-2", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
+        "JARO-1", "JARO-2", "KALIBO-1", "KALIBO-2", "ALTAVAS", "EMAP", "CULASI",
+        "BACOLOD", "PASSI-1", "PASSI-2", "BALASAN", "GUIMARAS", "PEMDI", "EEMSI",
+        "AJUY", "BAILAN", "MINDORO MB", "MINDORO 3S", "MANSALAY", "K-RIDERS",
+        "IBAJAY", "NUMANCIA", "HEADOFFICE", "CEBU", "GT"
+    ];
+    
+    const $branchDropdown = $('#quotaBranch');
+    $branchDropdown.empty();
+    
+    branches.forEach(branch => {
+        $branchDropdown.append($('<option>', {
+            value: branch,
+            text: branch
+        }));
+    });
+}
+
+function resetQuotaForm() {
+    $('#quotaId').val('');
+    $('#quotaYear').val('');
+    $('#quotaBranch').val('');
+    $('#quotaAmount').val('');
+    $('#quotaFormContainer').hide();
+    $('#quotaErrorMessage').hide();
+    $('#quotaSuccessMessage').hide();
+}
+
+function showQuotaForm() {
+    $('#quotaFormContainer').show();
+    $('#quotaFormContainer')[0].scrollIntoView({ behavior: 'smooth' });
+}
+
+// Handle add quota button click
+$('#addQuotaBtn').on('click', function() {
+    resetQuotaForm();
+    showQuotaForm();
+});
+
+// Handle cancel button click
+$('#cancelQuotaBtn').on('click', function() {
+    resetQuotaForm();
+});
+
+// Handle edit quota button click
+$(document).on('click', '.edit-quota-button', function() {
+    const quotaId = $(this).closest('tr').data('id');
+    
+    $.ajax({
+        url: 'api/sales_data_management.php',
+        method: 'GET',
+        data: { action: 'get_quota', id: quotaId },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.data) {
+                const quota = response.data;
+                $('#quotaId').val(quota.id);
+                $('#quotaYear').val(quota.year);
+                $('#quotaBranch').val(quota.branch);
+                $('#quotaAmount').val(quota.quota);
+                showQuotaForm();
+            } else {
+                showErrorModal(response.message || 'Failed to load quota data');
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('Error loading quota: ' + error);
+        }
+    });
+});
+
+// Handle quota search
+$('#quotaSearchBtn').on('click', function() {
+    const query = $('#quotaSearchInput').val();
+    loadQuotas(query);
+});
+
+$('#quotaSearchInput').on('keyup', function(e) {
+    if (e.key === 'Enter') {
+        const query = $(this).val();
+        loadQuotas(query);
+    }
+});
+
+function loadQuotas(query = '') {
+    $.ajax({
+        url: 'api/sales_data_management.php',
+        method: 'GET',
+        data: { 
+            action: 'get_quotas',
+            query: query
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                $('#quotasTableBody').html(generateQuotaTableRows(response.data));
+            } else {
+                showErrorModal(response.message || 'Failed to load quotas');
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('Error loading quotas: ' + error);
+        }
+    });
+}
+
+function generateQuotaTableRows(quotas) {
+    let rows = '';
+    quotas.forEach(quota => {
+        rows += `
+            <tr data-id="${quota.id}">
+                <td>${quota.year}</td>
+                <td>${quota.branch}</td>
+                <td>${quota.quota}</td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary edit-quota-button">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger delete-quota-button">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    return rows;
+}
+
+// Initialize quota modal when shown
+$('#salesQuotaModal').on('shown.bs.modal', function() {
+    populateYearDropdown();
+    populateBranchDropdown();
+    loadQuotas();
+    resetQuotaForm();
+});
     </script>
 </body>
 </html>

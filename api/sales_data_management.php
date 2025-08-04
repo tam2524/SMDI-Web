@@ -27,9 +27,176 @@ switch ($action) {
     case 'delete_sale':
         handleDeleteSale();
         break;
+    case 'set_quota':
+        handleSetQuota();
+        break;
+    case 'get_quotas':
+        handleGetQuotas();
+        break;
+    case 'delete_quota':
+        handleDeleteQuota();
+        break;
+       case 'get_quota':
+        handleGetQuota();
+        break;    
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;
+}
+function handleSetQuota() {
+    global $conn;
+
+    $data = $_POST;
+
+    $required = ['year', 'branch', 'quota'];
+    foreach ($required as $field) {
+        if (empty($data[$field])) {
+            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
+            return;
+        }
+    }
+
+    // Check if quota already exists for this year/branch combination
+    $checkQuery = "SELECT id FROM sales_quotas WHERE year = ? AND branch = ?";
+    $checkStmt = $conn->prepare($checkQuery);
+    
+    if ($checkStmt === false) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
+    }
+
+    $checkStmt->bind_param('is', $data['year'], $data['branch']);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+
+    if ($checkResult->num_rows > 0) {
+        // Update existing quota
+        $row = $checkResult->fetch_assoc();
+        $updateQuery = "UPDATE sales_quotas SET quota = ? WHERE id = ?";
+        $updateStmt = $conn->prepare($updateQuery);
+        
+        if ($updateStmt === false) {
+            echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+            return;
+        }
+
+        $updateStmt->bind_param('ii', $data['quota'], $row['id']);
+        
+        if ($updateStmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Quota updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update quota: ' . $updateStmt->error]);
+        }
+        
+        $updateStmt->close();
+    } else {
+        // Insert new quota
+        $insertQuery = "INSERT INTO sales_quotas (year, branch, quota) VALUES (?, ?, ?)";
+        $insertStmt = $conn->prepare($insertQuery);
+        
+        if ($insertStmt === false) {
+            echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+            return;
+        }
+
+        $insertStmt->bind_param('isi', $data['year'], $data['branch'], $data['quota']);
+        
+        if ($insertStmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Quota set successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to set quota: ' . $insertStmt->error]);
+        }
+        
+        $insertStmt->close();
+    }
+
+    $checkStmt->close();
+}
+function handleGetQuota() {
+    global $conn;
+
+    if (empty($_GET['id'])) {
+        echo json_encode(['success' => false, 'message' => 'Quota ID is required']);
+        return;
+    }
+
+    $quotaId = (int)$_GET['id'];
+
+    $query = "SELECT id, year, branch, quota FROM sales_quotas WHERE id = ?";
+    $stmt = $conn->prepare($query);
+    
+    if ($stmt === false) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
+    }
+
+    $stmt->bind_param('i', $quotaId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Quota not found']);
+        return;
+    }
+
+    $quota = $result->fetch_assoc();
+    echo json_encode(['success' => true, 'data' => $quota]);
+
+    $stmt->close();
+}
+
+function handleGetQuotas() {
+    global $conn;
+
+    $query = isset($_GET['query']) ? $_GET['query'] : '';
+    $searchCondition = '';
+    if (!empty($query)) {
+        $searchCondition = "WHERE branch LIKE '%$query%'";
+    }
+
+    $sql = "SELECT id, year, branch, quota FROM sales_quotas $searchCondition ORDER BY year DESC, branch";
+    $result = $conn->query($sql);
+
+    if ($result === false) {
+        echo json_encode(['success' => false, 'message' => 'Query failed: ' . $conn->error]);
+        return;
+    }
+
+    $quotas = [];
+    while ($row = $result->fetch_assoc()) {
+        $quotas[] = $row;
+    }
+
+    echo json_encode(['success' => true, 'data' => $quotas]);
+}
+
+function handleDeleteQuota() {
+    global $conn;
+
+    if (empty($_POST['id'])) {
+        echo json_encode(['success' => false, 'message' => 'Quota ID is required']);
+        return;
+    }
+
+    $quotaId = (int)$_POST['id'];
+
+    $query = "DELETE FROM sales_quotas WHERE id = ?";
+    $stmt = $conn->prepare($query);
+    
+    if ($stmt === false) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
+    }
+
+    $stmt->bind_param('i', $quotaId);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Quota deleted successfully']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to delete quota: ' . $stmt->error]);
+    }
+
+    $stmt->close();
 }
 
 function handleGetSales() {

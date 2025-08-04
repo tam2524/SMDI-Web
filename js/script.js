@@ -359,6 +359,8 @@ $('#confirmDeleteBtn').on('click', function() {
         }, 2000);
     }
 });
+
+//USER
 $(document).ready(function() {
     // Load users when the user management tab is shown
     $('#users-tab').on('click', function() {
@@ -444,11 +446,11 @@ $(document).ready(function() {
                                 <td>${user.position || 'N/A'}</td>
                                 <td>${user.branch || 'N/A'}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-primary edit-user" data-id="${user.id}">Edit</button>
-                                    <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Delete</button>
+                                    <button class="btn btn-sm text-white btn-primary edit-user" data-id="${user.id}">Edit</button>
+                                    <button class="btn btn-sm text-white btn-primary delete-user" data-id="${user.id}">Delete</button>
                                 </td>
                             </tr>
-                        `);
+                        `);    
                     });
                     
                     // Update pagination controls

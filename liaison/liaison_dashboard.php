@@ -317,7 +317,7 @@
                         <select class="form-select" id="sortBy">
                             <option value="all">All</option>
                             <option value="customerBatchRange">Customer Batch Range</option>
-                            <option value="familyName">Family Name</option> <!-- Added Family Name option -->
+                            <option value="familyName">Family Name</option> 
                         </select>
                     </div>
                     <div class="mb-3" id="batchRange" style="display: none;">
