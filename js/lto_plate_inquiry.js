@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function() {
             console.error('Error:', error);
             document.querySelector('.result').innerHTML = `
                 <div class="alert alert-danger">
-                    There was an error processing your request
+                    NO RECORD FOUND FOR: ${lastname}, ${firstname}
                 </div>`;
         });
     });
