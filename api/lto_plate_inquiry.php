@@ -83,17 +83,19 @@ function searchRegistrationTable($conn, $lastname, $firstname) {
     }
     return false;
 }
+
 // Search both tables
 $response = ["error" => "No matching records found"];
 if ($row = searchRecordsTable($conn, $lastname, $firstname)) {
     $response = [
         "plate_number" => $row['plate_number'],
         "mv_file_number" => $row['mv_file'],
-        "last_name" => $row['family_name'],
+        "last_name" => $row['pure_last_name'],
         "first_name" => $row['first_name'],
         "branch" => $row['branch'],
         "date_reg" => $row['date_reg'],
-        "remarks" => $row['remarks']
+        "remarks" => $row['remarks'],
+        "dealer" => isset($row['family_name']) ? trim(explode('/', $row['family_name'])[1] ?? '') : ''
     ];
 } elseif ($row = searchRegistrationTable($conn, $lastname, $firstname)) {
     $response = [

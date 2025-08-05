@@ -3,9 +3,8 @@ document.addEventListener("DOMContentLoaded", function() {
     form.addEventListener('submit', function(event) {
         event.preventDefault();
         
-        // Get and validate inputs
-        let lastname = form.lastname.value.trim();
-        let firstname = form.firstname.value.trim();
+        const lastname = form.lastname.value.trim();
+        const firstname = form.firstname.value.trim();
         
         if (!lastname || !firstname) {
             document.querySelector('.result').innerHTML = `
@@ -14,17 +13,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 </div>`;
             return;
         }
-
-        // Convert inputs to Windows-style pattern if not already
-        const convertToPattern = (name) => {
-            if (name.length >= 2 && !name.includes('*')) {
-                return name.substring(0, 2) + '***';
-            }
-            return name;
-        };
-
-        lastname = convertToPattern(lastname);
-        firstname = convertToPattern(firstname);
 
         fetch('api/lto_plate_inquiry.php', {
             method: 'POST',
@@ -41,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if (data.error) {
                 resultContainer.innerHTML = `
                     <div class="alert alert-danger">
-                        No records found for: ${lastname.replace(/\*+/g, '*')}, ${firstname.replace(/\*+/g, '*')}
+                        No records found for: ${lastname}, ${firstname}
                     </div>`;
             } else {
                 // Format name display
@@ -52,10 +40,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     nameDisplay = `${data.last_name || ''}${data.first_name ? ', ' + data.first_name : ''}`;
                 }
 
-                // Format plate number
-                const plateNumber = (data.plate_number === 'ND' || !data.plate_number) 
-                    ? 'ON PROCESS' 
-                    : data.plate_number;
+                // Format plate number display
+                const plateDisplay = (data.plate_number === 'ND' || !data.plate_number) ? 
+                                    'ON PROCESS' : 
+                                    data.plate_number;
+
+
 
                 resultContainer.innerHTML = `
                 <div class="card">
@@ -65,13 +55,16 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <p><strong>Customer Name:</strong> ${nameDisplay}</p>
+                            
                                 <p><strong>Date Registered:</strong> ${data.date_reg || 'N/A'}</p>
-                                <p><strong>MV File Number:</strong> ${data.mv_file_number || 'N/A'}</p>
+                                <p><strong>Customer Name:</strong> ${nameDisplay}</p>
+                                 <p><strong>Plate Number:</strong> ${plateDisplay}</p>
+
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Plate Number:</strong> ${plateNumber}</p>
+                                <p><strong>MV File Number:</strong> ${data.mv_file_number || 'N/A'}</p>
                                 <p><strong>Branch:</strong> ${data.branch || 'N/A'}</p>
+                                
                                 <p><strong>Remarks:</strong> ${data.remarks || 'N/A'}</p>
                             </div>
                         </div>

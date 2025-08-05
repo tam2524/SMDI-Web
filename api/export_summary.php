@@ -8,15 +8,16 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use TCPDF;
 
-// Get parameters
-$year = $_GET['year'] ?? date('Y');
+// Get and validate parameters
+$year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
 $month = $_GET['month'] ?? 'all';
 $format = $_GET['format'] ?? 'excel';
+$branchFilter = $_GET['branch'] ?? 'all';
+$fromDate = $_GET['fromDate'] ?? null;
+$toDate = $_GET['toDate'] ?? null;
 
-// Define branch order (matching your example)
+// Define branch order
 $orderedBranches = [
     'RXS-1', 'RXS-2', 'ANT-1', 'ANT-2', 'DEL-1', 'DEL-2', 'JAR-1', 'JAR-2',
     'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
@@ -24,17 +25,28 @@ $orderedBranches = [
     'SALAY', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'CEBU'
 ];
 
-// Get sales data
+// Get sales data with filtering
 $salesQuery = "SELECT branch, brand, model, SUM(qty) as qty 
               FROM sales 
               WHERE YEAR(sales_date) = ?";
 $params = [$year];
 $types = 'i';
 
-if ($month !== 'all') {
+if (!empty($fromDate) && !empty($toDate)) {
+    $salesQuery .= " AND sales_date BETWEEN ? AND ?";
+    $params[] = $fromDate;
+    $params[] = $toDate;
+    $types .= 'ss';
+} elseif ($month !== 'all') {
     $salesQuery .= " AND MONTH(sales_date) = ?";
-    $params[] = $month;
+    $params[] = (int)$month;
     $types .= 'i';
+}
+
+if ($branchFilter !== 'all') {
+    $salesQuery .= " AND branch = ?";
+    $params[] = $branchFilter;
+    $types .= 's';
 }
 
 $salesQuery .= " GROUP BY branch, brand, model";
@@ -65,7 +77,7 @@ while ($row = $quotasResult->fetch_assoc()) {
     $quotas[] = $row;
 }
 
-// Extract and filter data
+// Process data
 $allBranches = array_unique(array_column($sales, 'branch'));
 $branches = array_intersect($orderedBranches, $allBranches);
 $branches = array_unique(array_merge($orderedBranches, $branches));
@@ -84,248 +96,179 @@ sort($models);
 $brands = array_unique(array_column($sales, 'brand'));
 sort($brands);
 
-// Calculate totals
+// Calculate totals - ensure numeric values
 $branchTotals = [];
 $modelTotals = [];
 $brandBranchTotals = [];
 
 foreach ($sales as $sale) {
-    $branchTotals[$sale['branch']] = ($branchTotals[$sale['branch']] ?? 0) + $sale['qty'];
-    $modelTotals[$sale['model']] = ($modelTotals[$sale['model']] ?? 0) + $sale['qty'];
-    $key = $sale['brand'] . '|' . $sale['branch'];
-    $brandBranchTotals[$key] = ($brandBranchTotals[$key] ?? 0) + $sale['qty'];
-}
-
-$grandTotal = array_sum($branchTotals);
-
-if ($format === 'excel') {
-    exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month);
-} else {
-    exportToPDF($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month);
-}
-
-// Excel export function with the requested format
-function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month) {
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-
-    // Set document properties
-    $spreadsheet->getProperties()
-        ->setCreator("SMDI Sales System")
-        ->setTitle("Sales Summary Report")
-        ->setSubject("Sales Summary");
-
-    // Title
-    $sheet->mergeCells('A1:' . Coordinate::stringFromColumnIndex(count($branches) + 3) . '1');
-    $sheet->setCellValue('A1', 'SALES SUMMARY REPORT - ' . strtoupper(date('F Y', strtotime($year.'-'.($month === 'all' ? '01' : $month).'-01'))));
-    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-    // Header row with styling matching your example
-    $headerStyle = [
-        'font' => ['bold' => true],
-        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']],
-        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
-        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
-    ];
-
-    $sheet->setCellValue('A2', 'MODEL');
-    $col = 'B';
-    foreach ($branches as $branch) {
-        $sheet->setCellValue($col.'2', $branch);
-        $col++;
-    }
-    $sheet->setCellValue($col.'2', 'TTL');
-    $col++;
-    $sheet->setCellValue($col.'2', 'CEBU');
-    $col++;
-    $sheet->setCellValue($col.'2', 'GT');
-    $col++;
-    $sheet->setCellValue($col.'2', '%');
+    $qty = (int)$sale['qty'];
+    $branch = $sale['branch'];
+    $model = $sale['model'];
     
-    // Apply header style
-    $sheet->getStyle('A2:'.$col.'2')->applyFromArray($headerStyle);
+    $branchTotals[$branch] = ($branchTotals[$branch] ?? 0) + $qty;
+    $modelTotals[$model] = ($modelTotals[$model] ?? 0) + $qty;
+    $key = $sale['brand'] . '|' . $branch;
+    $brandBranchTotals[$key] = ($brandBranchTotals[$key] ?? 0) + $qty;
+}
 
-    // Model rows (only those with sales)
-    $row = 3;
-    foreach ($models as $model) {
-        $modelTotal = $modelTotals[$model] ?? 0;
-        if ($modelTotal <= 0) continue;
+$grandTotal = (int)array_sum($branchTotals);
 
-        $sheet->setCellValue('A'.$row, $model);
-        $col = 'B';
-        
-        // Branch quantities
+// Export based on format
+if ($format === 'excel') {
+    exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month, $fromDate, $toDate);
+} else {
+    die('PDF export not implemented');
+}
+
+function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month = 'all', $fromDate = null, $toDate = null) {
+    try {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set document properties
+        $spreadsheet->getProperties()
+            ->setCreator("SMDI Sales System")
+            ->setTitle("Sales Summary Report")
+            ->setSubject("Sales Summary");
+
+        // Title with date range
+        $title = 'SALES SUMMARY REPORT';
+        if ($fromDate && $toDate) {
+            $title .= ' (' . date('M d, Y', strtotime($fromDate)) . ' - ' . date('M d, Y', strtotime($toDate)) . ')';
+        } elseif ($month !== 'all') {
+            $title .= ' - ' . strtoupper(date('F Y', strtotime($year.'-'.$month.'-01')));
+        } else {
+            $title .= ' - ' . $year;
+        }
+
+        $lastColumn = Coordinate::stringFromColumnIndex(count($branches) + 1);
+        $sheet->mergeCells('A1:' . $lastColumn . '1');
+        $sheet->setCellValue('A1', $title);
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Header row with branch names
+        $headerStyle = [
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+        ];
+
+        $sheet->setCellValue('A2', 'MODEL');
+        $col = 1; // Start with column B (index 1)
         foreach ($branches as $branch) {
-            $qty = 0;
-            foreach ($sales as $sale) {
-                if ($sale['model'] == $model && $sale['branch'] == $branch) {
-                    $qty = $sale['qty'];
-                    break;
-                }
-            }
-            $sheet->setCellValue($col.$row, $qty ?: '');
+            $sheet->setCellValueByColumnAndRow($col + 1, 2, $branch);
             $col++;
         }
-        
-        // Total column
-        $sheet->setCellValue($col.$row, $modelTotal);
-        $col++;
-        
-        // Cebu column (you may need to adjust this based on your logic)
-        $cebuTotal = 0; // Placeholder - adjust as needed
-        $sheet->setCellValue($col.$row, $cebuTotal);
-        $col++;
-        
-        // GT column (Grand Total for this model)
-        $gtTotal = $modelTotal + $cebuTotal;
-        $sheet->setCellValue($col.$row, $gtTotal);
-        $col++;
-        
-        // Percentage column
-        $percentage = $grandTotal > 0 ? round(($gtTotal / $grandTotal) * 100, 2) : 0;
-        $sheet->setCellValue($col.$row, $percentage.'%');
-        
-        // Apply cell borders
-        $sheet->getStyle('A'.$row.':'.$col.$row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        
-        $row++;
-    }
+        $sheet->getStyle('A2:' . $lastColumn . '2')->applyFromArray($headerStyle);
 
-    // SUB-TOTAL row (similar to your example)
-    $sheet->setCellValue('A'.$row, 'SUB-TOTAL');
-    $col = 'B';
-    foreach ($branches as $branch) {
-        $sheet->setCellValue($col.$row, $branchTotals[$branch] ?? '');
-        $col++;
-    }
-    $sheet->setCellValue($col.$row, $grandTotal);
-    $col++;
-    $sheet->setCellValue($col.$row, ''); // Cebu placeholder
-    $col++;
-    $sheet->setCellValue($col.$row, $grandTotal); // GT
-    $col++;
-    $sheet->setCellValue($col.$row, '100%');
-    
-    // Style for sub-total row
-    $subTotalStyle = [
-        'font' => ['bold' => true],
-        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']],
-        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
-    ];
-    $sheet->getStyle('A'.$row.':'.$col.$row)->applyFromArray($subTotalStyle);
-    $row++;
-
-    // QUOTA row (from your quotas data)
-    $sheet->setCellValue('A'.$row, 'QUOTA');
-    $col = 'B';
-    $totalQuota = 0;
-    foreach ($branches as $branch) {
-        $quota = 0;
-        foreach ($quotas as $q) {
-            if ($q['branch'] == $branch) {
-                $quota = $q['quota'];
-                break;
+        // Model rows with sales data
+        $row = 3;
+        foreach ($models as $model) {
+            $sheet->setCellValue('A' . $row, $model);
+            
+            $col = 1; // Start with column B (index 1)
+            foreach ($branches as $branch) {
+                $qty = 0;
+                foreach ($sales as $sale) {
+                    if ($sale['model'] == $model && $sale['branch'] == $branch) {
+                        $qty = (int)$sale['qty'];
+                        break;
+                    }
+                }
+                $sheet->setCellValueByColumnAndRow($col + 1, $row, $qty ?: '');
+                $col++;
             }
+            
+            $sheet->getStyle('A' . $row . ':' . $lastColumn . $row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $row++;
         }
-        $sheet->setCellValue($col.$row, $quota);
-        $totalQuota += $quota;
-        $col++;
-    }
-    $sheet->setCellValue($col.$row, $totalQuota);
-    $col++;
-    $sheet->setCellValue($col.$row, ''); // Cebu quota placeholder
-    $col++;
-    $sheet->setCellValue($col.$row, $totalQuota);
-    $col++;
-    $sheet->setCellValue($col.$row, '');
-    
-    // Style for quota row
-    $sheet->getStyle('A'.$row.':'.$col.$row)->applyFromArray($subTotalStyle);
-    $row++;
 
-    // % row (performance against quota)
-    $sheet->setCellValue('A'.$row, '%');
-    $col = 'B';
-    foreach ($branches as $branch) {
-        $branchTotal = $branchTotals[$branch] ?? 0;
-        $quota = 0;
-        foreach ($quotas as $q) {
-            if ($q['branch'] == $branch) {
-                $quota = $q['quota'];
-                break;
-            }
+        // SUB-TOTAL row
+        $subTotalStyle = [
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+        ];
+
+        $sheet->setCellValue('A' . $row, 'SUB-TOTAL');
+        $col = 1; // Start with column B (index 1)
+        foreach ($branches as $branch) {
+            $total = isset($branchTotals[$branch]) ? (int)$branchTotals[$branch] : 0;
+            $sheet->setCellValueByColumnAndRow($col + 1, $row, $total ?: '');
+            $col++;
         }
-        $percent = $quota > 0 ? round(($branchTotal / $quota) * 100) : 0;
-        $sheet->setCellValue($col.$row, $percent.'%');
-        $col++;
+        $sheet->getStyle('A' . $row . ':' . $lastColumn . $row)->applyFromArray($subTotalStyle);
+
+        // Auto-size columns
+        foreach (range('A', $lastColumn) as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        // Freeze the header row
+        $sheet->freezePane('A3');
+
+        // Clear any previous output
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        // Set proper headers before output
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="sales_summary_' . date('Ymd_His') . '.xlsx"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+
+        // Create writer and save to output
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+
+    } catch (Exception $e) {
+        die('Error generating Excel file: ' . $e->getMessage());
     }
-    $percentTotal = $totalQuota > 0 ? round(($grandTotal / $totalQuota) * 100) : 0;
-    $sheet->setCellValue($col.$row, $percentTotal.'%');
-    $col++;
-    $sheet->setCellValue($col.$row, ''); // Cebu %
-    $col++;
-    $sheet->setCellValue($col.$row, $percentTotal.'%');
-    $col++;
-    $sheet->setCellValue($col.$row, '');
-    
-    // Style for % row
-    $sheet->getStyle('A'.$row.':'.$col.$row)->applyFromArray($subTotalStyle);
-
-    // Auto-size columns
-    foreach (range('A', $col) as $columnID) {
-        $sheet->getColumnDimension($columnID)->setAutoSize(true);
-    }
-
-    // Freeze the header row
-    $sheet->freezePane('A3');
-
-    // Output
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment;filename="sales_summary_'.$year.'_'.($month === 'all' ? 'all_months' : $month).'.xlsx"');
-    header('Cache-Control: max-age=0');
-
-    $writer = new Xlsx($spreadsheet);
-    $writer->save('php://output');
-    exit;
 }
 
-// PDF export function
 function exportToPDF($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month) {
+    // Create new PDF document
     $pdf = new TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
     
+    // Set document information
     $pdf->SetCreator('SMDI Sales System');
     $pdf->SetAuthor('SMDI');
     $pdf->SetTitle('Sales Summary Report');
+    $pdf->SetSubject('Sales Summary');
     
+    // Set margins
     $pdf->SetMargins(10, 15, 10);
     $pdf->SetHeaderMargin(5);
     $pdf->SetFooterMargin(10);
     
+    // Add a page
     $pdf->AddPage();
     
+    // Set font
     $pdf->SetFont('helvetica', 'B', 14);
     $pdf->Cell(0, 10, 'SALES SUMMARY REPORT - ' . strtoupper(date('F Y', strtotime($year.'-'.($month === 'all' ? '01' : $month).'-01'))), 0, 1, 'C');
     $pdf->SetFont('helvetica', '', 10);
     $pdf->Ln(5);
     
-    $colWidth = (270 - 30) / (count($branches) + 1);
+    // Calculate column widths
+    $colWidth = (270 - 30) / (count($branches) + 1); // Total width minus first column, divided by columns
     
-    // Header
+    // Create header
     $pdf->SetFont('helvetica', 'B', 10);
     $pdf->Cell(30, 7, 'Model/Branch', 1, 0, 'C');
     foreach ($branches as $branch) {
         $pdf->Cell($colWidth, 7, $branch, 1, 0, 'C');
     }
-    $pdf->Cell($colWidth, 7, 'Total', 1, 0, 'C');
-    $pdf->Cell($colWidth, 7, 'Percentage', 1, 1, 'C');
+    $pdf->Cell($colWidth, 7, 'Total', 1, 1, 'C');
     
-    // Data rows (only models with sales)
+    // Create data rows
     $pdf->SetFont('helvetica', '', 9);
     foreach ($models as $model) {
-        $modelTotal = $modelTotals[$model] ?? 0;
-        if ($modelTotal <= 0) continue;
-
         $pdf->Cell(30, 6, $model, 1, 0, 'L');
         foreach ($branches as $branch) {
             $qty = 0;
@@ -337,76 +280,54 @@ function exportToPDF($branches, $models, $brands, $sales, $quotas, $branchTotals
             }
             $pdf->Cell($colWidth, 6, $qty, 1, 0, 'C');
         }
-        $pdf->Cell($colWidth, 6, $modelTotal, 1, 0, 'C');
-        
-        $percentage = round(calculatePercentage($modelTotal, $branchTotals));
-        $pdf->Cell($colWidth, 6, $percentage . '%', 1, 1, 'C');
+        $pdf->Cell($colWidth, 6, $modelTotals[$model] ?? 0, 1, 1, 'C');
     }
     
-    // Totals
+    // Create totals row
     $pdf->SetFont('helvetica', 'B', 9);
     $pdf->Cell(30, 6, 'Total', 1, 0, 'L');
     foreach ($branches as $branch) {
         $pdf->Cell($colWidth, 6, $branchTotals[$branch] ?? 0, 1, 0, 'C');
     }
-    $pdf->Cell($colWidth, 6, $grandTotal, 1, 0, 'C');
+    $pdf->Cell($colWidth, 6, $grandTotal, 1, 1, 'C');
+    $pdf->Ln(5);
     
-    $totalPercentage = round(calculatePercentage($grandTotal, $quotas));
-    $pdf->Cell($colWidth, 6, $totalPercentage . '%', 1, 1, 'C');
+    // Performance section
+    $pdf->SetFont('helvetica', 'B', 11);
+    $pdf->Cell(0, 7, 'PERFORMANCE SUMMARY', 0, 1, 'L');
+    $pdf->SetFont('helvetica', '', 9);
     
-    // Quota row
-    $pdf->Cell(30, 6, 'Quota', 1, 0, 'L');
-    $totalQuota = 0;
-    foreach ($branches as $branch) {
-        $quota = 0;
-        foreach ($quotas as $q) {
-            if ($q['branch'] == $branch) {
-                $quota = $q['quota'];
-                break;
+    foreach ($brands as $brand) {
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell(0, 6, $brand . ' PERFORMANCE', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 9);
+        
+        foreach ($branches as $branch) {
+            $key = $brand.'|'.$branch;
+            $subtotal = $brandBranchTotals[$key] ?? 0;
+            
+            $quota = 0;
+            foreach ($quotas as $q) {
+                if ($q['branch'] == $branch) {
+                    $quota = $q['quota'];
+                    break;
+                }
             }
+            
+            $percentage = $quota > 0 ? round(($subtotal / $quota) * 100, 2) : 0;
+            
+            $pdf->Cell(60, 6, $branch . ' - ' . $brand, 0, 0, 'L');
+            $pdf->Cell(0, 6, 'Subtotal: ' . $subtotal . ' | Quota: ' . $quota . ' | Performance: ' . $percentage . '%', 0, 1, 'L');
         }
-        $pdf->Cell($colWidth, 6, $quota, 1, 0, 'C');
-        $totalQuota += $quota;
+        $pdf->Ln(2);
     }
-    $pdf->Cell($colWidth, 6, $totalQuota, 1, 0, 'C');
-    $pdf->Cell($colWidth, 6, '', 1, 1, 'C');
-    
-    // Percent row
-    $pdf->Cell(30, 6, 'Percent', 1, 0, 'L');
-    foreach ($branches as $branch) {
-        $branchTotal = $branchTotals[$branch] ?? 0;
-        $quota = 0;
-        foreach ($quotas as $q) {
-            if ($q['branch'] == $branch) {
-                $quota = $q['quota'];
-                break;
-            }
-        }
-        $percent = $quota > 0 ? round(($branchTotal / $quota) * 100) : 0;
-        $pdf->Cell($colWidth, 6, $percent . '%', 1, 0, 'C');
-    }
-    $percentTotal = $totalQuota > 0 ? round(($grandTotal / $totalQuota) * 100) : 0;
-    $pdf->Cell($colWidth, 6, $percentTotal . '%', 1, 0, 'C');
-    $pdf->Cell($colWidth, 6, '', 1, 1, 'C');
     
     // Footer
     $pdf->SetY(-15);
     $pdf->SetFont('helvetica', 'I', 8);
     $pdf->Cell(0, 10, 'Generated on ' . date('Y-m-d H:i:s'), 0, 0, 'C');
     
-    $pdf->Output('sales_summary_'.$year.'_'.($month === 'all' ? 'all_months' : $month).'.pdf', 'D');
-}
-
-function calculatePercentage($total, $quotas) {
-    $totalQuota = 0;
-
-    if (is_array($quotas)) {
-        foreach ($quotas as $q) {
-            if (isset($q['quota'])) {
-                $totalQuota += $q['quota'];
-            }
-        }
-    }
-
-    return $totalQuota > 0 ? round(($total / $totalQuota) * 100) : 0;
+    // Output PDF
+    $filename = 'sales_summary_'.$year.'_'.($month === 'all' ? 'all_months' : $month).'.pdf';
+    $pdf->Output($filename, 'D');
 }
