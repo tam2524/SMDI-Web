@@ -648,7 +648,6 @@ body {
                                     <option value="NUMANCIA">NUMANCIA</option>
                                     <option value="HEADOFFICE">HEADOFFICE</option>
                                     <option value="CEBU">CEBU</option>
-                                    <option value="GT">GT</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -699,9 +698,36 @@ body {
                         <label for="branchSelect" class="form-label">Branch:</label>
                         <select class="form-select" id="branchSelect">
                             <option value="all">All Branches</option>
-                            <option value="RXS-1">RXS-1</option>
-                            <option value="RXS-2">RXS-2</option>
-                            <!-- Add all other branches here -->
+                              <option value="RXS-1">RXS-1</option>
+                                    <option value="RXS-2">RXS-2</option>
+                                    <option value="ANTIQUE-1">ANTIQUE-1</option>
+                                    <option value="ANTIQUE-2">ANTIQUE-2</option>
+                                    <option value="DELGADO-1">DELGADO-1</option>
+                                    <option value="DELGADO-2">DELGADO-2</option>
+                                    <option value="JARO-1">JARO-1</option>
+                                    <option value="JARO-2">JARO-2</option>
+                                    <option value="KALIBO-1">KALIBO-1</option>
+                                    <option value="KALIBO-2">KALIBO-2</option>
+                                    <option value="ALTAVAS">ALTAVAS</option>
+                                    <option value="EMAP">EMAP</option>
+                                    <option value="CULASI">CULASI</option>
+                                    <option value="BACOLOD">BACOLOD</option>
+                                    <option value="PASSI-1">PASSI-1</option>
+                                    <option value="PASSI-2">PASSI-2</option>
+                                    <option value="BALASAN">BALASAN</option>
+                                    <option value="GUIMARAS">GUIMARAS</option>
+                                    <option value="PEMDI">PEMDI</option>
+                                    <option value="EEMSI">EEMSI</option>
+                                    <option value="AJUY">AJUY</option>
+                                    <option value="BAILAN">BAILAN</option>
+                                    <option value="MINDORO MB">MINDORO MB</option>
+                                    <option value="MINDORO 3S">MINDORO 3S</option>
+                                    <option value="MANSALAY">MANSALAY</option>
+                                    <option value="K-RIDERS">K-RIDERS</option>
+                                    <option value="IBAJAY">IBAJAY</option>
+                                    <option value="NUMANCIA">NUMANCIA</option>
+                                    <option value="HEADOFFICE">HEADOFFICE</option>
+                                    <option value="CEBU">CEBU</option>
                         </select>
                     </div>
                     <div class="mb-3">

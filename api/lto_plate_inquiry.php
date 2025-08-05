@@ -69,7 +69,7 @@ function searchRegistrationTable($conn, $lastname, $firstname) {
     
     foreach ($namePatterns as $pattern) {
         $sql = "SELECT * FROM registration WHERE 
-               full_name LIKE ?";
+               full_name LIKE %?%";
         $stmt = $conn->prepare($sql);
         if (!$stmt) continue;
         

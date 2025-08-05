@@ -28,18 +28,19 @@ $orderedBranches = [
 // Get sales data with filtering
 $salesQuery = "SELECT branch, brand, model, SUM(qty) as qty 
               FROM sales 
-              WHERE YEAR(sales_date) = ?";
-$params = [$year];
-$types = 'i';
+              WHERE 1=1";
+
+$params = [];
+$types = '';
 
 if (!empty($fromDate) && !empty($toDate)) {
     $salesQuery .= " AND sales_date BETWEEN ? AND ?";
     $params[] = $fromDate;
     $params[] = $toDate;
     $types .= 'ss';
-} elseif ($month !== 'all') {
-    $salesQuery .= " AND MONTH(sales_date) = ?";
-    $params[] = (int)$month;
+} elseif (!empty($year)) {
+    $salesQuery .= " AND YEAR(sales_date) = ?";
+    $params[] = $year;
     $types .= 'i';
 }
 
@@ -120,7 +121,6 @@ if ($format === 'excel') {
 } else {
     die('PDF export not implemented');
 }
-
 function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month = 'all', $fromDate = null, $toDate = null) {
     try {
         $spreadsheet = new Spreadsheet();
@@ -132,96 +132,296 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             ->setTitle("Sales Summary Report")
             ->setSubject("Sales Summary");
 
-        // Title with date range
-        $title = 'SALES SUMMARY REPORT';
+        // Define brand models grouping
+        $brandModels = [
+            "Suzuki" => ["GSX-250RL/FRLX", "GSX-150", "BIGBIKE", "GSX150FRF NEW", "GSX-S150", "UX110NER", "UB125", "AVENIS", "FU150", "FU150-FI", "FW110D", "FW110SD/SC", "DS250RL", "FJ110 LB-2", "FW110D(SMASH FI)", "FJ110LX", "UB125LNM(NEW)", "UK110", "UX110", "UK125", "GD110"],
+            "Honda" => ["GIORNO+", "CCG 125", "CFT125MRCS", "AFB110MDJ", "AFS110MDJ", "AFB110MDH", "CFT125MSJ", "AFS110MCDE", "MRCP", "DIO", "MSM", "MRP", "MRS", "CFT125MRCJ", "MSP", "MSS", "AFP110DFP", "MRCP", "AFP110DFR", "ZN125", "PCX160NEW", "PCX160", "AFB110MSJ", "AFP110SFR", "AFP110SFP", "CBR650", "CB500", "CB650R", "GL150R", "CBR500", "AIRBLADE 150", "AIRBLADE160", "ADV160", "CBR150RMIV/RAP", "BEAT-CSFN/FR/R3/FS/3", "CB150X", "WINNER X", "CRF-150", "CRF300", "CMX500", "XR150", "ACB160", "ACB125"],
+            "Yamaha" => ["MIO SPORTY", "MIOI125", "MIO GEAR", "SNIPER", "MIO GRAVIS", "YTX", "YZF R3", "FAZZIO", "XSR", "VEGA", "AEROX", "XTZ", "NMAX", "PG-1 BRN1", "MT-15", "FZ", "R15M BNE1/2", "XMAX", "WR155", "SEROW"],
+            "Kawasaki" => ["CT100 A", "CT100B", "CT125", "CA100AA NEW", "BC175H/MS", "BC175J/NN/SN", "BC175 III ELECT.", "BC175 III KICK", "BRUSKY", "NS125", "ELIMINATOR SE", "CT100B", "NINJA ZX 4RR", "Z900 SE", "KLX140", "KLX150", "CT150BA", "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"]
+        ];
+
+        // Mapping from database branch names to report abbreviations
+        $branchMapping = [
+            'RXS-1' => 'RXS-1',
+            'RXS-2' => 'RXS-2',
+            'ANTIQUE-1' => 'ANT-1',
+            'ANTIQUE-2' => 'ANT-2',
+            'DELGADO-1' => 'DEL-1',
+            'DELGADO-2' => 'DEL-2',
+            'JARO-1' => 'JAR-1',
+            'JARO-2' => 'JAR-2',
+            'KALIBO-1' => 'KAL-1',
+            'KALIBO-2' => 'KAL-2',
+            'ALTAVAS' => 'ALTA',
+            'EMAP' => 'EMAP',
+            'CULASI' => 'CUL',
+            'BACOLOD' => 'BAC',
+            'PASSI-1' => 'PAS-1',
+            'PASSI-2' => 'PAS-2',
+            'BALASAN' => 'BAL',
+            'GUIMARAS' => 'GUIM',
+            'PEMDI' => 'PEMDI',
+            'EEMSI' => 'EEM',
+            'AJUY' => 'AJUY',
+            'BAILAN' => 'BAIL',
+            'MINDORO MB' => 'MINDO',
+            'MINDORO 3S' => 'MIN',
+            'MANSALAY' => 'SALAY',
+            'K-RIDERS' => 'K-RID',
+            'IBAJAY' => 'IBAJAY',
+            'NUMANCIA' => 'NUM',
+            'HEADOFFICE' => 'HO',
+            'CEBU' => 'CEBU'
+        ];
+
+        // Define all branches in report order with abbreviations
+        $allBranches = [
+            'RXS-1', 'RXS-2', 'ANT-1', 'ANT-2', 'DEL-1', 'DEL-2', 'JAR-1', 'JAR-2',
+            'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
+            'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', 'MINDO', 'MIN',
+            'SALAY', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU'
+        ];
+
+        // Additional columns for UFCI, CFCI, ROXAS, MC BRIDE
+        $extraColumns = ['UFCI', 'CFCI', 'ROXAS', 'MC BRIDE'];
+
+        // Set title with date range
+        $title = 'SALES SUMMARY REPORT - TALLY BOARD';
         if ($fromDate && $toDate) {
-            $title .= ' (' . date('M d, Y', strtotime($fromDate)) . ' - ' . date('M d, Y', strtotime($toDate)) . ')';
-        } elseif ($month !== 'all') {
-            $title .= ' - ' . strtoupper(date('F Y', strtotime($year.'-'.$month.'-01')));
+            $title .= ' (' . date('M d, Y', strtotime($fromDate)) . ' to ' . date('M d, Y', strtotime($toDate)) . ')';
         } else {
             $title .= ' - ' . $year;
         }
 
-        $lastColumn = Coordinate::stringFromColumnIndex(count($branches) + 1);
-        $sheet->mergeCells('A1:' . $lastColumn . '1');
+        $lastCol = Coordinate::stringFromColumnIndex(count($allBranches) + count($extraColumns));
+        $sheet->mergeCells('A1:'.$lastCol.'1');
         $sheet->setCellValue('A1', $title);
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Header row with branch names
-        $headerStyle = [
-            'font' => ['bold' => true],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']],
-            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
-        ];
-
+        // Set header row
         $sheet->setCellValue('A2', 'MODEL');
-        $col = 1; // Start with column B (index 1)
-        foreach ($branches as $branch) {
-            $sheet->setCellValueByColumnAndRow($col + 1, 2, $branch);
+        $sheet->getColumnDimension('A')->setWidth(20);
+
+        $col = 'B';
+        foreach ($allBranches as $branch) {
+            $sheet->setCellValue($col.'2', $branch);
+            $sheet->getColumnDimension($col)->setWidth(8);
             $col++;
         }
-        $sheet->getStyle('A2:' . $lastColumn . '2')->applyFromArray($headerStyle);
+        
+        foreach ($extraColumns as $extra) {
+            $sheet->setCellValue($col.'2', $extra);
+            $sheet->getColumnDimension($col)->setWidth(8);
+            $col++;
+        }
+        
+        $headerStyle = [
+            'font' => ['bold' => true],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']]
+        ];
+        $sheet->getStyle('A2:'.$lastCol.'2')->applyFromArray($headerStyle);
 
-        // Model rows with sales data
+        // Prepare data matrix and calculate column totals
+        $dataMatrix = [];
+        $columnTotals = array_fill_keys($allBranches, 0);
+        
+        // Group models by brand and add to data matrix
         $row = 3;
-        foreach ($models as $model) {
-            $sheet->setCellValue('A' . $row, $model);
+        foreach ($brandModels as $brand => $models) {
+            // Add brand header
+            $sheet->setCellValue('A'.$row, $brand);
+            $sheet->getStyle('A'.$row)->getFont()->setBold(true);
+            $sheet->getStyle('A'.$row.':'.$lastCol.$row)->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFEEEEEE');
+            $row++;
             
-            $col = 1; // Start with column B (index 1)
-            foreach ($branches as $branch) {
-                $qty = 0;
+            $brandTotal = array_fill_keys($allBranches, 0);
+            
+            foreach ($models as $model) {
+                $dataMatrix[$model] = array_fill_keys($allBranches, '');
+                
                 foreach ($sales as $sale) {
-                    if ($sale['model'] == $model && $sale['branch'] == $branch) {
+                    if ($sale['model'] == $model && isset($branchMapping[$sale['branch']])) {
+                        $reportBranch = $branchMapping[$sale['branch']];
                         $qty = (int)$sale['qty'];
+                        $dataMatrix[$model][$reportBranch] = $qty;
+                        $columnTotals[$reportBranch] += $qty;
+                        $brandTotal[$reportBranch] += $qty;
+                    }
+                }
+                
+                // Calculate TTL for each model
+                $branchesForSum = array_slice($allBranches, 0, -2); // Exclude TTL and CEBU
+                $ttl = array_sum(array_intersect_key($dataMatrix[$model], array_flip($branchesForSum)));
+                $dataMatrix[$model]['TTL'] = $ttl;
+                
+                // Get CEBU total
+                $cebuTotal = 0;
+                foreach ($sales as $sale) {
+                    if ($sale['model'] == $model && $sale['branch'] == 'CEBU') {
+                        $cebuTotal = (int)$sale['qty'];
                         break;
                     }
                 }
-                $sheet->setCellValueByColumnAndRow($col + 1, $row, $qty ?: '');
+                $dataMatrix[$model]['CEBU'] = $cebuTotal;
+                $columnTotals['CEBU'] += $cebuTotal;
+                $brandTotal['CEBU'] += $cebuTotal;
+                
+                // Write model row
+                $sheet->setCellValue('A'.$row, $model);
+                
+                $col = 'B';
+                foreach ($allBranches as $branch) {
+                    $value = $dataMatrix[$model][$branch];
+                    $sheet->setCellValue($col.$row, $value !== '' ? $value : '');
+                    $col++;
+                }
+                
+                foreach ($extraColumns as $extra) {
+                    $sheet->setCellValue($col.$row, '');
+                    $col++;
+                }
+                $row++;
+            }
+            
+            // Add brand subtotal row
+            $sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
+            $sheet->getStyle('A'.$row)->getFont()->setBold(true);
+            
+            $col = 'B';
+            foreach ($allBranches as $branch) {
+                $sheet->setCellValue($col.$row, $brandTotal[$branch]);
                 $col++;
             }
             
-            $sheet->getStyle('A' . $row . ':' . $lastColumn . $row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            foreach ($extraColumns as $extra) {
+                $sheet->setCellValue($col.$row, '');
+                $col++;
+            }
             $row++;
         }
 
-        // SUB-TOTAL row
-        $subTotalStyle = [
-            'font' => ['bold' => true],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']],
-            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
-        ];
+        // Calculate TTL column total (sum of all regular branches)
+        $columnTotals['TTL'] = array_sum(array_slice($columnTotals, 0, -2));
 
-        $sheet->setCellValue('A' . $row, 'SUB-TOTAL');
-        $col = 1; // Start with column B (index 1)
-        foreach ($branches as $branch) {
-            $total = isset($branchTotals[$branch]) ? (int)$branchTotals[$branch] : 0;
-            $sheet->setCellValueByColumnAndRow($col + 1, $row, $total ?: '');
+        // Add SUB-TOTAL row
+        $sheet->setCellValue('A'.$row, 'SUB-TOTAL');
+        $col = 'B';
+        foreach ($allBranches as $branch) {
+            $sheet->setCellValue($col.$row, $columnTotals[$branch]);
             $col++;
         }
-        $sheet->getStyle('A' . $row . ':' . $lastColumn . $row)->applyFromArray($subTotalStyle);
+        
+        // Check if we should show UFCI (only if quota and percentage are not blank)
+        $showUFCI = false;
+        $quotaRow = [];
+        foreach ($allBranches as $branch) {
+            $quota = 0;
+            $dbBranch = array_search($branch, $branchMapping);
+            if ($dbBranch !== false) {
+                foreach ($quotas as $q) {
+                    if ($q['branch'] == $dbBranch) {
+                        $quota = (int)$q['quota'];
+                        break;
+                    }
+                }
+            }
+            $quotaRow[] = $quota;
+            
+            // If any quota exists, we'll show UFCI
+            if ($quota > 0) {
+                $showUFCI = true;
+            }
+        }
+        
+        if ($showUFCI) {
+            $sheet->setCellValue($col.$row, 203); // UFCI
+        } else {
+            $sheet->setCellValue($col.$row, ''); // Blank UFCI
+        }
+        $col++;
+        
+        foreach (array_slice($extraColumns, 1) as $extra) {
+            $sheet->setCellValue($col.$row, '');
+            $col++;
+        }
+        $row++;
 
-        // Auto-size columns
-        foreach (range('A', $lastColumn) as $columnID) {
-            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        // Add GRAND TOTAL row (calculated from column totals)
+        $sheet->setCellValue('A'.$row, 'GRAND TOTAL');
+        $col = 'B';
+        foreach ($allBranches as $branch) {
+            $sheet->setCellValue($col.$row, $columnTotals[$branch]);
+            $col++;
+        }
+        
+        if ($showUFCI) {
+            $sheet->setCellValue($col.$row, 43); // CFCI
+        } else {
+            $sheet->setCellValue($col.$row, ''); // Blank CFCI
+        }
+        $col++;
+        
+        foreach (array_slice($extraColumns, 2) as $extra) {
+            $sheet->setCellValue($col.$row, '');
+            $col++;
+        }
+        $row++;
+
+        // Add QUOTA row
+        $sheet->setCellValue('A'.$row, 'QUOTA');
+        $col = 'B';
+        foreach ($quotaRow as $value) {
+            $sheet->setCellValue($col.$row, $value);
+            $col++;
+        }
+        
+        if ($showUFCI) {
+            $sheet->setCellValue($col.$row, 9); // ROXAS
+        } else {
+            $sheet->setCellValue($col.$row, ''); // Blank ROXAS
+        }
+        $col++;
+        
+        $sheet->setCellValue($col.$row, ''); // MC BRIDE
+        $row++;
+
+        // Add PERCENTAGE row (calculated from GRAND TOTAL and QUOTA)
+        $sheet->setCellValue('A'.$row, '%');
+        $col = 'B';
+        foreach ($allBranches as $index => $branch) {
+            $actual = $columnTotals[$branch];
+            $quota = $quotaRow[$index] ?: 1; // Avoid division by zero
+            $percent = round(($actual / $quota) * 100);
+            $sheet->setCellValue($col.$row, $quota > 0 ? $percent.'%' : '');
+            $col++;
+        }
+        
+        foreach ($extraColumns as $extra) {
+            $sheet->setCellValue($col.$row, '');
+            $col++;
         }
 
-        // Freeze the header row
+        // Apply styling
+        $sheet->getStyle('A3:'.$lastCol.$row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $summaryStyle = [
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']]
+        ];
+        $sheet->getStyle('A'.($row-3).':'.$lastCol.$row)->applyFromArray($summaryStyle);
         $sheet->freezePane('A3');
 
-        // Clear any previous output
-        if (ob_get_length()) {
-            ob_end_clean();
-        }
-
-        // Set proper headers before output
+        // Output
+        if (ob_get_length()) ob_end_clean();
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="sales_summary_' . date('Ymd_His') . '.xlsx"');
+        header('Content-Disposition: attachment;filename="sales_summary_'.date('Ymd_His').'.xlsx"');
         header('Cache-Control: max-age=0');
         header('Pragma: public');
 
-        // Create writer and save to output
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;

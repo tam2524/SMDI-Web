@@ -802,23 +802,62 @@ function initModals() {
         }
     });
 
-    // Handle print confirmation
-    $('#confirmPrint').on('click', function() {
-        const fromDate = $('#fromDate').val();
-        const toDate = $('#toDate').val();
-        const branch = $('#branchSelect').val();
-        const outputFormat = $('#outputFormat').val();
+// Handle print confirmation
+$('#confirmPrint').on('click', function() {
+    const fromDate = $('#fromDate').val();
+    const toDate = $('#toDate').val();
+    const year = $('#yearSelect').val();
+    const month = $('#monthSelect').val();
+    const branch = $('#branchSelect').val();
+    const outputFormat = $('#outputFormat').val();
 
-        if (!fromDate || !toDate) {
-            showWarningModal('Please select both From and To dates.');
+    // Validate at least one filter is selected
+    if (!fromDate && !toDate && !year) {
+        showWarningModal('Please select either a date range or a year.');
+        return;
+    }
+
+    // Validate date range if provided
+    if (fromDate && toDate) {
+        if (new Date(fromDate) > new Date(toDate)) {
+            showWarningModal('The "From" date cannot be after the "To" date.');
             return;
         }
+    }
 
-        // Redirect to generate report script
-        window.location.href = `api/export_summary.php?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&branch=${encodeURIComponent(branch)}&format=${encodeURIComponent(outputFormat)}`;
-        
-        $('#printOptionsModal').modal('hide');
-    });
+    // Build the query parameters
+    let params = [];
+    
+    if (fromDate && toDate) {
+        params.push(`fromDate=${encodeURIComponent(fromDate)}`);
+        params.push(`toDate=${encodeURIComponent(toDate)}`);
+    } else if (year) {
+        params.push(`year=${encodeURIComponent(year)}`);
+        if (month && month !== 'all') {
+            params.push(`month=${encodeURIComponent(month)}`);
+        }
+    }
+    
+    if (branch && branch !== 'all') {
+        params.push(`branch=${encodeURIComponent(branch)}`);
+    }
+    
+    params.push(`format=${encodeURIComponent(outputFormat)}`);
+
+    // Generate the URL
+    const url = `api/export_summary.php?${params.join('&')}`;
+
+    // For Excel format, download directly
+    if (outputFormat === 'excel') {
+        window.location.href = url;
+    } 
+    // For PDF, open in new tab (if needed)
+    else {
+        window.open(url, '_blank');
+    }
+    
+    $('#printOptionsModal').modal('hide');
+});
 }
 
 // ==================== HELPER FUNCTIONS ====================
