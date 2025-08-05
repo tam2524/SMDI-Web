@@ -1,423 +1,566 @@
 <?php
 header('Content-Type: application/json');
 require_once 'db_config.php';
+require_once '../vendor/autoload.php';
 
-// Check connection
-if ($conn->connect_error) {
-    die(json_encode(['success' => false, 'message' => 'Database connection failed: ' . $conn->connect_error]));
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory; 
+
+
+// Helper function to sanitize input
+function sanitizeInput($data) {
+    global $conn;
+    return $conn->real_escape_string(htmlspecialchars(strip_tags(trim($data))));
 }
 
-// Get the requested action
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$action = isset($_REQUEST['action']) ? sanitizeInput($_REQUEST['action']) : '';
 
-// Handle different actions
 switch ($action) {
     case 'get_sales':
-        handleGetSales();
+        getSales();
         break;
     case 'get_sale':
-        handleGetSale();
+        getSale();
         break;
     case 'add_sale':
-        handleAddSale();
+        addSale();
         break;
     case 'update_sale':
-        handleUpdateSale();
+        updateSale();
         break;
     case 'delete_sale':
-        handleDeleteSale();
-        break;
-    case 'set_quota':
-        handleSetQuota();
+        deleteSales();
         break;
     case 'get_quotas':
-        handleGetQuotas();
+        getQuotas();
+        break;
+    case 'get_quota':
+        getQuota();
+        break;
+    case 'set_quota':
+        setQuota();
         break;
     case 'delete_quota':
-        handleDeleteQuota();
+        deleteQuota();
         break;
-       case 'get_quota':
-        handleGetQuota();
-        break;    
+    case 'get_summary_report':
+        getSummaryReport();
+        break;
+    case 'upload_sales_data':
+        uploadSalesData();     
+    break; 
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;
 }
-function handleSetQuota() {
+
+function getSales() {
     global $conn;
-
-    $data = $_POST;
-
-    $required = ['year', 'branch', 'quota'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
-            return;
-        }
-    }
-
-    // Check if quota already exists for this year/branch combination
-    $checkQuery = "SELECT id FROM sales_quotas WHERE year = ? AND branch = ?";
-    $checkStmt = $conn->prepare($checkQuery);
     
-    if ($checkStmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-        return;
-    }
-
-    $checkStmt->bind_param('is', $data['year'], $data['branch']);
-    $checkStmt->execute();
-    $checkResult = $checkStmt->get_result();
-
-    if ($checkResult->num_rows > 0) {
-        // Update existing quota
-        $row = $checkResult->fetch_assoc();
-        $updateQuery = "UPDATE sales_quotas SET quota = ? WHERE id = ?";
-        $updateStmt = $conn->prepare($updateQuery);
-        
-        if ($updateStmt === false) {
-            echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-            return;
-        }
-
-        $updateStmt->bind_param('ii', $data['quota'], $row['id']);
-        
-        if ($updateStmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Quota updated successfully']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to update quota: ' . $updateStmt->error]);
-        }
-        
-        $updateStmt->close();
-    } else {
-        // Insert new quota
-        $insertQuery = "INSERT INTO sales_quotas (year, branch, quota) VALUES (?, ?, ?)";
-        $insertStmt = $conn->prepare($insertQuery);
-        
-        if ($insertStmt === false) {
-            echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-            return;
-        }
-
-        $insertStmt->bind_param('isi', $data['year'], $data['branch'], $data['quota']);
-        
-        if ($insertStmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Quota set successfully']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to set quota: ' . $insertStmt->error]);
-        }
-        
-        $insertStmt->close();
-    }
-
-    $checkStmt->close();
-}
-function handleGetQuota() {
-    global $conn;
-
-    if (empty($_GET['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Quota ID is required']);
-        return;
-    }
-
-    $quotaId = (int)$_GET['id'];
-
-    $query = "SELECT id, year, branch, quota FROM sales_quotas WHERE id = ?";
-    $stmt = $conn->prepare($query);
+    $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
+    $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+    $sort = isset($_GET['sort']) ? sanitizeInput($_GET['sort']) : '';
     
-    if ($stmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-        return;
+    $itemsPerPage = 10;
+    $offset = ($page - 1) * $itemsPerPage;
+    
+    $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM sales WHERE 1=1";
+    $params = [];
+    $types = '';
+    
+    if (!empty($query)) {
+        $sql .= " AND (branch LIKE ? OR brand LIKE ? OR model LIKE ?)";
+        $params[] = "%$query%";
+        $params[] = "%$query%";
+        $params[] = "%$query%";
+        $types .= 'sss';
     }
-
-    $stmt->bind_param('i', $quotaId);
+    
+    // Apply sorting
+    switch ($sort) {
+        case 'date_asc':
+            $sql .= " ORDER BY sales_date ASC";
+            break;
+        case 'date_desc':
+            $sql .= " ORDER BY sales_date DESC";
+            break;
+        case 'branch_asc':
+            $sql .= " ORDER BY branch ASC";
+            break;
+        case 'branch_desc':
+            $sql .= " ORDER BY branch DESC";
+            break;
+        case 'brand_asc':
+            $sql .= " ORDER BY brand ASC";
+            break;
+        case 'brand_desc':
+            $sql .= " ORDER BY brand DESC";
+            break;
+        default:
+            $sql .= " ORDER BY sales_date DESC";
+            break;
+    }
+    
+    $sql .= " LIMIT ?, ?";
+    $params[] = $offset;
+    $params[] = $itemsPerPage;
+    $types .= 'ii';
+    
+    $stmt = $conn->prepare($sql);
+    if ($types) {
+        $stmt->bind_param($types, ...$params);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
-
-    if ($result->num_rows === 0) {
-        echo json_encode(['success' => false, 'message' => 'Quota not found']);
-        return;
-    }
-
-    $quota = $result->fetch_assoc();
-    echo json_encode(['success' => true, 'data' => $quota]);
-
-    $stmt->close();
-}
-
-function handleGetQuotas() {
-    global $conn;
-
-    $query = isset($_GET['query']) ? $_GET['query'] : '';
-    $searchCondition = '';
-    if (!empty($query)) {
-        $searchCondition = "WHERE branch LIKE '%$query%'";
-    }
-
-    $sql = "SELECT id, year, branch, quota FROM sales_quotas $searchCondition ORDER BY year DESC, branch";
-    $result = $conn->query($sql);
-
-    if ($result === false) {
-        echo json_encode(['success' => false, 'message' => 'Query failed: ' . $conn->error]);
-        return;
-    }
-
-    $quotas = [];
-    while ($row = $result->fetch_assoc()) {
-        $quotas[] = $row;
-    }
-
-    echo json_encode(['success' => true, 'data' => $quotas]);
-}
-
-function handleDeleteQuota() {
-    global $conn;
-
-    if (empty($_POST['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Quota ID is required']);
-        return;
-    }
-
-    $quotaId = (int)$_POST['id'];
-
-    $query = "DELETE FROM sales_quotas WHERE id = ?";
-    $stmt = $conn->prepare($query);
+    $sales = $result->fetch_all(MYSQLI_ASSOC);
     
-    if ($stmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-        return;
-    }
-
-    $stmt->bind_param('i', $quotaId);
-
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Quota deleted successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete quota: ' . $stmt->error]);
-    }
-
-    $stmt->close();
-}
-
-function handleGetSales() {
-    global $conn;
-
-    // Get pagination parameters
-    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    $perPage = 10; // Records per page
-    $offset = ($page - 1) * $perPage;
-
-    // Get search query
-    $query = isset($_GET['query']) ? $_GET['query'] : '';
-    $searchCondition = '';
-    if (!empty($query)) {
-        $searchCondition = "WHERE branch LIKE '%$query%' OR brand LIKE '%$query%' OR model LIKE '%$query%'";
-    }
-
-    // Get sort parameter
-    $sort = isset($_GET['sort']) ? $_GET['sort'] : 'sales_date DESC';
-    $validSorts = [
-        'date' => 'sales_date',
-        'branch' => 'branch',
-        'brand' => 'brand'
-    ];
+    // Get total count
+    $totalRows = $conn->query("SELECT FOUND_ROWS()")->fetch_row()[0];
+    $totalPages = ceil($totalRows / $itemsPerPage);
     
-    $sortColumn = $validSorts[$sort] ?? 'sales_date';
-    $sortOrder = 'DESC'; // Default sort order
-
-    // Count total records for pagination
-    $countQuery = "SELECT COUNT(*) as total FROM sales $searchCondition";
-    $countResult = $conn->query($countQuery);
-    $totalRecords = $countResult->fetch_assoc()['total'];
-    $totalPages = ceil($totalRecords / $perPage);
-
-    // Get paginated data
-    $dataQuery = "SELECT id, sales_date, branch, brand, model, qty FROM sales 
-                 $searchCondition
-                 ORDER BY $sortColumn $sortOrder
-                 LIMIT $perPage OFFSET $offset";
-    
-    $result = $conn->query($dataQuery);
-
-    if ($result === false) {
-        echo json_encode(['success' => false, 'message' => 'Query failed: ' . $conn->error]);
-        return;
-    }
-
-    $sales = [];
-    while ($row = $result->fetch_assoc()) {
-        $sales[] = $row;
-    }
-
     echo json_encode([
-        'success' => true, 
+        'success' => true,
         'data' => $sales,
-        'totalPages' => $totalPages,
-        'currentPage' => $page
+        'totalPages' => $totalPages
     ]);
 }
 
-function handleGetSale() {
+function getSale() {
     global $conn;
-
-    if (empty($_GET['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Sale ID is required']);
-        return;
-    }
-
-    $saleId = (int)$_GET['id'];
-
-    $query = "SELECT id, sales_date, branch, brand, model, qty FROM sales WHERE id = ?";
-    $stmt = $conn->prepare($query);
     
-    if ($stmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-        return;
-    }
-
-    $stmt->bind_param('i', $saleId);
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    
+    $stmt = $conn->prepare("SELECT * FROM sales WHERE id = ?");
+    $stmt->bind_param('i', $id);
     $stmt->execute();
     $result = $stmt->get_result();
-
-    if ($result->num_rows === 0) {
-        echo json_encode(['success' => false, 'message' => 'Sale not found']);
-        return;
-    }
-
     $sale = $result->fetch_assoc();
-    echo json_encode(['success' => true, 'data' => $sale]);
-
-    $stmt->close();
+    
+    if ($sale) {
+        echo json_encode(['success' => true, 'data' => $sale]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Sale not found']);
+    }
 }
 
-function handleAddSale() {
+function addSale() {
     global $conn;
-
-    $data = $_POST;
-
-    $required = ['sales_date', 'branch', 'brand', 'model', 'qty'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
-            return;
-        }
-    }
-
-    $query = "INSERT INTO sales (sales_date, branch, brand, model, qty) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($query);
     
-    if ($stmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+    $sales_date = isset($_POST['sales_date']) ? sanitizeInput($_POST['sales_date']) : '';
+    $branch = isset($_POST['branch']) ? sanitizeInput($_POST['branch']) : '';
+    $brand = isset($_POST['brand']) ? sanitizeInput($_POST['brand']) : '';
+    $model = isset($_POST['model']) ? sanitizeInput($_POST['model']) : '';
+    $qty = isset($_POST['qty']) ? intval($_POST['qty']) : 0;
+    
+    // Validate input
+    if (empty($sales_date) || empty($branch) || empty($brand) || empty($model) || $qty <= 0) {
+        echo json_encode(['success' => false, 'message' => 'All fields are required and quantity must be positive']);
         return;
     }
-
-    $stmt->bind_param('ssssi', 
-        $data['sales_date'],
-        $data['branch'],
-        $data['brand'],
-        $data['model'],
-        $data['qty']
-    );
-
+    
+    // Check for duplicate entry
+    $checkStmt = $conn->prepare("SELECT id FROM sales WHERE sales_date = ? AND branch = ? AND brand = ? AND model = ?");
+    $checkStmt->bind_param('ssss', $sales_date, $branch, $brand, $model);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    
+    if ($checkResult->num_rows > 0) {
+        echo json_encode(['success' => false, 'message' => 'Duplicate entry: A sale with the same date, branch, brand, and model already exists']);
+        return;
+    }
+    
+    $stmt = $conn->prepare("INSERT INTO sales (sales_date, branch, brand, model, qty) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param('ssssi', $sales_date, $branch, $brand, $model, $qty);
+    
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Sale added successfully']);
     } else {
-        // Check for duplicate entry
-        if ($conn->errno == 1062) {
-            echo json_encode(['success' => false, 'message' => 'Duplicate entry: This sale already exists']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to add sale: ' . $stmt->error]);
-        }
+        echo json_encode(['success' => false, 'message' => 'Error adding sale: ' . $conn->error]);
     }
-
-    $stmt->close();
 }
 
-function handleUpdateSale() {
+function updateSale() {
     global $conn;
-
-    $data = $_POST;
-
-    if (empty($data['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Sale ID is required']);
+    
+    $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    $sales_date = isset($_POST['sales_date']) ? sanitizeInput($_POST['sales_date']) : '';
+    $branch = isset($_POST['branch']) ? sanitizeInput($_POST['branch']) : '';
+    $brand = isset($_POST['brand']) ? sanitizeInput($_POST['brand']) : '';
+    $model = isset($_POST['model']) ? sanitizeInput($_POST['model']) : '';
+    $qty = isset($_POST['qty']) ? intval($_POST['qty']) : 0;
+    
+    // Validate input
+    if (empty($sales_date) || empty($branch) || empty($brand) || empty($model) || $qty <= 0) {
+        echo json_encode(['success' => false, 'message' => 'All fields are required and quantity must be positive']);
         return;
     }
+    
+    // Check for duplicate entry (excluding current record)
+    $checkStmt = $conn->prepare("SELECT id FROM sales WHERE sales_date = ? AND branch = ? AND brand = ? AND model = ? AND id != ?");
+    $checkStmt->bind_param('ssssi', $sales_date, $branch, $brand, $model, $id);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    
+    if ($checkResult->num_rows > 0) {
+        echo json_encode(['success' => false, 'message' => 'Duplicate entry: A sale with the same date, branch, brand, and model already exists']);
+        return;
+    }
+    
+    $stmt = $conn->prepare("UPDATE sales SET sales_date = ?, branch = ?, brand = ?, model = ?, qty = ? WHERE id = ?");
+    $stmt->bind_param('ssssii', $sales_date, $branch, $brand, $model, $qty, $id);
+    
+    if ($stmt->execute()) {
+        if ($stmt->affected_rows > 0) {
+            echo json_encode(['success' => true, 'message' => 'Sale updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No changes made or sale not found']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error updating sale: ' . $conn->error]);
+    }
+}
 
-    $required = ['sales_date', 'branch', 'brand', 'model', 'qty'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
+function deleteSales() {
+    global $conn;
+    
+    $ids = isset($_POST['ids']) ? $_POST['ids'] : [];
+    
+    if (!is_array($ids)) {
+        $ids = [$ids];
+    }
+    
+    if (empty($ids)) {
+        echo json_encode(['success' => false, 'message' => 'No sales selected for deletion']);
+        return;
+    }
+    
+    // Convert all IDs to integers for safety
+    $ids = array_map('intval', $ids);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $types = str_repeat('i', count($ids));
+    
+    $stmt = $conn->prepare("DELETE FROM sales WHERE id IN ($placeholders)");
+    $stmt->bind_param($types, ...$ids);
+    
+    if ($stmt->execute()) {
+        $deletedCount = $stmt->affected_rows;
+        
+        if ($deletedCount > 0) {
+            echo json_encode(['success' => true, 'message' => "Successfully deleted $deletedCount sale(s)"]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No sales found to delete']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error deleting sales: ' . $conn->error]);
+    }
+}
+
+function getQuotas() {
+    global $conn;
+    
+    $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
+    
+    $sql = "SELECT * FROM sales_quotas WHERE 1=1";
+    $params = [];
+    $types = '';
+    
+    if (!empty($query)) {
+        $sql .= " AND (branch LIKE ? OR brand LIKE ?)";
+        $params[] = "%$query%";
+        $params[] = "%$query%";
+        $types .= 'ss';
+    }
+    
+    $sql .= " ORDER BY year DESC, branch ASC";
+    
+    $stmt = $conn->prepare($sql);
+    if ($types) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $quotas = $result->fetch_all(MYSQLI_ASSOC);
+    
+    echo json_encode([
+        'success' => true,
+        'data' => $quotas
+    ]);
+}
+
+function getQuota() {
+    global $conn;
+    
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    
+    $stmt = $conn->prepare("SELECT * FROM sales_quotas WHERE id = ?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $quota = $result->fetch_assoc();
+    
+    if ($quota) {
+        echo json_encode(['success' => true, 'data' => $quota]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Quota not found']);
+    }
+}
+
+function setQuota() {
+    global $conn;
+    
+    $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    $year = isset($_POST['year']) ? intval($_POST['year']) : 0;
+    $branch = isset($_POST['branch']) ? sanitizeInput($_POST['branch']) : '';
+    $brand = isset($_POST['brand']) ? sanitizeInput($_POST['brand']) : '';
+    $quota = isset($_POST['quota']) ? intval($_POST['quota']) : 0;
+    
+    // Validate input
+    if ($year < 2000 || $year > 2100 || empty($branch) || empty($brand) || $quota <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid input data']);
+        return;
+    }
+    
+    if ($id > 0) {
+        // Update existing quota
+        $stmt = $conn->prepare("UPDATE sales_quotas SET year = ?, branch = ?, brand = ?, quota = ? WHERE id = ?");
+        $stmt->bind_param('issii', $year, $branch, $brand, $quota, $id);
+        
+        if ($stmt->execute()) {
+            if ($stmt->affected_rows > 0) {
+                echo json_encode(['success' => true, 'message' => 'Quota updated successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No changes made or quota not found']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error updating quota: ' . $conn->error]);
+        }
+    } else {
+        // Insert new quota
+        // Check for duplicate first
+        $checkStmt = $conn->prepare("SELECT id FROM sales_quotas WHERE year = ? AND branch = ? AND brand = ?");
+        $checkStmt->bind_param('iss', $year, $branch, $brand);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        
+        if ($checkResult->num_rows > 0) {
+            echo json_encode(['success' => false, 'message' => 'A quota already exists for this year, branch, and brand combination']);
             return;
         }
+        
+        $stmt = $conn->prepare("INSERT INTO sales_quotas (year, branch, brand, quota) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param('issi', $year, $branch, $brand, $quota);
+        
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Quota added successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error adding quota: ' . $conn->error]);
+        }
     }
-
-    $query = "UPDATE sales SET 
-              sales_date = ?,
-              branch = ?,
-              brand = ?,
-              model = ?,
-              qty = ?
-              WHERE id = ?";
-
-    $stmt = $conn->prepare($query);
-    
-    if ($stmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-        return;
-    }
-
-    $stmt->bind_param('ssssii', 
-        $data['sales_date'],
-        $data['branch'],
-        $data['brand'],
-        $data['model'],
-        $data['qty'],
-        $data['id']
-    );
-
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Sale updated successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to update sale: ' . $stmt->error]);
-    }
-
-    $stmt->close();
 }
 
-function handleDeleteSale() {
+function deleteQuota() {
+    global $conn;
+    
+    $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    
+    $stmt = $conn->prepare("DELETE FROM sales_quotas WHERE id = ?");
+    $stmt->bind_param('i', $id);
+    
+    if ($stmt->execute()) {
+        if ($stmt->affected_rows > 0) {
+            echo json_encode(['success' => true, 'message' => 'Quota deleted successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Quota not found']);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error deleting quota: ' . $conn->error]);
+    }
+}
+function getSummaryReport() {
+    global $conn;
+    
+    $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : 'all';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    
+    // Build the query for sales data
+    $salesSql = "SELECT branch, brand, model, SUM(qty) as qty FROM sales WHERE YEAR(sales_date) = ?";
+    $salesParams = [$year];
+    $salesTypes = 'i';
+    
+    if ($month !== 'all') {
+        $salesSql .= " AND MONTH(sales_date) = ?";
+        $salesParams[] = $month;
+        $salesTypes .= 'i';
+    }
+    
+    if ($branch !== 'all') {
+        $salesSql .= " AND branch = ?";
+        $salesParams[] = $branch;
+        $salesTypes .= 's';
+    }
+    
+    $salesSql .= " GROUP BY branch, brand, model";
+    
+    $salesStmt = $conn->prepare($salesSql);
+    $salesStmt->bind_param($salesTypes, ...$salesParams);
+    $salesStmt->execute();
+    $salesResult = $salesStmt->get_result();
+    $salesData = $salesResult->fetch_all(MYSQLI_ASSOC);
+    
+    // Get quotas data - branch level only
+    $quotasSql = "SELECT branch, quota FROM sales_quotas WHERE year = ?";
+    $quotasParams = [$year];
+    $quotasTypes = 'i';
+    
+    if ($branch !== 'all') {
+        $quotasSql .= " AND branch = ?";
+        $quotasParams[] = $branch;
+        $quotasTypes .= 's';
+    }
+    
+    $quotasStmt = $conn->prepare($quotasSql);
+    $quotasStmt->bind_param($quotasTypes, ...$quotasParams);
+    $quotasStmt->execute();
+    $quotasResult = $quotasStmt->get_result();
+    $quotasData = $quotasResult->fetch_all(MYSQLI_ASSOC);
+    
+    // Extract unique brands from sales data
+    $brands = array_unique(array_column($salesData, 'brand'));
+    
+    echo json_encode([
+        'success' => true,
+        'data' => [
+            'sales' => $salesData,
+            'quotas' => $quotasData,
+            'brands' => array_values($brands) // Include brands array in response
+        ]
+    ]);
+}
+
+function uploadSalesData() {
     global $conn;
 
-    $data = $_POST;
+    if (isset($_FILES['file']['name']) && isset($_POST['sales_date'])) {
+        $fileType = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+        $sales_date = sanitizeInput($_POST['sales_date']);
+        
+        // Validate date
+        if (empty($sales_date)) {
+            echo json_encode(['success' => false, 'message' => 'Sales date is required']);
+            return;
+        }
 
-    if (empty($data['ids'])) {
-        echo json_encode(['success' => false, 'message' => 'Sale ID(s) are required']);
-        return;
-    }
+        // Check file extension
+        if (strtolower($fileType) != "csv") {
+            echo json_encode(['success' => false, 'message' => 'Only CSV files are allowed']);
+            return;
+        }
 
-    // Handle both single ID and array of IDs
-    $ids = is_array($data['ids']) ? $data['ids'] : [$data['ids']];
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    
-    $query = "DELETE FROM sales WHERE id IN ($placeholders)";
-    $stmt = $conn->prepare($query);
-    
-    if ($stmt === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
-        return;
-    }
+        $fileName = $_FILES['file']['tmp_name'];
+        
+        if (!file_exists($fileName)) {
+            echo json_encode(['success' => false, 'message' => 'File not found']);
+            return;
+        }
 
-    // Dynamically bind parameters
-    $types = str_repeat('i', count($ids));
-    $stmt->bind_param($types, ...$ids);
+        $file = fopen($fileName, "r");
+        if ($file === false) {
+            echo json_encode(['success' => false, 'message' => 'Failed to open file']);
+            return;
+        }
 
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Sale(s) deleted successfully']);
+        // Get header row (branches)
+        $header = fgetcsv($file);
+        if ($header === false) {
+            echo json_encode(['success' => false, 'message' => 'Empty file']);
+            return;
+        }
+
+        // Remove "MODEL" from header and trim branch names
+        array_shift($header);
+        $branches = array_map('trim', $header);
+
+        $successCount = 0;
+        $errorCount = 0;
+        $errors = [];
+
+        // Begin transaction
+        $conn->begin_transaction();
+
+        try {
+            while (($data = fgetcsv($file)) !== false) {
+                // Skip empty rows
+                if (empty(array_filter($data))) {
+                    continue;
+                }
+
+                $model = sanitizeInput(array_shift($data));
+                if (empty($model)) {
+                    continue;
+                }
+
+                // Process each branch's quantity
+                foreach ($branches as $index => $branch) {
+                    $qty = isset($data[$index]) ? intval($data[$index]) : 0;
+                    
+                    // Skip if quantity is 0 or empty
+                    if ($qty <= 0) {
+                        continue;
+                    }
+
+                    // Check for duplicate entry
+                    $checkStmt = $conn->prepare("SELECT id FROM sales WHERE sales_date = ? AND branch = ? AND model = ?");
+                    $checkStmt->bind_param('sss', $sales_date, $branch, $model);
+                    $checkStmt->execute();
+                    $checkResult = $checkStmt->get_result();
+                    
+                    if ($checkResult->num_rows > 0) {
+                        $errors[] = "Duplicate skipped: $sales_date, $branch, $model";
+                        $errorCount++;
+                        continue;
+                    }
+
+                    // Insert the record
+                    $stmt = $conn->prepare("INSERT INTO sales (sales_date, branch, brand, model, qty) VALUES (?, ?, 'Suzuki', ?, ?)");
+                    $stmt->bind_param('sssi', $sales_date, $branch, $model, $qty);
+                    
+                    if ($stmt->execute()) {
+                        $successCount++;
+                    } else {
+                        $errors[] = "Error inserting: $sales_date, $branch, $model - " . $conn->error;
+                        $errorCount++;
+                    }
+                }
+            }
+
+            $conn->commit();
+            
+            $message = "Successfully imported $successCount records for $sales_date";
+            if ($errorCount > 0) {
+                $message .= " with $errorCount errors";
+            }
+            
+
+            echo json_encode([
+                'success' => true,
+                'message' => $message,
+                'imported' => $successCount,
+                'errors' => $errorCount
+            ]);
+
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo json_encode([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ]);
+        } finally {
+            fclose($file);
+        }
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete sale(s): ' . $stmt->error]);
+        echo json_encode(['success' => false, 'message' => 'Sales date and file are required']);
     }
-
-    $stmt->close();
 }
-
-$conn->close();
 ?>

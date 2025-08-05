@@ -104,16 +104,101 @@ body {
 .logo {
     height: 40px;
 }
+  #summaryReportModal .modal-content {
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+        border-radius: 0.5rem;
+    }
+    
+    #summaryReportModal .modal-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        padding: 1rem 1.5rem;
+    }
+    
+    #summaryReportModal .modal-body {
+        padding: 0;
+    }
+    
+    #summaryReportTable {
+        font-size: 0.875rem;
+    }
+    
+    #summaryReportTable th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+    }
+    
+    #summaryReportTable td, #summaryReportTable th {
+        vertical-align: middle;
+        padding: 0.75rem 1rem;
+    }
+    
+    #summaryReportTable tr:not(:last-child) td {
+        border-bottom: 1px solid #eceef1;
+    }
+    
+    .nav-tabs .nav-link {
+        font-weight: 500;
+        color: #6c757d;
+        border: none;
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #000f71;
+        border-bottom: 3px solid #000f71;
+        background: transparent;
+    }
+    
+    @media (max-width: 991.98px) {
+        #summaryReportModal .modal-dialog {
+            margin: 0.5rem auto;
+        }
+        
+        #summaryReportTable {
+            font-size: 0.8125rem;
+        }
+        
+        .nav-tabs .nav-link {
+            padding: 0.5rem;
+            font-size: 0.8125rem;
+        }
+    }
+    
+    /* Sticky table header */
+    .table-responsive {
+        position: relative;
+    }
+    
+    .table-responsive thead tr:nth-child(1) th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8f9fa;
+    }
 </style>
 </head>
 
 <body>
-    <!-- Navbar-->
-    <div class="container-fluid fixed-top">
+    <!-- Loading Spinner -->
+    <div class="spinner-container" id="loadingSpinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <div class="container-fluid fixed-top bg-white">
         <div class="container topbar bg-primary d-none d-lg-block">
             <div class="d-flex justify-content-between">
                 <div class="top-info ps-2">
-                    <small class="me-3"><i class="fas fa-map-marker-alt me-2 text-primary"></i> <a href="#" class="text-white">1031, Victoria Building, Roxas Avenue, Roxas City, 5800</a></small>
+                    <small class="me-3">
+                        <i class="fas fa-map-marker-alt me-2 text-primary"></i> 
+                        <a href="#" class="text-white">1031, Victoria Building, Roxas Avenue, Roxas City, 5800</a>
+                    </small>
                 </div>
                 <div class="top-link pe-2"></div>
             </div>
@@ -121,9 +206,10 @@ body {
         <div class="container px-0">
             <nav class="navbar navbar-light bg-white navbar-expand-lg">
                 <a href="index.html" class="navbar-brand">
-                    <img src="assets/img/smdi_logo.jpg" alt="Company Logo" class="logo">
+                    <img src="assets/img/smdi_logo.jpg" alt="SMDI Logo" class="logo">
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" 
+                        aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -135,69 +221,101 @@ body {
             </nav>
         </div>
     </div>
-    <!-- Navbar-->
 
-    <!-- Main Container -->
-    <div class="container-fluid py-5" style="margin-top: 120px;">
+    <!-- Main Content -->
+    <main class="container-fluid py-5" style="margin-top: 120px;">
         <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h1 class="h5 mb-0">Sales Records Management</h1>
+            </div>
             <div class="card-body">
-                <h5 class="card-title">Sales Records</h5>
-                <!-- Add this button near your other buttons -->
-<button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#salesQuotaModal">Set Sales Quotas</button>
-                <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#addSaleModal">Add New Sale</button>
-                <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#printOptionsModal">Print Documents</button>
-                <button id="deleteSelectedButton" class="btn btn-primary text-white mb-3">Delete Selected</button>
-                
-                <!-- Search and Sort Options -->
-                <div class="mb-3 d-flex">
-                    <input type="text" id="searchInput" class="form-control me-2" placeholder="Search...">
+                <!-- Action Buttons -->
+                <div class="action-buttons mb-4">
+                    <button class="btn btn-primary text-white mb-2" data-bs-toggle="modal" data-bs-target="#salesQuotaModal">
+                        <i class="fas fa-chart-line me-2"></i>Set Sales Quotas
+                    </button>
+                    <button class="btn btn-primary text-white mb-2" data-bs-toggle="modal" data-bs-target="#addSaleModal">
+                        <i class="fas fa-plus-circle me-2"></i>Add New Sale
+                    </button>
+                    <button id="deleteSelectedButton" class="btn btn-primary text-white mb-2">
+                        <i class="fas fa-trash-alt me-2"></i>Delete Selected
+                    </button>
+                    <button class="btn btn-primary text-white mb-2" data-bs-toggle="modal" data-bs-target="#summaryReportModal">
+                        <i class="fas fa-chart-pie me-2"></i>View Summary Report
+                    </button>
+                    <button class="btn btn-primary text-white mb-2" data-bs-toggle="modal" data-bs-target="#uploadSalesDataModal">
+                        <i class="fas fa-chart-pie me-2"></i>Import
+                    </button>
+                </div>
+
+                <!-- Search and Sort -->
+                <div class="mb-3 search-sort-container d-flex">
+                    <input type="text" id="searchInput" class="form-control me-2" placeholder="Search by branch, brand or model..." 
+                           aria-label="Search sales records">
                     <div class="dropdown">
-                        <button class="btn btn-primary text-white dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            Sort by
+                        <button class="btn btn-primary text-white dropdown-toggle" type="button" id="sortDropdown" 
+                                data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
+                            <i class="fas fa-sort me-1"></i> Sort by
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="sortDropdown">
-                            <li><a class="dropdown-item" href="#" data-sort="date">Date</a></li>
-                            <li><a class="dropdown-item" href="#" data-sort="branch">Branch</a></li>
-                            <li><a class="dropdown-item" href="#" data-sort="brand">Brand</a></li>
+                            <li><a class="dropdown-item" href="#" data-sort="date_desc"><i class="fas fa-sort-numeric-down me-2"></i>Date (Newest First)</a></li>
+                            <li><a class="dropdown-item" href="#" data-sort="date_asc"><i class="fas fa-sort-numeric-up me-2"></i>Date (Oldest First)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" data-sort="branch_asc"><i class="fas fa-sort-alpha-down me-2"></i>Branch (A-Z)</a></li>
+                            <li><a class="dropdown-item" href="#" data-sort="branch_desc"><i class="fas fa-sort-alpha-up me-2"></i>Branch (Z-A)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" data-sort="brand_asc"><i class="fas fa-sort-alpha-down me-2"></i>Brand (A-Z)</a></li>
+                            <li><a class="dropdown-item" href="#" data-sort="brand_desc"><i class="fas fa-sort-alpha-up me-2"></i>Brand (Z-A)</a></li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- Table of Records -->
+                <!-- Sales Table -->
                 <div class="table-responsive">
-                    <table id="salesTable" class="table table-striped">
-                        <thead>
+                    <table id="salesTable" class="table table-striped table-hover" aria-describedby="salesTableDesc">
+                        <caption id="salesTableDesc" class="visually-hidden">List of sales records with date, branch, brand, model and quantity information</caption>
+                        <thead class="table-light">
                             <tr>
-                                <th><input type="checkbox" id="selectAll"></th>
-                                <th>Date</th>
-                                <th>Branch</th>
-                                <th>Brand</th>
-                                <th>Model</th>
-                                <th>Quantity</th>
-                                <th class="no-print">Actions</th>
+                                <th scope="col" style="width: 40px;">
+                                    <input type="checkbox" id="selectAll" aria-label="Select all sales records">
+                                </th>
+                                <th scope="col">Date</th>
+                                <th scope="col">Branch</th>
+                                <th scope="col">Brand</th>
+                                <th scope="col">Model</th>
+                                <th scope="col">Quantity</th>
+                                <th scope="col" class="no-print">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="salesTableBody">
                             <!-- Sales records will be loaded here by AJAX -->
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    Loading sales data...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
                 
-                <!-- Pagination Controls -->
-                <nav aria-label="Page navigation">
+                <!-- Pagination -->
+                <nav aria-label="Sales records pagination">
                     <ul id="paginationControls" class="pagination">
-                        <li id="prevPage" class="page-item">
-                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                        <li id="prevPage" class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+                                <i class="fas fa-chevron-left me-1"></i> Previous
+                            </a>
                         </li>
                         <li id="nextPage" class="page-item">
-                            <a class="page-link" href="#">Next</a>
+                            <a class="page-link" href="#">
+                                Next <i class="fas fa-chevron-right ms-1"></i>
+                            </a>
                         </li>
                     </ul>
                 </nav>
             </div>
         </div>
-    </div>
-
+    </main>
 <!-- Sales Quota Modal -->
 <div class="modal fade" id="salesQuotaModal" tabindex="-1" aria-labelledby="salesQuotaModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -270,6 +388,141 @@ body {
     </div>
 </div>
 
+<div class="modal fade" id="summaryReportModal" tabindex="-1" aria-labelledby="summaryReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content border-0">
+            <!-- Modal Header -->
+            <div class="modal-header bg-primary text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-chart-bar fs-4 me-3"></i>
+                    <div>
+                        <h5 class="modal-title mb-0 text-white" id="summaryReportModalLabel">Sales Performance Dashboard</h5>
+                        <small class="opacity-75">Comprehensive sales analysis and reporting</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-0">
+                <!-- Control Panel -->
+                <div class="sticky-top bg-white p-3 border-bottom shadow-sm" style="z-index: 1050; top: 0;">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-3">
+                            <label for="summaryYear" class="form-label small text-muted mb-1">Fiscal Year</label>
+                            <select class="form-select" id="summaryYear">
+                                <option value="">Select Year</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="summaryBranchFilter" class="form-label small text-muted mb-1">Branch Selection</label>
+                            <select class="form-select" id="summaryBranchFilter">
+                                <option value="all">All Locations</option>
+                                <!-- Add branch options here -->
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="fromDate" class="form-label small text-muted mb-1">From Date</label>
+                            <input type="date" class="form-control" id="fromDate">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="toDate" class="form-label small text-muted mb-1">To Date</label>
+                            <input type="date" class="form-control" id="toDate">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <button id="generateSummaryBtn" class="btn btn-primary text-white w-100">
+                                <i class="fas fa-sync-alt me-2"></i>Generate Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+<div class="tab-pane fade show active" id="performance-tab-pane" role="tabpanel">
+    <div class="table-responsive">
+        <table id="summaryReportTable" class="table table-striped table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Branch</th>
+                    <th>Total Sales</th>
+                    <th>Quota</th>
+                    <th>% of Quota</th>
+                </tr>
+            </thead>
+            <tbody id="summaryReportBody">
+                <!-- Data will be loaded here -->
+            </tbody>
+            <tfoot>
+                <tr class="table-primary">
+                    <th>Grand Total</th>
+                    <th id="grandTotalSales">0</th>
+                    <th id="grandTotalQuota">0</th>
+                    <th id="grandTotalPercentage">0%</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-light">
+                <div class="d-flex justify-content-between w-100 align-items-center">
+                    <div class="text-muted small">
+                        <i class="fas fa-database me-1"></i>
+                        <span id="recordCount">0 records</span>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                        <div class="btn-group">
+                            <button type="button" id="exportExcelBtn" class="btn btn-success">
+                                <i class="fas fa-file-excel me-1"></i>Excel
+                            </button>
+                            <button type="button" id="exportPdfBtn" class="btn btn-danger">
+                                <i class="fas fa-file-pdf me-1"></i>PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- File Upload Modal -->
+<div class="modal fade" id="uploadSalesDataModal" tabindex="-1" aria-labelledby="uploadSalesDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadSalesDataModalLabel">Upload Sales Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    CSV format: First column = Model, subsequent columns = Branch quantities
+                </div>
+                <form id="uploadSalesDataForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="salesDate" class="form-label">Sales Date</label>
+                        <input type="date" class="form-control" id="salesDate" name="sales_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary text-white">
+                            <i class="fas fa-upload me-2"></i>Upload
+                        </button>
+                        <a href="api/download_template.php" class="btn btn-primary text-white">
+                            <i class="fas fa-download me-2"></i>Download Template
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- Add Sale Modal -->
     <div class="modal fade" id="addSaleModal" tabindex="-1" aria-labelledby="addSaleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -292,26 +545,26 @@ body {
                                 <select class="form-select" id="branch" required>
                                     <option value="RXS-1">RXS-1</option>
                                     <option value="RXS-2">RXS-2</option>
-                                    <option value="ANTIQUE-1">ANTIQUE-1</option>
-                                    <option value="ANTIQUE-2">ANTIQUE-2</option>
-                                    <option value="DELGADO-1">DELGADO-1</option>
-                                    <option value="DELGADO-2">DELGADO-2</option>
-                                    <option value="JARO-1">JARO-1</option>
-                                    <option value="JARO-2">JARO-2</option>
-                                    <option value="KALIBO-1">KALIBO-1</option>
-                                    <option value="KALIBO-2">KALIBO-2</option>
-                                    <option value="ALTAVAS">ALTAVAS</option>
+                                    <option value="ANT-1">ANTIQUE-1</option>
+                                    <option value="ANT-2">ANTIQUE-2</option>
+                                    <option value="DEL-1">DELGADO-1</option>
+                                    <option value="DEL-2">DELGADO-2</option>
+                                    <option value="JAR-1">JARO-1</option>
+                                    <option value="JAR-2">JARO-2</option>
+                                    <option value="KAL-1">KALIBO-1</option>
+                                    <option value="KAL-2">KALIBO-2</option>
+                                    <option value="ALTA">ALTAVAS</option>
                                     <option value="EMAP">EMAP</option>
-                                    <option value="CULASI">CULASI</option>
-                                    <option value="BACOLOD">BACOLOD</option>
-                                    <option value="PASSI-1">PASSI-1</option>
-                                    <option value="PASSI-2">PASSI-2</option>
-                                    <option value="BALASAN">BALASAN</option>
-                                    <option value="GUIMARAS">GUIMARAS</option>
-                                    <option value="PEMDI">PEMDI</option>
-                                    <option value="EEMSI">EEMSI</option>
-                                    <option value="AJUY">AJUY</option>
-                                    <option value="BAILAN">BAILAN</option>
+                                    <option value="CUL">CULASI</option>
+                                    <option value="BAC">BACOLOD</option>
+                                    <option value="PAS-1">PASSI-1</option>
+                                    <option value="PAS-2">PASSI-2</option>
+                                    <option value="BAL">BALASAN</option>
+                                    <option value="GUA">GUIMARAS</option>
+                                    <option value="PEM">PEMDI</option>
+                                    <option value="EEM">EEMSI</option>
+                                    <option value="AJU">AJUY</option>
+                                    <option value="BAIL">BAILAN</option>
                                     <option value="MINDORO MB">MINDORO MB</option>
                                     <option value="MINDORO 3S">MINDORO 3S</option>
                                     <option value="MANSALAY">MANSALAY</option>
@@ -538,682 +791,6 @@ body {
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script>
-    $(document).ready(function() {
-        let selectedRecordIds = [];
-        let saleIdToDelete = null;
-        let currentPage = 1;
-
-        // Define the models for each brand
-        const brandModels = {
-            "Suzuki": ["GSX-250RL/FRLX", "GSX-150", "BIGBIKE", "GSX150FRF NEW", "GSX-S150", "UX110NER", "UB125", "AVENIS", "FU150", "FU150-FI", "FW110D", "FW110SD/SC", "DS250RL", "FJ110 LB-2", "FW110D(SMASH FI)", "FJ110LX", "UB125LNM(NEW)", "UK110", "UX110", "UK125", "GD110"],
-            "Honda": ["GIORNO+", "CCG 125", "CFT125MRCS", "AFB110MDJ", "AFS110MDJ", "AFB110MDH", "CFT125MSJ", "AFS110MCDE", "MRCP", "DIO", "MSM", "MRP", "MRS", "CFT125MRCJ", "MSP", "MSS", "AFP110DFP", "MRCP", "AFP110DFR", "ZN125", "PCX160NEW", "PCX160", "AFB110MSJ", "AFP110SFR", "AFP110SFP", "CBR650", "CB500", "CB650R", "GL150R", "CBR500", "AIRBLADE 150", "AIRBLADE160", "ADV160", "CBR150RMIV/RAP", "BEAT-CSFN/FR/R3/FS/3", "CB150X", "WINNER X", "CRF-150", "CRF300", "CMX500", "XR150", "ACB160", "ACB125"],
-            "Yamaha": ["MIO SPORTY", "MIOI125", "MIO GEAR", "SNIPER", "MIO GRAVIS", "YTX", "YZF R3", "FAZZIO", "XSR", "VEGA", "AEROX", "XTZ", "NMAX", "PG-1 BRN1", "MT-15", "FZ", "R15M BNE1/2", "XMAX", "WR155", "SEROW"],
-            "Kawasaki": ["CT100 A", "CT100B", "CT125", "CA100AA NEW", "BC175H/MS", "BC175J/NN/SN", "BC175 III ELECT.", "BC175 III KICK", "BRUSKY", "NS125", "ELIMINATOR SE", "CT100B", "NINJA ZX 4RR", "Z900 SE", "KLX140", "KLX150", "CT150BA", "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"]
-        };
-
-        // Handle brand change to update models dropdown
-        $('#brand').change(function() {
-            updateModelsDropdown($(this).val(), $('#model'));
-        });
-
-        // Handle edit brand change
-        $('#editBrand').change(function() {
-            updateModelsDropdown($(this).val(), $('#editmodel'));
-        });
-
-        function updateModelsDropdown(brand, $dropdown) {
-            $dropdown.empty();
-            if (brand && brandModels[brand]) {
-                brandModels[brand].forEach(model => {
-                    $dropdown.append($('<option>', {
-                        value: model,
-                        text: model
-                    }));
-                });
-            }
-        }
-
-        // Add these functions to your existing JavaScript code
-
-function populateYearDropdown() {
-    const currentYear = new Date().getFullYear();
-    const $yearDropdown = $('#quotaYear');
-    $yearDropdown.empty();
-    
-    // Add options for current year and next 5 years
-    for (let i = 0; i < 6; i++) {
-        const year = currentYear + i;
-        $yearDropdown.append($('<option>', {
-            value: year,
-            text: year
-        }));
-    }
-}
-
-function loadQuotas() {
-    $.ajax({
-        url: 'api/sales_data_management.php',
-        method: 'GET',
-        data: { action: 'get_quotas' },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                $('#quotasTableBody').html(generateQuotaTableRows(response.data));
-            } else {
-                showErrorModal(response.message || 'Failed to load quotas');
-            }
-        },
-        error: function(xhr, status, error) {
-            showErrorModal('Error loading quotas: ' + error);
-        }
-    });
-}
-
-function generateQuotaTableRows(quotas) {
-    let rows = '';
-    quotas.forEach(quota => {
-        rows += `
-            <tr data-id="${quota.id}">
-                <td>${quota.year}</td>
-                <td>${quota.branch}</td>
-                <td>${quota.quota}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-danger delete-quota-button">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-    return rows;
-}
-
-// Handle quota form submission
-$('#salesQuotaForm').submit(function(e) {
-    e.preventDefault();
-    
-    const formData = {
-        action: 'set_quota',
-        id: $('#quotaId').val(),
-        year: $('#quotaYear').val(),
-        branch: $('#quotaBranch').val(),
-        quota: $('#quotaAmount').val()
-    };
-    
-    $.ajax({
-        url: 'api/sales_data_management.php',
-        method: 'POST',
-        data: formData,
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                $('#quotaSuccessMessage').text(response.message || 'Quota saved successfully!').show();
-                loadQuotas($('#quotaSearchInput').val());
-                
-                // Hide the form after successful save
-                resetQuotaForm();
-                
-                setTimeout(() => {
-                    $('#quotaSuccessMessage').hide();
-                }, 3000);
-            } else {
-                $('#quotaErrorMessage').text(response.message || 'Failed to save quota').show();
-                setTimeout(() => {
-                    $('#quotaErrorMessage').hide();
-                }, 3000);
-            }
-        },
-        error: function(xhr, status, error) {
-            $('#quotaErrorMessage').text('Error: ' + error).show();
-            setTimeout(() => {
-                $('#quotaErrorMessage').hide();
-            }, 3000);
-        }
-    });
-});
-
-// Handle delete quota button click
-$(document).on('click', '.delete-quota-button', function() {
-    const quotaId = $(this).closest('tr').data('id');
-    
-    if (confirm('Are you sure you want to delete this quota?')) {
-        $.ajax({
-            url: 'api/sales_data_management.php',
-            method: 'POST',
-            data: { 
-                action: 'delete_quota',
-                id: quotaId
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    loadQuotas();
-                    showSuccessModal('Quota deleted successfully!');
-                } else {
-                    showErrorModal(response.message || 'Failed to delete quota');
-                }
-            },
-            error: function(xhr, status, error) {
-                showErrorModal('Error deleting quota: ' + error);
-            }
-        });
-    }
-});
-
-// Initialize quota modal when shown
-$('#salesQuotaModal').on('shown.bs.modal', function() {
-    populateYearDropdown();
-    loadQuotas();
-});
-
-        // Initialize models dropdown on page load
-        updateModelsDropdown($('#brand').val(), $('#model'));
-
-        function loadSales(query = '', page = currentPage, sort = '') {
-            $.ajax({
-                url: 'api/sales_data_management.php',
-                method: 'GET',
-                data: { 
-                    action: 'get_sales',
-                    query: query,
-                    page: page,
-                    sort: sort
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $('#salesTableBody').html(generateTableRows(response.data));
-                        updatePaginationControls(response.totalPages);
-                    } else {
-                        showErrorModal(response.message || 'Failed to load sales data');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorModal('Error loading sales: ' + error);
-                }
-            });
-        }
-
-        function generateTableRows(sales) {
-            let rows = '';
-            sales.forEach(sale => {
-                rows += `
-                    <tr data-id="${sale.id}">
-                        <td><input type="checkbox" name="recordCheckbox" value="${sale.id}"></td>
-                        <td>${new Date(sale.sales_date).toLocaleDateString()}</td>
-                        <td>${sale.branch}</td>
-                        <td>${sale.brand}</td>
-                        <td>${sale.model}</td>
-                        <td>${sale.qty}</td>
-                        <td class="no-print">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary edit-button">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-outline-danger delete-button">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-            return rows;
-        }
-
-        function updatePaginationControls(totalPages) {
-            let paginationHtml = '';
-            
-            // Previous button
-            paginationHtml += `
-                <li id="prevPage" class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                </li>
-            `;
-            
-            // Page numbers
-            for (let i = 1; i <= totalPages; i++) {
-                paginationHtml += `
-                    <li class="page-item ${currentPage === i ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                    </li>
-                `;
-            }
-            
-            // Next button
-            paginationHtml += `
-                <li id="nextPage" class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="#">Next</a>
-                </li>
-            `;
-            
-            $('#paginationControls').html(paginationHtml);
-        }
-
-        // Initial load of sales
-        loadSales();
-
-        // Search input event
-        $('#searchInput').on('input', function() {
-            const query = $(this).val();
-            currentPage = 1; // Reset to first page when searching
-            loadSales(query);
-        });
-
-        // Pagination click events
-        $(document).on('click', '.page-link', function(e) {
-            e.preventDefault();
-            if ($(this).parent().hasClass('disabled')) return;
-            
-            if ($(this).attr('id') === 'prevPage') {
-                currentPage--;
-            } else if ($(this).attr('id') === 'nextPage') {
-                currentPage++;
-            } else {
-                currentPage = parseInt($(this).data('page'));
-            }
-            
-            loadSales($('#searchInput').val(), currentPage);
-        });
-
-        // Sorting functionality
-        $('.dropdown-item').on('click', function(e) {
-            e.preventDefault();
-            const sortOption = $(this).data('sort');
-            currentPage = 1; // Reset to first page when sorting
-            loadSales($('#searchInput').val(), currentPage, sortOption);
-        });
-
-        // Handle add sale form submission
-        $('#addSaleForm').submit(function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                action: 'add_sale',
-                sales_date: $('#saleDate').val(),
-                branch: $('#branch').val(),
-                brand: $('#brand').val(),
-                model: $('#model').val(),
-                qty: $('#quantity').val()
-            };
-            
-            $.ajax({
-                url: 'api/sales_data_management.php',
-                method: 'POST',
-                data: formData,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#addSaleModal').modal('hide');
-                        $('#addSaleForm')[0].reset();
-                        loadSales();
-                        showSuccessModal('Sale added successfully!');
-                    } else {
-                        if (response.message.includes('duplicate')) {
-                            showDuplicateErrorModal(response.message);
-                        } else {
-                            showErrorModal(response.message || 'Failed to add sale');
-                        }
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorModal('Error: ' + error);
-                }
-            });
-        });
-
-        // Handle edit button click
-        $(document).on('click', '.edit-button', function() {
-            const saleId = $(this).closest('tr').data('id');
-            
-            $.ajax({
-                url: 'api/sales_data_management.php',
-                method: 'GET',
-                data: { action: 'get_sale', id: saleId },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.data) {
-                        const sale = response.data;
-                        $('#editSaleId').val(sale.id);
-                        $('#editSaleDate').val(sale.sales_date);
-                        $('#editBranch').val(sale.branch);
-                        $('#editBrand').val(sale.brand);
-                        $('#editmodel').val(sale.model);
-                        $('#editQuantity').val(sale.qty);
-                        
-                        // Update models dropdown for the selected brand
-                        updateModelsDropdown(sale.brand, $('#editmodel'));
-                        $('#editmodel').val(sale.model);
-                        
-                        $('#editSaleModal').modal('show');
-                    } else {
-                        showErrorModal(response.message || 'Failed to load sale data');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorModal('Error loading sale: ' + error);
-                }
-            });
-        });
-
-        // Handle edit sale form submission
-        $('#editSaleForm').submit(function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                action: 'update_sale',
-                id: $('#editSaleId').val(),
-                sales_date: $('#editSaleDate').val(),
-                branch: $('#editBranch').val(),
-                brand: $('#editBrand').val(),
-                model: $('#editmodel').val(),
-                qty: $('#editQuantity').val()
-            };
-            
-            $.ajax({
-                url: 'api/sales_data_management.php',
-                method: 'POST',
-                data: formData,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#editSaleModal').modal('hide');
-                        loadSales();
-                        showSuccessModal('Sale updated successfully!');
-                    } else {
-                        showErrorModal(response.message || 'Failed to update sale');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorModal('Error updating sale: ' + error);
-                }
-            });
-        });
-
-        // Handle delete button click
-        $(document).on('click', '.delete-button', function() {
-            saleIdToDelete = $(this).closest('tr').data('id');
-            $('#confirmationModal').modal('show');
-        });
-
-        // Handle delete selected button click
-        $('#deleteSelectedButton').on('click', function() {
-            if (selectedRecordIds.length > 0) {
-                $('#confirmationModal').modal('show');
-            } else {
-                showWarningModal('No sales selected for deletion.');
-            }
-        });
-
-        // Handle checkbox changes
-        $('#salesTableBody').on('change', 'input[name="recordCheckbox"]', function() {
-            updateSelectedRecords();
-        });
-
-        // Handle select all checkbox
-        $('#selectAll').on('change', function() {
-            const isChecked = $(this).is(':checked');
-            $('#salesTableBody input[name="recordCheckbox"]').prop('checked', isChecked);
-            updateSelectedRecords();
-        });
-
-        function updateSelectedRecords() {
-            selectedRecordIds = [];
-            $('#salesTableBody input[name="recordCheckbox"]:checked').each(function() {
-                selectedRecordIds.push($(this).val());
-            });
-        }
-
-        // Handle confirm delete button click
-        $('#confirmDeleteBtn').on('click', function() {
-            const idsToDelete = saleIdToDelete ? [saleIdToDelete] : selectedRecordIds;
-            
-            if (idsToDelete.length > 0) {
-                $.ajax({
-                    url: 'api/sales_data_management.php',
-                    method: 'POST',
-                    data: { 
-                        action: 'delete_sale',
-                        ids: idsToDelete
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            $('#confirmationModal').modal('hide');
-                            loadSales();
-                            showSuccessModal(response.message || 'Sales deleted successfully!');
-                        } else {
-                            showErrorModal(response.message || 'Failed to delete sales');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        showErrorModal('Error deleting sales: ' + error);
-                    },
-                    complete: function() {
-                        saleIdToDelete = null;
-                        selectedRecordIds = [];
-                        $('#selectAll').prop('checked', false);
-                    }
-                });
-            }
-        });
-
-        // Print options functionality
-        $('#sortBy').on('change', function() {
-            const selectedValue = $(this).val();
-            
-            // Hide all range selectors
-            $('#dateRange').hide();
-            $('#branchSelection').hide();
-            
-            // Show the appropriate range based on the selected value
-            if (selectedValue === 'dateRange') {
-                $('#dateRange').show();
-            } else if (selectedValue === 'branch') {
-                $('#branchSelection').show();
-            }
-        });
-
-        // Handle print confirmation
-        $('#confirmPrint').on('click', function() {
-    const fromDate = $('#fromDate').val();
-    const toDate = $('#toDate').val();
-    const branch = $('#branchSelect').val();
-    const outputFormat = $('#outputFormat').val();
-
-    if (!fromDate || !toDate) {
-        showWarningModal('Please select both From and To dates.');
-        return;
-    }
-
-    // Redirect to generate report script
-    window.location.href = `api/generate_sales_report.php?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&branch=${encodeURIComponent(branch)}&format=${encodeURIComponent(outputFormat)}`;
-    
-    $('#printOptionsModal').modal('hide');
-});
-
-        // Modal helper functions
-        function showSuccessModal(message) {
-            $('#successMessage').text(message);
-            $('#successModal').modal('show');
-            setTimeout(() => {
-                $('#successModal').modal('hide');
-            }, 2000);
-        }
-
-        function showErrorModal(message) {
-            $('#errorMessage').text(message);
-            $('#errorMessage').show();
-            setTimeout(() => {
-                $('#errorMessage').hide();
-            }, 3000);
-        }
-
-        function showDuplicateErrorModal(message) {
-            $('#duplicateErrorMessage').text(message);
-            $('#duplicateErrorModal').modal('show');
-        }
-
-        function showWarningModal(message) {
-            $('#warningMessage').text(message);
-            $('#warningModal').modal('show');
-        }
-    });
-function populateYearDropdown() {
-    const currentYear = new Date().getFullYear();
-    const $yearDropdown = $('#quotaYear');
-    $yearDropdown.empty();
-    
-    // Add options for current year and next 5 years
-    for (let i = 0; i < 6; i++) {
-        const year = currentYear + i;
-        $yearDropdown.append($('<option>', {
-            value: year,
-            text: year
-        }));
-    }
-}
-
-function populateBranchDropdown() {
-    const branches = [
-        "RXS-1", "RXS-2", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
-        "JARO-1", "JARO-2", "KALIBO-1", "KALIBO-2", "ALTAVAS", "EMAP", "CULASI",
-        "BACOLOD", "PASSI-1", "PASSI-2", "BALASAN", "GUIMARAS", "PEMDI", "EEMSI",
-        "AJUY", "BAILAN", "MINDORO MB", "MINDORO 3S", "MANSALAY", "K-RIDERS",
-        "IBAJAY", "NUMANCIA", "HEADOFFICE", "CEBU", "GT"
-    ];
-    
-    const $branchDropdown = $('#quotaBranch');
-    $branchDropdown.empty();
-    
-    branches.forEach(branch => {
-        $branchDropdown.append($('<option>', {
-            value: branch,
-            text: branch
-        }));
-    });
-}
-
-function resetQuotaForm() {
-    $('#quotaId').val('');
-    $('#quotaYear').val('');
-    $('#quotaBranch').val('');
-    $('#quotaAmount').val('');
-    $('#quotaFormContainer').hide();
-    $('#quotaErrorMessage').hide();
-    $('#quotaSuccessMessage').hide();
-}
-
-function showQuotaForm() {
-    $('#quotaFormContainer').show();
-    $('#quotaFormContainer')[0].scrollIntoView({ behavior: 'smooth' });
-}
-
-// Handle add quota button click
-$('#addQuotaBtn').on('click', function() {
-    resetQuotaForm();
-    showQuotaForm();
-});
-
-// Handle cancel button click
-$('#cancelQuotaBtn').on('click', function() {
-    resetQuotaForm();
-});
-
-// Handle edit quota button click
-$(document).on('click', '.edit-quota-button', function() {
-    const quotaId = $(this).closest('tr').data('id');
-    
-    $.ajax({
-        url: 'api/sales_data_management.php',
-        method: 'GET',
-        data: { action: 'get_quota', id: quotaId },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success && response.data) {
-                const quota = response.data;
-                $('#quotaId').val(quota.id);
-                $('#quotaYear').val(quota.year);
-                $('#quotaBranch').val(quota.branch);
-                $('#quotaAmount').val(quota.quota);
-                showQuotaForm();
-            } else {
-                showErrorModal(response.message || 'Failed to load quota data');
-            }
-        },
-        error: function(xhr, status, error) {
-            showErrorModal('Error loading quota: ' + error);
-        }
-    });
-});
-
-// Handle quota search
-$('#quotaSearchBtn').on('click', function() {
-    const query = $('#quotaSearchInput').val();
-    loadQuotas(query);
-});
-
-$('#quotaSearchInput').on('keyup', function(e) {
-    if (e.key === 'Enter') {
-        const query = $(this).val();
-        loadQuotas(query);
-    }
-});
-
-function loadQuotas(query = '') {
-    $.ajax({
-        url: 'api/sales_data_management.php',
-        method: 'GET',
-        data: { 
-            action: 'get_quotas',
-            query: query
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                $('#quotasTableBody').html(generateQuotaTableRows(response.data));
-            } else {
-                showErrorModal(response.message || 'Failed to load quotas');
-            }
-        },
-        error: function(xhr, status, error) {
-            showErrorModal('Error loading quotas: ' + error);
-        }
-    });
-}
-
-function generateQuotaTableRows(quotas) {
-    let rows = '';
-    quotas.forEach(quota => {
-        rows += `
-            <tr data-id="${quota.id}">
-                <td>${quota.year}</td>
-                <td>${quota.branch}</td>
-                <td>${quota.quota}</td>
-                <td>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary edit-quota-button">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-danger delete-quota-button">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    });
-    return rows;
-}
-
-// Initialize quota modal when shown
-$('#salesQuotaModal').on('shown.bs.modal', function() {
-    populateYearDropdown();
-    populateBranchDropdown();
-    loadQuotas();
-    resetQuotaForm();
-});
-    </script>
+   <script src="js/sales_dashboard.js"></script>
 </body>
 </html>
