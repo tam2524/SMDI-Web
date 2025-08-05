@@ -407,57 +407,65 @@ body {
             <div class="modal-body p-0">
                 <!-- Control Panel -->
                 <div class="sticky-top bg-white p-3 border-bottom shadow-sm" style="z-index: 1050; top: 0;">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-12 col-md-3">
-                            <label for="summaryYear" class="form-label small text-muted mb-1">Fiscal Year</label>
-                            <select class="form-select" id="summaryYear">
-                                <option value="">Select Year</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <label for="summaryBranchFilter" class="form-label small text-muted mb-1">Branch Selection</label>
-                            <select class="form-select" id="summaryBranchFilter">
-                                <option value="all">All Locations</option>
-                                <!-- Add branch options here -->
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <label for="fromDate" class="form-label small text-muted mb-1">From Date</label>
-                            <input type="date" class="form-control" id="fromDate">
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <label for="toDate" class="form-label small text-muted mb-1">To Date</label>
-                            <input type="date" class="form-control" id="toDate">
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <button id="generateSummaryBtn" class="btn btn-primary text-white w-100">
-                                <i class="fas fa-sync-alt me-2"></i>Generate Report
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    <div class="row g-3 align-items-end">
+        <!-- First row: Filters -->
+        <div class="col-12 col-md-3">
+            <label for="summaryYear" class="form-label small text-muted mb-1">Fiscal Year</label>
+            <select class="form-select" id="summaryYear">
+                <option value="">Select Year</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-3">
+            <label for="summaryBranchFilter" class="form-label small text-muted mb-1">Branch Selection</label>
+            <select class="form-select" id="summaryBranchFilter">
+                <option value="all">All Locations</option>
+                <!-- Branch options will be populated by JavaScript -->
+            </select>
+        </div>
+        <div class="col-12 col-md-3">
+            <label for="fromDate" class="form-label small text-muted mb-1">From Date</label>
+            <input type="date" class="form-control" id="fromDate">
+        </div>
+        <div class="col-12 col-md-3">
+            <label for="toDate" class="form-label small text-muted mb-1">To Date</label>
+            <input type="date" class="form-control" id="toDate">
+        </div>
+        
+        <!-- Second row: Action buttons -->
+        <div class="col-12 col-md-4">
+            <button id="generateSummaryBtn" class="btn btn-primary text-white w-100">
+                <i class="fas fa-sync-alt me-2"></i>Generate Report
+            </button>
+        </div>
+        <div class="col-12 col-md-8 d-flex justify-content-end">
+            <div class="btn-group me-2">
+                <button type="button" id="exportExcelBtn" class="btn btn-success">
+                    <i class="fas fa-file-excel me-1"></i>Excel
+                </button>
+                <button type="button" id="exportPdfBtn" class="btn btn-danger">
+                    <i class="fas fa-file-pdf me-1"></i>PDF
+                </button>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-times me-1"></i>Close
+            </button>
+        </div>
+    </div>
+</div>
 <div class="tab-pane fade show active" id="performance-tab-pane" role="tabpanel">
     <div class="table-responsive">
         <table id="summaryReportTable" class="table table-striped table-hover">
             <thead class="table-light">
                 <tr>
                     <th>Branch</th>
-                    <th>Total Sales</th>
-                    <th>Quota</th>
-                    <th>% of Quota</th>
+                    <th>Model</th>
+                    <th>Quantity</th>
+                    <th>Brand</th>
                 </tr>
             </thead>
             <tbody id="summaryReportBody">
                 <!-- Data will be loaded here -->
             </tbody>
-            <tfoot>
-                <tr class="table-primary">
-                    <th>Grand Total</th>
-                    <th id="grandTotalSales">0</th>
-                    <th id="grandTotalQuota">0</th>
-                    <th id="grandTotalPercentage">0%</th>
-                </tr>
-            </tfoot>
         </table>
     </div>
 </div>
@@ -468,19 +476,7 @@ body {
                         <i class="fas fa-database me-1"></i>
                         <span id="recordCount">0 records</span>
                     </div>
-                    <div>
-                        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>Close
-                        </button>
-                        <div class="btn-group">
-                            <button type="button" id="exportExcelBtn" class="btn btn-success">
-                                <i class="fas fa-file-excel me-1"></i>Excel
-                            </button>
-                            <button type="button" id="exportPdfBtn" class="btn btn-danger">
-                                <i class="fas fa-file-pdf me-1"></i>PDF
-                            </button>
-                        </div>
-                    </div>
+                   
                 </div>
             </div>
         </div>

@@ -191,7 +191,7 @@ function updateSale() {
     $qty = isset($_POST['qty']) ? intval($_POST['qty']) : 0;
     
     // Validate input
-    if (empty($sales_date) || empty($branch) || empty($brand) || empty($model) || $qty <= 0) {
+    if (empty($sales_date) || empty($branch) || empty($model) || $qty <= 0) {
         echo json_encode(['success' => false, 'message' => 'All fields are required and quantity must be positive']);
         return;
     }
@@ -316,16 +316,16 @@ function setQuota() {
     $quota = isset($_POST['quota']) ? intval($_POST['quota']) : 0;
     
     // Validate input
-    if ($year < 2000 || $year > 2100 || empty($branch) || empty($brand) || $quota <= 0) {
+    if ($year < 2000 || $year > 2100 || empty($branch)|| $quota <= 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid input data']);
         return;
     }
     
     if ($id > 0) {
         // Update existing quota
-        $stmt = $conn->prepare("UPDATE sales_quotas SET year = ?, branch = ?, brand = ?, quota = ? WHERE id = ?");
-        $stmt->bind_param('issii', $year, $branch, $brand, $quota, $id);
-        
+        $stmt = $conn->prepare("UPDATE sales_quotas SET year = ?, branch = ?,  quota = ? WHERE id = ?");
+        $stmt->bind_param('issi', $year, $branch, $quota, $id);
+
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
                 echo json_encode(['success' => true, 'message' => 'Quota updated successfully']);
@@ -338,8 +338,8 @@ function setQuota() {
     } else {
         // Insert new quota
         // Check for duplicate first
-        $checkStmt = $conn->prepare("SELECT id FROM sales_quotas WHERE year = ? AND branch = ? AND brand = ?");
-        $checkStmt->bind_param('iss', $year, $branch, $brand);
+        $checkStmt = $conn->prepare("SELECT id FROM sales_quotas WHERE year = ? AND branch = ?");
+        $checkStmt->bind_param('is', $year, $branch);
         $checkStmt->execute();
         $checkResult = $checkStmt->get_result();
         
@@ -347,10 +347,10 @@ function setQuota() {
             echo json_encode(['success' => false, 'message' => 'A quota already exists for this year, branch, and brand combination']);
             return;
         }
-        
-        $stmt = $conn->prepare("INSERT INTO sales_quotas (year, branch, brand, quota) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param('issi', $year, $branch, $brand, $quota);
-        
+
+        $stmt = $conn->prepare("INSERT INTO sales_quotas (year, branch, quota) VALUES (?, ?, ?)");
+        $stmt->bind_param('isi', $year, $branch, $quota);
+
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Quota added successfully']);
         } else {
@@ -381,64 +381,55 @@ function getSummaryReport() {
     global $conn;
     
     $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
-    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : 'all';
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    $fromDate = isset($_GET['fromDate']) ? sanitizeInput($_GET['fromDate']) : '';
+    $toDate = isset($_GET['toDate']) ? sanitizeInput($_GET['toDate']) : '';
     
-    // Build the query for sales data
-    $salesSql = "SELECT branch, brand, model, SUM(qty) as qty FROM sales WHERE YEAR(sales_date) = ?";
-    $salesParams = [$year];
-    $salesTypes = 'i';
+    // Build the query
+    $sql = "SELECT branch, brand, model, SUM(qty) as qty FROM sales WHERE 1=1";
+    $params = [];
+    $types = '';
     
-    if ($month !== 'all') {
-        $salesSql .= " AND MONTH(sales_date) = ?";
-        $salesParams[] = $month;
-        $salesTypes .= 'i';
+    // Add year filter if provided
+    if ($year > 0) {
+        $sql .= " AND YEAR(sales_date) = ?";
+        $params[] = $year;
+        $types .= 'i';
     }
     
+    // Add branch filter if not 'all'
     if ($branch !== 'all') {
-        $salesSql .= " AND branch = ?";
-        $salesParams[] = $branch;
-        $salesTypes .= 's';
+        $sql .= " AND branch = ?";
+        $params[] = $branch;
+        $types .= 's';
     }
     
-    $salesSql .= " GROUP BY branch, brand, model";
-    
-    $salesStmt = $conn->prepare($salesSql);
-    $salesStmt->bind_param($salesTypes, ...$salesParams);
-    $salesStmt->execute();
-    $salesResult = $salesStmt->get_result();
-    $salesData = $salesResult->fetch_all(MYSQLI_ASSOC);
-    
-    // Get quotas data - branch level only
-    $quotasSql = "SELECT branch, quota FROM sales_quotas WHERE year = ?";
-    $quotasParams = [$year];
-    $quotasTypes = 'i';
-    
-    if ($branch !== 'all') {
-        $quotasSql .= " AND branch = ?";
-        $quotasParams[] = $branch;
-        $quotasTypes .= 's';
+    // Add date range filter if provided
+    if (!empty($fromDate) && !empty($toDate)) {
+        $sql .= " AND sales_date BETWEEN ? AND ?";
+        $params[] = $fromDate;
+        $params[] = $toDate;
+        $types .= 'ss';
     }
     
-    $quotasStmt = $conn->prepare($quotasSql);
-    $quotasStmt->bind_param($quotasTypes, ...$quotasParams);
-    $quotasStmt->execute();
-    $quotasResult = $quotasStmt->get_result();
-    $quotasData = $quotasResult->fetch_all(MYSQLI_ASSOC);
+    $sql .= " GROUP BY branch, brand, model ORDER BY branch, brand, model";
     
-    // Extract unique brands from sales data
-    $brands = array_unique(array_column($salesData, 'brand'));
+    $stmt = $conn->prepare($sql);
+    if ($types) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $salesData = $result->fetch_all(MYSQLI_ASSOC);
     
     echo json_encode([
         'success' => true,
         'data' => [
             'sales' => $salesData,
-            'quotas' => $quotasData,
-            'brands' => array_values($brands) // Include brands array in response
+            'total_records' => count($salesData)
         ]
     ]);
 }
-
 function uploadSalesData() {
     global $conn;
 
