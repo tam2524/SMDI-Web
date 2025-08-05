@@ -14,17 +14,96 @@ let currentPage = 1;
 $(document).ready(function() {
     // Initialize models dropdown on page load
     updateModelsDropdown($('#brand').val(), $('#model'));
+    initModals();
     
     // Initialize modals and event handlers
     initSalesTable();
     initQuotaManagement();
     initSummaryReport();
-    initModals();
     
     // Initial load of sales
     loadSales();
 });
 
+
+// ==================== MODAL FUNCTIONS ====================
+function initModals() {
+    // Initialize all modals
+    $('.modal').modal({
+        show: false
+    });
+
+    // Handle add sale modal
+    $('#addSaleModal').on('shown.bs.modal', function() {
+        // Reset form and update models dropdown
+        $('#addSaleForm')[0].reset();
+        updateModelsDropdown($('#brand').val(), $('#model'));
+    });
+
+    // Handle edit sale modal
+    $(document).on('click', '.edit-button', function() {
+        const saleId = $(this).closest('tr').data('id');
+        
+        $.ajax({
+            url: 'api/sales_data_management.php',
+            method: 'GET',
+            data: { action: 'get_sale', id: saleId },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.data) {
+                    const sale = response.data;
+                    $('#editSaleId').val(sale.id);
+                    $('#editSaleDate').val(sale.sales_date);
+                    $('#editBranch').val(sale.branch);
+                    $('#editBrand').val(sale.brand);
+                    $('#editmodel').val(sale.model);
+                    $('#editQuantity').val(sale.qty);
+                    
+                    updateModelsDropdown(sale.brand, $('#editmodel'));
+                    $('#editSaleModal').modal('show');
+                } else {
+                    showErrorModal(response.message || 'Failed to load sale data');
+                }
+            },
+            error: function(xhr, status, error) {
+                showErrorModal('Error loading sale: ' + error);
+            }
+        });
+    });
+
+    // Handle upload sales data modal
+    $('#uploadSalesBtn').on('click', function() {
+        $('#uploadSalesDataModal').modal('show');
+    });
+
+    // Handle confirmation modal
+    $(document).on('click', '.delete-button', function() {
+        saleIdToDelete = $(this).closest('tr').data('id');
+        $('#confirmationModal').modal('show');
+    });
+
+    // Handle print options modal
+    $('#printOptionsBtn').on('click', function() {
+        $('#printOptionsModal').modal('show');
+    });
+
+    // ... rest of your modal initialization code ...
+}
+
+// Make sure to call initModals() in your $(document).ready()
+$(document).ready(function() {
+    // Initialize models dropdown on page load
+    updateModelsDropdown($('#brand').val(), $('#model'));
+    
+    // Initialize modals and event handlers
+    initSalesTable();
+    initQuotaManagement();
+    initSummaryReport();
+    initModals(); // THIS IS CRUCIAL
+    
+    // Initial load of sales
+    loadSales();
+});
 // ==================== SALES TABLE FUNCTIONS ====================
 function initSalesTable() {
     // Handle brand change to update models dropdown
@@ -629,236 +708,6 @@ function showLoading(show) {
     }
 }
 
-// ==================== MODAL FUNCTIONS ====================
-function initModals() {
-    // Handle add sale form submission
-    $('#addSaleForm').submit(function(e) {
-        e.preventDefault();
-        
-        const formData = {
-            action: 'add_sale',
-            sales_date: $('#saleDate').val(),
-            branch: $('#branch').val(),
-            brand: $('#brand').val(),
-            model: $('#model').val(),
-            qty: $('#quantity').val()
-        };
-        
-        $.ajax({
-            url: 'api/sales_data_management.php',
-            method: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    $('#addSaleModal').modal('hide');
-                    $('#addSaleForm')[0].reset();
-                    loadSales();
-                    showSuccessModal('Sale added successfully!');
-                } else {
-                    if (response.message.includes('duplicate')) {
-                        showDuplicateErrorModal(response.message);
-                    } else {
-                        showErrorModal(response.message || 'Failed to add sale');
-                    }
-                }
-            },
-            error: function(xhr, status, error) {
-                showErrorModal('Error: ' + error);
-            }
-        });
-    });
-
-    // Handle edit button click
-    $(document).on('click', '.edit-button', function() {
-        const saleId = $(this).closest('tr').data('id');
-        
-        $.ajax({
-            url: 'api/sales_data_management.php',
-            method: 'GET',
-            data: { action: 'get_sale', id: saleId },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success && response.data) {
-                    const sale = response.data;
-                    $('#editSaleId').val(sale.id);
-                    $('#editSaleDate').val(sale.sales_date);
-                    $('#editBranch').val(sale.branch);
-                    $('#editBrand').val(sale.brand);
-                    $('#editmodel').val(sale.model);
-                    $('#editQuantity').val(sale.qty);
-                    
-                    // Update models dropdown for the selected brand
-                    updateModelsDropdown(sale.brand, $('#editmodel'));
-                    $('#editmodel').val(sale.model);
-                    
-                    $('#editSaleModal').modal('show');
-                } else {
-                    showErrorModal(response.message || 'Failed to load sale data');
-                }
-            },
-            error: function(xhr, status, error) {
-                showErrorModal('Error loading sale: ' + error);
-            }
-        });
-    });
-
-    // Handle edit sale form submission
-    $('#editSaleForm').submit(function(e) {
-        e.preventDefault();
-        
-        const formData = {
-            action: 'update_sale',
-            id: $('#editSaleId').val(),
-            sales_date: $('#editSaleDate').val(),
-            branch: $('#editBranch').val(),
-            brand: $('#editBrand').val(),
-            model: $('#editmodel').val(),
-            qty: $('#editQuantity').val()
-        };
-        
-        $.ajax({
-            url: 'api/sales_data_management.php',
-            method: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    $('#editSaleModal').modal('hide');
-                    loadSales();
-                    showSuccessModal('Sale updated successfully!');
-                } else {
-                    showErrorModal(response.message || 'Failed to update sale');
-                }
-            },
-            error: function(xhr, status, error) {
-                showErrorModal('Error updating sale: ' + error);
-            }
-        });
-    });
-
-    // Handle delete button click
-    $(document).on('click', '.delete-button', function() {
-        saleIdToDelete = $(this).closest('tr').data('id');
-        $('#confirmationModal').modal('show');
-    });
-
-    // Handle delete selected button click
-    $('#deleteSelectedButton').on('click', function() {
-        if (selectedRecordIds.length > 0) {
-            $('#confirmationModal').modal('show');
-        } else {
-            showWarningModal('No sales selected for deletion.');
-        }
-    });
-
-    // Handle confirm delete button click
-    $('#confirmDeleteBtn').on('click', function() {
-        const idsToDelete = saleIdToDelete ? [saleIdToDelete] : selectedRecordIds;
-        
-        if (idsToDelete.length > 0) {
-            $.ajax({
-                url: 'api/sales_data_management.php',
-                method: 'POST',
-                data: { 
-                    action: 'delete_sale',
-                    ids: idsToDelete
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('#confirmationModal').modal('hide');
-                        loadSales();
-                        showSuccessModal(response.message || 'Sales deleted successfully!');
-                    } else {
-                        showErrorModal(response.message || 'Failed to delete sales');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    showErrorModal('Error deleting sales: ' + error);
-                },
-                complete: function() {
-                    saleIdToDelete = null;
-                    selectedRecordIds = [];
-                    $('#selectAll').prop('checked', false);
-                }
-            });
-        }
-    });
-
-    // Print options functionality
-    $('#sortBy').on('change', function() {
-        const selectedValue = $(this).val();
-        
-        // Hide all range selectors
-        $('#dateRange').hide();
-        $('#branchSelection').hide();
-        
-        // Show the appropriate range based on the selected value
-        if (selectedValue === 'dateRange') {
-            $('#dateRange').show();
-        } else if (selectedValue === 'branch') {
-            $('#branchSelection').show();
-        }
-    });
-
-// Handle print confirmation
-$('#confirmPrint').on('click', function() {
-    const fromDate = $('#fromDate').val();
-    const toDate = $('#toDate').val();
-    const year = $('#yearSelect').val();
-    const month = $('#monthSelect').val();
-    const branch = $('#branchSelect').val();
-    const outputFormat = $('#outputFormat').val();
-
-    // Validate at least one filter is selected
-    if (!fromDate && !toDate && !year) {
-        showWarningModal('Please select either a date range or a year.');
-        return;
-    }
-
-    // Validate date range if provided
-    if (fromDate && toDate) {
-        if (new Date(fromDate) > new Date(toDate)) {
-            showWarningModal('The "From" date cannot be after the "To" date.');
-            return;
-        }
-    }
-
-    // Build the query parameters
-    let params = [];
-    
-    if (fromDate && toDate) {
-        params.push(`fromDate=${encodeURIComponent(fromDate)}`);
-        params.push(`toDate=${encodeURIComponent(toDate)}`);
-    } else if (year) {
-        params.push(`year=${encodeURIComponent(year)}`);
-        if (month && month !== 'all') {
-            params.push(`month=${encodeURIComponent(month)}`);
-        }
-    }
-    
-    if (branch && branch !== 'all') {
-        params.push(`branch=${encodeURIComponent(branch)}`);
-    }
-    
-    params.push(`format=${encodeURIComponent(outputFormat)}`);
-
-    // Generate the URL
-    const url = `api/export_summary.php?${params.join('&')}`;
-
-    // For Excel format, download directly
-    if (outputFormat === 'excel') {
-        window.location.href = url;
-    } 
-    // For PDF, open in new tab (if needed)
-    else {
-        window.open(url, '_blank');
-    }
-    
-    $('#printOptionsModal').modal('hide');
-});
-}
 
 // ==================== HELPER FUNCTIONS ====================
 function showSuccessModal(message) {

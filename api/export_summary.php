@@ -121,6 +121,7 @@ if ($format === 'excel') {
 } else {
     die('PDF export not implemented');
 }
+
 function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month = 'all', $fromDate = null, $toDate = null) {
     try {
         $spreadsheet = new Spreadsheet();
@@ -182,9 +183,6 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             'SALAY', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU'
         ];
 
-        // Additional columns for UFCI, CFCI, ROXAS, MC BRIDE
-        $extraColumns = ['UFCI', 'CFCI', 'ROXAS', 'MC BRIDE'];
-
         // Set title with date range
         $title = 'SALES SUMMARY REPORT - TALLY BOARD';
         if ($fromDate && $toDate) {
@@ -193,7 +191,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $title .= ' - ' . $year;
         }
 
-        $lastCol = Coordinate::stringFromColumnIndex(count($allBranches) + count($extraColumns));
+        $lastCol = Coordinate::stringFromColumnIndex(count($allBranches));
         $sheet->mergeCells('A1:'.$lastCol.'1');
         $sheet->setCellValue('A1', $title);
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
@@ -206,12 +204,6 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         $col = 'B';
         foreach ($allBranches as $branch) {
             $sheet->setCellValue($col.'2', $branch);
-            $sheet->getColumnDimension($col)->setWidth(8);
-            $col++;
-        }
-        
-        foreach ($extraColumns as $extra) {
-            $sheet->setCellValue($col.'2', $extra);
             $sheet->getColumnDimension($col)->setWidth(8);
             $col++;
         }
@@ -280,11 +272,6 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                     $sheet->setCellValue($col.$row, $value !== '' ? $value : '');
                     $col++;
                 }
-                
-                foreach ($extraColumns as $extra) {
-                    $sheet->setCellValue($col.$row, '');
-                    $col++;
-                }
                 $row++;
             }
             
@@ -295,11 +282,6 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $col = 'B';
             foreach ($allBranches as $branch) {
                 $sheet->setCellValue($col.$row, $brandTotal[$branch]);
-                $col++;
-            }
-            
-            foreach ($extraColumns as $extra) {
-                $sheet->setCellValue($col.$row, '');
                 $col++;
             }
             $row++;
@@ -315,10 +297,21 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $sheet->setCellValue($col.$row, $columnTotals[$branch]);
             $col++;
         }
-        
-        // Check if we should show UFCI (only if quota and percentage are not blank)
-        $showUFCI = false;
+        $row++;
+
+        // Add GRAND TOTAL row (calculated from column totals)
+        $sheet->setCellValue('A'.$row, 'GRAND TOTAL');
+        $col = 'B';
+        foreach ($allBranches as $branch) {
+            $sheet->setCellValue($col.$row, $columnTotals[$branch]);
+            $col++;
+        }
+        $row++;
+
+        // Add QUOTA row
         $quotaRow = [];
+        $sheet->setCellValue('A'.$row, 'QUOTA');
+        $col = 'B';
         foreach ($allBranches as $branch) {
             $quota = 0;
             $dbBranch = array_search($branch, $branchMapping);
@@ -331,63 +324,9 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                 }
             }
             $quotaRow[] = $quota;
-            
-            // If any quota exists, we'll show UFCI
-            if ($quota > 0) {
-                $showUFCI = true;
-            }
-        }
-        
-        if ($showUFCI) {
-            $sheet->setCellValue($col.$row, 203); // UFCI
-        } else {
-            $sheet->setCellValue($col.$row, ''); // Blank UFCI
-        }
-        $col++;
-        
-        foreach (array_slice($extraColumns, 1) as $extra) {
-            $sheet->setCellValue($col.$row, '');
+            $sheet->setCellValue($col.$row, $quota);
             $col++;
         }
-        $row++;
-
-        // Add GRAND TOTAL row (calculated from column totals)
-        $sheet->setCellValue('A'.$row, 'GRAND TOTAL');
-        $col = 'B';
-        foreach ($allBranches as $branch) {
-            $sheet->setCellValue($col.$row, $columnTotals[$branch]);
-            $col++;
-        }
-        
-        if ($showUFCI) {
-            $sheet->setCellValue($col.$row, 43); // CFCI
-        } else {
-            $sheet->setCellValue($col.$row, ''); // Blank CFCI
-        }
-        $col++;
-        
-        foreach (array_slice($extraColumns, 2) as $extra) {
-            $sheet->setCellValue($col.$row, '');
-            $col++;
-        }
-        $row++;
-
-        // Add QUOTA row
-        $sheet->setCellValue('A'.$row, 'QUOTA');
-        $col = 'B';
-        foreach ($quotaRow as $value) {
-            $sheet->setCellValue($col.$row, $value);
-            $col++;
-        }
-        
-        if ($showUFCI) {
-            $sheet->setCellValue($col.$row, 9); // ROXAS
-        } else {
-            $sheet->setCellValue($col.$row, ''); // Blank ROXAS
-        }
-        $col++;
-        
-        $sheet->setCellValue($col.$row, ''); // MC BRIDE
         $row++;
 
         // Add PERCENTAGE row (calculated from GRAND TOTAL and QUOTA)
@@ -398,11 +337,6 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $quota = $quotaRow[$index] ?: 1; // Avoid division by zero
             $percent = round(($actual / $quota) * 100);
             $sheet->setCellValue($col.$row, $quota > 0 ? $percent.'%' : '');
-            $col++;
-        }
-        
-        foreach ($extraColumns as $extra) {
-            $sheet->setCellValue($col.$row, '');
             $col++;
         }
 
@@ -430,7 +364,6 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         die('Error generating Excel file: ' . $e->getMessage());
     }
 }
-
 function exportToPDF($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month) {
     // Create new PDF document
     $pdf = new TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
