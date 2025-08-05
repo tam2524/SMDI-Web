@@ -26,8 +26,9 @@
     
     <!-- PrintJS -->
     <link rel="stylesheet" href="https://printjs-4de6.kxcdn.com/print.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
 
 <style>
@@ -345,8 +346,13 @@ body {
                             <div class="col-md-4 mb-3">
                                 <label for="quotaYear" class="form-label">Year</label>
                                 <select class="form-select" id="quotaYear" required>
-                                    <!-- Options will be populated by JavaScript -->
-                                </select>
+    <option value="2025" selected>2025</option> 
+    <option value="2026">2026</option>
+    <option value="2027">2027</option>
+    <option value="2028">2028</option>
+    <option value="2029">2029</option>
+    <option value="2030">2030</option>
+</select>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="quotaBranch" class="form-label">Branch</label>
@@ -387,103 +393,6 @@ body {
         </div>
     </div>
 </div>
-
-<div class="modal fade" id="summaryReportModal" tabindex="-1" aria-labelledby="summaryReportModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
-        <div class="modal-content border-0">
-            <!-- Modal Header -->
-            <div class="modal-header bg-primary text-white">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-chart-bar fs-4 me-3"></i>
-                    <div>
-                        <h5 class="modal-title mb-0 text-white" id="summaryReportModalLabel">Sales Performance Dashboard</h5>
-                        <small class="opacity-75">Comprehensive sales analysis and reporting</small>
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <!-- Modal Body -->
-            <div class="modal-body p-0">
-                <!-- Control Panel -->
-                <div class="sticky-top bg-white p-3 border-bottom shadow-sm" style="z-index: 1050; top: 0;">
-    <div class="row g-3 align-items-end">
-        <!-- First row: Filters -->
-        <div class="col-12 col-md-3">
-            <label for="summaryYear" class="form-label small text-muted mb-1">Fiscal Year</label>
-            <select class="form-select" id="summaryYear">
-                <option value="">Select Year</option>
-            </select>
-        </div>
-        <div class="col-12 col-md-3">
-            <label for="summaryBranchFilter" class="form-label small text-muted mb-1">Branch Selection</label>
-            <select class="form-select" id="summaryBranchFilter">
-                <option value="all">All Locations</option>
-                <!-- Branch options will be populated by JavaScript -->
-            </select>
-        </div>
-        <div class="col-12 col-md-3">
-            <label for="fromDate" class="form-label small text-muted mb-1">From Date</label>
-            <input type="date" class="form-control" id="fromDate">
-        </div>
-        <div class="col-12 col-md-3">
-            <label for="toDate" class="form-label small text-muted mb-1">To Date</label>
-            <input type="date" class="form-control" id="toDate">
-        </div>
-        
-        <!-- Second row: Action buttons -->
-        <div class="col-12 col-md-4">
-            <button id="generateSummaryBtn" class="btn btn-primary text-white w-100">
-                <i class="fas fa-sync-alt me-2"></i>Generate Report
-            </button>
-        </div>
-        <div class="col-12 col-md-8 d-flex justify-content-end">
-            <div class="btn-group me-2">
-                <button type="button" id="exportExcelBtn" class="btn btn-success">
-                    <i class="fas fa-file-excel me-1"></i>Excel
-                </button>
-                <button type="button" id="exportPdfBtn" class="btn btn-danger">
-                    <i class="fas fa-file-pdf me-1"></i>PDF
-                </button>
-            </div>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                <i class="fas fa-times me-1"></i>Close
-            </button>
-        </div>
-    </div>
-</div>
-<div class="tab-pane fade show active" id="performance-tab-pane" role="tabpanel">
-    <div class="table-responsive">
-        <table id="summaryReportTable" class="table table-striped table-hover">
-            <thead class="table-light">
-                <tr>
-                    <th>Branch</th>
-                    <th>Model</th>
-                    <th>Quantity</th>
-                    <th>Brand</th>
-                </tr>
-            </thead>
-            <tbody id="summaryReportBody">
-                <!-- Data will be loaded here -->
-            </tbody>
-        </table>
-    </div>
-</div>
-            <!-- Modal Footer -->
-            <div class="modal-footer bg-light">
-                <div class="d-flex justify-content-between w-100 align-items-center">
-                    <div class="text-muted small">
-                        <i class="fas fa-database me-1"></i>
-                        <span id="recordCount">0 records</span>
-                    </div>
-                   
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 <!-- File Upload Modal -->
 <div class="modal fade" id="uploadSalesDataModal" tabindex="-1" aria-labelledby="uploadSalesDataModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -541,29 +450,29 @@ body {
                                 <select class="form-select" id="branch" required>
                                     <option value="RXS-1">RXS-1</option>
                                     <option value="RXS-2">RXS-2</option>
-                                    <option value="ANT-1">ANTIQUE-1</option>
-                                    <option value="ANT-2">ANTIQUE-2</option>
-                                    <option value="DEL-1">DELGADO-1</option>
-                                    <option value="DEL-2">DELGADO-2</option>
-                                    <option value="JAR-1">JARO-1</option>
-                                    <option value="JAR-2">JARO-2</option>
-                                    <option value="KAL-1">KALIBO-1</option>
-                                    <option value="KAL-2">KALIBO-2</option>
-                                    <option value="ALTA">ALTAVAS</option>
+                                    <option value="ANT-1">ANT-1</option>
+                                    <option value="ANT-2">ANT-2</option>
+                                    <option value="DEL-1">DEL-1</option>
+                                    <option value="DEL-2">DEL-2</option>
+                                    <option value="JAR-1">JAR-1</option>
+                                    <option value="JAR-2">JAR-2</option>
+                                    <option value="KAL-1">KAL-1</option>
+                                    <option value="KAL-2">KAL-2</option>
+                                    <option value="ALTA">ALTA</option>
                                     <option value="EMAP">EMAP</option>
-                                    <option value="CUL">CULASI</option>
-                                    <option value="BAC">BACOLOD</option>
-                                    <option value="PAS-1">PASSI-1</option>
-                                    <option value="PAS-2">PASSI-2</option>
-                                    <option value="BAL">BALASAN</option>
-                                    <option value="GUA">GUIMARAS</option>
-                                    <option value="PEM">PEMDI</option>
-                                    <option value="EEM">EEMSI</option>
-                                    <option value="AJU">AJUY</option>
-                                    <option value="BAIL">BAILAN</option>
-                                    <option value="MINDORO MB">MINDORO MB</option>
-                                    <option value="MINDORO 3S">MINDORO 3S</option>
-                                    <option value="MANSALAY">MANSALAY</option>
+                                    <option value="CUL">CUL</option>
+                                    <option value="BAC">BAC</option>
+                                    <option value="PAS-1">PAS-1</option>
+                                    <option value="PAS-2">PAS-2</option>
+                                    <option value="BAL">BAL</option>
+                                    <option value="GUIM">GUIM</option>
+                                    <option value="PEMDI">PEMDI</option>
+                                    <option value="EEM">EEM</option>
+                                    <option value="AJU">AJU</option>
+                                    <option value="BAIL">BAIL</option>
+                                    <option value="MINDO">MINDORO MB</option>
+                                    <option value="MIN">MINDORO 3S</option>
+                                    <option value="SALAY">MANSALAY</option>
                                     <option value="K-RIDERS">K-RIDERS</option>
                                     <option value="IBAJAY">IBAJAY</option>
                                     <option value="NUMANCIA">NUMANCIA</option>
@@ -640,10 +549,10 @@ body {
                                     <option value="EEMSI">EEMSI</option>
                                     <option value="AJUY">AJUY</option>
                                     <option value="BAILAN">BAILAN</option>
-                                    <option value="MINDORO MB">MINDORO MB</option>
-                                    <option value="MINDORO 3S">MINDORO 3S</option>
-                                    <option value="MANSALAY">MANSALAY</option>
-                                    <option value="K-RIDERS">K-RIDERS</option>
+                                    <option value="MINO">MINDORO MB</option>
+                                    <option value="MIN">MINDORO 3S</option>
+                                    <option value="SALAY">MANSALAY</option>
+                                    <option value="K-RID">K-RIDERS</option>
                                     <option value="IBAJAY">IBAJAY</option>
                                     <option value="NUMANCIA">NUMANCIA</option>
                                     <option value="HEADOFFICE">HEADOFFICE</option>
@@ -747,6 +656,119 @@ body {
     </div>
 </div>
 
+
+<!-- Summary Report Modal -->
+<div class="modal fade" id="summaryReportModal" tabindex="-1" aria-labelledby="summaryReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content border-0">
+            <!-- Modal Header -->
+            <div class="modal-header bg-primary text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-chart-bar fs-4 me-3"></i>
+                    <div>
+                        <h5 class="modal-title mb-0 text-white" id="summaryReportModalLabel">Sales Summary Report</h5>
+                        <small class="opacity-75">Generate sales reports by branch, brand, and date range</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-0">
+                <!-- Control Panel -->
+                <div class="sticky-top bg-white p-3 border-bottom shadow-sm" style="z-index: 1050; top: 0;">
+                    <div class="row g-3 align-items-end">
+                        <!-- First row: Filters -->
+                        <div class="col-12 col-md-3">
+                            <label for="summaryYear" class="form-label small text-muted mb-1">Year</label>
+                            <select class="form-select" id="summaryYear" required>
+    <option value="2025" selected>2025</option> 
+    <option value="2026">2026</option>
+    <option value="2027">2027</option>
+    <option value="2028">2028</option>
+    <option value="2029">2029</option>
+    <option value="2030">2030</option>
+</select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="summaryBranchFilter" class="form-label small text-muted mb-1">Branch</label>
+                            <select class="form-select" id="summaryBranchFilter">
+                                <option value="all">All Locations</option>
+                                <option value="RXS-1">RXS-1</option>
+                                <option value="RXS-2">RXS-2</option>
+                                <option value="ANT-1">ANT-1</option>
+                                <option value="ANT-2">ANT-2</option>
+                                <option value="DEL-1">DEL-1</option>
+                                <option value="DEL-2">DEL-2</option>
+                                <option value="JAR-1">JAR-1</option>
+                                <option value="JAR-2">JAR-2</option>
+                                <option value="KAL-1">KAL-1</option>
+                                <option value="KAL-2">KAL-2</option>
+                                <option value="ALTA">ALTA</option>
+                                <option value="EMAP">EMAP</option>
+                                <option value="CUL">CUL</option>
+                                <option value="BAC">BAC</option>
+                                <option value="PAS-1">PAS-1</option>
+                                <option value="PAS-2">PAS-2</option>
+                                <option value="BAL">BAL</option>
+                                <option value="GUIM">GUIM</option>
+                                <option value="PEMDI">PEMDI</option>
+                                <option value="EEM">EEM</option>
+                                <option value="AJU">AJU</option>
+                                <option value="BAIL">BAIL</option>
+                                <option value="MINDORO MB">MINDORO MB</option>
+                                <option value="MINDORO 3S">MINDORO 3S</option>
+                                <option value="MANSALAY">MANSALAY</option>
+                                <option value="K-RIDERS">K-RIDERS</option>
+                                <option value="IBAJAY">IBAJAY</option>
+                                <option value="NUMANCIA">NUMANCIA</option>
+                                <option value="HEADOFFICE">HEADOFFICE</option>
+                                <option value="CEBU">CEBU</option>
+                                <option value="GT">GT</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="summaryBrandFilter" class="form-label small text-muted mb-1">Brand</label>
+                            <select class="form-select" id="summaryBrandFilter">
+                                <option value="all">All Brands</option>
+                                <option value="Suzuki">Suzuki</option>
+                                <option value="Honda">Honda</option>
+                                <option value="Kawasaki">Kawasaki</option>
+                                <option value="Yamaha">Yamaha</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="fromDate" class="form-label small text-muted mb-1">From Date</label>
+                            <input type="date" class="form-control" id="fromDate">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="toDate" class="form-label small text-muted mb-1">To Date</label>
+                            <input type="date" class="form-control" id="toDate">
+                        </div>
+                        <!-- Second row: Action buttons -->
+                        <div class="col-12 d-flex justify-content-end">
+                            <div class="btn-group me-2">
+                                <button type="button" id="exportExcelBtn" class="btn btn-success">
+                                    <i class="fas fa-file-excel me-1"></i>Export to Excel
+                                </button>
+                                <button type="button" id="exportPdfBtn" class="btn btn-danger">
+                                    <i class="fas fa-file-pdf me-1"></i>Export to PDF
+                                </button>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-1"></i>Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+               
+            </div>
+          
+        </div>
+    </div>
+</div>
+
     <!-- Success Modal -->
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -812,7 +834,6 @@ body {
             </div>
         </div>
     </div>
-
-   <script src="js/sales_dashboard.js"></script>
+<script src="js/sales_dashboard.js"></script>
 </body>
 </html>

@@ -14,96 +14,17 @@ let currentPage = 1;
 $(document).ready(function() {
     // Initialize models dropdown on page load
     updateModelsDropdown($('#brand').val(), $('#model'));
+    
+    // Initialize modals and event handlers
+    initSalesTable();
+    initQuotaManagement();
+    initSummaryReport();
     initModals();
     
-    // Initialize modals and event handlers
-    initSalesTable();
-    initQuotaManagement();
-    initSummaryReport();
-    
     // Initial load of sales
     loadSales();
 });
 
-
-// ==================== MODAL FUNCTIONS ====================
-function initModals() {
-    // Initialize all modals
-    $('.modal').modal({
-        show: false
-    });
-
-    // Handle add sale modal
-    $('#addSaleModal').on('shown.bs.modal', function() {
-        // Reset form and update models dropdown
-        $('#addSaleForm')[0].reset();
-        updateModelsDropdown($('#brand').val(), $('#model'));
-    });
-
-    // Handle edit sale modal
-    $(document).on('click', '.edit-button', function() {
-        const saleId = $(this).closest('tr').data('id');
-        
-        $.ajax({
-            url: 'api/sales_data_management.php',
-            method: 'GET',
-            data: { action: 'get_sale', id: saleId },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success && response.data) {
-                    const sale = response.data;
-                    $('#editSaleId').val(sale.id);
-                    $('#editSaleDate').val(sale.sales_date);
-                    $('#editBranch').val(sale.branch);
-                    $('#editBrand').val(sale.brand);
-                    $('#editmodel').val(sale.model);
-                    $('#editQuantity').val(sale.qty);
-                    
-                    updateModelsDropdown(sale.brand, $('#editmodel'));
-                    $('#editSaleModal').modal('show');
-                } else {
-                    showErrorModal(response.message || 'Failed to load sale data');
-                }
-            },
-            error: function(xhr, status, error) {
-                showErrorModal('Error loading sale: ' + error);
-            }
-        });
-    });
-
-    // Handle upload sales data modal
-    $('#uploadSalesBtn').on('click', function() {
-        $('#uploadSalesDataModal').modal('show');
-    });
-
-    // Handle confirmation modal
-    $(document).on('click', '.delete-button', function() {
-        saleIdToDelete = $(this).closest('tr').data('id');
-        $('#confirmationModal').modal('show');
-    });
-
-    // Handle print options modal
-    $('#printOptionsBtn').on('click', function() {
-        $('#printOptionsModal').modal('show');
-    });
-
-    // ... rest of your modal initialization code ...
-}
-
-// Make sure to call initModals() in your $(document).ready()
-$(document).ready(function() {
-    // Initialize models dropdown on page load
-    updateModelsDropdown($('#brand').val(), $('#model'));
-    
-    // Initialize modals and event handlers
-    initSalesTable();
-    initQuotaManagement();
-    initSummaryReport();
-    initModals(); // THIS IS CRUCIAL
-    
-    // Initial load of sales
-    loadSales();
-});
 // ==================== SALES TABLE FUNCTIONS ====================
 function initSalesTable() {
     // Handle brand change to update models dropdown
@@ -326,7 +247,6 @@ $('#uploadSalesDataForm').on('submit', function(e) {
 function initQuotaManagement() {
     // Initialize quota modal when shown
     $('#salesQuotaModal').on('shown.bs.modal', function() {
-        populateYearDropdown();
         populateBranchDropdown();
         loadQuotas();
         resetQuotaForm();
@@ -453,27 +373,6 @@ function initQuotaManagement() {
     });
 }
 
-function populateYearDropdown() {
-    const currentYear = new Date().getFullYear();
-    const $yearDropdown = $('#quotaYear');
-    const $summaryYearDropdown = $('#summaryYear');
-
-    $yearDropdown.empty();
-    
-    // Add options for current year and next 5 years
-    for (let i = 0; i < 6; i++) {
-        const year = currentYear + i;
-        $yearDropdown.append($('<option>', {
-            value: year,
-            text: year
-        }));
-        $summaryYearDropdown.append($('<option>', {
-            value: year,
-            text: year
-        }));
-    }
-}
-
 function populateBranchDropdown() {
     const branches = [
         "RXS-1", "RXS-2", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
@@ -557,66 +456,35 @@ function generateQuotaTableRows(quotas) {
 
 // ==================== SUMMARY REPORT FUNCTIONS ====================
 function initSummaryReport() {
-    // Initialize summary modal
-    $('#summaryReportModal').on('shown.bs.modal', function() {
-        populateYearDropdown('#summaryYear');
-        populateBranchDropdown('#summaryBranchFilter');
-    });
-
-     // Populate branch dropdown
-    const branches = [
-        "RXS-1", "RXS-2", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
-        "JARO-1", "JARO-2", "KALIBO-1", "KALIBO-2", "ALTAVAS", "EMAP", "CULASI",
-        "BACOLOD", "PASSI-1", "PASSI-2", "BALASAN", "GUIMARAS", "PEMDI", "EEMSI",
-        "AJUY", "BAILAN", "MINDORO MB", "MINDORO 3S", "MANSALAY", "K-RIDERS",
-        "IBAJAY", "NUMANCIA", "HEADOFFICE", "CEBU", "GT"
-    ];
-    
-    const $branchDropdown = $('#summaryBranchFilter');
-    branches.forEach(branch => {
-        $branchDropdown.append($('<option>', {
-            value: branch,
-            text: branch
-        }));
-    });
-
     // Generate report button click handler
     $('#generateSummaryBtn').on('click', function() {
-        const year = $('#summaryYear').val();
-        const month = $('#summaryMonth').val();
-        const branchFilter = $('#summaryBranchFilter').val();
-        
-        if (!year) {
-            showWarningModal('Please select a year');
-            return;
-        }
-        
-        generateSummaryReport(year, month, branchFilter);
+        generateSummaryReport();
     });
 
-    // Export buttons
+    // Export to Excel button
     $('#exportExcelBtn').on('click', function() {
-        const year = $('#summaryYear').val();
-        const month = $('#summaryMonth').val();
-        const branch = $('#summaryBranchFilter').val();
-        window.location.href = `api/export_summary.php?year=${year}&month=${month}&branch=${branch}&format=excel`;
+        exportReport('excel');
     });
 
+    // Export to PDF button
     $('#exportPdfBtn').on('click', function() {
-        const year = $('#summaryYear').val();
-        const month = $('#summaryMonth').val();
-        const branch = $('#summaryBranchFilter').val();
-        window.location.href = `api/export_summary.php?year=${year}&month=${month}&branch=${branch}&format=pdf`;
+        exportReport('pdf');
     });
 }
 
 function generateSummaryReport() {
     const year = $('#summaryYear').val();
-    const branchFilter = $('#summaryBranchFilter').val();
+    const branch = $('#summaryBranchFilter').val();
+    const brand = $('#summaryBrandFilter').val();
     const fromDate = $('#fromDate').val();
     const toDate = $('#toDate').val();
 
-    showLoading(true);
+    if (!year) {
+        showWarningModal('Please select a year');
+        return;
+    }
+
+    showLoading(true, '#summaryReportBody');
     
     $.ajax({
         url: 'api/sales_data_management.php',
@@ -624,16 +492,17 @@ function generateSummaryReport() {
         data: {
             action: 'get_summary_report',
             year: year,
-            branch: branchFilter,
+            branch: branch,
+            brand: brand,
             fromDate: fromDate,
             toDate: toDate
         },
         dataType: 'json',
         success: function(response) {
-            showLoading(false);
+            showLoading(false, '#summaryReportBody');
             if (response.success) {
                 // Update the record count
-                $('#recordCount').text(response.data.sales.length + ' records');
+                $('#recordCount').text(response.total_records + ' records');
                 
                 // Render the report data
                 renderSummaryReport(response.data);
@@ -642,72 +511,271 @@ function generateSummaryReport() {
             }
         },
         error: function(xhr, status, error) {
-            showLoading(false);
+            showLoading(false, '#summaryReportBody');
             showErrorModal('Error generating report: ' + error);
         }
     });
 }
+
 function renderSummaryReport(data) {
     const $tbody = $('#summaryReportBody');
     $tbody.empty();
 
-    if (!data || !data.sales || data.sales.length === 0) {
-        $tbody.html('<tr><td colspan="4" class="text-center py-5 text-muted">No data available for the selected criteria</td></tr>');
+    if (!data || data.length === 0) {
+        $tbody.html('<tr><td colspan="5" class="text-center py-5 text-muted">No data available for the selected criteria</td></tr>');
         return;
     }
 
-    // Calculate totals
-    let grandTotal = 0;
-    const branchTotals = {};
-    const modelTotals = {};
-
-    // First pass to calculate totals
-    data.sales.forEach(sale => {
-        const qty = parseInt(sale.qty);
-        grandTotal += qty;
-
-        // Branch totals
-        if (!branchTotals[sale.branch]) {
-            branchTotals[sale.branch] = 0;
-        }
-        branchTotals[sale.branch] += qty;
-
-        // Model totals
-        if (!modelTotals[sale.model]) {
-            modelTotals[sale.model] = 0;
-        }
-        modelTotals[sale.model] += qty;
-    });
-
-    // Second pass to create rows
-    data.sales.forEach(sale => {
+    data.forEach(item => {
         $tbody.append(`
             <tr>
-                <td>${sale.branch}</td>
-                <td>${sale.model}</td>
-                <td>${sale.qty}</td>
-                <td>${sale.brand}</td>
+                <td>${item.branch}</td>
+                <td>${item.brand}</td>
+                <td>${item.model}</td>
+                <td>${item.qty}</td>
+                <td>${new Date(item.sales_date).toLocaleDateString()}</td>
             </tr>
         `);
     });
-
-    // Add summary row
-    $tbody.append(`
-        <tr class="table-primary">
-            <td><strong>Total</strong></td>
-            <td></td>
-            <td><strong>${grandTotal}</strong></td>
-            <td></td>
-        </tr>
-    `);
 }
 
-function showLoading(show) {
+function exportReport(format) {
+    const year = $('#summaryYear').val();
+    const branch = $('#summaryBranchFilter').val();
+    const brand = $('#summaryBrandFilter').val();
+    const fromDate = $('#fromDate').val();
+    const toDate = $('#toDate').val();
+
+    if (!year) {
+        showWarningModal('Please select a year');
+        return;
+    }
+
+    // Build the export URL with all filter parameters
+    let exportUrl = `api/export_summary.php?format=${format}&year=${year}`;
+    
+    if (branch && branch !== 'all') {
+        exportUrl += `&branch=${encodeURIComponent(branch)}`;
+    }
+    
+    if (brand && brand !== 'all') {
+        exportUrl += `&brand=${encodeURIComponent(brand)}`;
+    }
+    
+    if (fromDate) {
+        exportUrl += `&fromDate=${encodeURIComponent(fromDate)}`;
+    }
+    
+    if (toDate) {
+        exportUrl += `&toDate=${encodeURIComponent(toDate)}`;
+    }
+
+    // Open the export URL in a new window to trigger download
+    window.open(exportUrl, '_blank');
+}
+
+function showLoading(show, element) {
     if (show) {
-        $('#summaryReportBody').html('<tr><td colspan="100" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+        $(element).html('<tr><td colspan="5" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
     }
 }
 
+// ==================== MODAL FUNCTIONS ====================
+function initModals() {
+
+    const modalElements = document.querySelectorAll('.modal');
+    modalElements.forEach(modalEl => {
+        new bootstrap.Modal(modalEl);
+    });
+    // Handle add sale form submission
+    $('#addSaleForm').submit(function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            action: 'add_sale',
+            sales_date: $('#saleDate').val(),
+            branch: $('#branch').val(),
+            brand: $('#brand').val(),
+            model: $('#model').val(),
+            qty: $('#quantity').val()
+        };
+        
+        $.ajax({
+            url: 'api/sales_data_management.php',
+            method: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    $('#addSaleModal').modal('hide');
+                    $('#addSaleForm')[0].reset();
+                    loadSales();
+                    showSuccessModal('Sale added successfully!');
+                } else {
+                    if (response.message.includes('duplicate')) {
+                        showDuplicateErrorModal(response.message);
+                    } else {
+                        showErrorModal(response.message || 'Failed to add sale');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                showErrorModal('Error: ' + error);
+            }
+        });
+    });
+
+    // Handle edit button click
+    $(document).on('click', '.edit-button', function() {
+        const saleId = $(this).closest('tr').data('id');
+        
+        $.ajax({
+            url: 'api/sales_data_management.php',
+            method: 'GET',
+            data: { action: 'get_sale', id: saleId },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.data) {
+                    const sale = response.data;
+                    $('#editSaleId').val(sale.id);
+                    $('#editSaleDate').val(sale.sales_date);
+                    $('#editBranch').val(sale.branch);
+                    $('#editBrand').val(sale.brand);
+                    $('#editmodel').val(sale.model);
+                    $('#editQuantity').val(sale.qty);
+                    
+                    // Update models dropdown for the selected brand
+                    updateModelsDropdown(sale.brand, $('#editmodel'));
+                    $('#editmodel').val(sale.model);
+                    
+                    $('#editSaleModal').modal('show');
+                } else {
+                    showErrorModal(response.message || 'Failed to load sale data');
+                }
+            },
+            error: function(xhr, status, error) {
+                showErrorModal('Error loading sale: ' + error);
+            }
+        });
+    });
+
+    // Handle edit sale form submission
+    $('#editSaleForm').submit(function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            action: 'update_sale',
+            id: $('#editSaleId').val(),
+            sales_date: $('#editSaleDate').val(),
+            branch: $('#editBranch').val(),
+            brand: $('#editBrand').val(),
+            model: $('#editmodel').val(),
+            qty: $('#editQuantity').val()
+        };
+        
+        $.ajax({
+            url: 'api/sales_data_management.php',
+            method: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    $('#editSaleModal').modal('hide');
+                    loadSales();
+                    showSuccessModal('Sale updated successfully!');
+                } else {
+                    showErrorModal(response.message || 'Failed to update sale');
+                }
+            },
+            error: function(xhr, status, error) {
+                showErrorModal('Error updating sale: ' + error);
+            }
+        });
+    });
+
+    // Handle delete button click
+    $(document).on('click', '.delete-button', function() {
+        saleIdToDelete = $(this).closest('tr').data('id');
+        $('#confirmationModal').modal('show');
+    });
+
+    // Handle delete selected button click
+    $('#deleteSelectedButton').on('click', function() {
+        if (selectedRecordIds.length > 0) {
+            $('#confirmationModal').modal('show');
+        } else {
+            showWarningModal('No sales selected for deletion.');
+        }
+    });
+
+    // Handle confirm delete button click
+    $('#confirmDeleteBtn').on('click', function() {
+        const idsToDelete = saleIdToDelete ? [saleIdToDelete] : selectedRecordIds;
+        
+        if (idsToDelete.length > 0) {
+            $.ajax({
+                url: 'api/sales_data_management.php',
+                method: 'POST',
+                data: { 
+                    action: 'delete_sale',
+                    ids: idsToDelete
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#confirmationModal').modal('hide');
+                        loadSales();
+                        showSuccessModal(response.message || 'Sales deleted successfully!');
+                    } else {
+                        showErrorModal(response.message || 'Failed to delete sales');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showErrorModal('Error deleting sales: ' + error);
+                },
+                complete: function() {
+                    saleIdToDelete = null;
+                    selectedRecordIds = [];
+                    $('#selectAll').prop('checked', false);
+                }
+            });
+        }
+    });
+
+    // Print options functionality
+    $('#sortBy').on('change', function() {
+        const selectedValue = $(this).val();
+        
+        // Hide all range selectors
+        $('#dateRange').hide();
+        $('#branchSelection').hide();
+        
+        // Show the appropriate range based on the selected value
+        if (selectedValue === 'dateRange') {
+            $('#dateRange').show();
+        } else if (selectedValue === 'branch') {
+            $('#branchSelection').show();
+        }
+    });
+
+    // Handle print confirmation
+    $('#confirmPrint').on('click', function() {
+        const fromDate = $('#fromDate').val();
+        const toDate = $('#toDate').val();
+        const branch = $('#branchSelect').val();
+        const outputFormat = $('#outputFormat').val();
+
+        if (!fromDate || !toDate) {
+            showWarningModal('Please select both From and To dates.');
+            return;
+        }
+
+        // Redirect to generate report script
+        window.location.href = `api/export_summary.php?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&branch=${encodeURIComponent(branch)}&format=${encodeURIComponent(outputFormat)}`;
+        
+        $('#printOptionsModal').modal('hide');
+    });
+}
 
 // ==================== HELPER FUNCTIONS ====================
 function showSuccessModal(message) {

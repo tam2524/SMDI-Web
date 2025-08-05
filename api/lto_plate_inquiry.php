@@ -48,10 +48,13 @@ function searchRecordsTable($conn, $lastname, $firstname) {
     $stmt->execute();
     $result = $stmt->get_result();
     
+    $rows = [];
     if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $row['pure_last_name'] = extractLastName($row['family_name']);
-        return $row;
+        while ($row = $result->fetch_assoc()) {
+            $row['pure_last_name'] = extractLastName($row['family_name']);
+            $rows[] = $row;
+        }
+        return $rows;
     }
     return false;
 }
@@ -67,43 +70,60 @@ function searchRegistrationTable($conn, $lastname, $firstname) {
         $lastPattern . ' ' . $firstPattern
     ];
     
+    $rows = [];
     foreach ($namePatterns as $pattern) {
         $sql = "SELECT * FROM registration WHERE 
-               full_name LIKE %?%";
+               full_name LIKE ?";
         $stmt = $conn->prepare($sql);
         if (!$stmt) continue;
         
+        $pattern = "%" . $pattern . "%";
         $stmt->bind_param("s", $pattern);
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows > 0) {
-            return $result->fetch_assoc();
+            while ($row = $result->fetch_assoc()) {
+                $rows[] = $row;
+            }
         }
     }
-    return false;
+    return !empty($rows) ? $rows : false;
 }
 
 // Search both tables
 $response = ["error" => "No matching records found"];
-if ($row = searchRecordsTable($conn, $lastname, $firstname)) {
-    $response = [
-        "plate_number" => $row['plate_number'],
-        "mv_file_number" => $row['mv_file'],
-        "last_name" => $row['pure_last_name'],
-        "first_name" => $row['first_name'],
-        "branch" => $row['branch'],
-        "date_reg" => $row['date_reg'],
-        "remarks" => $row['remarks'],
-        "dealer" => isset($row['family_name']) ? trim(explode('/', $row['family_name'])[1] ?? '') : ''
-    ];
-} elseif ($row = searchRegistrationTable($conn, $lastname, $firstname)) {
-    $response = [
-        "plate_number" => $row['lto_plate_number'],
-        "mv_file_number" => $row['mv_file_number'],
-        "full_name" => $row['full_name'],
-        "date_reg" => $row['date_reg']
-    ];
+
+// Check records table first
+if ($rows = searchRecordsTable($conn, $lastname, $firstname)) {
+    $response = array_map(function($row) {
+        return [
+            "plate_number" => $row['plate_number'],
+            "mv_file_number" => $row['mv_file'],
+            "last_name" => $row['pure_last_name'],
+            "first_name" => $row['first_name'],
+            "branch" => $row['branch'],
+            "date_reg" => $row['date_reg'],
+            "remarks" => $row['remarks'],
+            "dealer" => isset($row['family_name']) ? trim(explode('/', $row['family_name'])[1] ?? '') : ''
+        ];
+    }, $rows);
+} 
+// If no results in records table, check registration table
+elseif ($rows = searchRegistrationTable($conn, $lastname, $firstname)) {
+    $response = array_map(function($row) {
+        return [
+            "plate_number" => $row['lto_plate_number'],
+            "mv_file_number" => $row['mv_file_number'],
+            "full_name" => $row['full_name'],
+            "date_reg" => $row['date_reg']
+        ];
+    }, $rows);
+}
+
+// If we have only one result, return it as an object (backward compatibility)
+if (is_array($response) && count($response) === 1 && !isset($response['error'])) {
+    $response = $response[0];
 }
 
 $conn->close();

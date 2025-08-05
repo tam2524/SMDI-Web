@@ -31,7 +31,52 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="alert alert-danger">
                         No records found for: ${lastname}, ${firstname}
                     </div>`;
+            } else if (Array.isArray(data)) {
+                // Handle multiple results
+                let resultsHTML = `
+                <div class="card">
+                    <div class="card-header bg-primary text-white ">
+                        <h4 class="mb-0 text-white">Multiple Inquiry Results (${data.length})</h4>
+                    </div>
+                    <div class="card-body">`;
+                
+                data.forEach((item, index) => {
+                    // Format name display
+                    let nameDisplay;
+                    if (item.full_name) {
+                        nameDisplay = item.full_name;
+                    } else {
+                        nameDisplay = `${item.last_name || ''}${item.first_name ? ', ' + item.first_name : ''}`;
+                    }
+
+                    // Format plate number display
+                    const plateDisplay = (item.plate_number === 'ND' || !item.plate_number) ? 
+                                        'ON PROCESS' : 
+                                        item.plate_number;
+
+                    resultsHTML += `
+                    <div class="mb-4 ${index > 0 ? 'mt-4 pt-3 border-top' : ''} text-start">
+    <h5>Document #${index + 1}</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <p><strong>Date Registered:</strong> ${item.date_reg || 'N/A'}</p>
+            <p><strong>Customer Name:</strong> ${nameDisplay}</p>
+            <p><strong>Plate Number:</strong> ${plateDisplay}</p>
+        </div>
+        <div class="col-md-6">
+            <p><strong>MV File Number:</strong> ${item.mv_file_number || 'N/A'}</p>
+            <p><strong>Branch:</strong> ${item.branch || 'N/A'}</p>
+            <p><strong>Remarks:</strong> ${item.remarks || 'N/A'}</p>
+        </div>
+    </div>
+</div>
+`;
+                });
+                
+                resultsHTML += `</div></div>`;
+                resultContainer.innerHTML = resultsHTML;
             } else {
+                // Single result case
                 // Format name display
                 let nameDisplay;
                 if (data.full_name) {
@@ -45,26 +90,21 @@ document.addEventListener("DOMContentLoaded", function() {
                                     'ON PROCESS' : 
                                     data.plate_number;
 
-
-
                 resultContainer.innerHTML = `
                 <div class="card">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-primary text-white ">
                         <h4 class="mb-0 text-white">Inquiry Results</h4>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body text-start">
                         <div class="row">
                             <div class="col-md-6">
-                            
                                 <p><strong>Date Registered:</strong> ${data.date_reg || 'N/A'}</p>
                                 <p><strong>Customer Name:</strong> ${nameDisplay}</p>
-                                 <p><strong>Plate Number:</strong> ${plateDisplay}</p>
-
+                                <p><strong>Plate Number:</strong> ${plateDisplay}</p>
                             </div>
                             <div class="col-md-6">
                                 <p><strong>MV File Number:</strong> ${data.mv_file_number || 'N/A'}</p>
                                 <p><strong>Branch:</strong> ${data.branch || 'N/A'}</p>
-                                
                                 <p><strong>Remarks:</strong> ${data.remarks || 'N/A'}</p>
                             </div>
                         </div>
