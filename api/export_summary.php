@@ -7,6 +7,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 use TCPDF;
 
 // Get parameters
@@ -14,7 +16,7 @@ $year = $_GET['year'] ?? date('Y');
 $month = $_GET['month'] ?? 'all';
 $format = $_GET['format'] ?? 'excel';
 
-// Define branch order
+// Define branch order (matching your example)
 $orderedBranches = [
     'RXS-1', 'RXS-2', 'ANT-1', 'ANT-2', 'DEL-1', 'DEL-2', 'JAR-1', 'JAR-2',
     'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
@@ -102,7 +104,7 @@ if ($format === 'excel') {
     exportToPDF($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month);
 }
 
-// Excel export function
+// Excel export function with the requested format
 function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month) {
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
@@ -114,23 +116,35 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         ->setSubject("Sales Summary");
 
     // Title
-    $sheet->mergeCells('A1:' . Coordinate::stringFromColumnIndex(count($branches) + 2) . '1');
+    $sheet->mergeCells('A1:' . Coordinate::stringFromColumnIndex(count($branches) + 3) . '1');
     $sheet->setCellValue('A1', 'SALES SUMMARY REPORT - ' . strtoupper(date('F Y', strtotime($year.'-'.($month === 'all' ? '01' : $month).'-01'))));
     $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
     $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-    // Header row
-    $sheet->setCellValue('A2', 'Model/Branch');
+    // Header row with styling matching your example
+    $headerStyle = [
+        'font' => ['bold' => true],
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']],
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+    ];
+
+    $sheet->setCellValue('A2', 'MODEL');
     $col = 'B';
     foreach ($branches as $branch) {
         $sheet->setCellValue($col.'2', $branch);
         $col++;
     }
-    $sheet->setCellValue($col.'2', 'Total');
+    $sheet->setCellValue($col.'2', 'TTL');
     $col++;
-    $sheet->setCellValue($col.'2', 'Percentage');
-    $sheet->getStyle('A2:'.$col.'2')->getFont()->setBold(true);
-    $sheet->getStyle('A2:'.$col.'2')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFDDDDDD');
+    $sheet->setCellValue($col.'2', 'CEBU');
+    $col++;
+    $sheet->setCellValue($col.'2', 'GT');
+    $col++;
+    $sheet->setCellValue($col.'2', '%');
+    
+    // Apply header style
+    $sheet->getStyle('A2:'.$col.'2')->applyFromArray($headerStyle);
 
     // Model rows (only those with sales)
     $row = 3;
@@ -140,6 +154,8 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
 
         $sheet->setCellValue('A'.$row, $model);
         $col = 'B';
+        
+        // Branch quantities
         foreach ($branches as $branch) {
             $qty = 0;
             foreach ($sales as $sale) {
@@ -148,34 +164,60 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                     break;
                 }
             }
-            $sheet->setCellValue($col.$row, $qty);
+            $sheet->setCellValue($col.$row, $qty ?: '');
             $col++;
         }
+        
+        // Total column
         $sheet->setCellValue($col.$row, $modelTotal);
         $col++;
         
-        $percentage = round(calculatePercentage($modelTotal, $branchTotals));
+        // Cebu column (you may need to adjust this based on your logic)
+        $cebuTotal = 0; // Placeholder - adjust as needed
+        $sheet->setCellValue($col.$row, $cebuTotal);
+        $col++;
+        
+        // GT column (Grand Total for this model)
+        $gtTotal = $modelTotal + $cebuTotal;
+        $sheet->setCellValue($col.$row, $gtTotal);
+        $col++;
+        
+        // Percentage column
+        $percentage = $grandTotal > 0 ? round(($gtTotal / $grandTotal) * 100, 2) : 0;
         $sheet->setCellValue($col.$row, $percentage.'%');
+        
+        // Apply cell borders
+        $sheet->getStyle('A'.$row.':'.$col.$row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        
         $row++;
     }
 
-    // Branch totals
-    $sheet->setCellValue('A'.$row, 'Total');
+    // SUB-TOTAL row (similar to your example)
+    $sheet->setCellValue('A'.$row, 'SUB-TOTAL');
     $col = 'B';
     foreach ($branches as $branch) {
-        $sheet->setCellValue($col.$row, $branchTotals[$branch] ?? 0);
+        $sheet->setCellValue($col.$row, $branchTotals[$branch] ?? '');
         $col++;
     }
     $sheet->setCellValue($col.$row, $grandTotal);
     $col++;
+    $sheet->setCellValue($col.$row, ''); // Cebu placeholder
+    $col++;
+    $sheet->setCellValue($col.$row, $grandTotal); // GT
+    $col++;
+    $sheet->setCellValue($col.$row, '100%');
     
-    $totalPercentage = round(calculatePercentage($grandTotal, $quotas));
-    $sheet->setCellValue($col.$row, $totalPercentage.'%');
-    $sheet->getStyle('A'.$row.':'.$col.$row)->getFont()->setBold(true);
+    // Style for sub-total row
+    $subTotalStyle = [
+        'font' => ['bold' => true],
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']],
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+    ];
+    $sheet->getStyle('A'.$row.':'.$col.$row)->applyFromArray($subTotalStyle);
     $row++;
 
-    // Quota row
-    $sheet->setCellValue('A'.$row, 'Quota');
+    // QUOTA row (from your quotas data)
+    $sheet->setCellValue('A'.$row, 'QUOTA');
     $col = 'B';
     $totalQuota = 0;
     foreach ($branches as $branch) {
@@ -191,11 +233,19 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         $col++;
     }
     $sheet->setCellValue($col.$row, $totalQuota);
-    $sheet->getStyle('A'.$row.':'.$col.$row)->getFont()->setBold(true);
+    $col++;
+    $sheet->setCellValue($col.$row, ''); // Cebu quota placeholder
+    $col++;
+    $sheet->setCellValue($col.$row, $totalQuota);
+    $col++;
+    $sheet->setCellValue($col.$row, '');
+    
+    // Style for quota row
+    $sheet->getStyle('A'.$row.':'.$col.$row)->applyFromArray($subTotalStyle);
     $row++;
 
-    // Percent row
-    $sheet->setCellValue('A'.$row, 'Percent');
+    // % row (performance against quota)
+    $sheet->setCellValue('A'.$row, '%');
     $col = 'B';
     foreach ($branches as $branch) {
         $branchTotal = $branchTotals[$branch] ?? 0;
@@ -212,12 +262,23 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
     }
     $percentTotal = $totalQuota > 0 ? round(($grandTotal / $totalQuota) * 100) : 0;
     $sheet->setCellValue($col.$row, $percentTotal.'%');
-    $sheet->getStyle('A'.$row.':'.$col.$row)->getFont()->setBold(true);
+    $col++;
+    $sheet->setCellValue($col.$row, ''); // Cebu %
+    $col++;
+    $sheet->setCellValue($col.$row, $percentTotal.'%');
+    $col++;
+    $sheet->setCellValue($col.$row, '');
+    
+    // Style for % row
+    $sheet->getStyle('A'.$row.':'.$col.$row)->applyFromArray($subTotalStyle);
 
     // Auto-size columns
     foreach (range('A', $col) as $columnID) {
         $sheet->getColumnDimension($columnID)->setAutoSize(true);
     }
+
+    // Freeze the header row
+    $sheet->freezePane('A3');
 
     // Output
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
