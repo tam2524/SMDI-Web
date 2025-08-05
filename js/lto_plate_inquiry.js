@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function() {
             </div>
             <div class="col-md-6">
                 <p><strong>Branch:</strong> ${data.branch || 'N/A'}</p>
-                <p><strong>Plate Number:</strong> ${(data.plate_number === 'ND' || !data.plate_number) ? 'Not yet available' : data.plate_number}</p>
+                <p><strong>Plate Number:</strong> ${(data.plate_number === 'ND' || !data.plate_number) ? 'ON PROCESS' : data.plate_number}</p>
                 <p><strong>Remarks:</strong> ${data.remarks || 'N/A'}</p>
             </div>
         </div>
