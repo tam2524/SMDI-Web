@@ -1,5 +1,3 @@
-
-
 // LTO PLATE INQUIRY
 document.addEventListener("DOMContentLoaded", function() {
     const form = document.getElementById('inquiryForm');
@@ -22,6 +20,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (data.error) {
                     resultContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
                 } else {
+                    // Format the name display - use full_name if available, otherwise combine last_name and first_name
+                    const nameDisplay = data.full_name || 
+                                      (data.last_name ? `${data.last_name}${data.first_name ? ', ' + data.first_name : ''}` : 'N/A');
+                    
+                    // Format plate number display
+                    const plateDisplay = (data.plate_number === 'ND' || !data.plate_number) ? 
+                                        'ON PROCESS' : 
+                                        data.plate_number;
+
                     resultContainer.innerHTML = `
                       <div class="card">
     <div class="card-header bg-primary text-white">
@@ -32,17 +39,16 @@ document.addEventListener("DOMContentLoaded", function() {
             <div class="col-md-6">
                 <p><strong>Date Registered:</strong> ${data.date_reg || 'N/A'}</p>
                 <p><strong>MV File Number:</strong> ${data.mv_file_number || 'N/A'}</p>
-                <p><strong>Name:</strong> ${data.last_name || ''}, ${data.first_name || ''}</p>
+                <p><strong>Name:</strong> ${nameDisplay}</p>
             </div>
             <div class="col-md-6">
                 <p><strong>Branch:</strong> ${data.branch || 'N/A'}</p>
-                <p><strong>Plate Number:</strong> ${(data.plate_number === 'ND' || !data.plate_number) ? 'ON PROCESS' : data.plate_number}</p>
+                <p><strong>Plate Number:</strong> ${plateDisplay}</p>
                 <p><strong>Remarks:</strong> ${data.remarks || 'N/A'}</p>
             </div>
         </div>
     </div>
 </div>
-
                     `;
                 }
             } catch (error) {

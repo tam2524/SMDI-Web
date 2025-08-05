@@ -17,7 +17,7 @@ if (empty($lastname) || empty($firstname)) {
     exit;
 }
 
-// Prepare SQL query with LIKE operator for partial matches
+// Prepare SQL query for main records table
 $sql = "SELECT * FROM records WHERE family_name LIKE CONCAT('%', ?, '%') AND first_name LIKE CONCAT('%', ?, '%')";
 $stmt = $conn->prepare($sql);
 
@@ -27,13 +27,13 @@ if ($stmt === false) {
     exit;
 }
 
-// Bind parameters
+// Bind parameters and execute
 $stmt->bind_param("ss", $lastname, $firstname);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
-    // Fetch data
+    // Fetch data from main records table
     $row = $result->fetch_assoc();
     $response = array(
         "plate_number" => $row['plate_number'],
@@ -45,7 +45,34 @@ if ($result->num_rows > 0) {
         "remarks" => $row['remarks']
     );
 } else {
-    $response = array("error" => "No matching records found for the provided name");
+    // If no records found in main table, try registration table
+    $sql = "SELECT * FROM registration WHERE full_name LIKE CONCAT('%', ?, '%') OR 
+            (full_name LIKE CONCAT('%', ?, '%') AND full_name LIKE CONCAT('%', ?, '%'))";
+    $stmt = $conn->prepare($sql);
+    
+    if ($stmt === false) {
+        header('Content-Type: application/json');
+        echo json_encode(array("error" => "Failed to prepare SQL query: " . $conn->error));
+        exit;
+    }
+    
+    $stmt->bind_param("sss", $lastname, $lastname, $firstname);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        // Fetch data from registration table
+        $row = $result->fetch_assoc();
+        $response = array(
+            "plate_number" => $row['lto_plate_number'],
+            "mv_file_number" => $row['mv_file_number'],
+            "full_name" => $row['full_name'],
+            "date_reg" => $row['date_reg']
+            // Other fields will be blank/N/A as they don't exist in registration table
+        );
+    } else {
+        $response = array("error" => "No matching records found in either table");
+    }
 }
 
 // Close connection
