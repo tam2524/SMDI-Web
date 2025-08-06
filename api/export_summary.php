@@ -259,7 +259,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                 $columnTotals['TTL'] += $modelTotal;
                 $brandTotal['TTL'] += $modelTotal;
                 
-               // Set GT (TTL + CEBU)
+             // Set GT (TTL + CEBU)
     $gt = $modelTotal + $modelCebu;
     $dataMatrix[$model]['GT'] = $gt;
     $columnTotals['GT'] += $gt;
@@ -274,34 +274,42 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
         $colLetter++;
     }
-                
-                // Calculate percentage of this model's GT against brand's GT total
-    $percentage = ($brandGTtotal > 0) ? ($gt / $brandGTtotal) : 0;
-    $sheet->setCellValue($colLetter.$row, round($percentage, 1).'%');
     
+    // Calculate percentage of this model's GT against brand's GT total
+    $percentage = ($brandGTtotal > 0) ? ($gt / $brandGTtotal) * 100 : 0;
+    
+    // Custom rounding:
+    // - 0.001% → 0%
+    // - 0.01% → 1%
+    // - 0.5% → 1%
+    // - 1.49% → 1%
+    // - 1.5% → 2%
+    $roundedPercentage = ($percentage >= 0.5) ? round($percentage) : 
+                        (($percentage >= 0.01) ? 1 : 0);
+    
+    $sheet->setCellValue($colLetter.$row, $roundedPercentage.'%');
     $row++;
-            }
-            
-            // Store brand GT total for later percentage calculations
-            $brandGTtotals[$brand] = $brandGTtotal;
-            
-            // Add brand subtotal row with corrected column order
-            $sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
-            $sheet->getStyle('A'.$row)->getFont()->setBold(true);
-            
-            $colLetter = 'B';
-            foreach ($allBranches as $branch) {
-                if (in_array($branch, $reportBranches)) {
-                    $sheet->setCellValue($colLetter.$row, $brandTotal[$branch]);
-                } elseif ($branch == 'TTL') {
-                    $sheet->setCellValue($colLetter.$row, $brandTotal['TTL']);
-                } elseif ($branch == 'CEBU') {
-                    $sheet->setCellValue($colLetter.$row, $brandCebuTotal);
-                } elseif ($branch == 'GT') {
-                    $sheet->setCellValue($colLetter.$row, $brandTotal['TTL'] + $brandCebuTotal);
-                }
-                $colLetter++;
-            }
+}
+
+// For brand subtotal row:
+$sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
+$colLetter = 'B';
+foreach ($allBranches as $branch) {
+    if (in_array($branch, $reportBranches)) {
+        $sheet->setCellValue($colLetter.$row, $brandTotal[$branch]);
+    } elseif ($branch == 'TTL') {
+        $sheet->setCellValue($colLetter.$row, $brandTotal['TTL']);
+    } elseif ($branch == 'CEBU') {
+        $sheet->setCellValue($colLetter.$row, $brandCebuTotal);
+    } elseif ($branch == 'GT') {
+        $sheet->setCellValue($colLetter.$row, $brandGTtotal);
+    }
+    $colLetter++;
+}
+
+// Brand GT percentage is always 100%
+$sheet->setCellValue($colLetter.$row, '100%');
+$row++;
             
             // Add percentage of GT for this brand
            $grandTotalGT = $columnTotals['GT'];
