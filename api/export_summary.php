@@ -259,57 +259,48 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                 $columnTotals['TTL'] += $modelTotal;
                 $brandTotal['TTL'] += $modelTotal;
                 
-                // Set GT (TTL + CEBU)
-                $gt = $modelTotal + $modelCebu;
-                $dataMatrix[$model]['GT'] = $gt;
-                $columnTotals['GT'] += $gt;
-                $brandTotal['GT'] += $gt;
-                $brandGTtotal += $gt;
+               // Set GT (TTL + CEBU)
+    $gt = $modelTotal + $modelCebu;
+    $dataMatrix[$model]['GT'] = $gt;
+    $columnTotals['GT'] += $gt;
+    $brandTotal['GT'] += $gt;
+    $brandGTtotal += $gt;
+    
+    // Write model row
+    $sheet->setCellValue('A'.$row, $model);
+    $colLetter = 'B';
+    foreach ($allBranches as $branch) {
+        $value = $dataMatrix[$model][$branch];
+        $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
+        $colLetter++;
+    }
                 
-                // Write model row with corrected column order
-                $sheet->setCellValue('A'.$row, $model);
-                $colLetter = 'B';
-                foreach ($allBranches as $branch) {
-                    $value = $dataMatrix[$model][$branch];
-                    $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
-                    $colLetter++;
-                }
-                
-                // Add percentage of GT for this model
-                $gtValue = $dataMatrix[$model]['GT'];
-                $percentage = ($brandGTtotal > 0 && $gtValue > 0) ? round(($gtValue / $brandGTtotal) * 100, 1) : 0;
-                $sheet->setCellValue($colLetter.$row, $percentage > 0 ? $percentage.'%' : '');
-                
-                $row++;
+                // Calculate percentage of this model's GT against brand's GT total
+    $percentage = ($brandGTtotal > 0) ? ($gt / $brandGTtotal) * 100 : 0;
+    $sheet->setCellValue($colLetter.$row, round($percentage, 1).'%');
+    
+    $row++;
             }
             
-            // Store brand GT total for later percentage calculations
-            $brandGTtotals[$brand] = $brandGTtotal;
-            
-            // Add brand subtotal row with corrected column order
-            $sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
-            $sheet->getStyle('A'.$row)->getFont()->setBold(true);
-            
-            $colLetter = 'B';
-            foreach ($allBranches as $branch) {
-                if (in_array($branch, $reportBranches)) {
-                    $sheet->setCellValue($colLetter.$row, $brandTotal[$branch]);
-                } elseif ($branch == 'TTL') {
-                    $sheet->setCellValue($colLetter.$row, $brandTotal['TTL']);
-                } elseif ($branch == 'CEBU') {
-                    $sheet->setCellValue($colLetter.$row, $brandCebuTotal);
-                } elseif ($branch == 'GT') {
-                    $sheet->setCellValue($colLetter.$row, $brandTotal['TTL'] + $brandCebuTotal);
-                }
-                $colLetter++;
-            }
-            
-            // Add percentage of GT for this brand
-           $grandTotalGT = $columnTotals['GT'];
-            $brandPercentage = ($grandTotalGT > 0) ? ($brandGTtotal / $grandTotalGT) * 100 : 0;
-            $sheet->setCellValue($colLetter.$row, round($brandPercentage, 1).'%');
-            
-            $row++;
+            // For brand subtotal row:
+$sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
+$colLetter = 'B';
+foreach ($allBranches as $branch) {
+    if (in_array($branch, $reportBranches)) {
+        $sheet->setCellValue($colLetter.$row, $brandTotal[$branch]);
+    } elseif ($branch == 'TTL') {
+        $sheet->setCellValue($colLetter.$row, $brandTotal['TTL']);
+    } elseif ($branch == 'CEBU') {
+        $sheet->setCellValue($colLetter.$row, $brandCebuTotal);
+    } elseif ($branch == 'GT') {
+        $sheet->setCellValue($colLetter.$row, $brandGTtotal);
+    }
+    $colLetter++;
+}
+
+// Brand GT percentage is always 100%
+$sheet->setCellValue($colLetter.$row, '100%');
+$row++;
         }
 
         // Add GRAND TOTAL row with corrected column order

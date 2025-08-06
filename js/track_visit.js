@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add debug info
     console.log('Sending tracking data:', trackingData);
 
-    fetch('../track_visit.php', {
+    fetch('../api/track_visit.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Tracking error:', error);
         // Fallback to image pixel if fetch fails
         const fallbackImg = document.createElement('img');
-        fallbackImg.src = 'track_visit.php?page=' + encodeURIComponent(trackingData.page) + 
+        fallbackImg.src = 'api/track_visit.php?page=' + encodeURIComponent(trackingData.page) + 
                          '&referrer=' + encodeURIComponent(trackingData.referrer);
         fallbackImg.style.display = 'none';
         document.body.appendChild(fallbackImg);
