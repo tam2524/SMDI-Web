@@ -137,9 +137,9 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         // Define brand models grouping
         $brandModels = [
             "Suzuki" => ["GSX-250RL/FRLX", "GSX-150", "BIGBIKE", "GSX150FRF NEW", "GSX-S150", "UX110NER", "UB125", "AVENIS", "FU150", "FU150-FI", "FW110D", "FW110SD/SC", "DS250RL", "FJ110 LB-2", "FW110D(SMASH FI)", "FJ110LX", "UB125LNM(NEW)", "UK110", "UX110", "UK125", "GD110"],
-            "Honda" => ["GIORNO+", "CCG 125", "CFT125MRCS", "AFB110MDJ", "AFS110MDJ", "AFB110MDH", "CFT125MSJ", "AFS110MCDE", "MRCP", "DIO", "MSM", "MRP", "MRS", "CFT125MRCJ", "MSP", "MSS", "AFP110DFP", "AFP110DFR", "ZN125", "PCX160NEW", "PCX160", "AFB110MSJ", "AFP110SFR", "AFP110SFP", "CBR650", "CB500", "CB650R", "GL150R", "CBR500", "AIRBLADE 150", "AIRBLADE160", "ADV160", "CBR150RMIV/RAP", "BEAT-CSFN/FR/R3/FS/3", "CB150X", "WINNER X", "CRF-150", "CRF300", "CMX500", "XR150", "ACB160", "ACB125"],
+            "Honda" => ["GIORNO+", "CCG 125", "CFT125MRCS", "AFB110MDJ", "AFS110MDJ", "AFB110MDH", "CFT125MSJ", "AFS110MCDE", "MRCP", "DIO", "MSM", "MRP", "MRS", "CFT125MRCJ", "MSP", "MSS", "AFP110DFP", "MRCP", "AFP110DFR", "ZN125", "PCX160NEW", "PCX160", "AFB110MSJ", "AFP110SFR", "AFP110SFP", "CBR650", "CB500", "CB650R", "GL150R", "CBR500", "AIRBLADE 150", "AIRBLADE160", "ADV160", "CBR150RMIV/RAP", "BEAT-CSFN/FR/R3/FS/3", "CB150X", "WINNER X", "CRF-150", "CRF300", "CMX500", "XR150", "ACB160", "ACB125"],
             "Yamaha" => ["MIO SPORTY", "MIOI125", "MIO GEAR", "SNIPER", "MIO GRAVIS", "YTX", "YZF R3", "FAZZIO", "XSR", "VEGA", "AEROX", "XTZ", "NMAX", "PG-1 BRN1", "MT-15", "FZ", "R15M BNE1/2", "XMAX", "WR155", "SEROW"],
-            "Kawasaki" => ["CT100 A", "CT100B", "CT125", "CA100AA NEW", "BC175H/MS", "BC175J/NN/SN", "BC175 III ELECT.", "BC175 III KICK", "BRUSKY", "NS125", "ELIMINATOR SE", "NINJA ZX 4RR", "KLX140", "KLX150", "CT150BA", "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"]
+            "Kawasaki" => ["CT100 A", "CT100B", "CT125", "CA100AA NEW", "BC175H/MS", "BC175J/NN/SN", "BC175 III ELECT.", "BC175 III KICK", "BRUSKY", "NS125", "ELIMINATOR SE", "CT100B", "NINJA ZX 4RR", "Z900 SE", "KLX140", "KLX150", "CT150BA", "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"]
         ];
 
         $reportBranches = [
@@ -149,7 +149,9 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             'SALAY', 'K-RID', 'IBAJAY', 'NUM', 'HO'
         ];
 
-        $allBranches = array_merge($reportBranches, ['CEBU', 'TTL', 'GT']);
+        // Corrected column order: regular branches → TTL → CEBU → GT
+        $allBranches = array_merge($reportBranches, ['TTL', 'CEBU', 'GT']);
+        $lastCol = Coordinate::stringFromColumnIndex(count($allBranches) + 1);
 
         // Set title with date range
         $title = 'SALES SUMMARY REPORT - TALLY BOARD';
@@ -162,13 +164,12 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $title .= ' - ' . $year;
         }
 
-        $lastCol = Coordinate::stringFromColumnIndex(count($allBranches) + 1);
         $sheet->mergeCells('A1:'.$lastCol.'1');
         $sheet->setCellValue('A1', $title);
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Set header row
+        // Set header row with corrected column order
         $sheet->setCellValue('A2', 'MODEL');
         $sheet->getColumnDimension('A')->setWidth(20);
 
@@ -245,7 +246,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                 $columnTotals['GT'] += $gt;
                 $brandTotal['GT'] += $gt;
                 
-                // Write model row
+                // Write model row with corrected column order
                 $sheet->setCellValue('A'.$row, $model);
                 $col = 'B';
                 foreach ($allBranches as $branch) {
@@ -256,7 +257,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                 $row++;
             }
             
-            // Add brand subtotal row
+            // Add brand subtotal row with corrected column order
             $sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
             $sheet->getStyle('A'.$row)->getFont()->setBold(true);
             
@@ -264,10 +265,10 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             foreach ($allBranches as $branch) {
                 if (in_array($branch, $reportBranches)) {
                     $sheet->setCellValue($col.$row, $brandTotal[$branch]);
-                } elseif ($branch == 'CEBU') {
-                    $sheet->setCellValue($col.$row, $brandCebuTotal);
                 } elseif ($branch == 'TTL') {
                     $sheet->setCellValue($col.$row, $brandTotal['TTL']);
+                } elseif ($branch == 'CEBU') {
+                    $sheet->setCellValue($col.$row, $brandCebuTotal);
                 } elseif ($branch == 'GT') {
                     $sheet->setCellValue($col.$row, $brandTotal['TTL'] + $brandCebuTotal);
                 }
@@ -276,16 +277,16 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $row++;
         }
 
-        // Add GRAND TOTAL row
+        // Add GRAND TOTAL row with corrected column order
         $sheet->setCellValue('A'.$row, 'GRAND TOTAL');
         $col = 'B';
         foreach ($allBranches as $branch) {
             if (in_array($branch, $reportBranches)) {
                 $sheet->setCellValue($col.$row, $columnTotals[$branch]);
-            } elseif ($branch == 'CEBU') {
-                $sheet->setCellValue($col.$row, $columnTotals['CEBU']);
             } elseif ($branch == 'TTL') {
                 $sheet->setCellValue($col.$row, $columnTotals['TTL']);
+            } elseif ($branch == 'CEBU') {
+                $sheet->setCellValue($col.$row, $columnTotals['CEBU']);
             } elseif ($branch == 'GT') {
                 $sheet->setCellValue($col.$row, $columnTotals['TTL'] + $columnTotals['CEBU']);
             }
@@ -293,7 +294,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         }
         $row++;
 
-        // Add QUOTA row
+        // Add QUOTA row (only for actual branches)
         $sheet->setCellValue('A'.$row, 'QUOTA');
         $col = 'B';
         foreach ($allBranches as $branch) {
@@ -313,12 +314,12 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         }
         $row++;
 
-        // Add PERCENTAGE row
+        // Add PERCENTAGE row (only for actual branches)
         $sheet->setCellValue('A'.$row, '%');
         $col = 'B';
         foreach ($allBranches as $branch) {
             if (in_array($branch, $reportBranches) || $branch == 'CEBU') {
-                $actual = $branch == 'CEBU' ? $columnTotals['CEBU'] : $columnTotals[$branch];
+                $actual = $columnTotals[$branch];
                 $quota = 0;
                 foreach ($quotas as $q) {
                     if ($q['branch'] == $branch) {
