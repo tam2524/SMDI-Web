@@ -266,7 +266,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
     $brandTotal['GT'] += $gt;
     $brandGTtotal += $gt;
     
-    // Write model row
+   // Write model row
     $sheet->setCellValue('A'.$row, $model);
     $colLetter = 'B';
     foreach ($allBranches as $branch) {
@@ -275,22 +275,30 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         $colLetter++;
     }
     
-    // Calculate percentage of this model's GT against brand's GT total
-    $percentage = ($brandGTtotal > 0) ? ($gt / $brandGTtotal) * 100 : 0;
+    // Calculate ratio of this model's GT against brand's GT total
+    $ratio = ($brandGTtotal > 0) ? ($gt / $brandGTtotal) : 0;
     
     // Custom rounding:
-    // - 0.001% → 0%
-    // - 0.01% → 1%
-    // - 0.5% → 1%
-    // - 1.49% → 1%
-    // - 1.5% → 2%
-    $roundedPercentage = ($percentage >= 0.5) ? round($percentage) : 
-                        (($percentage >= 0.01) ? 1 : 0);
+    // - 0.001 → 0
+    // - 0.01 → 0.01
+    // - 0.5 → 0.5
+    // - 1.49 → 1.49
+    // - 1.5 → 1.5
+    $roundedValue = $ratio; // Keep original decimal value
     
-    $sheet->setCellValue($colLetter.$row, $roundedPercentage.'%');
+    // Format display:
+    // - Show as 0 if < 0.01
+    // - Otherwise show exact decimal value
+    $displayValue = ($ratio < 0.01) ? 0 : $ratio;
+    
+    // Format with 2 decimal places, remove trailing zeros
+    $formattedValue = number_format($displayValue, 2);
+    $formattedValue = rtrim($formattedValue, '0');
+    $formattedValue = rtrim($formattedValue, '.'); // Remove decimal point if no decimals
+    
+    $sheet->setCellValue($colLetter.$row, $formattedValue);
     $row++;
 }
-
 // For brand subtotal row:
 $sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
 $colLetter = 'B';

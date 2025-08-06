@@ -44,11 +44,11 @@ try {
         // Insert new visit
         $stmt = $conn->prepare("
             INSERT INTO visitor_logs 
-            (ip_address, user_agent, page_visited, referrer) 
-            VALUES (?, ?, ?, ?)
+            (ip_address, user_agent, page_visited) 
+            VALUES (?, ?, ?)
         ");
-        $stmt->bind_param("ssss", $ip_address, $user_agent, $page_visited, $referrer);
-        
+        $stmt->bind_param("sss", $ip_address, $user_agent, $page_visited);
+
         if (!$stmt->execute()) {
             throw new Exception("Database insert failed: " . $stmt->error);
         }
