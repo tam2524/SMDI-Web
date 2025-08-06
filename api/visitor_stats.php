@@ -1,5 +1,5 @@
 <?php
-require_once '../db_config.php';
+require_once '../api/db_config.php';
 header('Content-Type: application/json');
 
 // Get date range from request

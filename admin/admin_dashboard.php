@@ -101,7 +101,7 @@
 }
 
 .tab-content {
-    padding: 20px 0;
+    padding: 0px 0;
 }
 
 /* Visitor Stats Cards */
@@ -266,6 +266,96 @@
                 </div>
             </div>
         </div>
+
+        
+  <div class="tab-pane fade" id="visitors" role="tabpanel" aria-labelledby="visitors-tab">
+                <div class="card mb-4">
+                    <div class="card-body">
+            <h5 class="card-title">Website Visitor Statistics</h5>
+            
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h6 class="card-title">Total Visits</h6>
+                            <h3 id="totalVisits" class="card-text">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h6 class="card-title">Unique Visitors</h6>
+                            <h3 id="uniqueVisitors" class="card-text">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h6 class="card-title">Today's Visits</h6>
+                            <h3 id="todayVisits" class="card-text">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h6 class="card-title">This Month</h6>
+                            <h3 id="monthVisits" class="card-text">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Date Range Filter -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="visitorStartDate" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="visitorStartDate">
+                </div>
+                <div class="col-md-4">
+                    <label for="visitorEndDate" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="visitorEndDate">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button id="filterVisitorsBtn" class="btn btn-primary text-white">Filter</button>
+                    <button id="resetVisitorFilterBtn" class="btn btn-secondary ms-2">Reset</button>
+                </div>
+            </div>
+            
+            <!-- Visitor Log Table -->
+            <div class="table-responsive">
+                <table id="visitorsTable" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>IP Address</th>
+                            <th>Page Visited</th>
+                            <th>Device</th>
+                            <th>Visit Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="visitorsTableBody">
+                        <!-- Visitor logs will be loaded here by AJAX -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="Page navigation">
+                <ul id="visitorsPaginationControls" class="pagination">
+                    <li id="prevVisitorsPage" class="page-item">
+                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                    </li>
+                    <li id="nextVisitorsPage" class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
     </div>
 
 <!-- Add Record Modal -->
@@ -576,95 +666,7 @@
         </div>
     </div>
 </div>
-<div class="tab-pane fade" id="visitors" role="tabpanel" aria-labelledby="visitors-tab">
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Website Visitor Statistics</h5>
-            
-            <!-- Summary Cards -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card text-white bg-primary">
-                        <div class="card-body">
-                            <h6 class="card-title">Total Visits</h6>
-                            <h3 id="totalVisits" class="card-text">0</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-white bg-success">
-                        <div class="card-body">
-                            <h6 class="card-title">Unique Visitors</h6>
-                            <h3 id="uniqueVisitors" class="card-text">0</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-white bg-info">
-                        <div class="card-body">
-                            <h6 class="card-title">Today's Visits</h6>
-                            <h3 id="todayVisits" class="card-text">0</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-white bg-warning">
-                        <div class="card-body">
-                            <h6 class="card-title">This Month</h6>
-                            <h3 id="monthVisits" class="card-text">0</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Date Range Filter -->
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label for="visitorStartDate" class="form-label">From Date</label>
-                    <input type="date" class="form-control" id="visitorStartDate">
-                </div>
-                <div class="col-md-4">
-                    <label for="visitorEndDate" class="form-label">To Date</label>
-                    <input type="date" class="form-control" id="visitorEndDate">
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button id="filterVisitorsBtn" class="btn btn-primary text-white">Filter</button>
-                    <button id="resetVisitorFilterBtn" class="btn btn-secondary ms-2">Reset</button>
-                </div>
-            </div>
-            
-            <!-- Visitor Log Table -->
-            <div class="table-responsive">
-                <table id="visitorsTable" class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>IP Address</th>
-                            <th>Page Visited</th>
-                            <th>Referrer</th>
-                            <th>Device</th>
-                            <th>Visit Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="visitorsTableBody">
-                        <!-- Visitor logs will be loaded here by AJAX -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            <nav aria-label="Page navigation">
-                <ul id="visitorsPaginationControls" class="pagination">
-                    <li id="prevVisitorsPage" class="page-item">
-                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                    </li>
-                    <li id="nextVisitorsPage" class="page-item">
-                        <a class="page-link" href="#">Next</a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    </div>
-</div>
+
 <!-- Warning Modal -->
 <div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="warningModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
