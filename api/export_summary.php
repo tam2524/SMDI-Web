@@ -137,21 +137,35 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         // Define brand models grouping
         $brandModels = [
             "Suzuki" => ["GSX-250RL/FRLX", "GSX-150", "BIGBIKE", "GSX150FRF NEW", "GSX-S150", "UX110NER", "UB125", "AVENIS", "FU150", "FU150-FI", "FW110D", "FW110SD/SC", "DS250RL", "FJ110 LB-2", "FW110D(SMASH FI)", "FJ110LX", "UB125LNM(NEW)", "UK110", "UX110", "UK125", "GD110"],
-            "Honda" => ["GIORNO+", "CCG 125", "CFT125MRCS", "AFB110MDJ", "AFS110MDJ", "AFB110MDH", "CFT125MSJ", "AFS110MCDE", "MRCP", "DIO", "MSM", "MRP", "MRS", "CFT125MRCJ", "MSP", "MSS", "AFP110DFP", "MRCP", "AFP110DFR", "ZN125", "PCX160NEW", "PCX160", "AFB110MSJ", "AFP110SFR", "AFP110SFP", "CBR650", "CB500", "CB650R", "GL150R", "CBR500", "AIRBLADE 150", "AIRBLADE160", "ADV160", "CBR150RMIV/RAP", "BEAT-CSFN/FR/R3/FS/3", "CB150X", "WINNER X", "CRF-150", "CRF300", "CMX500", "XR150", "ACB160", "ACB125"],
+            "Honda" => ["GIORNO+", "CCG 125", "CFT125MRCS", "AFB110MDJ", "AFS110MDJ", "AFB110MDH", "CFT125MSJ", "AFS110MCDE", "MRCP", "DIO", "MSM", "MRP", "MRS", "CFT125MRCJ", "MSP", "MSS", "AFP110DFP",  "AFP110DFR", "ZN125", "PCX160NEW", "PCX160", "AFB110MSJ", "AFP110SFR", "AFP110SFP", "CBR650", "CB500", "CB650R", "GL150R", "CBR500", "AIRBLADE 150", "AIRBLADE160", "ADV160", "CBR150RMIV/RAP", "BEAT-CSFN/FR/R3/FS/3", "CB150X", "WINNER X", "CRF-150", "CRF300", "CMX500", "XR150", "ACB160", "ACB125"],
             "Yamaha" => ["MIO SPORTY", "MIOI125", "MIO GEAR", "SNIPER", "MIO GRAVIS", "YTX", "YZF R3", "FAZZIO", "XSR", "VEGA", "AEROX", "XTZ", "NMAX", "PG-1 BRN1", "MT-15", "FZ", "R15M BNE1/2", "XMAX", "WR155", "SEROW"],
-            "Kawasaki" => ["CT100 A", "CT100B", "CT125", "CA100AA NEW", "BC175H/MS", "BC175J/NN/SN", "BC175 III ELECT.", "BC175 III KICK", "BRUSKY", "NS125", "ELIMINATOR SE", "CT100B", "NINJA ZX 4RR", "Z900 SE", "KLX140", "KLX150", "CT150BA", "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"]
+            "Kawasaki" => ["CT100 A", "CT100B", "CT125", "CA100AA NEW", "BC175H/MS", "BC175J/NN/SN", "BC175 III ELECT.", "BC175 III KICK", "BRUSKY", "NS125", "ELIMINATOR SE", "NINJA ZX 4RR", "KLX140", "KLX150", "CT150BA", "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"]
         ];
-
-        $reportBranches = [
+  $reportBranches = [
             'RXS-1', 'RXS-2', 'ANT-1', 'ANT-2', 'DEL-1', 'DEL-2', 'JAR-1', 'JAR-2',
             'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
             'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', 'MINDO', 'MIN',
             'SALAY', 'K-RID', 'IBAJAY', 'NUM', 'HO'
         ];
 
-        // Corrected column order: regular branches → TTL → CEBU → GT
+        // Correct column order: regular branches → TTL → CEBU → GT → % of GT
         $allBranches = array_merge($reportBranches, ['TTL', 'CEBU', 'GT']);
-        $lastCol = Coordinate::stringFromColumnIndex(count($allBranches) + 1);
+        $lastCol = Coordinate::stringFromColumnIndex(count($allBranches) + 2); // +2 because we're adding % column
+        
+        // Prepare quota data
+        $quotaData = [];
+        foreach ($quotas as $q) {
+            $quotaData[$q['branch']] = (int)$q['quota'];
+        }
+
+        // Calculate TTL quota (sum of all regular branches)
+        $quotaData['TTL'] = 0;
+        foreach ($reportBranches as $branch) {
+            $quotaData['TTL'] += $quotaData[$branch] ?? 0;
+        }
+
+        // Calculate GT quota (TTL quota + CEBU quota)
+        $quotaData['GT'] = ($quotaData['TTL'] ?? 0) + ($quotaData['CEBU'] ?? 0);
 
         // Set title with date range
         $title = 'SALES SUMMARY REPORT - TALLY BOARD';
@@ -179,6 +193,9 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $sheet->getColumnDimension($col)->setWidth(8);
             $col++;
         }
+        // Add % column header
+        $sheet->setCellValue($col.'2', '%');
+        $sheet->getColumnDimension($col)->setWidth(8);
         
         $headerStyle = [
             'font' => ['bold' => true],
@@ -186,11 +203,12 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']]
         ];
-        $sheet->getStyle('A2:'.$lastCol.'2')->applyFromArray($headerStyle);
+        $sheet->getStyle('A2:'.$col.'2')->applyFromArray($headerStyle);
 
         // Initialize data structures
         $dataMatrix = [];
         $columnTotals = array_fill_keys($allBranches, 0);
+        $brandGTtotals = []; // To store each brand's GT total for percentage calculation
         $row = 3;
 
         // Group models by brand
@@ -198,13 +216,14 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             // Add brand header
             $sheet->setCellValue('A'.$row, $brand);
             $sheet->getStyle('A'.$row)->getFont()->setBold(true);
-            $sheet->getStyle('A'.$row.':'.$lastCol.$row)->getFill()
+            $sheet->getStyle('A'.$row.':'.$col.$row)->getFill()
                 ->setFillType(Fill::FILL_SOLID)
                 ->getStartColor()->setARGB('FFEEEEEE');
             $row++;
             
             $brandTotal = array_fill_keys($allBranches, 0);
             $brandCebuTotal = 0;
+            $brandGTtotal = 0; // To calculate this brand's GT total
             
             foreach ($models as $model) {
                 $dataMatrix[$model] = array_fill_keys($allBranches, 0);
@@ -245,108 +264,112 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                 $dataMatrix[$model]['GT'] = $gt;
                 $columnTotals['GT'] += $gt;
                 $brandTotal['GT'] += $gt;
+                $brandGTtotal += $gt;
                 
                 // Write model row with corrected column order
                 $sheet->setCellValue('A'.$row, $model);
-                $col = 'B';
+                $colLetter = 'B';
                 foreach ($allBranches as $branch) {
                     $value = $dataMatrix[$model][$branch];
-                    $sheet->setCellValue($col.$row, $value !== 0 ? $value : '');
-                    $col++;
+                    $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
+                    $colLetter++;
                 }
+                
+                // Add percentage of GT for this model
+                $gtValue = $dataMatrix[$model]['GT'];
+                $percentage = ($brandGTtotal > 0 && $gtValue > 0) ? round(($gtValue / $brandGTtotal) * 100, 1) : 0;
+                $sheet->setCellValue($colLetter.$row, $percentage > 0 ? $percentage.'%' : '');
+                
                 $row++;
             }
+            
+            // Store brand GT total for later percentage calculations
+            $brandGTtotals[$brand] = $brandGTtotal;
             
             // Add brand subtotal row with corrected column order
             $sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
             $sheet->getStyle('A'.$row)->getFont()->setBold(true);
             
-            $col = 'B';
+            $colLetter = 'B';
             foreach ($allBranches as $branch) {
                 if (in_array($branch, $reportBranches)) {
-                    $sheet->setCellValue($col.$row, $brandTotal[$branch]);
+                    $sheet->setCellValue($colLetter.$row, $brandTotal[$branch]);
                 } elseif ($branch == 'TTL') {
-                    $sheet->setCellValue($col.$row, $brandTotal['TTL']);
+                    $sheet->setCellValue($colLetter.$row, $brandTotal['TTL']);
                 } elseif ($branch == 'CEBU') {
-                    $sheet->setCellValue($col.$row, $brandCebuTotal);
+                    $sheet->setCellValue($colLetter.$row, $brandCebuTotal);
                 } elseif ($branch == 'GT') {
-                    $sheet->setCellValue($col.$row, $brandTotal['TTL'] + $brandCebuTotal);
+                    $sheet->setCellValue($colLetter.$row, $brandTotal['TTL'] + $brandCebuTotal);
                 }
-                $col++;
+                $colLetter++;
             }
+            
+            // Add percentage of GT for this brand
+           $grandTotalGT = $columnTotals['GT'];
+            $brandPercentage = ($grandTotalGT > 0) ? ($brandGTtotal / $grandTotalGT) * 100 : 0;
+            $sheet->setCellValue($colLetter.$row, round($brandPercentage, 1).'%');
+            
             $row++;
         }
 
         // Add GRAND TOTAL row with corrected column order
         $sheet->setCellValue('A'.$row, 'GRAND TOTAL');
-        $col = 'B';
+        $colLetter = 'B';
         foreach ($allBranches as $branch) {
             if (in_array($branch, $reportBranches)) {
-                $sheet->setCellValue($col.$row, $columnTotals[$branch]);
+                $sheet->setCellValue($colLetter.$row, $columnTotals[$branch]);
             } elseif ($branch == 'TTL') {
-                $sheet->setCellValue($col.$row, $columnTotals['TTL']);
+                $sheet->setCellValue($colLetter.$row, $columnTotals['TTL']);
             } elseif ($branch == 'CEBU') {
-                $sheet->setCellValue($col.$row, $columnTotals['CEBU']);
+                $sheet->setCellValue($colLetter.$row, $columnTotals['CEBU']);
             } elseif ($branch == 'GT') {
-                $sheet->setCellValue($col.$row, $columnTotals['TTL'] + $columnTotals['CEBU']);
+                $sheet->setCellValue($colLetter.$row, $columnTotals['TTL'] + $columnTotals['CEBU']);
             }
-            $col++;
+            $colLetter++;
         }
+        
+        // Add 100% for grand total percentage
+        $sheet->setCellValue($colLetter.$row, '100%');
         $row++;
 
-        // Add QUOTA row (only for actual branches)
+        // Add QUOTA row (now includes TTL and GT)
         $sheet->setCellValue('A'.$row, 'QUOTA');
-        $col = 'B';
+        $colLetter = 'B';
         foreach ($allBranches as $branch) {
-            if (in_array($branch, $reportBranches) || $branch == 'CEBU') {
-                $quota = 0;
-                foreach ($quotas as $q) {
-                    if ($q['branch'] == $branch) {
-                        $quota = (int)$q['quota'];
-                        break;
-                    }
-                }
-                $sheet->setCellValue($col.$row, $quota > 0 ? $quota : '');
-            } else {
-                $sheet->setCellValue($col.$row, '');
-            }
-            $col++;
+            $quota = $quotaData[$branch] ?? 0;
+            $sheet->setCellValue($colLetter.$row, $quota > 0 ? $quota : '');
+            $colLetter++;
         }
+        // Empty cell for percentage column
+        $sheet->setCellValue($colLetter.$row, '');
         $row++;
 
-        // Add PERCENTAGE row (only for actual branches)
+        // Add PERCENTAGE row (now includes TTL and GT)
         $sheet->setCellValue('A'.$row, '%');
-        $col = 'B';
+        $colLetter = 'B';
         foreach ($allBranches as $branch) {
-            if (in_array($branch, $reportBranches) || $branch == 'CEBU') {
-                $actual = $columnTotals[$branch];
-                $quota = 0;
-                foreach ($quotas as $q) {
-                    if ($q['branch'] == $branch) {
-                        $quota = (int)$q['quota'];
-                        break;
-                    }
-                }
-                if ($quota > 0) {
-                    $percent = round(($actual / $quota) * 100);
-                    $sheet->setCellValue($col.$row, $percent.'%');
-                } else {
-                    $sheet->setCellValue($col.$row, '');
-                }
+            $actual = $columnTotals[$branch] ?? 0;
+            $quota = $quotaData[$branch] ?? 0;
+            
+            if ($quota > 0) {
+                $percent = round(($actual / $quota) * 100);
+                $sheet->setCellValue($colLetter.$row, $percent.'%');
             } else {
-                $sheet->setCellValue($col.$row, '');
+                $sheet->setCellValue($colLetter.$row, '');
             }
-            $col++;
+            $colLetter++;
         }
+        // Empty cell for percentage column
+        $sheet->setCellValue($colLetter.$row, '');
         $row++;
 
         // Apply styling
-        $sheet->getStyle('A3:'.$lastCol.($row-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle('A3:'.$col.($row-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
         $summaryStyle = [
             'font' => ['bold' => true],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']]
         ];
-        $sheet->getStyle('A'.($row-4).':'.$lastCol.($row-1))->applyFromArray($summaryStyle);
+        $sheet->getStyle('A'.($row-4).':'.$col.($row-1))->applyFromArray($summaryStyle);
         $sheet->freezePane('A3');
 
         // Output

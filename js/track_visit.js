@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add debug info
     console.log('Sending tracking data:', trackingData);
 
-    fetch('track_visit.php', {
+    fetch('../track_visit.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
