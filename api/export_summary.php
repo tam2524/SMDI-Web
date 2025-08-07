@@ -100,11 +100,16 @@ $showTTL = count(array_intersect($allBranches, array_slice($orderedBranches, 0, 
 $showCEBU = in_array('CEBU', $allBranches);
 $showGT = $showTTL || $showCEBU;
 
-// Build the list of columns to display
-$displayBranches = array_intersect($orderedBranches, $allBranches);
-if ($showTTL) $displayBranches[] = 'TTL';
-if ($showCEBU) $displayBranches[] = 'CEBU';
-if ($showGT) $displayBranches[] = 'GT';
+// Remove TTL, CEBU, GT to avoid duplicates
+$displayBranches = array_diff(array_intersect($orderedBranches, $allBranches), ['TTL', 'CEBU', 'GT']);
+
+// Add TTL, CEBU, GT in the desired order
+if ($showTTL || $showCEBU || $showGT) {
+    if ($showTTL) $displayBranches[] = 'TTL';
+    if ($showCEBU) $displayBranches[] = 'CEBU';
+    if ($showGT) $displayBranches[] = 'GT';
+}
+
 
 // Filter models to only those with sales
 $modelsWithSales = [];
@@ -168,6 +173,13 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
+        // Title and headers (same as your code)
+        $lastCol = Coordinate::stringFromColumnIndex(count($branches) + 2); // +2: 1 for MODEL, 1 for % column
+        $headerRow = 4; // You may adjust if filter row exists
+
+        // Freeze header row
+        $sheet->freezePane('A' . ($headerRow + 1)); 
+
         // Set document properties
         $spreadsheet->getProperties()
             ->setCreator("SMDI Sales System")
@@ -201,19 +213,33 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         }
 
         // Calculate TTL quota (sum of all regular branches)
-        if (in_array('TTL', $branches)) {
-            $quotaData['TTL'] = 0;
-            foreach ($branches as $branch) {
-                if (!in_array($branch, ['TTL', 'CEBU', 'GT'])) {
-                    $quotaData['TTL'] += $quotaData[$branch] ?? 0;
-                }
-            }
-        }
+       if (in_array('TTL', $branches)) {
+    $dataMatrix[$model]['TTL'] = $modelTotal;
+    $columnTotals['TTL'] += $modelTotal;
+    $brandTotal['TTL'] += $modelTotal;
+}
+
 
         // Calculate GT quota (TTL quota + CEBU quota)
-        if (in_array('GT', $branches)) {
-            $quotaData['GT'] = ($quotaData['TTL'] ?? 0) + ($quotaData['CEBU'] ?? 0);
+if (in_array('GT', $branches)) {
+    $quotaData['GT'] = 0;
+
+    foreach ($quotaData as $branch => $quota) {
+        if (!in_array($branch, ['GT', 'TTL'])) {
+            $quotaData['GT'] += $quota;
         }
+    }
+}
+
+// Calculate TTL quota (sum of all regular branches excluding TTL, CEBU, GT)
+if (in_array('TTL', $branches)) {
+    $quotaData['TTL'] = 0;
+    foreach ($quotaData as $branch => $quota) {
+        if (!in_array($branch, ['CEBU', 'GT', 'TTL'])) {
+            $quotaData['TTL'] += $quota;
+        }
+    }
+}
 
         // Set main title with date range
         $title = 'SALES SUMMARY REPORT';
@@ -275,6 +301,27 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         // Adjust starting row for data
         $row = $headerRow + 1;
 
+        // Define styles
+        $highlightYellow = [
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FFFFF599']
+            ]
+        ];
+        $highlightGreen = [
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FF92D050']
+            ]
+        ];
+        $highlightGray = [
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FFD9D9D9']
+            ]
+        ];
         // Initialize data structures
         $dataMatrix = [];
         $columnTotals = array_fill_keys($branches, 0);
@@ -313,29 +360,32 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             
             // Second pass - output rows
             foreach ($models as $model) {
-                $dataMatrix[$model] = array_fill_keys($branches, 0);
-                $modelTotal = 0;
-                $modelCebu = 0;
+               $dataMatrix[$model] = array_fill_keys($branches, 0);
+    $modelTotal = 0;
+    $modelCebu = 0;
                 
-                // Process branches
-                foreach ($sales as $sale) {
-                    if ($sale['model'] == $model && in_array($sale['branch'], $branches)) {
-                        $branch = $sale['branch'];
-                        $qty = (int)$sale['qty'];
-                        $dataMatrix[$model][$branch] = $qty;
-                        $columnTotals[$branch] += $qty;
-                        $brandTotal[$branch] += $qty;
-                        $modelTotal += $qty;
-                    }
-                }
-                
+               foreach ($sales as $sale) {
+    if ($sale['model'] == $model && in_array($sale['branch'], $branches)) {
+        $branch = $sale['branch'];
+        $qty = (int)$sale['qty'];
+        $dataMatrix[$model][$branch] = $qty;
+        $columnTotals[$branch] += $qty;
+        $brandTotal[$branch] += $qty;
+
+        // Exclude CEBU from TTL
+        if ($branch !== 'CEBU') {
+            $modelTotal += $qty;
+        }
+    }
+}
+
                 // Process CEBU if showing
                 if (in_array('CEBU', $branches)) {
                     foreach ($sales as $sale) {
                         if ($sale['model'] == $model && $sale['branch'] == 'CEBU') {
                             $qty = (int)$sale['qty'];
                             $dataMatrix[$model]['CEBU'] = $qty;
-                            $columnTotals['CEBU'] += $qty;
+                            
                             $brandCebuTotal += $qty;
                             $modelCebu = $qty;
                             break;
@@ -390,6 +440,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
                 $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
                 $colLetter++;
             }
+            
 
             // Brand percentage is sum of all model percentages
             $sheet->setCellValue($colLetter.$row, $brandPercentageSum.'%');
@@ -443,30 +494,39 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']]
         ];
         $sheet->getStyle('A'.($row-4).':'.$col.($row-1))->applyFromArray($summaryStyle);
-        $sheet->freezePane('A'.$headerRow);
+        $sheet->freezePane('A' . ($headerRow + 1));
 
-        // Output
+
+       // Highlight TTL column
+        $ttlIndex = array_search('TTL', $branches);
+        if ($ttlIndex !== false) {
+            $ttlColLetter = Coordinate::stringFromColumnIndex($ttlIndex + 2); // +2 to account for MODEL in col A
+            $sheet->getStyle($ttlColLetter . ($headerRow) . ':' . $ttlColLetter . ($sheet->getHighestRow()))
+                ->applyFromArray($highlightGray);
+        }
+
+        // Loop back through rows to apply highlights
+        for ($i = $headerRow + 1; $i <= $sheet->getHighestRow(); $i++) {
+            $rowLabel = $sheet->getCell('A' . $i)->getValue();
+
+            if (strpos($rowLabel, 'SUB-TOTAL') !== false) {
+                $sheet->getStyle('A' . $i . ':' . $lastCol . $i)->applyFromArray($highlightYellow);
+            } elseif ($rowLabel === 'GRAND TOTAL') {
+                $sheet->getStyle('A' . $i . ':' . $lastCol . $i)->applyFromArray($highlightGreen);
+            }
+        }
+
+        // Output Excel
         if (ob_get_length()) ob_end_clean();
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        
-        // Create filename with filters
-        $filenameParts = ["sales_summary"];
-        if ($month !== 'all') $filenameParts[] = date('F', mktime(0, 0, 0, $month, 1));
-        $filenameParts[] = $year;
-        if ($brandFilter !== 'all') $filenameParts[] = $brandFilter;
-        if ($branchFilter !== 'all') $filenameParts[] = $branchFilter;
-        
-        $filename = implode('_', $filenameParts) . '.xlsx';
-        $filename = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $filename);
-
-        header('Content-Disposition: attachment;filename="'.$filename.'"');
+        $filename = 'sales_summary_' . date('Ymd_His') . '.xlsx';
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
         header('Pragma: public');
 
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
-
     } catch (Exception $e) {
         die('Error generating Excel file: ' . $e->getMessage());
     }
