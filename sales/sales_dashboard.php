@@ -1,4 +1,4 @@
-<?php include 'api/auth.php'; ?>
+<?php include '../api/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,21 +9,21 @@
     <meta content="" name="keywords">
     <meta content="" name="description">
 
-    <link rel="icon" href="assets/img/smdi_logosmall.png" type="image/png">
+    <link rel="icon" href="../assets/img/smdi_logosmall.png" type="image/png">
 
     <!-- Icon Font Stylesheet -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Libraries Stylesheet -->
-    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+    <link href="../lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="../lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
 
     <!-- Bootstrap CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Template Stylesheet -->
-    <link href="css/style.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
 
     <!-- PrintJS -->
     <link rel="stylesheet" href="https://printjs-4de6.kxcdn.com/print.min.css">
@@ -214,7 +214,7 @@
         <div class="container px-0">
             <nav class="navbar navbar-light bg-white navbar-expand-lg">
                 <a href="index.html" class="navbar-brand">
-                    <img src="assets/img/smdi_logo.jpg" alt="SMDI Logo" class="logo">
+                    <img src="../assets/img/smdi_logo.jpg" alt="SMDI Logo" class="logo">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
                     aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -223,7 +223,7 @@
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <div class="navbar-nav">
                         <a href="staffDashboard.html" class="nav-item nav-link active">Home</a>
-                        <a href="api/logout.php" class="nav-item nav-link active">Logout</a>
+                        <a href="../api/logout.php" class="nav-item nav-link active">Logout</a>
                     </div>
                 </div>
             </nav>
@@ -231,7 +231,7 @@
     </div>
 
     <!-- Main Content -->
-    <main class="container-fluid py-5" style="margin-top: 120px;">
+    <main class="container-fluid py-5" style="margin-top: 20px;">
         <div class="card mb-4">
             <div class="card-header bg-white">
                 <h1 class="h5 mb-0">Sales Records Management</h1>
@@ -871,7 +871,7 @@
             </div>
         </div>
     </div>
-    <script src="js/sales_dashboard.js"></script>
+    <script src="../js/sales_dashboard.js"></script>
 </body>
 
 </html>

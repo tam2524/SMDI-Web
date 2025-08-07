@@ -94,7 +94,7 @@ $('#uploadSalesDataForm').submit(function(e) {
         const formData = new FormData(this);
         formData.append('action', 'upload_sales_data');
         $.ajax({
-            url: 'api/sales_data_management.php',
+            url: '../api/sales_data_management.php',
             method: 'POST',
             data: formData,
             contentType: false,
@@ -118,7 +118,7 @@ function loadSales(query = '', page = 1, sort = '') {
     $('#salesTableBody').html('<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
     
     $.ajax({
-        url: 'api/sales_data_management.php',
+        url: '../api/sales_data_management.php',
         method: 'GET',
         data: { 
             action: 'get_sales',
@@ -273,7 +273,7 @@ $('#uploadSalesDataForm').on('submit', function(e) {
     formData.append('action', 'upload_sales_data');
     
     $.ajax({
-        url: 'api/sales_data_management.php',
+        url: '../api/sales_data_management.php',
         type: 'POST',
         data: formData,
         contentType: false,
@@ -322,7 +322,7 @@ function initQuotaManagement() {
         const quotaId = $(this).closest('tr').data('id');
         
         $.ajax({
-            url: 'api/sales_data_management.php',
+            url: '../api/sales_data_management.php',
             method: 'GET',
             data: { action: 'get_quota', id: quotaId },
             dataType: 'json',
@@ -370,7 +370,7 @@ function initQuotaManagement() {
         };
         
         $.ajax({
-            url: 'api/sales_data_management.php',
+            url: '../api/sales_data_management.php',
             method: 'POST',
             data: formData,
             dataType: 'json',
@@ -404,7 +404,7 @@ function initQuotaManagement() {
         
         if (confirm('Are you sure you want to delete this quota?')) {
             $.ajax({
-                url: 'api/sales_data_management.php',
+                url: '../api/sales_data_management.php',
                 method: 'POST',
                 data: { 
                     action: 'delete_quota',
@@ -464,7 +464,7 @@ function showQuotaForm() {
 
 function loadQuotas(query = '') {
     $.ajax({
-        url: 'api/sales_data_management.php',
+        url: '../api/sales_data_management.php',
         method: 'GET',
         data: { 
             action: 'get_quotas',
@@ -538,7 +538,7 @@ function generateSummaryReport() {
     showLoading(true, '#summaryReportBody');
     
     $.ajax({
-        url: 'api/sales_data_management.php',
+        url: '../api/sales_data_management.php',
         method: 'GET',
         data: {
             action: 'get_summary_report',
@@ -602,7 +602,7 @@ function exportReport(format) {
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
 
     // Build export URL
-    let url = `api/export_summary.php?format=${format}`;
+    let url = `../api/export_summary.php?format=${format}`;
     if (month && month !== 'all') url += `&month=${month}`;
     if (year) url += `&year=${year}`;
     if (branch && branch !== 'all') url += `&branch=${encodeURIComponent(branch)}`;
@@ -671,7 +671,7 @@ function initModals() {
         };
         
         $.ajax({
-            url: 'api/sales_data_management.php',
+            url: '../api/sales_data_management.php',
             method: 'POST',
             data: formData,
             dataType: 'json',
@@ -700,7 +700,7 @@ function initModals() {
         const saleId = $(this).closest('tr').data('id');
         
         $.ajax({
-            url: 'api/sales_data_management.php',
+            url: '../api/sales_data_management.php',
             method: 'GET',
             data: { action: 'get_sale', id: saleId },
             dataType: 'json',
@@ -744,7 +744,7 @@ function initModals() {
         };
         
         $.ajax({
-            url: 'api/sales_data_management.php',
+            url: '../api/sales_data_management.php',
             method: 'POST',
             data: formData,
             dataType: 'json',
@@ -784,7 +784,7 @@ function initModals() {
         
         if (idsToDelete.length > 0) {
             $.ajax({
-                url: 'api/sales_data_management.php',
+                url: '../api/sales_data_management.php',
                 method: 'POST',
                 data: { 
                     action: 'delete_sale',
@@ -841,7 +841,7 @@ function initModals() {
         }
 
         // Redirect to generate report script
-        window.location.href = `api/export_summary.php?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&branch=${encodeURIComponent(branch)}&format=${encodeURIComponent(outputFormat)}`;
+        window.location.href = `../api/export_summary.php?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&branch=${encodeURIComponent(branch)}&format=${encodeURIComponent(outputFormat)}`;
         
         $('#printOptionsModal').modal('hide');
     });

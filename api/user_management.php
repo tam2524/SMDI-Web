@@ -1,10 +1,17 @@
 <?php
 require_once 'db_config.php';
 
-
 header('Content-Type: application/json');
 
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 $action = $_GET['action'] ?? '';
+
+// Change to handle both POST form data and JSON
+$data = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : json_decode(file_get_contents('php://input'), true);
 
 try {
     switch ($action) {
@@ -17,15 +24,15 @@ try {
             break;
             
         case 'add_user':
-            addUser($conn);
+            addUser($conn, $data);
             break;
             
         case 'edit_user':
-            editUser($conn);
+            editUser($conn, $data);
             break;
             
         case 'delete_user':
-            deleteUser($conn);
+            deleteUser($conn, $data);
             break;
             
         default:
@@ -112,9 +119,7 @@ function getUser($conn) {
     echo json_encode(['success' => true, 'user' => $user]);
 }
 
-function addUser($conn) {
-    $data = json_decode(file_get_contents('php://input'), true);
-    
+function addUser($conn, $data) {
     // Validate required fields
     $required = ['username', 'password', 'confirmPassword'];
     foreach ($required as $field) {
@@ -143,10 +148,9 @@ function addUser($conn) {
     $position = $data['position'] ?? null;
     $branch = $data['branch'] ?? null;
     
-    // Insert new user
     $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password) 
-                           VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", 
+                           VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", 
         $data['username'],
         $fullName,
         $position,
@@ -161,9 +165,7 @@ function addUser($conn) {
     }
 }
 
-function editUser($conn) {
-    $data = json_decode(file_get_contents('php://input'), true);
-    
+function editUser($conn, $data) {
     // Validate required fields
     if (empty($data['id'])) {
         throw new Exception('User ID is required');
@@ -220,7 +222,6 @@ function editUser($conn) {
         $types .= "s";
     }
     
-
     // Update password if provided
     if (!empty($data['password'])) {
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -247,18 +248,19 @@ function editUser($conn) {
     }
 }
 
-function deleteUser($conn) {
-    $data = json_decode(file_get_contents('php://input'), true);
-    
+function deleteUser($conn, $data) {
     if (empty($data['id'])) {
         throw new Exception('User ID is required');
     }
     
     $id = intval($data['id']);
     
-    // Prevent deleting yourself
-    if (isset($_SESSION['user_id']) && $id === $_SESSION['user_id']) {
-        throw new Exception('You cannot delete your own account');
+    // Check if user exists first
+    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    if ($stmt->get_result()->num_rows === 0) {
+        throw new Exception('User not found');
     }
     
     $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");

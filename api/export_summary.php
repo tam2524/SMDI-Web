@@ -306,14 +306,14 @@ if (in_array('TTL', $branches)) {
             'font' => ['bold' => true],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FFFFF599']
+                'startColor' => ['argb' => 'FFFF00']
             ]
         ];
         $highlightGreen = [
             'font' => ['bold' => true],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FF92D050']
+                'startColor' => ['argb' => '39FF14']
             ]
         ];
         $highlightGray = [
@@ -414,6 +414,8 @@ if (in_array('TTL', $branches)) {
                     $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
                     $colLetter++;
                 }
+
+                
                 
                 $modelGT = $modelTotal + (in_array('CEBU', $branches) ? $modelCebu : 0);
                 $percentage = ($brandGTtotal > 0) ? ($modelGT / $brandGTtotal) * 100 : 0;
@@ -500,9 +502,9 @@ if (in_array('TTL', $branches)) {
        // Highlight TTL column
         $ttlIndex = array_search('TTL', $branches);
         if ($ttlIndex !== false) {
-            $ttlColLetter = Coordinate::stringFromColumnIndex($ttlIndex + 2); // +2 to account for MODEL in col A
+            $ttlColLetter = Coordinate::stringFromColumnIndex($ttlIndex + 1); // +2 to account for MODEL in col A
             $sheet->getStyle($ttlColLetter . ($headerRow) . ':' . $ttlColLetter . ($sheet->getHighestRow()))
-                ->applyFromArray($highlightGray);
+                ->applyFromArray($highlightYellow);
         }
 
         // Loop back through rows to apply highlights
@@ -516,17 +518,38 @@ if (in_array('TTL', $branches)) {
             }
         }
 
-        // Output Excel
+        // Center-align all numeric columns (B to last column) across all data rows
+$dataStartRow = $headerRow + 1;
+$dataEndRow = $sheet->getHighestRow();
+$lastDataColLetter = Coordinate::stringFromColumnIndex(count($branches) + 2); // +2 for MODEL and %
+
+$sheet->getStyle("B{$dataStartRow}:{$lastDataColLetter}{$dataEndRow}")
+    ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+
+
+      // Output
         if (ob_get_length()) ob_end_clean();
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $filename = 'sales_summary_' . date('Ymd_His') . '.xlsx';
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        
+        // Create filename with filters
+        $filenameParts = ["sales_summary"];
+        if ($month !== 'all') $filenameParts[] = date('F', mktime(0, 0, 0, $month, 1));
+        $filenameParts[] = $year;
+        if ($brandFilter !== 'all') $filenameParts[] = $brandFilter;
+        if ($branchFilter !== 'all') $filenameParts[] = $branchFilter;
+        
+        $filename = implode('_', $filenameParts) . '.xlsx';
+        $filename = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $filename);
+
+        header('Content-Disposition: attachment;filename="'.$filename.'"');
         header('Cache-Control: max-age=0');
         header('Pragma: public');
 
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
+
     } catch (Exception $e) {
         die('Error generating Excel file: ' . $e->getMessage());
     }
