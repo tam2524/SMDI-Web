@@ -6,10 +6,11 @@ const brandModels = {
     "Kawasaki": ["CT100 A", "CT100B", "CT125", "CA100AA NEW", "BC175H/MS", "BC175J/NN/SN", "BC175 III ELECT.", "BC175 III KICK", "BRUSKY", "NS125", "ELIMINATOR SE", "CT100B", "NINJA ZX 4RR", "Z900 SE", "KLX140", "KLX150", "CT150BA", "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"]
 };
 
-// Global variables
 let selectedRecordIds = [];
 let saleIdToDelete = null;
 let currentPage = 1;
+let currentSort = '';
+let totalPages = 1;
 
 $(document).ready(function() {
     // Initialize models dropdown on page load
@@ -44,28 +45,33 @@ function initSalesTable() {
         loadSales(query);
     });
 
-    // Pagination click events
+    // Pagination click events - updated version
     $(document).on('click', '.page-link', function(e) {
         e.preventDefault();
         if ($(this).parent().hasClass('disabled')) return;
         
+        const oldPage = currentPage;
+        
         if ($(this).attr('id') === 'prevPage') {
-            currentPage--;
+            currentPage = Math.max(1, currentPage - 1);
         } else if ($(this).attr('id') === 'nextPage') {
-            currentPage++;
+            currentPage = Math.min(totalPages, currentPage + 1);
         } else {
             currentPage = parseInt($(this).data('page'));
         }
         
-        loadSales($('#searchInput').val(), currentPage);
+        // Only load if page actually changed
+        if (currentPage !== oldPage) {
+            loadSales($('#searchInput').val(), currentPage, currentSort);
+        }
     });
 
-    // Sorting functionality
+    // Sorting functionality - ensure this updates currentSort
     $('.dropdown-item').on('click', function(e) {
         e.preventDefault();
-        const sortOption = $(this).data('sort');
-        currentPage = 1; // Reset to first page when sorting
-        loadSales($('#searchInput').val(), currentPage, sortOption);
+        currentSort = $(this).data('sort');
+        currentPage = 1;
+        loadSales($('#searchInput').val(), currentPage, currentSort);
     });
 
     // Handle checkbox changes
@@ -107,7 +113,10 @@ $('#uploadSalesDataForm').submit(function(e) {
             }
         });
     });
-function loadSales(query = '', page = currentPage, sort = '') {
+function loadSales(query = '', page = 1, sort = '') {
+    // Show loading state
+    $('#salesTableBody').html('<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+    
     $.ajax({
         url: 'api/sales_data_management.php',
         method: 'GET',
@@ -119,18 +128,27 @@ function loadSales(query = '', page = currentPage, sort = '') {
         },
         success: function(response) {
             if (response.success) {
-                $('#salesTableBody').html(generateTableRows(response.data));
-                updatePaginationControls(response.totalPages);
+                totalPages = response.totalPages || 1;
+                currentPage = Math.min(currentPage, totalPages); // Ensure currentPage is valid
+                
+                if (response.data && response.data.length > 0) {
+                    $('#salesTableBody').html(generateTableRows(response.data));
+                    updatePaginationControls(totalPages);
+                    $('#pageInfo').text(`Page ${currentPage} of ${totalPages}`);
+                } else {
+                    $('#salesTableBody').html('<tr><td colspan="7" class="text-center text-muted py-4">No records found</td></tr>');
+                }
             } else {
                 showErrorModal(response.message || 'Failed to load sales data');
+                $('#salesTableBody').html('<tr><td colspan="7" class="text-center text-danger">Error loading data</td></tr>');
             }
         },
         error: function(xhr, status, error) {
             showErrorModal('Error loading sales: ' + error);
+            $('#salesTableBody').html('<tr><td colspan="7" class="text-center text-danger">Error loading data</td></tr>');
         }
     });
 }
-
 function generateTableRows(sales) {
     let rows = '';
     sales.forEach(sale => {
@@ -160,29 +178,65 @@ function generateTableRows(sales) {
 
 function updatePaginationControls(totalPages) {
     let paginationHtml = '';
+    const maxVisiblePages = 5;
+    let startPage, endPage;
     
-    // Previous button
-    paginationHtml += `
-        <li id="prevPage" class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-        </li>
-    `;
+    if (totalPages <= maxVisiblePages) {
+        startPage = 1;
+        endPage = totalPages;
+    } else {
+        const half = Math.floor(maxVisiblePages / 2);
+        if (currentPage <= half + 1) {
+            startPage = 1;
+            endPage = maxVisiblePages;
+        } else if (currentPage >= totalPages - half) {
+            startPage = totalPages - maxVisiblePages + 1;
+            endPage = totalPages;
+        } else {
+            startPage = currentPage - half;
+            endPage = currentPage + half;
+        }
+    }
+    
+
+    
+    // First page + ellipsis
+    if (startPage > 1) {
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="1">1</a>
+            </li>`;
+        if (startPage > 2) {
+            paginationHtml += `
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>`;
+        }
+    }
     
     // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
+    for (let i = startPage; i <= endPage; i++) {
         paginationHtml += `
             <li class="page-item ${currentPage === i ? 'active' : ''}">
                 <a class="page-link" href="#" data-page="${i}">${i}</a>
-            </li>
-        `;
+            </li>`;
     }
     
-    // Next button
-    paginationHtml += `
-        <li id="nextPage" class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#">Next</a>
-        </li>
-    `;
+    // Last page + ellipsis
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHtml += `
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>`;
+        }
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a>
+            </li>`;
+    }
+    
+    
     
     $('#paginationControls').html(paginationHtml);
 }
@@ -479,10 +533,7 @@ function generateSummaryReport() {
     const fromDate = $('#fromDate').val();
     const toDate = $('#toDate').val();
 
-    if (!year) {
-        showWarningModal('Please select a year');
-        return;
-    }
+
 
     showLoading(true, '#summaryReportBody');
     
@@ -540,38 +591,57 @@ function renderSummaryReport(data) {
 }
 
 function exportReport(format) {
-    const year = $('#summaryYear').val();
     const branch = $('#summaryBranchFilter').val();
     const brand = $('#summaryBrandFilter').val();
-    const fromDate = $('#fromDate').val();
-    const toDate = $('#toDate').val();
+    const month = $('#summaryMonthFilter').val();
+    const year = $('#summaryYearFilter').val();
 
-    if (!year) {
-        showWarningModal('Please select a year');
-        return;
-    }
+    // Show loading state
+    const btn = format === 'excel' ? $('#exportExcelBtn') : $('#exportPdfBtn');
+    const originalText = btn.html();
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
 
-    // Build the export URL with all filter parameters
-    let exportUrl = `api/export_summary.php?format=${format}&year=${year}`;
-    
-    if (branch && branch !== 'all') {
-        exportUrl += `&branch=${encodeURIComponent(branch)}`;
-    }
-    
-    if (brand && brand !== 'all') {
-        exportUrl += `&brand=${encodeURIComponent(brand)}`;
-    }
-    
-    if (fromDate) {
-        exportUrl += `&fromDate=${encodeURIComponent(fromDate)}`;
-    }
-    
-    if (toDate) {
-        exportUrl += `&toDate=${encodeURIComponent(toDate)}`;
-    }
+    // Build export URL
+    let url = `api/export_summary.php?format=${format}`;
+    if (month && month !== 'all') url += `&month=${month}`;
+    if (year) url += `&year=${year}`;
+    if (branch && branch !== 'all') url += `&branch=${encodeURIComponent(branch)}`;
+    if (brand && brand !== 'all') url += `&brand=${encodeURIComponent(brand)}`;
 
-    // Open the export URL in a new window to trigger download
-    window.open(exportUrl, '_blank');
+    // Create hidden iframe for download
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    // First check if data exists
+    fetch(url, {
+        method: 'HEAD',
+        cache: 'no-cache'
+    })
+    .then(response => {
+        if (response.ok) {
+            // Data exists - trigger download
+            iframe.src = url;
+            
+            // Set timeout to reset button
+            setTimeout(() => {
+                btn.prop('disabled', false).html(originalText);
+                setTimeout(() => document.body.removeChild(iframe), 5000);
+            }, 3000);
+        } else if (response.status === 404) {
+            // No data found
+            showWarningModal(`No sales data found for ${month}/${year}`);
+            btn.prop('disabled', false).html(originalText);
+            document.body.removeChild(iframe);
+        } else {
+            throw new Error('Export failed');
+        }
+    })
+    .catch(error => {
+        showWarningModal(error.message || 'Error generating report');
+        btn.prop('disabled', false).html(originalText);
+        document.body.removeChild(iframe);
+    });
 }
 
 function showLoading(show, element) {
@@ -800,6 +870,15 @@ function showDuplicateErrorModal(message) {
 }
 
 function showWarningModal(message) {
-    $('#warningMessage').text(message);
-    $('#warningModal').modal('show');
+    const modal = $('#warningModal');
+    if (modal.length) {
+        $('#warningMessage').text(message);
+        modal.modal('show');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => modal.modal('hide'), 5000);
+    } else {
+        // Fallback if modal not available
+        alert('Warning: ' + message);
+    }
 }

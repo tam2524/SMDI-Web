@@ -34,6 +34,9 @@ if ($result->num_rows > 0) {
             case 'Liaison':
                 header("Location: ../liaison/liaison_dashboard.php");
                 break;
+            case 'Sales':
+                header("Location: ../sales_dashboard.php");
+                break;
             default:
                 // Fallback if no matching case
                 header("Location: ../login.html");

@@ -26,10 +26,14 @@ $query = "SELECT COUNT(DISTINCT ip_address) as unique_visitors FROM visitor_logs
 $result = $conn->query($query);
 $unique_visitors = $result->fetch_assoc()['unique_visitors'];
 
-// Today's visits
-$query = "SELECT COUNT(*) as today_visits FROM visitor_logs WHERE DATE(visit_time) = CURDATE()";
-$result = $conn->query($query);
-$today_visits = $result->fetch_assoc()['today_visits'];
+// Today's visits (total and unique)
+$query_today_total = "SELECT COUNT(*) as today_visits FROM visitor_logs WHERE DATE(visit_time) = CURDATE()";
+$result_today_total = $conn->query($query_today_total);
+$today_visits_total = $result_today_total->fetch_assoc()['today_visits'];
+
+$query_today_unique = "SELECT COUNT(DISTINCT ip_address) as today_unique_visitors FROM visitor_logs WHERE DATE(visit_time) = CURDATE()";
+$result_today_unique = $conn->query($query_today_unique);
+$today_visits_unique = $result_today_unique->fetch_assoc()['today_unique_visitors'];
 
 // This month's visits
 $query = "SELECT COUNT(*) as month_visits FROM visitor_logs WHERE MONTH(visit_time) = MONTH(CURDATE()) AND YEAR(visit_time) = YEAR(CURDATE())";
@@ -39,7 +43,10 @@ $month_visits = $result->fetch_assoc()['month_visits'];
 echo json_encode([
     'total_visits' => $total_visits,
     'unique_visitors' => $unique_visitors,
-    'today_visits' => $today_visits,
+    'today_visits' => [
+        'total' => $today_visits_total,
+        'unique' => $today_visits_unique
+    ],
     'month_visits' => $month_visits
 ]);
 
