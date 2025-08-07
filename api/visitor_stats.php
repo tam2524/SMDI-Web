@@ -43,10 +43,7 @@ $month_visits = $result->fetch_assoc()['month_visits'];
 echo json_encode([
     'total_visits' => $total_visits,
     'unique_visitors' => $unique_visitors,
-    'today_visits' => [
-        'total' => $today_visits_total,
-        'unique' => $today_visits_unique
-    ],
+    'today_visits' => $today_visits_total,
     'month_visits' => $month_visits
 ]);
 
