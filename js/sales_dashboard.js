@@ -241,7 +241,7 @@ function updatePaginationControls(totalPages) {
     $('#paginationControls').html(paginationHtml);
 }
 
-function updateModelsDropdown(brand, $dropdown) {
+function updateModelsDropdown(brand, $dropdown, defaultValue = '') {
     $dropdown.empty();
     if (brand && brandModels[brand]) {
         brandModels[brand].forEach(model => {
@@ -250,9 +250,12 @@ function updateModelsDropdown(brand, $dropdown) {
                 text: model
             }));
         });
+        
+        if (defaultValue) {
+            $dropdown.val(defaultValue);
+        }
     }
 }
-
 function updateSelectedRecords() {
     selectedRecordIds = [];
     $('#salesTableBody input[name="recordCheckbox"]:checked').each(function() {
@@ -695,39 +698,42 @@ function initModals() {
         });
     });
 
-    // Handle edit button click
-    $(document).on('click', '.edit-button', function() {
-        const saleId = $(this).closest('tr').data('id');
-        
-        $.ajax({
-            url: '../api/sales_data_management.php',
-            method: 'GET',
-            data: { action: 'get_sale', id: saleId },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success && response.data) {
-                    const sale = response.data;
-                    $('#editSaleId').val(sale.id);
-                    $('#editSaleDate').val(sale.sales_date);
-                    $('#editBranch').val(sale.branch);
-                    $('#editBrand').val(sale.brand);
-                    $('#editmodel').val(sale.model);
-                    $('#editQuantity').val(sale.qty);
-                    
-                    // Update models dropdown for the selected brand
-                    updateModelsDropdown(sale.brand, $('#editmodel'));
-                    $('#editmodel').val(sale.model);
-                    
-                    $('#editSaleModal').modal('show');
-                } else {
-                    showErrorModal(response.message || 'Failed to load sale data');
-                }
-            },
-            error: function(xhr, status, error) {
-                showErrorModal('Error loading sale: ' + error);
+   // Handle edit button click
+$(document).on('click', '.edit-button', function() {
+    const saleId = $(this).closest('tr').data('id');
+    
+    $.ajax({
+        url: '../api/sales_data_management.php',
+        method: 'GET',
+        data: { action: 'get_sale', id: saleId },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.data) {
+                const sale = response.data;
+                $('#editSaleId').val(sale.id);
+                $('#editSaleDate').val(sale.sales_date);
+                $('#editBranch').val(sale.branch);
+                $('#editBrand').val(sale.brand);
+                
+                // Update models dropdown for the selected brand
+                updateModelsDropdown(sale.brand, $('#editModel'), sale.model);
+
+                // Set the model value after a small delay to ensure dropdown is populated
+                setTimeout(() => {
+                    $('#editModel').val(sale.model);
+                }, 100);
+                
+                $('#editQuantity').val(sale.qty);
+                $('#editSaleModal').modal('show');
+            } else {
+                showErrorModal(response.message || 'Failed to load sale data');
             }
-        });
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('Error loading sale: ' + error);
+        }
     });
+});
 
     // Handle edit sale form submission
     $('#editSaleForm').submit(function(e) {
@@ -739,7 +745,7 @@ function initModals() {
             sales_date: $('#editSaleDate').val(),
             branch: $('#editBranch').val(),
             brand: $('#editBrand').val(),
-            model: $('#editmodel').val(),
+            model: $('#editModel').val(),
             qty: $('#editQuantity').val()
         };
         

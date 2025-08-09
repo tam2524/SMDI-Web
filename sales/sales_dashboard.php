@@ -595,8 +595,8 @@
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="editmodel" class="form-label">Model</label>
-                                <select class="form-select" id="editmodel" required>
+                                <label for="editModel" class="form-label">Model</label>
+                                <select class="form-select" id="editModel" required>
                                     <!-- Options will be populated by JavaScript -->
                                 </select>
                             </div>

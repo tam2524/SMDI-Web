@@ -8,6 +8,7 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
 // Get and validate parameters
 $format = $_GET['format'] ?? 'excel';
@@ -171,14 +172,9 @@ if ($format === 'excel') {
 function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTotals, $modelTotals, $brandBranchTotals, $grandTotal, $year, $month, $fromDate, $toDate, $brandFilter, $branchFilter) {
     try {
         $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Title and headers (same as your code)
-        $lastCol = Coordinate::stringFromColumnIndex(count($branches) + 2); // +2: 1 for MODEL, 1 for % column
-        $headerRow = 4; // You may adjust if filter row exists
-
-        // Freeze header row
-        $sheet->freezePane('A' . ($headerRow + 1)); 
+        
+        // Remove the default sheet since we'll create our own
+        $spreadsheet->removeSheetByIndex(0);
 
         // Set document properties
         $spreadsheet->getProperties()
@@ -204,60 +200,57 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             return !empty($models);
         });
 
-        $lastCol = Coordinate::stringFromColumnIndex(count($branches) + 1); // +1 for model column
-
         // Prepare quota data
         $quotaData = [];
         foreach ($quotas as $q) {
             $quotaData[$q['branch']] = (int)$q['quota'];
         }
 
-        // Calculate TTL quota (sum of all regular branches)
-       if (in_array('TTL', $branches)) {
-    $dataMatrix[$model]['TTL'] = $modelTotal;
-    $columnTotals['TTL'] += $modelTotal;
-    $brandTotal['TTL'] += $modelTotal;
-}
-
-
-        // Calculate GT quota (TTL quota + CEBU quota)
-if (in_array('GT', $branches)) {
-    $quotaData['GT'] = 0;
-
-    foreach ($quotaData as $branch => $quota) {
-        if (!in_array($branch, ['GT', 'TTL'])) {
-            $quotaData['GT'] += $quota;
+        // Calculate TTL quota (sum of all regular branches excluding TTL, CEBU, GT)
+        if (in_array('TTL', $branches)) {
+            $quotaData['TTL'] = 0;
+            foreach ($quotaData as $branch => $quota) {
+                if (!in_array($branch, ['CEBU', 'GT', 'TTL'])) {
+                    $quotaData['TTL'] += $quota;
+                }
+            }
         }
-    }
-}
 
-// Calculate TTL quota (sum of all regular branches excluding TTL, CEBU, GT)
-if (in_array('TTL', $branches)) {
-    $quotaData['TTL'] = 0;
-    foreach ($quotaData as $branch => $quota) {
-        if (!in_array($branch, ['CEBU', 'GT', 'TTL'])) {
-            $quotaData['TTL'] += $quota;
+        // Calculate GT quota (sum of all quotas)
+        if (in_array('GT', $branches)) {
+            $quotaData['GT'] = 0;
+            foreach ($quotaData as $branch => $quota) {
+                if (!in_array($branch, ['GT', 'TTL'])) {
+                    $quotaData['GT'] += $quota;
+                }
+            }
         }
-    }
-}
 
+        // Create a summary sheet first
+        $summarySheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'Summary');
+        $spreadsheet->addSheet($summarySheet, 0);
+        $summarySheet = $spreadsheet->getSheet(0);
+        
+        // Set up summary sheet (same as before)
+        $lastCol = Coordinate::stringFromColumnIndex(count($branches) + 1);
+        
         // Set main title with date range
         $title = 'SALES SUMMARY REPORT';
-        $sheet->mergeCells('A1:'.$lastCol.'1');
-        $sheet->setCellValue('A1', $title);
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $summarySheet->mergeCells('A1:'.$lastCol.'1');
+        $summarySheet->setCellValue('A1', $title);
+        $summarySheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $summarySheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Add date range below title - always show the actual filtered dates
+        // Add date range below title
         $dateRangeText = date('M d, Y', strtotime($fromDate)) . ' to ' . date('M d, Y', strtotime($toDate));
         if ($month !== 'all') {
             $dateRangeText = date('F Y', strtotime($fromDate));
         }
         
-        $sheet->mergeCells('A2:'.$lastCol.'2');
-        $sheet->setCellValue('A2', $dateRangeText);
-        $sheet->getStyle('A2')->getFont()->setBold(false)->setSize(12);
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $summarySheet->mergeCells('A2:'.$lastCol.'2');
+        $summarySheet->setCellValue('A2', $dateRangeText);
+        $summarySheet->getStyle('A2')->getFont()->setBold(false)->setSize(12);
+        $summarySheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Add filter information
         $filterText = "Filters: ";
@@ -267,212 +260,143 @@ if (in_array('TTL', $branches)) {
         
         if (!empty($filters)) {
             $filterText .= implode(", ", $filters);
-            $sheet->mergeCells('A3:'.$lastCol.'3');
-            $sheet->setCellValue('A3', $filterText);
-            $sheet->getStyle('A3')->getFont()->setBold(false)->setSize(10);
-            $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $headerRow = 4;
+            $summarySheet->mergeCells('A3:'.$lastCol.'3');
+            $summarySheet->setCellValue('A3', $filterText);
+            $summarySheet->getStyle('A3')->getFont()->setBold(false)->setSize(10);
+            $summarySheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $summaryStartRow = 4; // Start of summary table
         } else {
-            $headerRow = 3;
+            $summaryStartRow = 3; // Start of summary table
         }
-        
-        // Set header row
-        $sheet->setCellValue('A'.$headerRow, 'MODEL');
-        $sheet->getColumnDimension('A')->setWidth(20);
 
-        $col = 'B';
+        // Summary table title
+        $summarySheet->setCellValue('A'.$summaryStartRow, 'SUMMARY');
+        $summarySheet->mergeCells('A'.$summaryStartRow.':'.$lastCol.$summaryStartRow);
+        $summarySheet->getStyle('A'.$summaryStartRow)->getFont()->setBold(true);
+        $summarySheet->getStyle('A'.$summaryStartRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $summaryStartRow++;
+
+        // Summary table headers
+        $summarySheet->setCellValue('A'.$summaryStartRow, 'BRAND');
+        $colLetter = 'B';
         foreach ($branches as $branch) {
-            $sheet->setCellValue($col.$headerRow, $branch);
-            $sheet->getColumnDimension($col)->setWidth(8);
-            $col++;
+            $summarySheet->setCellValue($colLetter.$summaryStartRow, $branch);
+            $colLetter++;
         }
-        // Add % column header
-        $sheet->setCellValue($col.$headerRow, '%');
-        $sheet->getColumnDimension($col)->setWidth(8);
-
+        $numberStyle = [
+    'font' => ['size' => 14], // Set font size to 12 for numbers
+    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
+];
         $headerStyle = [
             'font' => ['bold' => true],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']]
         ];
-        $sheet->getStyle('A'.$headerRow.':'.$col.$headerRow)->applyFromArray($headerStyle);
+        $summarySheet->getStyle('A'.$summaryStartRow.':'.$colLetter.$summaryStartRow)->applyFromArray($headerStyle);
+        
+        $summaryStartRow++;
 
-        // Adjust starting row for data
-        $row = $headerRow + 1;
-
-        // Define styles
-        $highlightYellow = [
-            'font' => ['bold' => true],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FFFF00']
-            ]
-        ];
-        $highlightGreen = [
-            'font' => ['bold' => true],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '39FF14']
-            ]
-        ];
-        $highlightGray = [
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FFD9D9D9']
-            ]
-        ];
-        // Initialize data structures
-        $dataMatrix = [];
+        // Initialize data structures for collecting brand totals
+        $brandTotalsForSummary = [];
         $columnTotals = array_fill_keys($branches, 0);
 
-        // Group models by brand
+        // Process each brand to collect totals for summary
         foreach ($brandModels as $brand => $models) {
-            // Add brand header
-            $sheet->setCellValue('A'.$row, $brand);
-            $sheet->getStyle('A'.$row)->getFont()->setBold(true);
-            $sheet->getStyle('A'.$row.':'.$col.$row)->getFill()
-                ->setFillType(Fill::FILL_SOLID)
-                ->getStartColor()->setARGB('FFEEEEEE');
-            $row++;
-            
             $brandTotal = array_fill_keys($branches, 0);
             $brandCebuTotal = 0;
-            $brandGTtotal = 0;
             $brandPercentageSum = 0;
             
-            // First pass - calculate brand GT total
             foreach ($models as $model) {
                 $modelTotal = 0;
                 $modelCebu = 0;
-                
+                $modelTTL = 0;
+                $modelGT = 0;
+
                 foreach ($sales as $sale) {
                     if ($sale['model'] == $model) {
-                        if (in_array($sale['branch'], $branches)) {
-                            $modelTotal += (int)$sale['qty'];
-                        } elseif ($sale['branch'] == 'CEBU' && in_array('CEBU', $branches)) {
-                            $modelCebu += (int)$sale['qty'];
+                        $branch = $sale['branch'];
+                        $qty = (int)$sale['qty'];
+
+                        if (in_array($branch, $branches)) {
+                            $brandTotal[$branch] += $qty;
+                            $columnTotals[$branch] += $qty;
+
+                            if ($branch !== 'CEBU' && $branch !== 'TTL' && $branch !== 'GT') {
+                                $modelTTL += $qty;
+                            }
+
+                            if ($branch === 'CEBU') {
+                                $brandCebuTotal += $qty;
+                                $modelCebu = $qty;
+                            }
                         }
                     }
                 }
-                $brandGTtotal += ($modelTotal + (in_array('CEBU', $branches) ? $modelCebu : 0));
-            }
-            
-            // Second pass - output rows
-            foreach ($models as $model) {
-               $dataMatrix[$model] = array_fill_keys($branches, 0);
-    $modelTotal = 0;
-    $modelCebu = 0;
-                
-               foreach ($sales as $sale) {
-    if ($sale['model'] == $model && in_array($sale['branch'], $branches)) {
-        $branch = $sale['branch'];
-        $qty = (int)$sale['qty'];
-        $dataMatrix[$model][$branch] = $qty;
-        $columnTotals[$branch] += $qty;
-        $brandTotal[$branch] += $qty;
 
-        // Exclude CEBU from TTL
-        if ($branch !== 'CEBU') {
-            $modelTotal += $qty;
-        }
-    }
-}
-
-                // Process CEBU if showing
-                if (in_array('CEBU', $branches)) {
-                    foreach ($sales as $sale) {
-                        if ($sale['model'] == $model && $sale['branch'] == 'CEBU') {
-                            $qty = (int)$sale['qty'];
-                            $dataMatrix[$model]['CEBU'] = $qty;
-                            
-                            $brandCebuTotal += $qty;
-                            $modelCebu = $qty;
-                            break;
-                        }
-                    }
-                }
-                
-                // Set TTL and GT if showing
+                // Calculate TTL and GT values as before
                 if (in_array('TTL', $branches)) {
-                    $dataMatrix[$model]['TTL'] = $modelTotal;
-                    $columnTotals['TTL'] += $modelTotal;
-                    $brandTotal['TTL'] += $modelTotal;
-                }
-                
-                if (in_array('GT', $branches)) {
-                    $dataMatrix[$model]['GT'] = $modelTotal + (in_array('CEBU', $branches) ? $modelCebu : 0);
-                    $columnTotals['GT'] += ($modelTotal + (in_array('CEBU', $branches) ? $modelCebu : 0));
-                    $brandTotal['GT'] += ($modelTotal + (in_array('CEBU', $branches) ? $modelCebu : 0));
-                }
-                
-                // Write model row
-                $sheet->setCellValue('A'.$row, $model);
-                $colLetter = 'B';
-                foreach ($branches as $branch) {
-                    $value = $dataMatrix[$model][$branch];
-                    $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
-                    $colLetter++;
+                    $brandTotal['TTL'] += $modelTTL;
                 }
 
-                
-                
-                $modelGT = $modelTotal + (in_array('CEBU', $branches) ? $modelCebu : 0);
-                $percentage = ($brandGTtotal > 0) ? ($modelGT / $brandGTtotal) * 100 : 0;
-                
-                // Rounding: <1% → 0%, ≥1% → whole number
-                $roundedPercentage = ($percentage >= 1) ? round($percentage) : 0;
-                $sheet->setCellValue($colLetter.$row, $roundedPercentage.'%');
-                
-                // Accumulate percentages for brand subtotal
-                $brandPercentageSum += $roundedPercentage;
-                
-                $row++;
+                if (in_array('GT', $branches)) {
+                    $modelGT = $modelTTL + (in_array('CEBU', $branches) ? $modelCebu : 0);
+                    $brandTotal['GT'] += $modelGT;
+                }
             }
 
-            // Brand subtotal row
-            $sheet->setCellValue('A'.$row, $brand.' SUB-TOTAL');
-            $sheet->getStyle('A'.$row)->getFont()->setBold(true);
+            // Store brand totals for summary table
+            $brandTotalsForSummary[$brand] = [
+                'values' => $brandTotal,
+                'cebu' => $brandCebuTotal,
+                'percentage' => ($grandTotal > 0) ? round(($brandTotal['GT'] ?? 0) / $grandTotal * 100) : 0
+            ];
 
+            // Add TTL and GT to columnTotals for GRAND TOTAL row
+            if (isset($brandTotal['TTL'])) {
+                $columnTotals['TTL'] += $brandTotal['TTL'];
+            }
+            if (isset($brandTotal['GT'])) {
+                $columnTotals['GT'] += $brandTotal['GT'];
+            }
+        }
+
+        // Add brand subtotal rows to summary table
+        foreach ($brandTotalsForSummary as $brand => $data) {
+            $summarySheet->setCellValue('A'.$summaryStartRow, $brand.' SUB-TOTAL');
             $colLetter = 'B';
             foreach ($branches as $branch) {
-                $value = $branch == 'CEBU' ? $brandCebuTotal : 
-                        ($branch == 'TTL' ? $brandTotal['TTL'] : 
-                        ($branch == 'GT' ? $brandTotal['GT'] : $brandTotal[$branch]));
-                $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
+                // For CEBU branch, use the special cebu total we calculated
+                $value = $branch === 'CEBU' ? $data['cebu'] : ($data['values'][$branch] ?? 0);
+                $summarySheet->setCellValue($colLetter.$summaryStartRow, $value !== 0 ? $value : '');
                 $colLetter++;
             }
-            
-
-            // Brand percentage is sum of all model percentages
-            $sheet->setCellValue($colLetter.$row, $brandPercentageSum.'%');
-            $row++;
+            $summaryStartRow++;
         }
 
-        // GRAND TOTAL row
-        $sheet->setCellValue('A'.$row, 'GRAND TOTAL');
+        // GRAND TOTAL row in summary table
+        $summarySheet->setCellValue('A'.$summaryStartRow, 'GRAND TOTAL');
         $colLetter = 'B';
         foreach ($branches as $branch) {
             $value = $columnTotals[$branch];
-            $sheet->setCellValue($colLetter.$row, $value !== 0 ? $value : '');
+            $summarySheet->setCellValue($colLetter.$summaryStartRow, $value !== 0 ? $value : '');
             $colLetter++;
         }
-        $sheet->setCellValue($colLetter.$row, '100%');
-        $row++;
+        $summaryStartRow++;
 
-        // QUOTA row
-        $sheet->setCellValue('A'.$row, 'QUOTA');
+        // QUOTA row in summary table
+        $summarySheet->setCellValue('A'.$summaryStartRow, 'QUOTA');
         $colLetter = 'B';
         foreach ($branches as $branch) {
             $quota = $quotaData[$branch] ?? 0;
-            $sheet->setCellValue($colLetter.$row, $quota > 0 ? $quota : '');
+            $summarySheet->setCellValue($colLetter.$summaryStartRow, $quota > 0 ? $quota : '');
             $colLetter++;
         }
-        $sheet->setCellValue($colLetter.$row, '');
-        $row++;
+        $summarySheet->setCellValue($colLetter.$summaryStartRow, '');
+        $summaryStartRow++;
 
-        // PERCENTAGE row
-        $sheet->setCellValue('A'.$row, '%');
+        // PERCENTAGE row in summary table
+        $summarySheet->setCellValue('A'.$summaryStartRow, '%');
         $colLetter = 'B';
         foreach ($branches as $branch) {
             $actual = $columnTotals[$branch] ?? 0;
@@ -480,55 +404,266 @@ if (in_array('TTL', $branches)) {
             
             if ($quota > 0) {
                 $percent = round(($actual / $quota) * 100);
-                $sheet->setCellValue($colLetter.$row, $percent.'%');
+                $summarySheet->setCellValue($colLetter.$summaryStartRow, $percent.'%');
             } else {
-                $sheet->setCellValue($colLetter.$row, '');
+                $summarySheet->setCellValue($colLetter.$summaryStartRow, '');
             }
             $colLetter++;
         }
-        $sheet->setCellValue($colLetter.$row, '');
-        $row++;
+        $summarySheet->setCellValue($colLetter.$summaryStartRow, '');
 
-        // Apply styling
-        $sheet->getStyle('A'.$headerRow.':'.$col.($row-1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        // Style the summary table
         $summaryStyle = [
             'font' => ['bold' => true],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']]
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFEEEEEE']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
         ];
-        $sheet->getStyle('A'.($row-4).':'.$col.($row-1))->applyFromArray($summaryStyle);
-        $sheet->freezePane('A' . ($headerRow + 1));
 
+        $summarySheet->getStyle('A'.($summaryStartRow-6-count($brandModels)).':'.$colLetter.($summaryStartRow))->applyFromArray($summaryStyle);
+// Apply number style to all numeric cells in the summary table
+$summarySheet->getStyle('B'.($summaryStartRow-6-count($brandModels)).':'.$colLetter.($summaryStartRow))
+    ->applyFromArray($numberStyle);
+        // After creating the summary sheet and adding all the data...
 
-       // Highlight TTL column
-        $ttlIndex = array_search('TTL', $branches);
-        if ($ttlIndex !== false) {
-            $ttlColLetter = Coordinate::stringFromColumnIndex($ttlIndex + 1); // +2 to account for MODEL in col A
-            $sheet->getStyle($ttlColLetter . ($headerRow) . ':' . $ttlColLetter . ($sheet->getHighestRow()))
-                ->applyFromArray($highlightYellow);
-        }
+// ====== OPTIMIZE SUMMARY SHEET LAYOUT ======
 
-        // Loop back through rows to apply highlights
-        for ($i = $headerRow + 1; $i <= $sheet->getHighestRow(); $i++) {
-            $rowLabel = $sheet->getCell('A' . $i)->getValue();
+// Auto-size columns first to get proper widths
+foreach (range('A', $lastCol) as $columnID) {
+    $summarySheet->getColumnDimension($columnID)->setAutoSize(true);
+}
 
-            if (strpos($rowLabel, 'SUB-TOTAL') !== false) {
-                $sheet->getStyle('A' . $i . ':' . $lastCol . $i)->applyFromArray($highlightYellow);
-            } elseif ($rowLabel === 'GRAND TOTAL') {
-                $sheet->getStyle('A' . $i . ':' . $lastCol . $i)->applyFromArray($highlightGreen);
+// Calculate how much space we have on an A4 page
+$pageWidth = 1123; // A4 width in points (landscape)
+$pageHeight = 794;  // A4 height in points (landscape)
+$marginWidth = 100; // Approximate margin width
+$marginHeight = 100; // Approximate margin height
+
+// Calculate available width and adjust columns
+$usedWidth = 0;
+foreach (range('A', $lastCol) as $columnID) {
+    $usedWidth += $summarySheet->getColumnDimension($columnID)->getWidth();
+}
+
+// If we have extra width, distribute it to columns
+if ($usedWidth < ($pageWidth - $marginWidth)) {
+    $extraWidth = ($pageWidth - $marginWidth - $usedWidth) / count($branches);
+    foreach (range('A', $lastCol) as $columnID) {
+        $currentWidth = $summarySheet->getColumnDimension($columnID)->getWidth();
+        $summarySheet->getColumnDimension($columnID)->setWidth($currentWidth + $extraWidth);
+    }
+}
+
+// Adjust row heights to maximize vertical space
+$lastRow = $summarySheet->getHighestRow();
+$headerRows = 4; // Title, date, filters, and header row
+$dataRows = $lastRow - $headerRows;
+
+if ($dataRows > 0) {
+    $availableHeight = $pageHeight - $marginHeight;
+    $rowHeight = $availableHeight / $dataRows;
+    
+    // Don't make rows too tall or too small
+    $rowHeight = min($rowHeight, 30); // Max 30 points per row
+    $rowHeight = max($rowHeight, 15); // Min 15 points per row
+    
+    for ($row = $headerRows + 1; $row <= $lastRow; $row++) {
+        $summarySheet->getRowDimension($row)->setRowHeight($rowHeight);
+    }
+}
+
+// Set page setup for summary sheet to maximize space
+$summarySheet->getPageSetup()
+    ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)
+    ->setFitToWidth(1)
+    ->setFitToHeight(0)
+    ->setPaperSize(PageSetup::PAPERSIZE_A4)
+    ->setHorizontalCentered(true)
+    ->setVerticalCentered(false);
+
+// Freeze the header row
+$summarySheet->freezePane('A' . ($headerRows + 1));
+
+// Apply borders to all data cells
+$summarySheet->getStyle('A' . ($headerRows + 1) . ':' . $lastCol . $lastRow)
+    ->getBorders()
+    ->getAllBorders()
+    ->setBorderStyle(Border::BORDER_THIN);
+
+// Center-align all numeric cells
+$summarySheet->getStyle('B' . ($headerRows + 1) . ':' . $lastCol . $lastRow)
+    ->getAlignment()
+    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+// Make sure the summary sheet is the first sheet
+$spreadsheet->setActiveSheetIndex(0);
+        
+        // Now create detailed sheets for each brand
+        foreach ($brandModels as $brand => $models) {
+            $brandSheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $brand);
+            $spreadsheet->addSheet($brandSheet);
+            $sheet = $spreadsheet->getSheetByName($brand);
+            
+            // Set up the brand sheet
+            $lastCol = Coordinate::stringFromColumnIndex(count($branches) + 1);
+            
+            // Title
+            $sheet->mergeCells('A1:'.$lastCol.'1');
+            $sheet->setCellValue('A1', $brand . ' SALES DETAILS');
+            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+            $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            
+            // Date range
+            $sheet->mergeCells('A2:'.$lastCol.'2');
+            $sheet->setCellValue('A2', $dateRangeText);
+            $sheet->getStyle('A2')->getFont()->setBold(false)->setSize(12);
+            $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            
+            // Filter info if any
+            if ($branchFilter !== 'all') {
+                $sheet->mergeCells('A3:'.$lastCol.'3');
+                $sheet->setCellValue('A3', 'Branch: ' . $branchFilter);
+                $sheet->getStyle('A3')->getFont()->setBold(false)->setSize(10);
+                $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $startRow = 4;
+            } else {
+                $startRow = 3;
             }
+            
+            // Headers
+            $sheet->setCellValue('A'.$startRow, 'MODEL');
+            $colLetter = 'B';
+            foreach ($branches as $branch) {
+                $sheet->setCellValue($colLetter.$startRow, $branch);
+                $colLetter++;
+            }
+            $sheet->setCellValue($colLetter.$startRow, '%');
+            
+            // Style headers
+            $sheet->getStyle('A'.$startRow.':'.$colLetter.$startRow)->applyFromArray($headerStyle);
+            $startRow++;
+            
+            // Calculate brand totals
+            $brandTotal = array_fill_keys($branches, 0);
+            $brandGTTotal = 0;
+            
+            foreach ($models as $model) {
+                $dataMatrix = array_fill_keys($branches, 0);
+                $modelTotal = 0;
+                $modelCebu = 0;
+                $modelTTL = 0;
+                $modelGT = 0;
+                
+                foreach ($sales as $sale) {
+                    if ($sale['model'] == $model && in_array($sale['branch'], $branches)) {
+                        $branch = $sale['branch'];
+                        $qty = (int)$sale['qty'];
+                        $dataMatrix[$branch] = $qty;
+                        $brandTotal[$branch] += $qty;
+                        
+                        if ($branch !== 'CEBU' && $branch !== 'TTL' && $branch !== 'GT') {
+                            $modelTTL += $qty;
+                        }
+                    } elseif ($sale['model'] == $model && $sale['branch'] == 'CEBU' && in_array('CEBU', $branches)) {
+                        $modelCebu = (int)$sale['qty'];
+                        $dataMatrix['CEBU'] = $modelCebu;
+                        $brandTotal['CEBU'] += $modelCebu;
+                    }
+                }
+                
+                // Calculate TTL for this model
+if (in_array('TTL', $branches)) {
+    $dataMatrix['TTL'] = $modelTTL;
+    $brandTotal['TTL'] += $modelTTL;
+}
+
+// Calculate GT as TTL + CEBU
+if (in_array('GT', $branches)) {
+    $ttlValue = isset($dataMatrix['TTL']) ? $dataMatrix['TTL'] : 0;
+    $cebuValue = (in_array('CEBU', $branches) && isset($dataMatrix['CEBU'])) ? $dataMatrix['CEBU'] : 0;
+
+    $dataMatrix['GT'] = $ttlValue + $cebuValue;
+    $brandTotal['GT'] += $dataMatrix['GT'];
+    $brandGTTotal += $dataMatrix['GT'];
+}
+
+                // Write model row
+                $sheet->setCellValue('A'.$startRow, $model);
+                $colLetter = 'B';
+                foreach ($branches as $branch) {
+                    $value = $dataMatrix[$branch];
+                    $sheet->setCellValue($colLetter.$startRow, $value !== 0 ? $value : '');
+                    $colLetter++;
+                }
+
+                $modelGT = $modelTTL + (in_array('CEBU', $branches) ? $modelCebu : 0);
+                $percentage = ($brandGTTotal > 0) ? ($modelGT / $brandGTTotal) * 100 : 0;
+                $roundedPercentage = ($percentage >= 1) ? round($percentage) : 0;
+                $sheet->setCellValue($colLetter.$startRow, $roundedPercentage.'%');
+                
+                $startRow++;
+            }
+            
+            // Add brand total row
+            $sheet->setCellValue('A'.$startRow, 'TOTAL');
+            $colLetter = 'B';
+            foreach ($branches as $branch) {
+                $value = $brandTotal[$branch];
+                $sheet->setCellValue($colLetter.$startRow, $value !== 0 ? $value : '');
+                $colLetter++;
+            }
+            
+            $percentage = ($grandTotal > 0) ? ($brandGTTotal / $grandTotal) * 100 : 0;
+            $roundedPercentage = ($percentage >= 1) ? round($percentage) : 0;
+            $sheet->setCellValue($colLetter.$startRow, $roundedPercentage.'%');
+            
+            // Style the total row
+            $highlightYellow = [
+                'font' => ['bold' => true],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFFF00']]
+            ];
+            $sheet->getStyle('A'.$startRow.':'.$colLetter.$startRow)->applyFromArray($highlightYellow);
+            
+            // Apply borders to all data
+            $sheet->getStyle('A4:'.$colLetter.$startRow)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            
+            // Center-align all numeric cells
+            $sheet->getStyle('B4:'.$colLetter.$startRow)
+                ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            
+                $sheet->getStyle('B4:'.$colLetter.$startRow)
+    ->applyFromArray($numberStyle);
+            // Auto-size columns
+            foreach (range('A', $colLetter) as $columnID) {
+                $sheet->getColumnDimension($columnID)->setAutoSize(true);
+            }
+
+            
+            // Set page setup for brand sheet - maximize to one A4 page
+            $sheet->getPageSetup()
+                ->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)
+                ->setFitToWidth(1)
+                ->setFitToHeight(0)
+                ->setPaperSize(PageSetup::PAPERSIZE_A4);
+                
+            // Set row heights to maximize space
+            $rowCount = $sheet->getHighestRow();
+            $pageHeight = 842; // A4 height in points (landscape)
+            $marginHeight = 100; // Approximate margin height
+            $availableHeight = $pageHeight - $marginHeight;
+            $rowHeight = $availableHeight / ($rowCount - 3); // Subtract header rows
+            
+            for ($row = 4; $row <= $rowCount; $row++) {
+                $sheet->getRowDimension($row)->setRowHeight($rowHeight);
+            }
+            
+            // Freeze headers
+            $sheet->freezePane('A4');
         }
 
-        // Center-align all numeric columns (B to last column) across all data rows
-$dataStartRow = $headerRow + 1;
-$dataEndRow = $sheet->getHighestRow();
-$lastDataColLetter = Coordinate::stringFromColumnIndex(count($branches) + 2); // +2 for MODEL and %
+        // Set the first sheet as active
+        $spreadsheet->setActiveSheetIndex(0);
 
-$sheet->getStyle("B{$dataStartRow}:{$lastDataColLetter}{$dataEndRow}")
-    ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-
-
-      // Output
+        // Output
         if (ob_get_length()) ob_end_clean();
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         
