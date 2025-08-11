@@ -30,8 +30,8 @@ if ($monthFilter !== 'all') {
 
 // Define branch order
 $orderedBranches = [
-    'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SKS', 'JAR-1', 'JAR-2',
-    'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
+    'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2',
+    'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
     'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', '3SMB', '3SMIN',
     'MAN', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
 ];
@@ -249,7 +249,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         
         $summarySheet->mergeCells('A2:'.$lastCol.'2');
         $summarySheet->setCellValue('A2', $dateRangeText);
-        $summarySheet->getStyle('A2')->getFont()->setBold(false)->setSize(12);
+        $summarySheet->getStyle('A2')->getFont()->setBold(false)->setSize(18);
         $summarySheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Add filter information
@@ -262,7 +262,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $filterText .= implode(", ", $filters);
             $summarySheet->mergeCells('A3:'.$lastCol.'3');
             $summarySheet->setCellValue('A3', $filterText);
-            $summarySheet->getStyle('A3')->getFont()->setBold(false)->setSize(10);
+            $summarySheet->getStyle('A3')->getFont()->setBold(false)->setSize(18);
             $summarySheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $summaryStartRow = 4; // Start of summary table
         } else {
@@ -272,7 +272,8 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         // Summary table title
         $summarySheet->setCellValue('A'.$summaryStartRow, 'SUMMARY');
         $summarySheet->mergeCells('A'.$summaryStartRow.':'.$lastCol.$summaryStartRow);
-        $summarySheet->getStyle('A'.$summaryStartRow)->getFont()->setBold(true);
+        $summarySheet->getStyle('A'.$summaryStartRow)->getFont()->setBold(true)->setSize(18);
+
         $summarySheet->getStyle('A'.$summaryStartRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $summaryStartRow++;
 
@@ -283,6 +284,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $summarySheet->setCellValue($colLetter.$summaryStartRow, $branch);
             $colLetter++;
         }
+        
         $numberStyle = [
     'font' => ['size' => 18], // Set font size to 12 for numbers
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
@@ -516,14 +518,14 @@ $spreadsheet->setActiveSheetIndex(0);
             // Date range
             $sheet->mergeCells('A2:'.$lastCol.'2');
             $sheet->setCellValue('A2', $dateRangeText);
-            $sheet->getStyle('A2')->getFont()->setBold(false)->setSize(12);
+            $sheet->getStyle('A2')->getFont()->setBold(false)->setSize(18);
             $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             
             // Filter info if any
             if ($branchFilter !== 'all') {
                 $sheet->mergeCells('A3:'.$lastCol.'3');
                 $sheet->setCellValue('A3', 'Branch: ' . $branchFilter);
-                $sheet->getStyle('A3')->getFont()->setBold(false)->setSize(10);
+                $sheet->getStyle('A3')->getFont()->setBold(false)->setSize(18);
                 $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $startRow = 4;
             } else {
@@ -535,12 +537,16 @@ $spreadsheet->setActiveSheetIndex(0);
             $colLetter = 'B';
             foreach ($branches as $branch) {
                 $sheet->setCellValue($colLetter.$startRow, $branch);
+                $sheet->getStyle($colLetter.$startRow)->getFont()->setBold(false)->setSize(18);
+
                 $colLetter++;
             }
             $sheet->setCellValue($colLetter.$startRow, '%');
             
             // Style headers
             $sheet->getStyle('A'.$startRow.':'.$colLetter.$startRow)->applyFromArray($headerStyle);
+            $sheet->getStyle('A'.$startRow)->getFont()->setBold(false)->setSize(18);
+
             $startRow++;
             
             // Calculate brand totals
