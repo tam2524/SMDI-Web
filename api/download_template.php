@@ -10,10 +10,10 @@ $sheet = $spreadsheet->getActiveSheet();
 
 // Define branch headers
 $branches = [
-    'MODEL', 'RXS-1', 'RXS-2', 'ANT-1', 'ANT-2', 'DEL-1', 'DEL-2', 'JAR-1', 'JAR-2', 
-        'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2', 
-        'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', 'MINDO', 'MIN', 
-        'SALAY', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'CEBU'
+    'MODEL', 'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SKS', 'JAR-1', 'JAR-2',
+    'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
+    'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', '3SMB', '3SMIN',
+    'MAN', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'CEBU'
 ];
 $sheet->fromArray($branches, NULL, 'A1');
 

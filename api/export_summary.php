@@ -30,10 +30,10 @@ if ($monthFilter !== 'all') {
 
 // Define branch order
 $orderedBranches = [
-    'RXS-1', 'RXS-2', 'ANT-1', 'ANT-2', 'DEL-1', 'DEL-2', 'JAR-1', 'JAR-2',
+    'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SKS', 'JAR-1', 'JAR-2',
     'KAL-1', 'KAL-2', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
-    'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', 'MINDO', 'MIN',
-    'SALAY', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
+    'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', '3SMB', '3SMIN',
+    'MAN', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
 ];
 
 // Get sales data with filtering
@@ -238,7 +238,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
         $title = 'SALES SUMMARY REPORT';
         $summarySheet->mergeCells('A1:'.$lastCol.'1');
         $summarySheet->setCellValue('A1', $title);
-        $summarySheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $summarySheet->getStyle('A1')->getFont()->setBold(true)->setSize(18);
         $summarySheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Add date range below title
@@ -284,7 +284,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $colLetter++;
         }
         $numberStyle = [
-    'font' => ['size' => 14], // Set font size to 12 for numbers
+    'font' => ['size' => 18], // Set font size to 12 for numbers
     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
 ];
         $headerStyle = [
@@ -293,7 +293,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDDDDD']]
         ];
-        $summarySheet->getStyle('A'.$summaryStartRow.':'.$colLetter.$summaryStartRow)->applyFromArray($headerStyle);
+        // $summarySheet->getStyle('A'.$summaryStartRow.':'.$colLetter.$summaryStartRow)->applyFromArray($headerStyle);
         
         $summaryStartRow++;
 
@@ -392,7 +392,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             $summarySheet->setCellValue($colLetter.$summaryStartRow, $quota > 0 ? $quota : '');
             $colLetter++;
         }
-        $summarySheet->setCellValue($colLetter.$summaryStartRow, '');
+        // $summarySheet->setCellValue($colLetter.$summaryStartRow, '');
         $summaryStartRow++;
 
         // PERCENTAGE row in summary table
@@ -410,7 +410,7 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             }
             $colLetter++;
         }
-        $summarySheet->setCellValue($colLetter.$summaryStartRow, '');
+        // $summarySheet->setCellValue($colLetter.$summaryStartRow, '');
 
         // Style the summary table
         $summaryStyle = [
@@ -419,7 +419,8 @@ function exportToExcel($branches, $models, $brands, $sales, $quotas, $branchTota
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
         ];
 
-        $summarySheet->getStyle('A'.($summaryStartRow-6-count($brandModels)).':'.$colLetter.($summaryStartRow))->applyFromArray($summaryStyle);
+        $lastBranchCol = Coordinate::stringFromColumnIndex(count($branches) + 1);
+$summarySheet->getStyle('A'.($summaryStartRow-6-count($brandModels)).':'.$lastBranchCol.($summaryStartRow))->applyFromArray($summaryStyle);
 // Apply number style to all numeric cells in the summary table
 $summarySheet->getStyle('B'.($summaryStartRow-6-count($brandModels)).':'.$colLetter.($summaryStartRow))
     ->applyFromArray($numberStyle);
@@ -504,12 +505,12 @@ $spreadsheet->setActiveSheetIndex(0);
             $sheet = $spreadsheet->getSheetByName($brand);
             
             // Set up the brand sheet
-            $lastCol = Coordinate::stringFromColumnIndex(count($branches) + 1);
-            
+            // $lastCol = Coordinate::stringFromColumnIndex(count($branches) + 1);
+            $lastCol = Coordinate::stringFromColumnIndex(count($branches));
             // Title
             $sheet->mergeCells('A1:'.$lastCol.'1');
             $sheet->setCellValue('A1', $brand . ' SALES DETAILS');
-            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(18);
             $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             
             // Date range

@@ -445,7 +445,7 @@
                             <button type="submit" class="btn btn-primary text-white">
                                 <i class="fas fa-upload me-2"></i>Upload
                             </button>
-                            <a href="api/download_template.php" class="btn btn-primary text-white">
+                            <a href="../api/download_template.php" class="btn btn-primary text-white">
                                 <i class="fas fa-download me-2"></i>Download Template
                             </a>
                         </div>
@@ -474,12 +474,12 @@
                             <div class="col-md-6 mb-3">
                                 <label for="branch" class="form-label">Branch</label>
                                 <select class="form-select" id="branch" required>
-                                    <option value="RXS-1">RXS-1</option>
-                                    <option value="RXS-2">RXS-2</option>
+                                    <option value="RXS-S">RXS-S</option>
+                                    <option value="RXS-H">RXS-H</option>
                                     <option value="ANT-1">ANT-1</option>
                                     <option value="ANT-2">ANT-2</option>
-                                    <option value="DEL-1">DEL-1</option>
-                                    <option value="DEL-2">DEL-2</option>
+                                    <option value="SDH">SDH</option>
+                                    <option value="SKS">SKS</option>
                                     <option value="JAR-1">JAR-1</option>
                                     <option value="JAR-2">JAR-2</option>
                                     <option value="KAL-1">KAL-1</option>
@@ -496,9 +496,9 @@
                                     <option value="EEM">EEM</option>
                                     <option value="AJU">AJU</option>
                                     <option value="BAIL">BAIL</option>
-                                    <option value="MINDO">MINDORO MB</option>
-                                    <option value="MIN">MINDORO 3S</option>
-                                    <option value="SALAY">MANSALAY</option>
+                                    <option value="3SMB">MINDORO MB</option>
+                                    <option value="3SMIN">MINDORO 3S</option>
+                                    <option value="MAN">MANSALAY</option>
                                     <option value="K-RIDERS">K-RIDERS</option>
                                     <option value="IBAJAY">IBAJAY</option>
                                     <option value="NUMANCIA">NUMANCIA</option>
@@ -553,8 +553,8 @@
                             <div class="col-md-6 mb-3">
                                 <label for="editBranch" class="form-label">Branch</label>
                                 <select class="form-select" id="editBranch" required>
-                                    <option value="RXS-1">RXS-1</option>
-                                    <option value="RXS-2">RXS-2</option>
+                                    <option value="RXS-S">RXS-S</option>
+                                    <option value="RXS-H">RXS-H</option>
                                     <option value="ANTIQUE-1">ANTIQUE-1</option>
                                     <option value="ANTIQUE-2">ANTIQUE-2</option>
                                     <option value="DELGADO-1">DELGADO-1</option>
@@ -634,8 +634,8 @@
                             <label for="branchSelect" class="form-label">Branch:</label>
                             <select class="form-select" id="branchSelect">
                                 <option value="all">All Branches</option>
-                                <option value="RXS-1">RXS-1</option>
-                                <option value="RXS-2">RXS-2</option>
+                                <option value="RXS-S">RXS-S</option>
+                                <option value="RXS-H">RXS-H</option>
                                 <option value="ANTIQUE-1">ANTIQUE-1</option>
                                 <option value="ANTIQUE-2">ANTIQUE-2</option>
                                 <option value="DELGADO-1">DELGADO-1</option>
@@ -741,12 +741,12 @@
                 <label for="summaryBranchFilter" class="form-label fw-semibold text-muted">Branch</label>
                 <select class="form-select" id="summaryBranchFilter">
                     <option value="all">All Locations</option>
-                    <option value="RXS-1">RXS-1</option>
-                    <option value="RXS-2">RXS-2</option>
+                    <option value="RXS-S">RXS-S</option>
+                    <option value="RXS-H">RXS-H</option>
                     <option value="ANT-1">ANT-1</option>
                     <option value="ANT-2">ANT-2</option>
-                    <option value="DEL-1">DEL-1</option>
-                    <option value="DEL-2">DEL-2</option>
+                    <option value="SDH">SDH</option>
+                    <option value="SKS">SKS</option>
                     <option value="JAR-1">JAR-1</option>
                     <option value="JAR-2">JAR-2</option>
                     <option value="KAL-1">KAL-1</option>

@@ -35,7 +35,7 @@ function initSalesTable() {
 
     // Handle edit brand change
     $('#editBrand').change(function() {
-        updateModelsDropdown($(this).val(), $('#editmodel'));
+        updateModelsDropdown($(this).val(), $('#editModel'));
     });
 
     // Search input event
@@ -432,7 +432,7 @@ function initQuotaManagement() {
 
 function populateBranchDropdown() {
     const branches = [
-        "RXS-1", "RXS-2", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
+        "RXS-S", "RXS-H", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
         "JARO-1", "JARO-2", "KALIBO-1", "KALIBO-2", "ALTAVAS", "EMAP", "CULASI",
         "BACOLOD", "PASSI-1", "PASSI-2", "BALASAN", "GUIMARAS", "PEMDI", "EEMSI",
         "AJUY", "BAILAN", "MINDORO MB", "MINDORO 3S", "MANSALAY", "K-RIDERS",
@@ -699,6 +699,7 @@ function initModals() {
     });
 
    // Handle edit button click
+// Handle edit button click
 $(document).on('click', '.edit-button', function() {
     const saleId = $(this).closest('tr').data('id');
     
@@ -715,13 +716,8 @@ $(document).on('click', '.edit-button', function() {
                 $('#editBranch').val(sale.branch);
                 $('#editBrand').val(sale.brand);
                 
-                // Update models dropdown for the selected brand
+                // Update models dropdown for the selected brand with the current model as default
                 updateModelsDropdown(sale.brand, $('#editModel'), sale.model);
-
-                // Set the model value after a small delay to ensure dropdown is populated
-                setTimeout(() => {
-                    $('#editModel').val(sale.model);
-                }, 100);
                 
                 $('#editQuantity').val(sale.qty);
                 $('#editSaleModal').modal('show');
