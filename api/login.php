@@ -17,6 +17,7 @@ if ($result->num_rows > 0) {
     if (password_verify($password, $user['password'])) {
         $_SESSION['username'] = $user['username'];
         $_SESSION['position'] = $user['position']; 
+        $_SESSION['user_branch'] = $user['branch'];
 
         // Trim any extra whitespace from the position
         $position = trim($user['position']);
