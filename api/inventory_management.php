@@ -50,7 +50,10 @@ switch ($action) {
     case 'search_inventory':
         searchInventory();
         break;
-      case 'transfer_multiple_motorcycles':
+    case 'search_inventory_by_engine':
+        searchInventoryByEngine();
+        break;
+    case 'transfer_multiple_motorcycles':
         transferMultipleMotorcycles();
         break;
         case 'get_incoming_transfers':
@@ -63,9 +66,6 @@ switch ($action) {
     getMonthlyInventory();
     break;
 
-    case 'transfer_multiple_motorcycles':
-    transferMultipleMotorcycles();
-    break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;
@@ -123,37 +123,44 @@ function getMotorcycleTransfers() {
 
 function getInventoryTable() {
     global $conn;
-    
-    if (!isset($_SESSION['user_branch'])) {
-        echo json_encode(['success' => false, 'message' => 'User branch not set']);
-        return;
-    }
-    
-    $userBranch = $_SESSION['user_branch'];
-    
+
+    // Check if user role is set in session
+    $isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $perPage = 10;
     $offset = ($page - 1) * $perPage;
-    
+
     $sort = isset($_GET['sort']) ? sanitizeInput($_GET['sort']) : '';
     $sortField = 'date_delivered';
     $sortOrder = 'DESC';
-    
+
     if (!empty($sort)) {
         $parts = explode('_', $sort);
         $validFields = ['date_delivered', 'brand', 'model', 'status'];
-        
+
         if (in_array($parts[0], $validFields)) {
             $sortField = $parts[0];
             $sortOrder = strtoupper($parts[1]) === 'ASC' ? 'ASC' : 'DESC';
         }
     }
-    
+
     $search = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
-    $where = "WHERE status != 'deleted' AND current_branch = '$userBranch'";
+    $where = "WHERE status != 'deleted'";
+
+    // If the user is not an admin, filter by their branch
+    if (!$isAdmin) {
+        if (!isset($_SESSION['user_branch'])) {
+            echo json_encode(['success' => false, 'message' => 'User  branch not set']);
+            return;
+        }
+        $userBranch = $_SESSION['user_branch'];
+        $where .= " AND current_branch = '$userBranch'";
+    }
+
     $params = [];
     $types = '';
-    
+
     if (!empty($search)) {
         $where .= " AND (model LIKE ? OR brand LIKE ? OR engine_number LIKE ? 
                   OR frame_number LIKE ? OR color LIKE ?)";
@@ -161,24 +168,24 @@ function getInventoryTable() {
         $params = array_fill(0, 5, $searchTerm);
         $types = str_repeat('s', count($params));
     }
-    
+
     $countSql = "SELECT COUNT(*) as total FROM motorcycle_inventory $where";
     $countStmt = $conn->prepare($countSql);
-    
+
     if (!empty($params)) {
         $countStmt->bind_param($types, ...$params);
     }
-    
+
     $countStmt->execute();
     $totalRecords = $countStmt->get_result()->fetch_assoc()['total'];
     $totalPages = ceil($totalRecords / $perPage);
-    
+
     $sql = "SELECT * FROM motorcycle_inventory $where 
             ORDER BY $sortField $sortOrder 
             LIMIT ? OFFSET ?";
-    
+
     $stmt = $conn->prepare($sql);
-    
+
     if (!empty($params)) {
         $params[] = $perPage;
         $params[] = $offset;
@@ -187,15 +194,15 @@ function getInventoryTable() {
     } else {
         $stmt->bind_param('ii', $perPage, $offset);
     }
-    
+
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $data = [];
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
     }
-    
+
     echo json_encode([
         'success' => true,
         'data' => $data,
@@ -207,6 +214,7 @@ function getInventoryTable() {
         ]
     ]);
 }
+
 
 function getMotorcycle() {
     global $conn;
@@ -258,6 +266,7 @@ function addMotorcycle() {
     $model = sanitizeInput($_POST['model']);
     $engineNumber = sanitizeInput($_POST['engine_number']);
     $frameNumber = sanitizeInput($_POST['frame_number']);
+    $invoiceNumber = !empty($_POST['invoice_number']) ? sanitizeInput($_POST['invoice_number']) : null; // NEW FIELD
     $color = sanitizeInput($_POST['color']);
     $quantity = max(1, intval($_POST['quantity'] ?? 1));
     $lcp = !empty($_POST['lcp']) ? floatval($_POST['lcp']) : null;
@@ -279,12 +288,13 @@ function addMotorcycle() {
         for ($i = 0; $i < $quantity; $i++) {
             $currentEngineNumber = $quantity > 1 ? $engineNumber . '-' . ($i + 1) : $engineNumber;
             $currentFrameNumber = $quantity > 1 ? $frameNumber . '-' . ($i + 1) : $frameNumber;
+            $currentInvoiceNumber = $quantity > 1 && $invoiceNumber ? $invoiceNumber . '-' . ($i + 1) : $invoiceNumber;
             
             $stmt = $conn->prepare("INSERT INTO motorcycle_inventory 
-                                   (date_delivered, brand, model, engine_number, frame_number, color, lcp, current_branch, status) 
-                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available')");
+                                   (date_delivered, brand, model, engine_number, frame_number, invoice_number, color, lcp, current_branch, status) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')");
             
-            $stmt->bind_param('ssssssds', $dateDelivered, $brand, $model, $currentEngineNumber, $currentFrameNumber, $color, $lcp, $currentBranch);
+            $stmt->bind_param('ssssssdss', $dateDelivered, $brand, $model, $currentEngineNumber, $currentFrameNumber, $currentInvoiceNumber, $color, $lcp, $currentBranch);
             
             if ($stmt->execute()) {
                 $successCount++;
@@ -316,6 +326,7 @@ function updateMotorcycle() {
     $model = sanitizeInput($_POST['model']);
     $engineNumber = sanitizeInput($_POST['engine_number']);
     $frameNumber = sanitizeInput($_POST['frame_number']);
+    $invoiceNumber = !empty($_POST['invoice_number']) ? sanitizeInput($_POST['invoice_number']) : null; // NEW FIELD
     $color = sanitizeInput($_POST['color']);
     $lcp = !empty($_POST['lcp']) ? floatval($_POST['lcp']) : null;
     $currentBranch = sanitizeInput($_POST['current_branch']);
@@ -333,10 +344,10 @@ function updateMotorcycle() {
     
     $stmt = $conn->prepare("UPDATE motorcycle_inventory 
                            SET date_delivered = ?, brand = ?, model = ?, engine_number = ?, 
-                               frame_number = ?, color = ?, lcp = ?, current_branch = ?, status = ?
+                               frame_number = ?, invoice_number = ?, color = ?, lcp = ?, current_branch = ?, status = ?
                            WHERE id = ?");
-    $stmt->bind_param('ssssssdssi', $dateDelivered, $brand, $model, $engineNumber, 
-                      $frameNumber, $color, $lcp, $currentBranch, $status, $id);
+    $stmt->bind_param('sssssssdssi', $dateDelivered, $brand, $model, $engineNumber, 
+                      $frameNumber, $invoiceNumber, $color, $lcp, $currentBranch, $status, $id);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Motorcycle updated successfully']);
@@ -669,12 +680,13 @@ function getBranchesWithInventory() {
     echo json_encode(['success' => true, 'data' => $data]);
 }
 function searchInventory() {
-    global $conn;
+     global $conn;
     
     $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
     $field = isset($_GET['field']) ? sanitizeInput($_GET['field']) : 'all';
+    $includeLcp = isset($_GET['include_lcp']) ? true : false;
     
-    $sql = "SELECT id, brand, model, color, engine_number, frame_number, current_branch, status
+    $sql = "SELECT id, brand, model, color, engine_number, frame_number, lcp, current_branch, status
             FROM motorcycle_inventory
             WHERE status = 'available'";
     
@@ -713,6 +725,73 @@ function searchInventory() {
     
     echo json_encode(['success' => true, 'data' => $data]);
 }
+
+function searchInventoryByEngine() {
+    global $conn;
+    
+    // Get the logged-in user's branch from session
+    if (!isset($_SESSION['user_branch'])) {
+        echo json_encode(['success' => false, 'message' => 'User branch not set']);
+        return;
+    }
+    
+    $userBranch = $_SESSION['user_branch'];
+    $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
+    $field = isset($_GET['field']) ? sanitizeInput($_GET['field']) : 'all';
+    $includeLcp = isset($_GET['include_lcp']) ? true : false;
+    $fuzzySearch = isset($_GET['fuzzy_search']) ? true : false;
+    
+    $sql = "SELECT id, brand, model, color, engine_number, frame_number, lcp, current_branch, status
+            FROM motorcycle_inventory
+            WHERE status = 'available' AND current_branch = '$userBranch'"; // Added branch filter
+    
+    $params = [];
+    $types = '';
+    
+    if (!empty($query)) {
+        if ($field === 'engine_number') {
+            if ($fuzzySearch) {
+                // Fuzzy search: allow partial matches anywhere in the engine number
+                $sql .= " AND (engine_number LIKE ? OR engine_number LIKE ? OR engine_number LIKE ?)";
+                $searchTerm1 = "%$query%"; // Matches anywhere in the string
+                $searchTerm2 = "$query%"; // Matches at the beginning
+                $searchTerm3 = "%$query"; // Matches at the end
+                $params = [$searchTerm1, $searchTerm2, $searchTerm3];
+                $types = str_repeat('s', count($params));
+            } else {
+                // Exact search (original behavior)
+                $sql .= " AND engine_number LIKE ?";
+                $searchTerm = "%$query%";
+                $params[] = $searchTerm;
+                $types = 's';
+            }
+        } else {
+            $sql .= " AND (brand LIKE ? OR model LIKE ? OR engine_number LIKE ? OR frame_number LIKE ?)";
+            $searchTerm = "%$query%";
+            $params = array_fill(0, 4, $searchTerm);
+            $types = str_repeat('s', count($params));
+        }
+    }
+    
+    $sql .= " ORDER BY brand, model LIMIT 20"; // Increased limit for better results
+    
+    $stmt = $conn->prepare($sql);
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+    
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
 
 
 function getCurrentBranch() {
@@ -763,24 +842,23 @@ function transferMultipleMotorcycles() {
     $conn->begin_transaction();
     
     try {
-        // Update motorcycle records
+        // DO NOT update current_branch here - keep it at the original branch
+        // Only update status to 'transferred' to indicate it's in transit
         $updateStmt = $conn->prepare("UPDATE motorcycle_inventory 
-                                    SET current_branch = ?, status = 'transferred'
+                                    SET status = 'transferred' 
                                     WHERE id IN ($placeholders)");
         
-        // Correct parameter binding: first the toBranch, then motorcycle IDs
-        $params = array_merge([$toBranch], $motorcycleIds);
-        $updateStmt->bind_param('s'.$types, ...$params);
+        $updateStmt->bind_param($types, ...$motorcycleIds);
         $updateStmt->execute();
         
         if ($updateStmt->affected_rows === 0) {
             throw new Exception('No motorcycles were updated');
         }
         
-        // Record transfers without transfer_status
+        // Record transfers with 'pending' status
         $transferStmt = $conn->prepare("INSERT INTO inventory_transfers 
-                                      (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes)
-                                      VALUES (?, ?, ?, ?, ?, ?)");
+                                      (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status)
+                                      VALUES (?, ?, ?, ?, ?, ?, 'pending')");
         
         foreach ($motorcycleIds as $id) {
             $transferStmt->bind_param('isssis', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes);
@@ -790,7 +868,7 @@ function transferMultipleMotorcycles() {
         $conn->commit();
         echo json_encode([
             'success' => true, 
-            'message' => 'Successfully transferred ' . count($motorcycleIds) . ' motorcycle(s)',
+            'message' => 'Successfully initiated transfer for ' . count($motorcycleIds) . ' motorcycle(s)',
             'transferred_count' => count($motorcycleIds),
             'to_branch' => $toBranch
         ]);
@@ -849,7 +927,6 @@ function getIncomingTransfers() {
     echo json_encode(['success' => true, 'data' => $transfers]);
 }
 
-
 function acceptTransfers() {
     global $conn;
     
@@ -879,28 +956,27 @@ function acceptTransfers() {
         $updateTransfers->bind_param($types, ...$transferIds);
         $updateTransfers->execute();
         
-        // Get motorcycle IDs from these transfers
-        $getMotorcycles = $conn->prepare("SELECT motorcycle_id FROM inventory_transfers 
+        // Get motorcycle IDs and destination branches from these transfers
+        $getMotorcycles = $conn->prepare("SELECT motorcycle_id, to_branch FROM inventory_transfers 
                                         WHERE id IN ($placeholders)");
         $getMotorcycles->bind_param($types, ...$transferIds);
         $getMotorcycles->execute();
         $result = $getMotorcycles->get_result();
         
-        $motorcycleIds = [];
+        $motorcycleUpdates = [];
         while ($row = $result->fetch_assoc()) {
-            $motorcycleIds[] = $row['motorcycle_id'];
+            $motorcycleUpdates[] = $row;
         }
         
-        if (!empty($motorcycleIds)) {
-            $motorcyclePlaceholders = implode(',', array_fill(0, count($motorcycleIds), '?'));
-            $motorcycleTypes = str_repeat('i', count($motorcycleIds));
-            
-            // Update motorcycle status to available at current branch
-            $updateMotorcycles = $conn->prepare("UPDATE motorcycle_inventory 
-                                               SET status = 'available'
-                                               WHERE id IN ($motorcyclePlaceholders)");
-            $updateMotorcycles->bind_param($motorcycleTypes, ...$motorcycleIds);
-            $updateMotorcycles->execute();
+        if (!empty($motorcycleUpdates)) {
+            foreach ($motorcycleUpdates as $update) {
+                // NOW update the current_branch to the destination branch
+                $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
+                                                  SET current_branch = ?, status = 'available'
+                                                  WHERE id = ?");
+                $updateMotorcycle->bind_param('si', $update['to_branch'], $update['motorcycle_id']);
+                $updateMotorcycle->execute();
+            }
         }
         
         $conn->commit();
@@ -918,6 +994,7 @@ function acceptTransfers() {
 }
 function getMonthlyInventory() {
     global $conn;
+    
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
     
@@ -934,7 +1011,7 @@ function getMonthlyInventory() {
     $monthStart = "$year-$monthNum-01";
     $monthEnd = date("Y-m-t", strtotime($monthStart));
     
-    // Get beginning inventory balance
+    // Get beginning inventory balance (inventory that existed BEFORE this month)
     $beginningInventory = getBeginningInventory($monthStart, $branch);
     
     // Get all inventory movements during the month
@@ -990,16 +1067,22 @@ function getBeginningInventory($monthStart, $branchFilter) {
 function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     global $conn;
     
-    // Get deliveries (INs) during the month
+    // Get ONLY direct deliveries (NEW inventory added directly to this branch, NOT transfers)
     $sqlDeliveries = "SELECT 
                         brand, model, color, current_branch,
                         COUNT(*) as in_qty
                     FROM motorcycle_inventory 
                     WHERE date_delivered BETWEEN ? AND ?
-                    AND status != 'deleted'";
+                    AND status != 'deleted'
+                    AND id NOT IN (
+                        SELECT motorcycle_id 
+                        FROM inventory_transfers 
+                        WHERE transfer_date BETWEEN ? AND ?
+                        AND transfer_status = 'completed'
+                    )";
     
-    $params = [$monthStart, $monthEnd];
-    $types = 'ss';
+    $params = [$monthStart, $monthEnd, $monthStart, $monthEnd];
+    $types = 'ssss';
     
     if (!empty($branchFilter) && $branchFilter !== 'all') {
         $sqlDeliveries .= " AND current_branch = ?";
@@ -1014,7 +1097,7 @@ function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     $stmt->execute();
     $deliveries = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Get transfers IN (to this branch) during the month
+    // Get transfers IN (from other branches to this branch)
     $sqlTransfersIn = "SELECT 
                         mi.brand, mi.model, mi.color, 
                         it.to_branch as current_branch,
@@ -1040,7 +1123,7 @@ function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     $stmt->execute();
     $transfersIn = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Get transfers OUT (from this branch) during the month
+    // Get transfers OUT (from this branch to other branches)
     $sqlTransfersOut = "SELECT 
                         mi.brand, mi.model, mi.color, 
                         it.from_branch as current_branch,
@@ -1066,38 +1149,10 @@ function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     $stmt->execute();
     $transfersOut = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Get returns to head office (special OUT category)
-    $sqlReturns = "SELECT 
-                    mi.brand, mi.model, mi.color, 
-                    it.from_branch as current_branch,
-                    COUNT(*) as out_qty
-                FROM inventory_transfers it
-                JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
-                WHERE it.transfer_date BETWEEN ? AND ?
-                AND it.to_branch = 'HEADOFFICE'
-                AND it.transfer_status = 'completed'";
-    
-    $paramsReturns = [$monthStart, $monthEnd];
-    $typesReturns = 'ss';
-    
-    if (!empty($branchFilter) && $branchFilter !== 'all') {
-        $sqlReturns .= " AND it.from_branch = ?";
-        $paramsReturns[] = $branchFilter;
-        $typesReturns .= 's';
-    }
-    
-    $sqlReturns .= " GROUP BY mi.brand, mi.model, mi.color, it.from_branch";
-    
-    $stmt = $conn->prepare($sqlReturns);
-    $stmt->bind_param($typesReturns, ...$paramsReturns);
-    $stmt->execute();
-    $returns = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
     return [
         'deliveries' => $deliveries,
         'transfers_in' => $transfersIn,
-        'transfers_out' => $transfersOut,
-        'returns' => $returns
+        'transfers_out' => $transfersOut
     ];
 }
 
@@ -1110,6 +1165,9 @@ function processInventoryData($beginningInventory, $inventoryMovements, $monthSt
             'brand' => $item['brand'],
             'model' => $item['model'],
             'color' => $item['color'],
+            
+                'engine_number' => $transfer['engine_number'],
+                'frame_number' => $transfer['frame_number'],
             'current_branch' => $item['current_branch'],
             'beginning_balance' => (int)$item['beginning_balance'],
             'in_qty' => 0,
@@ -1118,7 +1176,7 @@ function processInventoryData($beginningInventory, $inventoryMovements, $monthSt
         ];
     }
     
-    // Process deliveries (INs)
+    // Process deliveries (NEW inventory added directly to branch)
     foreach ($inventoryMovements['deliveries'] as $delivery) {
         $key = $delivery['brand'] . '|' . $delivery['model'] . '|' . $delivery['color'] . '|' . $delivery['current_branch'];
         
@@ -1139,7 +1197,7 @@ function processInventoryData($beginningInventory, $inventoryMovements, $monthSt
         $processed[$key]['ending_balance'] += (int)$delivery['in_qty'];
     }
     
-    // Process transfers IN (from other branches)
+    // Process transfers IN (from other branches to this branch)
     foreach ($inventoryMovements['transfers_in'] as $transfer) {
         $key = $transfer['brand'] . '|' . $transfer['model'] . '|' . $transfer['color'] . '|' . $transfer['current_branch'];
         
@@ -1160,7 +1218,7 @@ function processInventoryData($beginningInventory, $inventoryMovements, $monthSt
         $processed[$key]['ending_balance'] += (int)$transfer['in_qty'];
     }
     
-    // Process transfers OUT (to other branches)
+    // Process transfers OUT (from this branch to other branches)
     foreach ($inventoryMovements['transfers_out'] as $transfer) {
         $key = $transfer['brand'] . '|' . $transfer['model'] . '|' . $transfer['color'] . '|' . $transfer['current_branch'];
         
@@ -1181,34 +1239,6 @@ function processInventoryData($beginningInventory, $inventoryMovements, $monthSt
         $processed[$key]['ending_balance'] -= (int)$transfer['out_qty'];
     }
     
-    // Process returns to head office (special OUT category)
-    foreach ($inventoryMovements['returns'] as $return) {
-        $key = $return['brand'] . '|' . $return['model'] . '|' . $return['color'] . '|' . $return['current_branch'];
-        
-        if (!isset($processed[$key])) {
-            $processed[$key] = [
-                'brand' => $return['brand'],
-                'model' => $return['model'],
-                'color' => $return['color'],
-                'current_branch' => $return['current_branch'],
-                'beginning_balance' => 0,
-                'in_qty' => 0,
-                'out_qty' => 0,
-                'ending_balance' => 0
-            ];
-        }
-        
-        // Add to out_qty and create a special notation for returns
-        $processed[$key]['out_qty'] += (int)$return['out_qty'];
-        $processed[$key]['ending_balance'] -= (int)$return['out_qty'];
-        
-        // Add a special field to track returns to head office
-        if (!isset($processed[$key]['returns_to_head_office'])) {
-            $processed[$key]['returns_to_head_office'] = 0;
-        }
-        $processed[$key]['returns_to_head_office'] += (int)$return['out_qty'];
-    }
-    
     return $processed;
 }
 
@@ -1217,8 +1247,7 @@ function calculateSummary($processedData) {
         'total_beginning' => 0,
         'total_in' => 0,
         'total_out' => 0,
-        'total_ending' => 0,
-        'total_returns' => 0
+        'total_ending' => 0
     ];
     
     foreach ($processedData as $item) {
@@ -1226,10 +1255,6 @@ function calculateSummary($processedData) {
         $summary['total_in'] += $item['in_qty'];
         $summary['total_out'] += $item['out_qty'];
         $summary['total_ending'] += $item['ending_balance'];
-        
-        if (isset($item['returns_to_head_office'])) {
-            $summary['total_returns'] += $item['returns_to_head_office'];
-        }
     }
     
     return $summary;

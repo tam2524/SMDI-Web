@@ -360,5 +360,3 @@ $('#confirmDeleteBtn').on('click', function() {
     }
 });
 
-
-

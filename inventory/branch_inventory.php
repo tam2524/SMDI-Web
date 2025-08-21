@@ -1,7 +1,6 @@
 <?php include '../api/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <title>SMDI - INVENTORY | The Highest Levels of Service</title>
@@ -13,11 +12,12 @@
 
     <!-- Icon Font Stylesheet -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Libraries Stylesheet -->
     <link href="../lib/lightbox/css/lightbox.min.css" rel="stylesheet">
     <link href="../lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+
 
     <!-- Bootstrap CSS -->
     <link href="../css/bootstrap.min.css" rel="stylesheet">
@@ -31,6 +31,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+
     <style>
         #branchMap { 
             height: 600px; 
@@ -233,11 +234,8 @@
                                     data-bs-target="#addMotorcycleModal">
                                     <i class="bi bi-plus-circle"></i> Add Motorcycle
                                 </button>
-                                <button id="deleteSelectedBtn" class="btn btn-danger" disabled>
-                                    <i class="bi bi-trash"></i> Delete Selected
-                                </button>
                                 <button id="transferSelectedBtn" class="btn btn-primary text-white" disabled>
-            <i class="bi bi-truck"></i> Return Selected
+            <i class="bi bi-truck"></i> Transfer
         </button>
                             </div>
                             <div class="input-group" style="max-width: 300px;">
@@ -253,7 +251,6 @@
                             <table class="table table-striped" id="inventoryTable">
                                 <thead>
                                     <tr>
-                                        <th><input type="checkbox" id="selectAll"></th>
                                         <th class="sortable-header" data-sort="date_delivered">Date Delivered</th>
                                         <th class="sortable-header" data-sort="brand">Brand</th>
                                         <th class="sortable-header" data-sort="model">Model</th>
@@ -315,215 +312,252 @@
     </div>
 </div>
     
-    <!-- Add Motorcycle Modal -->
-    <div class="modal fade" id="addMotorcycleModal" tabindex="-1" aria-labelledby="addMotorcycleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addMotorcycleModalLabel">Add Motorcycle to Inventory</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addMotorcycleForm">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="dateDelivered" class="form-label">Date Delivered</label>
-                                <input type="date" class="form-control" id="dateDelivered" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="brand" class="form-label">Brand</label>
-                                <select class="form-select" id="brand" required>
-                                    <option value="">Select Brand</option>
-                                    <option value="Suzuki">Suzuki</option>
-                                    <option value="Honda">Honda</option>
-                                    <option value="Kawasaki">Kawasaki</option>
-                                    <option value="Yamaha">Yamaha</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="model" class="form-label">Model</label>
-                                <input type="text" class="form-control" id="model" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="engineNumber" class="form-label">Engine Number</label>
-                                <input type="text" class="form-control" id="engineNumber" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="frameNumber" class="form-label">Frame Number</label>
-                                <input type="text" class="form-control" id="frameNumber" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="color" class="form-label">Color</label>
-                                <input type="text" class="form-control" id="color" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="quantity" class="form-label">Quantity</label>
-                                <input type="number" class="form-control" id="quantity" value="1" min="1" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="lcp" class="form-label">LCP</label>
-                                <input type="number" step="0.01" class="form-control" id="lcp">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="currentBranch" class="form-label">Current Branch</label>
-                                <select class="form-select" id="currentBranch" required>
-    <option value="<?php echo $_SESSION['user_branch']; ?>" selected><?php echo $_SESSION['user_branch']; ?></option>
-                                   
-                                </select>
-                            </div>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary text-white">Add Motorcycle</button>
-                        </div>
-                    </form>
-                </div>
+<!-- Add Motorcycle Modal -->
+<div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='addMotorcycleModalLabel'>Add Motorcycle to Inventory</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
             </div>
-        </div>
-    </div>
-
-    <!-- Edit Motorcycle Modal -->
-    <div class="modal fade" id="editMotorcycleModal" tabindex="-1" aria-labelledby="editMotorcycleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editMotorcycleModalLabel">Edit Motorcycle Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editMotorcycleForm">
-                        <input type="hidden" id="editId">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="editDateDelivered" class="form-label">Date Delivered</label>
-                                <input type="date" class="form-control" id="editDateDelivered" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editBrand" class="form-label">Brand</label>
-                                <select class="form-select" id="editBrand" required>
-                                    <option value="Suzuki">Suzuki</option>
-                                    <option value="Honda">Honda</option>
-                                    <option value="Kawasaki">Kawasaki</option>
-                                    <option value="Yamaha">Yamaha</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editModel" class="form-label">Model</label>
-                                <input type="text" class="form-control" id="editModel" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editEngineNumber" class="form-label">Engine Number</label>
-                                <input type="text" class="form-control" id="editEngineNumber" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editFrameNumber" class="form-label">Frame Number</label>
-                                <input type="text" class="form-control" id="editFrameNumber" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editColor" class="form-label">Color</label>
-                                <input type="text" class="form-control" id="editColor" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editLcp" class="form-label">LCP</label>
-                                <input type="number" step="0.01" class="form-control" id="editLcp">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editCurrentBranch" class="form-label">Current Branch</label>
-                                <select class="form-select" id="editCurrentBranch" readonly>
-                                    <option value="HEADOFFICE">Head Office</option>
-                                    <option value="RXS-S">RXS-S</option>
-                                    <option value="RXS-H">RXS-H</option>
-                                    <option value="ANT-1">ANT-1</option>
-                                    <option value="ANT-2">ANT-2</option>
-                                    <option value="SDH">SDH</option>
-                                    <option value="SDS">SDS</option>
-                                    <option value="JAR-1">JAR-1</option>
-                                    <option value="JAR-2">JAR-2</option>
-                                    <option value="SKM">SKM</option>
-                                    <option value="SKS">SKS</option>
-                                    <option value="ALTA">ALTA</option>
-                                    <option value="EMAP">EMAP</option>
-                                    <option value="CUL">CUL</option>
-                                    <option value="BAC">BAC</option>
-                                    <option value="PAS-1">PAS-1</option>
-                                    <option value="PAS-2">PAS-2</option>
-                                    <option value="BAL">BAL</option>
-                                    <option value="GUIM">GUIM</option>
-                                    <option value="PEMDI">PEMDI</option>
-                                    <option value="EEM">EEM</option>
-                                    <option value="AJU">AJU</option>
-                                    <option value="BAIL">BAIL</option>
-                                    <option value="3SMB">MINDORO MB</option>
-                                    <option value="3SMIN">MINDORO 3S</option>
-                                    <option value="MAN">MANSALAY</option>
-                                    <option value="K-RIDERS">K-RIDERS</option>
-                                    <option value="IBAJAY">IBAJAY</option>
-                                    <option value="NUMANCIA">NUMANCIA</option>
-                                    <option value="HEADOFFICE">HEADOFFICE</option>
-                                    <option value="CEBU">CEBU</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editStatus" class="form-label">Status</label>
-                                <select class="form-select" id="editStatus" required>
-                                    <option value="available">Available</option>
-                                    <option value="sold">Sold</option>
-                                    <option value="transferred">Transferred</option>
-                                </select>
-                            </div>
+            <div class='modal-body'>
+                <form id='addMotorcycleForm'>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='dateDelivered' class='form-label'>Date Delivered</label>
+                            <input type='date' class='form-control' id='dateDelivered' required>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary text-white">Save Changes</button>
+                        <div class='col-md-6 mb-3'>
+                            <label for='invoiceNumber' class='form-label'>Invoice Number/MT</label>
+                            <input type='text' class='form-control' id='invoiceNumber'>
                         </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Multiple Transfer Modal -->
-<div class="modal fade" id="multipleTransferModal" tabindex="-1" aria-labelledby="multipleTransferModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="multipleTransferModalLabel">Return Multiple Motorcycles</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="multipleTransferForm">
-                    <div class="mb-3">
-                        <label for="multipleFromBranch" class="form-label">From Branch</label>
-                        <input type="text" class="form-control" id="multipleFromBranch" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label for="multipleToBranch" class="form-label">To Branch</label>
-                        <select class="form-select" id="multipleToBranch" readonly>
-                            <option value="HEADOFFICE">HEADOFFICE</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="multipleTransferDate" class="form-label">Transfer Date</label>
-                        <input type="date" class="form-control" id="multipleTransferDate" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="multipleTransferNotes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="multipleTransferNotes" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Selected Motorcycles (<span id="selectedCount">0</span>)</label>
-                        <div class="border p-2" style="max-height: 200px; overflow-y: auto;" id="selectedMotorcyclesList">
-                            <!-- Selected motorcycles will be listed here -->
+                        <div class='col-md-6 mb-3'>
+                            <label for='brand' class='form-label'>Brand</label>
+                            <select class='form-select' id='brand' required>
+                                <option value=''>Select Brand</option>
+                                <option value='Suzuki'>Suzuki</option>
+                                <option value='Honda'>Honda</option>
+                                <option value='Kawasaki'>Kawasaki</option>
+                                <option value='Yamaha'>Yamaha</option>
+                            </select>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='model' class='form-label'>Model</label>
+                            <input type='text' class='form-control' id='model' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='engineNumber' class='form-label'>Engine Number</label>
+                            <input type='text' class='form-control' id='engineNumber' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='frameNumber' class='form-label'>Frame Number</label>
+                            <input type='text' class='form-control' id='frameNumber' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='color' class='form-label'>Color</label>
+                            <input type='text' class='form-control' id='color' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='quantity' class='form-label'>Quantity</label>
+                            <input type='number' class='form-control' id='quantity' value='1' min='1' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='lcp' class='form-label'>LCP</label>
+                            <input type='number' step='0.01' class='form-control' id='lcp'>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='currentBranch' class='form-label'>Current Branch</label>
+                            <select class='form-select' id='currentBranch' required>
+                                <option value='HEADOFFICE'>Head Office</option>
+                                <option value='RXS-S'>RXS-S</option>
+                                <option value='RXS-H'>RXS-H</option>
+                                <option value='ANT-1'>ANT-1</option>
+                                <option value='ANT-2'>ANT-2</option>
+                                <option value='SDH'>SDH</option>
+                                <option value='SDS'>SDS</option>
+                                <option value='JAR-1'>JAR-1</option>
+                                <option value='JAR-2'>JAR-2</option>
+                                <option value='SKM'>SKM</option>
+                                <option value='SKS'>SKS</option>
+                                <option value='ALTA'>ALTA</option>
+                                <option value='EMAP'>EMAP</option>
+                                <option value='CUL'>CUL</option>
+                                <option value='BAC'>BAC</option>
+                                <option value='PAS-1'>PAS-1</option>
+                                <option value='PAS-2'>PAS-2</option>
+                                <option value='BAL'>BAL</option>
+                                <option value='GUIM'>GUIM</option>
+                                <option value='PEMDI'>PEMDI</option>
+                                <option value='EEM'>EEM</option>
+                                <option value='AJU'>AJU</option>
+                                <option value='BAIL'>BAIL</option>
+                                <option value='3SMB'>MINDORO MB</option>
+                                <option value='3SMIN'>MINDORO 3S</option>
+                                <option value='MAN'>MANSALAY</option>
+                                <option value='K-RIDERS'>K-RIDERS</option>
+                                <option value='IBAJAY'>IBAJAY</option>
+                                <option value='NUMANCIA'>NUMANCIA</option>
+                                <option value='HEADOFFICE'>HEADOFFICE</option>
+                                <option value='CEBU'>CEBU</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary text-white">Transfer Motorcycles</button>
+                    <div class='d-grid'>
+                        <button type='submit' class='btn btn-primary text-white'>Add Motorcycle</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Edit Motorcycle Modal -->
+<div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='editMotorcycleModalLabel'>Edit Motorcycle Details</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <form id='editMotorcycleForm'>
+                    <input type='hidden' id='editId'>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editDateDelivered' class='form-label'>Date Delivered</label>
+                            <input type='date' class='form-control' id='editDateDelivered' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
+                            <input type='text' class='form-control' id='editInvoiceNumber'>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editBrand' class='form-label'>Brand</label>
+                            <select class='form-select' id='editBrand' required>
+                                <option value='Suzuki'>Suzuki</option>
+                                <option value='Honda'>Honda</option>
+                                <option value='Kawasaki'>Kawasaki</option>
+                                <option value='Yamaha'>Yamaha</option>
+                            </select>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editModel' class='form-label'>Model</label>
+                            <input type='text' class='form-control' id='editModel' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editEngineNumber' class='form-label'>Engine Number</label>
+                            <input type='text' class='form-control' id='editEngineNumber' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editFrameNumber' class='form-label'>Frame Number</label>
+                            <input type='text' class='form-control' id='editFrameNumber' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editColor' class='form-label'>Color</label>
+                            <input type='text' class='form-control' id='editColor' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editLcp' class='form-label'>LCP</label>
+                            <input type='number' step='0.01' class='form-control' id='editLcp'>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editCurrentBranch' class='form-label'>Current Branch</label>
+                            <select class='form-select' id='editCurrentBranch' required>
+                                <option value='HEADOFFICE'>Head Office</option>
+                                <option value='RXS-S'>RXS-S</option>
+                                <option value='RXS-H'>RXS-H</option>
+                                <!-- Add other branches as needed -->
+                            </select>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editStatus' class='form-label'>Status</label>
+                            <select class='form-select' id='editStatus' required>
+                                <option value='available'>Available</option>
+                                <option value='sold'>Sold</option>
+                                <option value='transferred'>Transferred</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class='d-grid'>
+                        <button type='submit' class='btn btn-primary text-white'>Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+   <!-- Transfer Motorcycle Modal -->
+    <div class='modal fade' id='transferMotorcycleModal' tabindex='-1' aria-labelledby='transferMotorcycleModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='transferMotorcycleModalLabel'>Transfer Motorcycle</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='transferMotorcycleForm'>
+                        <input type='hidden' id='transferId'>
+                        <div class='mb-3'>
+                            <label for='fromBranch' class='form-label'>From Branch</label>
+                            <input type='text' class='form-control' id='fromBranch' readonly>
+                        </div>
+                        <div class='mb-3'>
+                            <label for='toBranch' class='form-label'>To Branch</label>
+                            <select class='form-select' id='toBranch' required>
+                              <option value='HEADOFFICE'>Head Office</option>
+                                <option value='RXS-S'>RXS-S</option>
+                                <option value='RXS-H'>RXS-H</option>
+                                <option value='ANT-1'>ANT-1</option>
+                                <option value='ANT-2'>ANT-2</option>
+                                <option value='SDH'>SDH</option>
+                                <option value='SDS'>SDS</option>
+                                <option value='JAR-1'>JAR-1</option>
+                                <option value='JAR-2'>JAR-2</option>
+                                <option value='SKM'>SKM</option>
+                                <option value='SKS'>SKS</option>
+                                <option value='ALTA'>ALTA</option>
+                                <option value='EMAP'>EMAP</option>
+                                <option value='CUL'>CUL</option>
+                                <option value='BAC'>BAC</option>
+                                <option value='PAS-1'>PAS-1</option>
+                                <option value='PAS-2'>PAS-2</option>
+                                <option value='BAL'>BAL</option>
+                                <option value='GUIM'>GUIM</option>
+                                <option value='PEMDI'>PEMDI</option>
+                                <option value='EEM'>EEM</option>
+                                <option value='AJU'>AJU</option>
+                                <option value='BAIL'>BAIL</option>
+                                <option value='3SMB'>MINDORO MB</option>
+                                <option value='3SMIN'>MINDORO 3S</option>
+                                <option value='MAN'>MANSALAY</option>
+                                <option value='K-RIDERS'>K-RIDERS</option>
+                                <option value='IBAJAY'>IBAJAY</option>
+                                <option value='NUMANCIA'>NUMANCIA</option>
+                                <option value='HEADOFFICE'>HEADOFFICE</option>
+                                <option value='CEBU'>CEBU</option>
+                            </select>
+                        </div>
+                        <div class='mb-3'>
+                            <label for='transferDate' class='form-label'>Transfer Date</label>
+                            <input type='date' class='form-control' id='transferDate' required>
+                        </div>
+                        <div class='mb-3'>
+                            <label for='transferNotes' class='form-label'>Notes</label>
+                            <textarea class='form-control' id='transferNotes' rows='3'></textarea>
+                        </div>
+                        <div class='d-grid'>
+                            <button type='submit' class='btn btn-primary text-white'>Transfer Motorcycle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 <!-- Incoming Transfers Modal -->
 <div class="modal fade" id="incomingTransfersModal" tabindex="-1" aria-labelledby="incomingTransfersModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -565,6 +599,168 @@
     </div>
 </div>
 
+<!-- Multiple Transfer Modal - Improved Layout -->
+<div class="modal fade" id="multipleTransferModal" tabindex="-1" aria-labelledby="multipleTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="multipleTransferModalLabel">
+                    <i class="bi bi-truck me-2 text-white"></i>Transfer Multiple Motorcycles
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <form id="multipleTransferForm">
+                    <div class="row g-0">
+                        <!-- Transfer Details (Left Panel) -->
+                        <div class="col-md-4 border-end bg-light">
+                            <div class="p-4">
+                                <fieldset>
+                                    <legend class="fs-6 fw-semibold text-black mb-4">
+                                        <i class="bi bi-geo-alt me-2"></i>Transfer Information
+                                    </legend>
+
+                                    <div class="mb-3">
+                                        <label for="multipleFromBranch" class="form-label small fw-semibold">
+                                            <i class="bi bi-geo-alt me-1"></i>From Branch
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm" id="multipleFromBranch" readonly>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="multipleToBranch" class="form-label small fw-semibold">
+                                            <i class="bi bi-geo-alt-fill me-1"></i>To Branch <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select form-select-sm" id="multipleToBranch" required>
+                                            <option value="">Select Destination Branch</option>
+                                           
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="multipleTransferDate" class="form-label small fw-semibold">
+                                            <i class="bi bi-calendar me-1"></i>Transfer Date <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="date" class="form-control form-control-sm" id="multipleTransferDate" required>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="multipleTransferNotes" class="form-label small fw-semibold">
+                                            <i class="bi bi-chat-text me-1"></i>Transfer Notes
+                                        </label>
+                                        <textarea class="form-control form-control-sm" id="multipleTransferNotes" rows="3" placeholder="Optional notes about this transfer..."></textarea>
+                                    </div>
+                                </fieldset>
+
+                                <hr>
+
+                                <!-- Transfer Summary Section -->
+                                <fieldset>
+                                    <legend class="fs-6 fw-semibold text-black mb-3">
+                                        <i class="bi bi-calculator me-2"></i>Transfer Summary
+                                    </legend>
+
+                                    <div class="summary-card p-3 mb-3" style="background: white; border-radius: 8px; border: 1px solid #e9ecef;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="small fw-semibold">Total Units:</span>
+                                            <span class="badge bg-primary" id="selectedCount">0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="small fw-semibold">Total LCP Value:</span>
+                                            <span class="fw-bold text-success" id="totalLcpValue">₱0.00</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="progress mb-4" style="height: 6px;">
+                                        <div class="progress-bar" id="selectionProgress" style="width: 0%"></div>
+                                    </div>
+
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="bi bi-truck me-2"></i>Transfer Selected Motorcycles
+                                        </button>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <!-- Motorcycle Selection (Right Panel) -->
+                        <div class="col-md-8">
+                            <div class="p-4">
+                                <h6 class="fw-semibold text-primary mb-4">
+                                    <i class="bi bi-search me-2"></i>Motorcycle Selection
+                                </h6>
+
+                                <!-- Search Form -->
+                                <div class="row g-2 mb-3 align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-semibold">
+                                            <i class="bi bi-upc-scan me-1"></i>Search by Engine Number
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm" id="engineSearch" placeholder="Enter engine number...">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm w-100 text-white" type="button" id="searchEngineBtn">
+                                                <i class="bi bi-search me-1"></i>Search
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-text small text-muted mb-4">You can search using full or partial engine numbers.</div>
+
+                                <!-- Search & Selected Results Panels -->
+                                <div class="row g-3">
+                                    <!-- Search Results -->
+                                    <div class="col-md-6">
+                                        <div class="card h-100 shadow-sm">
+                                            <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                                                <span class="fw-semibold small">
+                                                    <i class="bi bi-list-check me-1"></i>Search Results
+                                                </span>
+                                                <span class="badge bg-secondary" id="searchResultsCount">0</span>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="search-results-container" style="max-height: 300px; overflow-y: auto;" id="searchResults">
+                                                    <div class="text-center text-muted py-5">
+                                                        <i class="bi bi-search display-6 mb-2"></i>
+                                                        <p class="small">Search for motorcycles to display results</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Selected Items -->
+                                    <div class="col-md-6">
+                                        <div class="card h-100 shadow-sm">
+                                            <div class="card-header py-2 bg-light d-flex justify-content-between align-items-center">
+                                                <span class="fw-semibold small">
+                                                    <i class="bi bi-check-circle me-1"></i>Selected Items
+                                                </span>
+                                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" id="clearSelectionBtn" title="Clear All">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="selected-items-container" style="max-height: 300px; overflow-y: auto;" id="selectedMotorcyclesList">
+                                                    <div class="text-center text-muted py-5">
+                                                        <i class="bi bi-inbox display-6 mb-2"></i>
+                                                        <p class="small">No motorcycles selected</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div> <!-- End row -->
+                            </div> <!-- End p-4 -->
+                        </div> <!-- End Right Panel -->
+                    </div> <!-- End row -->
+                </form>
+            </div> <!-- End modal-body -->
+        </div> <!-- End modal-content -->
+    </div> <!-- End modal-dialog -->
+</div>
 
     <!-- Confirmation Modal -->
     <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
@@ -630,6 +826,6 @@
     <script>
     const currentBranch = '<?php echo $_SESSION['user_branch'] ?? 'RXS-S'; ?>';
     </script>
-    <script src="../js/branch_inventory.js"></script>
+    <script src="../js/inventory_management.js"></script>
 </body>
 </html>
