@@ -1408,7 +1408,6 @@ function generateMonthlyInventoryReport() {
     });
 }
 
-
 function renderMonthlyInventoryReport(data, month, branch) {
     const [year, monthNum] = month.split('-');
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString('default', { month: 'long' });
@@ -1577,7 +1576,6 @@ function renderMonthlyInventoryReport(data, month, branch) {
 
 }
 
-
 function generateMonthlyReportPDF() {
     // Check if we have report data available
     if (!currentReportData || !currentReportMonth) {
@@ -1688,6 +1686,7 @@ function generateMonthlyReportPDF() {
     html2pdf().set(opt).from(container).save();
 }
 
+
 function exportMonthlyReportToPDF() {
     const reportEl = document.getElementById('monthlyReportPrintContainer');
 
@@ -1740,6 +1739,8 @@ function exportMonthlyReport() {
     link.click();
     document.body.removeChild(link);
 }
+
+
 // =======================
 // Helper Functions
 // =======================

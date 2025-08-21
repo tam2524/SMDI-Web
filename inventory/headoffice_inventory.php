@@ -34,6 +34,7 @@
 
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
+    
 
     <style>
     .model-card {
