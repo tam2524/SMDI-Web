@@ -121,28 +121,9 @@ function setupEventListeners() {
 
 $('#acceptAllTransfersBtn').click(function() {
     const transferIds = [];
-    const transferDetails = [];
-    
-    // Collect transfer details
     $('#incomingTransfersBody tr').each(function() {
         const id = $(this).data('transfer-id');
-        const brand = $(this).data('brand');
-        const model = $(this).data('model');
-        const engine = $(this).data('engine');
-        const frame = $(this).data('frame');
-        const color = $(this).data('color');
-        
-        if (id) {
-            transferIds.push(id);
-            transferDetails.push({
-                id: id,
-                brand: brand,
-                model: model,
-                engine: engine,
-                frame: frame,
-                color: color
-            });
-        }
+        if (id) transferIds.push(id);
     });
     
     if (transferIds.length === 0) {
@@ -161,14 +142,13 @@ $('#acceptAllTransfersBtn').click(function() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                // Show receipt modal instead of success modal
-                showTransferReceipt(transferDetails, response.date_received);
+                showSuccessModal(response.message || 'Transfers accepted successfully! Received on: ' + response.date_received);
                 $('#incomingTransfersModal').modal('hide');
                 
-                // Reload after receipt is closed
-                $('#receiptModal').on('hidden.bs.modal', function() {
+                // Wait for the success modal to show, then reload the page
+                setTimeout(function() {
                     window.location.reload();
-                });
+                }, 2000);
                 
                 hasShownIncomingTransfers = false;
             } else {
@@ -2050,7 +2030,6 @@ function exportMonthlyReport() {
     link.click();
     document.body.removeChild(link);
 }
-
 
 
 // =======================
