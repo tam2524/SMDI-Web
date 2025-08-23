@@ -16,7 +16,7 @@ let branchesMatch = true;
 let currentReportData = null;
 let currentReportMonth = null;
 let currentReportBranch = null;
-
+let modelCount = 0;
 // =======================
 // Document Ready
 // =======================
@@ -28,6 +28,9 @@ $(document).ready(function() {
     setupEventListeners();
     loadBranchInventory(currentBranch);
     setInterval(checkIncomingTransfers, 1000);
+    
+    addModelForm();
+    
 
     // Initialize map after a short delay to ensure DOM is ready
     setTimeout(() => { 
@@ -35,6 +38,7 @@ $(document).ready(function() {
             map = initMap(currentBranch); 
         }
     }, 300);
+   
 });
 
 // =======================
@@ -115,11 +119,30 @@ function setupEventListeners() {
         $('#searchResults').html('<div class="text-center text-muted py-3">Search for motorcycles using engine number</div>');
     });
 
-    $('#acceptAllTransfersBtn').click(function() {
+$('#acceptAllTransfersBtn').click(function() {
     const transferIds = [];
+    const transferDetails = [];
+    
+    // Collect transfer details
     $('#incomingTransfersBody tr').each(function() {
         const id = $(this).data('transfer-id');
-        if (id) transferIds.push(id);
+        const brand = $(this).data('brand');
+        const model = $(this).data('model');
+        const engine = $(this).data('engine');
+        const frame = $(this).data('frame');
+        const color = $(this).data('color');
+        
+        if (id) {
+            transferIds.push(id);
+            transferDetails.push({
+                id: id,
+                brand: brand,
+                model: model,
+                engine: engine,
+                frame: frame,
+                color: color
+            });
+        }
     });
     
     if (transferIds.length === 0) {
@@ -138,13 +161,14 @@ function setupEventListeners() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                showSuccessModal(response.message || 'Transfers accepted successfully!');
+                // Show receipt modal instead of success modal
+                showTransferReceipt(transferDetails, response.date_received);
                 $('#incomingTransfersModal').modal('hide');
                 
-                // Wait for the success modal to show, then reload the page
-                setTimeout(function() {
+                // Reload after receipt is closed
+                $('#receiptModal').on('hidden.bs.modal', function() {
                     window.location.reload();
-                }, 2000); // Reload after 2 seconds (same as success modal timeout)
+                });
                 
                 hasShownIncomingTransfers = false;
             } else {
@@ -188,6 +212,14 @@ function setupEventListeners() {
         .addClass('btn-success')
         .text('Select');
 });
+
+  $('#addModelBtn').click(function() {
+        addModelForm();
+    });
+        $('#addMotorcycleForm').submit(function(e) { 
+        e.preventDefault(); 
+        addMotorcycle(); 
+    });
 }
 
 // =======================
@@ -485,32 +517,154 @@ function getStatusBadgeClass(status) {
         default: return 'bg-secondary';
     }
 }
+// =======================
+// Model Management
+// =======================
 
+function addModelForm() {
+    modelCount++;
+    const template = document.getElementById('modelFormTemplate');
+    const clone = template.content.cloneNode(true);
+    
+    // Update model number
+    clone.querySelector('.model-number').textContent = `Model #${modelCount}`;
+    
+    // Add remove functionality
+    clone.querySelector('.remove-model-btn').addEventListener('click', function() {
+        if ($('.model-form').length > 1) {
+            $(this).closest('.model-form').remove();
+            updateModelNumbers();
+        } else {
+            showErrorModal('You must have at least one model');
+        }
+    });
+    
+    // Add quantity change listener
+    const quantityInput = clone.querySelector('.model-quantity');
+    quantityInput.addEventListener('change', function() {
+        updateSpecificDetailsFields(this);
+    });
+    
+    // Add initial specific details for quantity 1
+    setTimeout(() => {
+        updateSpecificDetailsFields(quantityInput);
+    }, 100);
+    
+    $('#modelFormsContainer').append(clone);
+}
+
+function updateSpecificDetailsFields(quantityInput) {
+    const quantity = parseInt(quantityInput.value) || 1;
+    const container = $(quantityInput).closest('.model-form').find('.specific-details-container');
+    const detailsRows = container.find('.specific-details-row');
+    const existingRows = detailsRows.length;
+    
+    // Show/hide the container based on quantity
+    if (quantity > 0) {
+        container.show();
+    } else {
+        container.hide();
+        return;
+    }
+    
+    const rowsContainer = container.find('.specific-details-rows');
+    
+    if (quantity > existingRows) {
+        // Add rows
+        for (let i = existingRows; i < quantity; i++) {
+            const rowHtml = `
+                <div class="specific-details-row row g-3 align-items-end mb-3 border-bottom pb-3">
+                    <div class="col-md-4">
+                        <label class="form-label mb-1">Engine Number <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control engine-number" placeholder="Engine Number" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-1">Frame Number <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control frame-number" placeholder="Frame Number" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-1">Color <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control color" placeholder="Color" required>
+                    </div>
+                </div>
+            `;
+            rowsContainer.append(rowHtml);
+        }
+    } else if (quantity < existingRows) {
+        // Remove rows
+        const rowsToRemove = existingRows - quantity;
+        for (let i = 0; i < rowsToRemove; i++) {
+            rowsContainer.find('.specific-details-row').last().remove();
+        }
+    }
+}
+
+function updateModelNumbers() {
+    $('.model-form').each(function(index) {
+        $(this).find('.model-number').text(`Model #${index + 1}`);
+    });
+}
 // =======================
 // Motorcycle CRUD
 // =======================
 function addMotorcycle() {
-     const formData = {
+    const formData = {
         action: 'add_motorcycle',
+        invoice_number: $('#invoiceNumber').val(),
         date_delivered: $('#dateDelivered').val(),
-        brand: $('#brand').val(),
-        model: $('#model').val(),
-        engine_number: $('#engineNumber').val(),
-        frame_number: $('#frameNumber').val(),
-        invoice_number: $('#invoiceNumber').val(), 
-        color: $('#color').val(),
-        quantity: $('#quantity').val(),
-        lcp: $('#lcp').val(),
-        current_branch: $('#currentBranch').val()
+        branch: $('#branch').val(),
+        models: []
     };
     
     // Validate required fields
-    if (!formData.date_delivered || !formData.brand || !formData.model || 
-        !formData.engine_number || !formData.frame_number || !formData.color) {
-        showErrorModal('Please fill in all required fields');
+    if (!formData.invoice_number || !formData.date_delivered || !formData.branch) {
+        showErrorModal('Please fill in invoice number, date delivered, and branch');
         return;
     }
     
+    // Collect model data
+    let hasErrors = false;
+    $('.model-form').each(function() {
+        const modelData = {
+            brand: $(this).find('.model-brand').val(),
+            model: $(this).find('.model-name').val(),
+            lcp: $(this).find('.model-lcp').val(),
+            quantity: $(this).find('.model-quantity').val(),
+            details: []
+        };
+        
+        // Validate model data
+        if (!modelData.brand || !modelData.model || !modelData.quantity) {
+            showErrorModal('Please fill in all required fields for each model');
+            hasErrors = true;
+            return false; // Break out of the loop
+        }
+        
+        // Collect specific details
+        $(this).find('.specific-details-row').each(function() {
+            const detail = {
+                engine_number: $(this).find('.engine-number').val(),
+                frame_number: $(this).find('.frame-number').val(),
+                color: $(this).find('.color').val()
+            };
+            
+            if (!detail.engine_number || !detail.frame_number || !detail.color) {
+                showErrorModal('Please fill in all engine number, frame number, and color fields');
+                hasErrors = true;
+                return false;
+            }
+            
+            modelData.details.push(detail);
+        });
+        
+        if (hasErrors) return false;
+        
+        formData.models.push(modelData);
+    });
+    
+    if (hasErrors) return;
+    
+    // Send data to server
     $.ajax({
         url: '../api/inventory_management.php',
         method: 'POST',
@@ -518,28 +672,32 @@ function addMotorcycle() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                // Hide modal and remove backdrop
                 $('#addMotorcycleModal').modal('hide');
-                
-                // Manually remove any leftover backdrop
                 $('.modal-backdrop').remove();
                 $('body').removeClass('modal-open');
                 
                 $('#addMotorcycleForm')[0].reset();
-                showSuccessModal('Motorcycle added successfully!');
+                $('#modelFormsContainer').empty();
+                modelCount = 0;
+                
+                showSuccessModal('Motorcycles added successfully!');
                 
                 loadInventoryDashboard();
                 loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
-            } else {
-                showErrorModal(response.message || 'Error adding motorcycle');
+           } else {
+                if (response.message === 'DUPLICATE_INVOICE') {
+                    showInvoiceError('An invoice with this number already exists');
+                    $('#invoiceNumber').focus();
+                } else {
+                    showErrorModal(response.message || 'Error adding motorcycles');
+                }
             }
         },
         error: function(xhr, status, error) {
-            showErrorModal('Error adding motorcycle: ' + error);
+            showErrorModal('Error adding motorcycles: ' + error);
         }
     });
 }
-
 function updateMotorcycle() {
        const formData = {
         action: 'update_motorcycle',
@@ -696,6 +854,75 @@ function transferMotorcycle() {
         }
     });
 }
+// =======================
+// Invoice Validation
+// =======================
+
+// Check invoice number on input change
+$('#invoiceNumber').on('blur', function() {
+    checkInvoiceNumber($(this).val());
+});
+
+// Check invoice number on form submit
+$('#addMotorcycleForm').on('submit', function(e) {
+    const invoiceNumber = $('#invoiceNumber').val();
+    if (invoiceNumber) {
+        e.preventDefault();
+        checkInvoiceNumber(invoiceNumber, true);
+    }
+});
+
+function checkInvoiceNumber(invoiceNumber, isSubmit = false) {
+    if (!invoiceNumber) return;
+    
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'POST',
+        data: {
+            action: 'check_invoice_number',
+            invoice_number: invoiceNumber
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.exists) {
+                showInvoiceError('An invoice with this number already exists');
+                if (isSubmit) {
+                    $('#invoiceNumber').focus();
+                }
+            } else {
+                clearInvoiceError();
+                if (isSubmit) {
+                    // If checking on submit and no error, actually submit the form
+                    $('#addMotorcycleForm').off('submit').submit();
+                }
+            }
+        },
+        error: function() {
+            if (isSubmit) {
+                // If check fails, proceed with submission anyway
+                $('#addMotorcycleForm').off('submit').submit();
+            }
+        }
+    });
+}
+
+function showInvoiceError(message) {
+    $('#invoiceNumber').addClass('is-invalid');
+    $('#invoiceNumber').removeClass('is-valid');
+    
+    // Remove existing error message if any
+    $('#invoiceNumber').next('.invalid-feedback').remove();
+    
+    // Add error message
+    $('#invoiceNumber').after(`<div class="invalid-feedback">${message}</div>`);
+}
+
+function clearInvoiceError() {
+    $('#invoiceNumber').removeClass('is-invalid');
+    $('#invoiceNumber').addClass('is-valid');
+    $('#invoiceNumber').next('.invalid-feedback').remove();
+}
+
 
 
 // =======================
@@ -967,8 +1194,7 @@ function removeMotorcycleFromSelection(id) {
     if (index !== -1) {
         selectedMotorcycles.splice(index, 1);
         updateSelectedMotorcyclesList();
-        updateTransferSummary(); // Update summary when removing items
-        // Refresh search results to update button states
+        updateTransferSummary();
         searchMotorcyclesByEngine();
     }
 }
@@ -1173,9 +1399,6 @@ function loadBranchInventory(branchCode) {
 function viewModelDetails(id) {
     $('#motorcycleDetails').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>');
     
-    const detailsModalEl = document.getElementById('detailsModal');
-    const detailsModal = new bootstrap.Modal(detailsModalEl);
-
     $.get('../api/inventory_management.php', {
         action: 'get_motorcycle',
         id: id
@@ -1183,64 +1406,119 @@ function viewModelDetails(id) {
         if (response.success) {
             const item = response.data;
             let detailsHTML = `
-            
-                <h6>${item.brand} ${item.model}</h6>
-                <p><strong>Color:</strong> ${item.color}</p>
-                <p><strong>Current Branch:</strong> ${item.current_branch}</p>
-                <p><strong>Status:</strong> <span class="badge ${getStatusClass(item.status)}">
-                    ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                </span></p>
-                <hr>
-                <p><strong>Engine #:</strong> ${item.engine_number}</p>
-                <p><strong>Frame #:</strong> ${item.frame_number}</p>
-                <p><strong>Date Delivered:</strong> ${item.date_delivered}</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-black">Basic Information</h6>
+                        <hr>
+                        <p><strong>Invoice Number/MT:</strong> ${item.invoice_number || 'N/A'}</p>
+                        <p><strong>Brand:</strong> ${item.brand}</p>
+                        <p><strong>Model:</strong> ${item.model}</p>
+                        <p><strong>Color:</strong> ${item.color}</p>
+                        <p><strong>Current Branch:</strong> ${item.current_branch}</p>
+                        <p><strong>Status:</strong> <span class="badge ${getStatusClass(item.status)}">
+                            ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                        </span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-black">Identification & Pricing</h6>
+                        <hr>
+                        <p><strong>Engine #:</strong> ${item.engine_number}</p>
+                        <p><strong>Frame #:</strong> ${item.frame_number}</p>
+                        <p><strong>Date Delivered:</strong> ${formatDate(item.date_delivered)}</p>
+                        <p><strong>LCP:</strong> ${item.lcp ? formatCurrency(item.lcp) : 'N/A'}</p>
+                    </div>
+                </div>
             `;
+
+            // Add transfer history if available
+            if (item.transfer_history && item.transfer_history.length > 0) {
+                detailsHTML += `
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-primary">Transfer History</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>From Branch</th>
+                                            <th>To Branch</th>
+                                            <th>Notes</th>
+                                            <th>Transferred By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                `;
+                
+                item.transfer_history.forEach(transfer => {
+                    detailsHTML += `
+                        <tr>
+                            <td>${formatDate(transfer.transfer_date)}</td>
+                            <td>${transfer.from_branch}</td>
+                            <td>${transfer.to_branch}</td>
+                            <td>${transfer.notes || 'N/A'}</td>
+                            <td>${transfer.transferred_by_name || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                detailsHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
 
             if (item.latitude && item.longitude) {
                 detailsHTML += `
                     <hr>
-                    <h6>Location</h6>
-                    <div id="mapid" style="height: 300px;"></div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-primary">Location</h6>
+                            <div id="mapid" style="height: 300px;"></div>
+                        </div>
+                    </div>
                 `;
             }
 
             $('#motorcycleDetails').html(detailsHTML);
 
-            // Remove old modal event listener
-            $(detailsModalEl).off('shown.bs.modal');
-
-            // Attach new listener
+            // Setup map if coordinates exist
             if (item.latitude && item.longitude) {
-                $(detailsModalEl).on('shown.bs.modal', function () {
+                // Use a small delay to ensure the modal is fully rendered
+                setTimeout(() => {
                     const container = document.getElementById('mapid');
-                    if (!container) return; // safety guard
+                    if (container) {
+                        // Clear any existing map
+                        if (container._leaflet_id) {
+                            container._leaflet_id = null;
+                        }
 
-                    // Reset Leaflet if reopened
-                    if (container._leaflet_id) {
-                        container._leaflet_id = null;
+                        const map = L.map('mapid').setView([item.latitude, item.longitude], 14);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                        }).addTo(map);
+
+                        L.marker([item.latitude, item.longitude]).addTo(map)
+                            .bindPopup(`${item.brand} ${item.model}<br>${item.engine_number}`)
+                            .openPopup();
                     }
-
-                    const map = L.map('mapid').setView([item.latitude, item.longitude], 14);
-
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                    }).addTo(map);
-
-                    L.marker([item.latitude, item.longitude]).addTo(map)
-                        .bindPopup(`${item.brand} ${item.model}`)
-                        .openPopup();
-                });
+                }, 100);
             }
 
-            detailsModal.show();
+            // Show the modal
+            $('#detailsModal').modal('show');
 
         } else {
-            $('#motorcycleDetails').html('<p class="text-danger">Error loading details</p>');
-            detailsModal.show();
+            $('#motorcycleDetails').html('<div class="alert alert-danger">Error loading motorcycle details</div>');
+            $('#detailsModal').modal('show');
         }
     }, 'json').fail(function() {
-        $('#motorcycleDetails').html('<p class="text-danger">Error loading details</p>');
-        detailsModal.show();
+        $('#motorcycleDetails').html('<div class="alert alert-danger">Error loading motorcycle details</div>');
+        $('#detailsModal').modal('show');
     });
 }
 
@@ -1303,25 +1581,59 @@ function viewMotorcycleDetails(id) {
             
             // Simple modal content without map
             $('#detailsModal .modal-body').html(`
-                  <p><strong>Invoice Number/MT:</strong> ${data.invoice_number || 'N/A'}</p> 
-                <h5>${data.brand} ${data.model}</h5>
-                <p><strong>Color:</strong> ${data.color}</p>
-                <p><strong>Branch:</strong> ${data.current_branch}</p>
-                <p><strong>Engine No:</strong> ${data.engine_number}</p>
-                <p><strong>Frame No:</strong> ${data.frame_number}</p>
-                <p><strong>Status:</strong> ${data.status}</p>
-                <p><strong>Date Delivered:</strong> ${data.date_delivered || 'N/A'}</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-black">Basic Information</h6>
+                        <hr>
+                        <p><strong>Invoice Number/MT:</strong> ${data.invoice_number || 'N/A'}</p>
+                        <p><strong>Brand:</strong> ${data.brand}</p>
+                        <p><strong>Model:</strong> ${data.model}</p>
+                        <p><strong>Color:</strong> ${data.color}</p>
+                        <p><strong>Current Branch:</strong> ${data.current_branch}</p>
+                        <p><strong>Status:</strong> <span class="badge ${getStatusClass(data.status)}">
+                            ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}
+                        </span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-black">Identification & Pricing</h6>
+                        <hr>
+                        <p><strong>Engine #:</strong> ${data.engine_number}</p>
+                        <p><strong>Frame #:</strong> ${data.frame_number}</p>
+                        <p><strong>Date Delivered:</strong> ${formatDate(data.date_delivered)}</p>
+                        <p><strong>LCP:</strong> ${data.lcp ? formatCurrency(data.lcp) : 'N/A'}</p>
+                    </div>
+                </div>
             `);
             
             // Show the modal
             $('#detailsModal').modal('show');
             
         } else {
-            $('#detailsModal .modal-body').html('<p class="text-danger">Error loading details</p>');
+            $('#detailsModal .modal-body').html('<div class="alert alert-danger">Error loading motorcycle details</div>');
             $('#detailsModal').modal('show');
         }
-    }, 'json');
+    }, 'json').fail(function() {
+        $('#detailsModal .modal-body').html('<div class="alert alert-danger">Error loading motorcycle details</div>');
+        $('#detailsModal').modal('show');
+    });
 }
+
+$('#addMotorcycleModal').on('shown.bs.modal', function() {
+    if (!isAdmin) {
+        // For non-admin users, set the branch to their current branch and make it readonly
+        $('#branch').val(currentBranch).prop('readonly', true);
+    } else {
+        // For admin users, enable the dropdown
+        $('#branch').prop('readonly', false);
+    }
+});
+
+// Reset the branch field when modal is hidden
+$('#addMotorcycleModal').on('hidden.bs.modal', function() {
+    if (!isAdmin) {
+        $('#branch').val(currentBranch);
+    }
+});
 
 // =======================
 // Monthly Inventory Report
@@ -1695,7 +2007,6 @@ function exportMonthlyReportToPDF() {
         return;
     }
 
-    // Temporarily make it visible for rendering
     reportEl.style.display = 'block';
 
     const opt = {
@@ -1739,6 +2050,7 @@ function exportMonthlyReport() {
     link.click();
     document.body.removeChild(link);
 }
+
 
 
 // =======================
@@ -1785,6 +2097,7 @@ function groupByModel(items) {
         return groups;
     }, {});
 }
+
 
 function getStatusClass(status) {
     switch(status) {

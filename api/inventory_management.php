@@ -66,6 +66,10 @@ switch ($action) {
     getMonthlyInventory();
     break;
 
+    case 'check_invoice_number':
+    checkInvoiceNumber();
+    break;
+  
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;
@@ -76,7 +80,7 @@ function getInventoryDashboard() {
     
     $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
     
-    $sql = "SELECT model, brand, SUM(quantity) as total_quantity 
+    $sql = "SELECT model, brand, COUNT(*) as total_quantity 
             FROM motorcycle_inventory 
             WHERE status = 'available'";
     
@@ -132,44 +136,49 @@ function getInventoryTable() {
     $offset = ($page - 1) * $perPage;
 
     $sort = isset($_GET['sort']) ? sanitizeInput($_GET['sort']) : '';
-    $sortField = 'date_delivered';
+    $sortField = 'mi.date_delivered'; // Changed to use table alias
     $sortOrder = 'DESC';
 
     if (!empty($sort)) {
         $parts = explode('_', $sort);
-        $validFields = ['date_delivered', 'brand', 'model', 'status'];
+        $validFields = ['date_delivered', 'brand', 'model', 'status', 'invoice_number', 'current_branch']; // Added valid fields
 
         if (in_array($parts[0], $validFields)) {
-            $sortField = $parts[0];
+            $sortField = 'mi.' . $parts[0]; // Use table alias
             $sortOrder = strtoupper($parts[1]) === 'ASC' ? 'ASC' : 'DESC';
         }
     }
 
     $search = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
-    $where = "WHERE status != 'deleted'";
+    $where = "WHERE mi.status != 'deleted'";
 
     // If the user is not an admin, filter by their branch
     if (!$isAdmin) {
         if (!isset($_SESSION['user_branch'])) {
-            echo json_encode(['success' => false, 'message' => 'User  branch not set']);
+            echo json_encode(['success' => false, 'message' => 'User branch not set']);
             return;
         }
         $userBranch = $_SESSION['user_branch'];
-        $where .= " AND current_branch = '$userBranch'";
+        $where .= " AND mi.current_branch = '$userBranch'";
     }
 
     $params = [];
     $types = '';
 
     if (!empty($search)) {
-        $where .= " AND (model LIKE ? OR brand LIKE ? OR engine_number LIKE ? 
-                  OR frame_number LIKE ? OR color LIKE ?)";
+        $where .= " AND (mi.model LIKE ? OR mi.brand LIKE ? OR mi.engine_number LIKE ? 
+                  OR mi.frame_number LIKE ? OR mi.color LIKE ? OR i.invoice_number LIKE ?)";
         $searchTerm = "%$search%";
-        $params = array_fill(0, 5, $searchTerm);
+        $params = array_fill(0, 6, $searchTerm);
         $types = str_repeat('s', count($params));
     }
 
-    $countSql = "SELECT COUNT(*) as total FROM motorcycle_inventory $where";
+    // Updated SQL to join with invoices table
+    $countSql = "SELECT COUNT(*) as total 
+                 FROM motorcycle_inventory mi 
+                 LEFT JOIN invoices i ON mi.invoice_id = i.id 
+                 $where";
+    
     $countStmt = $conn->prepare($countSql);
 
     if (!empty($params)) {
@@ -180,7 +189,11 @@ function getInventoryTable() {
     $totalRecords = $countStmt->get_result()->fetch_assoc()['total'];
     $totalPages = ceil($totalRecords / $perPage);
 
-    $sql = "SELECT * FROM motorcycle_inventory $where 
+    // Updated SQL to include invoice_number from invoices table
+    $sql = "SELECT mi.*, i.invoice_number 
+            FROM motorcycle_inventory mi 
+            LEFT JOIN invoices i ON mi.invoice_id = i.id 
+            $where 
             ORDER BY $sortField $sortOrder 
             LIMIT ? OFFSET ?";
 
@@ -221,7 +234,10 @@ function getMotorcycle() {
     
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
     
-    $stmt = $conn->prepare("SELECT * FROM motorcycle_inventory WHERE id = ?");
+    $stmt = $conn->prepare("SELECT mi.*, i.invoice_number 
+                           FROM motorcycle_inventory mi 
+                           LEFT JOIN invoices i ON mi.invoice_id = i.id 
+                           WHERE mi.id = ?");
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -250,65 +266,121 @@ function getMotorcycle() {
         echo json_encode(['success' => false, 'message' => 'Motorcycle not found']);
     }
 }
+
 function addMotorcycle() {
     global $conn;
     
-    $required = ['date_delivered', 'brand', 'model', 'engine_number', 'frame_number', 'color', 'current_branch'];
-    foreach ($required as $field) {
-        if (empty($_POST[$field])) {
-            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
-            return;
-        }
-    }
-    
-    $dateDelivered = sanitizeInput($_POST['date_delivered']);
-    $brand = sanitizeInput($_POST['brand']);
-    $model = sanitizeInput($_POST['model']);
-    $engineNumber = sanitizeInput($_POST['engine_number']);
-    $frameNumber = sanitizeInput($_POST['frame_number']);
-    $invoiceNumber = !empty($_POST['invoice_number']) ? sanitizeInput($_POST['invoice_number']) : null; // NEW FIELD
-    $color = sanitizeInput($_POST['color']);
-    $quantity = max(1, intval($_POST['quantity'] ?? 1));
-    $lcp = !empty($_POST['lcp']) ? floatval($_POST['lcp']) : null;
-    $currentBranch = sanitizeInput($_POST['current_branch']);
-    
-    $checkStmt = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE engine_number = ? OR frame_number = ?");
-    $checkStmt->bind_param('ss', $engineNumber, $frameNumber);
-    $checkStmt->execute();
-    
-    if ($checkStmt->get_result()->num_rows > 0) {
-        echo json_encode(['success' => false, 'message' => 'A motorcycle with this engine or frame number already exists']);
-        return;
-    }
-    
-    $conn->begin_transaction();
-    $successCount = 0;
-    
-    try {
-        for ($i = 0; $i < $quantity; $i++) {
-            $currentEngineNumber = $quantity > 1 ? $engineNumber . '-' . ($i + 1) : $engineNumber;
-            $currentFrameNumber = $quantity > 1 ? $frameNumber . '-' . ($i + 1) : $frameNumber;
-            $currentInvoiceNumber = $quantity > 1 && $invoiceNumber ? $invoiceNumber . '-' . ($i + 1) : $invoiceNumber;
-            
-            $stmt = $conn->prepare("INSERT INTO motorcycle_inventory 
-                                   (date_delivered, brand, model, engine_number, frame_number, invoice_number, color, lcp, current_branch, status) 
-                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')");
-            
-            $stmt->bind_param('ssssssdss', $dateDelivered, $brand, $model, $currentEngineNumber, $currentFrameNumber, $currentInvoiceNumber, $color, $lcp, $currentBranch);
-            
-            if ($stmt->execute()) {
-                $successCount++;
+    // Check if we're receiving the new format with models array
+    if (isset($_POST['models']) && is_array($_POST['models'])) {
+        $required = ['invoice_number', 'date_delivered', 'branch'];
+        foreach ($required as $field) {
+            if (empty($_POST[$field])) {
+                echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
+                return;
             }
         }
         
-        $conn->commit();
-        echo json_encode(['success' => true, 'message' => "Successfully added $successCount motorcycle(s)"]);
-    } catch (Exception $e) {
-        $conn->rollback();
-        echo json_encode(['success' => false, 'message' => 'Error adding motorcycle: ' . $e->getMessage()]);
+        $invoiceNumber = sanitizeInput($_POST['invoice_number']);
+        $dateDelivered = sanitizeInput($_POST['date_delivered']);
+        $branch = sanitizeInput($_POST['branch']);
+        
+        $conn->begin_transaction();
+        $successCount = 0;
+        $invoiceId = null;
+        
+        try {
+            // Create the invoice record first
+            $invoiceStmt = $conn->prepare("INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)");
+            if (!$invoiceStmt) {
+                throw new Exception('Error preparing invoice statement: ' . $conn->error);
+            }
+            
+            $notes = "Motorcycles delivered to $branch branch";
+            $invoiceStmt->bind_param('sss', $invoiceNumber, $dateDelivered, $notes);
+            
+            if (!$invoiceStmt->execute()) {
+                // Check if it's a duplicate invoice error
+                if ($conn->errno == 1062) { // MySQL duplicate entry error code
+                    throw new Exception('DUPLICATE_INVOICE');
+                }
+                throw new Exception('Error creating invoice: ' . $invoiceStmt->error);
+            }
+            
+            $invoiceId = $conn->insert_id;
+            
+            // Now process each model and its details
+            foreach ($_POST['models'] as $modelIndex => $modelData) {
+                $brand = sanitizeInput($modelData['brand']);
+                $modelName = sanitizeInput($modelData['model']);
+                $lcp = !empty($modelData['lcp']) ? floatval($modelData['lcp']) : null;
+                
+                // Check if details exist and is an array
+                if (isset($modelData['details']) && is_array($modelData['details'])) {
+                    foreach ($modelData['details'] as $detailIndex => $detail) {
+                        $engineNumber = sanitizeInput($detail['engine_number']);
+                        $frameNumber = sanitizeInput($detail['frame_number']);
+                        $color = sanitizeInput($detail['color']);
+                        
+                        // Validate required detail fields
+                        if (empty($engineNumber) || empty($frameNumber) || empty($color)) {
+                            throw new Exception("Missing required detail fields for model $modelIndex, detail $detailIndex");
+                        }
+                        
+                        // Check for duplicate engine/frame numbers
+                        $duplicateCheck = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE engine_number = ? OR frame_number = ?");
+                        if (!$duplicateCheck) {
+                            throw new Exception('Error preparing duplicate check: ' . $conn->error);
+                        }
+                        
+                        $duplicateCheck->bind_param('ss', $engineNumber, $frameNumber);
+                        if (!$duplicateCheck->execute()) {
+                            throw new Exception('Error executing duplicate check: ' . $duplicateCheck->error);
+                        }
+                        
+                        $duplicateResult = $duplicateCheck->get_result();
+                        if ($duplicateResult->num_rows > 0) {
+                            $duplicateRow = $duplicateResult->fetch_assoc();
+                            throw new Exception("Duplicate engine number ($engineNumber) or frame number ($frameNumber) found with ID: " . $duplicateRow['id']);
+                        }
+                        
+                        // Insert motorcycle inventory record
+                        $stmt = $conn->prepare("INSERT INTO motorcycle_inventory 
+                                               (date_delivered, brand, model, engine_number, frame_number, invoice_id, color, lcp, current_branch, status) 
+                                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')");
+                        
+                        if (!$stmt) {
+                            throw new Exception('Error preparing motorcycle insert: ' . $conn->error);
+                        }
+                        
+                        $stmt->bind_param('sssssisds', $dateDelivered, $brand, $modelName, $engineNumber, $frameNumber, $invoiceId, $color, $lcp, $branch);
+                        
+                        if ($stmt->execute()) {
+                            $successCount++;
+                        } else {
+                            throw new Exception('Error executing motorcycle insert: ' . $stmt->error);
+                        }
+                    }
+                } else {
+                    throw new Exception('No details found for model ' . $modelIndex);
+                }
+            }
+            
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => "Successfully added $successCount motorcycle(s) with invoice #$invoiceNumber"]);
+            
+        } catch (Exception $e) {
+            $conn->rollback();
+            
+            if ($e->getMessage() === 'DUPLICATE_INVOICE') {
+                echo json_encode(['success' => false, 'message' => 'DUPLICATE_INVOICE']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error adding motorcycle: ' . $e->getMessage()]);
+            }
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid data format. Expected models array.']);
     }
 }
-
 function updateMotorcycle() {
     global $conn;
     
@@ -326,7 +398,6 @@ function updateMotorcycle() {
     $model = sanitizeInput($_POST['model']);
     $engineNumber = sanitizeInput($_POST['engine_number']);
     $frameNumber = sanitizeInput($_POST['frame_number']);
-    $invoiceNumber = !empty($_POST['invoice_number']) ? sanitizeInput($_POST['invoice_number']) : null; // NEW FIELD
     $color = sanitizeInput($_POST['color']);
     $lcp = !empty($_POST['lcp']) ? floatval($_POST['lcp']) : null;
     $currentBranch = sanitizeInput($_POST['current_branch']);
@@ -342,12 +413,13 @@ function updateMotorcycle() {
         return;
     }
     
+    // Removed invoice_number from update since it's now handled by invoice_id
     $stmt = $conn->prepare("UPDATE motorcycle_inventory 
                            SET date_delivered = ?, brand = ?, model = ?, engine_number = ?, 
-                               frame_number = ?, invoice_number = ?, color = ?, lcp = ?, current_branch = ?, status = ?
+                               frame_number = ?, color = ?, lcp = ?, current_branch = ?, status = ?
                            WHERE id = ?");
-    $stmt->bind_param('sssssssdssi', $dateDelivered, $brand, $model, $engineNumber, 
-                      $frameNumber, $invoiceNumber, $color, $lcp, $currentBranch, $status, $id);
+    $stmt->bind_param('ssssssdssi', $dateDelivered, $brand, $model, $engineNumber, 
+                      $frameNumber, $color, $lcp, $currentBranch, $status, $id);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Motorcycle updated successfully']);
@@ -540,7 +612,6 @@ function getTransferHistory() {
     
     echo json_encode(['success' => true, 'data' => $data]);
 }
-
 function getBranchInventory() {
     global $conn;
     
@@ -556,33 +627,43 @@ function getBranchInventory() {
     $offset = ($page - 1) * $perPage;
     $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 
-    $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM motorcycle_inventory 
-           WHERE current_branch = ?";
+    $sql = "SELECT SQL_CALC_FOUND_ROWS mi.*, i.invoice_number 
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            WHERE mi.current_branch = ?";
     
     $params = [$branch];
     $types = 's';
     
     if ($status === 'available') {
-        $sql .= " AND status = 'available'";
+        $sql .= " AND mi.status = 'available'";
     } elseif ($status === 'transferred') {
-        $sql .= " AND status = 'transferred'";
+        $sql .= " AND mi.status = 'transferred'";
     } else {
-        $sql .= " AND status IN ('available', 'transferred')";
+        $sql .= " AND mi.status IN ('available', 'transferred')";
     }
 
     if (!empty($search)) {
-        $sql .= " AND (model LIKE ? OR brand LIKE ? OR engine_number LIKE ? OR frame_number LIKE ? OR color LIKE ?)";
+        $sql .= " AND (mi.model LIKE ? OR mi.brand LIKE ? OR mi.engine_number LIKE ? 
+                  OR mi.frame_number LIKE ? OR mi.color LIKE ? OR i.invoice_number LIKE ?)";
         $searchTerm = "%$search%";
-        $params = array_merge($params, array_fill(0, 5, $searchTerm));
-        $types .= str_repeat('s', 5);
+        $params = array_merge($params, array_fill(0, 6, $searchTerm));
+        $types .= str_repeat('s', 6);
     }
 
     $sortField = isset($_GET['sort']) ? sanitizeInput($_GET['sort']) : 'brand';
     $sortOrder = isset($_GET['order']) && strtoupper($_GET['order']) === 'DESC' ? 'DESC' : 'ASC';
     
-    $validSortFields = ['brand', 'model', 'color', 'engine_number', 'frame_number', 'date_delivered', 'status'];
+    $validSortFields = ['brand', 'model', 'color', 'engine_number', 'frame_number', 'date_delivered', 'status', 'invoice_number'];
     if (!in_array($sortField, $validSortFields)) {
         $sortField = 'brand';
+    }
+    
+    // Use table alias for sort field
+    if ($sortField === 'invoice_number') {
+        $sortField = 'i.invoice_number';
+    } else {
+        $sortField = 'mi.' . $sortField;
     }
     
     $sql .= " ORDER BY $sortField $sortOrder LIMIT ? OFFSET ?";
@@ -620,7 +701,8 @@ function getBranchInventory() {
             'frame_number' => $row['frame_number'],
             'color' => $row['color'],
             'current_branch' => $row['current_branch'],
-            'status' => $row['status']
+            'status' => $row['status'],
+            'invoice_number' => $row['invoice_number']
         ];
 
         if ($row['status'] === 'transferred') {
@@ -654,15 +736,15 @@ function getBranchesWithInventory() {
     global $conn;
     
     $sql = "SELECT 
-                current_branch AS branch, 
-                COALESCE(GROUP_CONCAT(DISTINCT CONCAT(brand, ' ', model) SEPARATOR ', '), '') AS models,
+                mi.current_branch AS branch, 
+                COALESCE(GROUP_CONCAT(DISTINCT CONCAT(mi.brand, ' ', mi.model) SEPARATOR ', '), '') AS models,
                 COUNT(*) AS total_quantity,
-                SUM(CASE WHEN status = 'transferred' THEN 1 ELSE 0 END) AS transferred_count
-            FROM motorcycle_inventory
-            WHERE status IN ('available', 'transferred')
-            GROUP BY current_branch
+                SUM(CASE WHEN mi.status = 'transferred' THEN 1 ELSE 0 END) AS transferred_count
+            FROM motorcycle_inventory mi
+            WHERE mi.status IN ('available', 'transferred')
+            GROUP BY mi.current_branch
             HAVING COUNT(*) > 0
-            ORDER BY current_branch";
+            ORDER BY mi.current_branch";
     
     $result = $conn->query($sql);
     
@@ -680,34 +762,37 @@ function getBranchesWithInventory() {
     echo json_encode(['success' => true, 'data' => $data]);
 }
 function searchInventory() {
-     global $conn;
+    global $conn;
     
     $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
     $field = isset($_GET['field']) ? sanitizeInput($_GET['field']) : 'all';
     $includeLcp = isset($_GET['include_lcp']) ? true : false;
     
-    $sql = "SELECT id, brand, model, color, engine_number, frame_number, lcp, current_branch, status
-            FROM motorcycle_inventory
-            WHERE status = 'available'";
+    $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
+                   mi.lcp, mi.current_branch, mi.status, i.invoice_number
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            WHERE mi.status = 'available'";
     
     $params = [];
     $types = '';
     
     if (!empty($query)) {
         if ($field === 'engine_number') {
-            $sql .= " AND engine_number LIKE ?";
+            $sql .= " AND mi.engine_number LIKE ?";
             $searchTerm = "%$query%";
             $params[] = $searchTerm;
             $types = 's';
         } else {
-            $sql .= " AND (brand LIKE ? OR model LIKE ? OR engine_number LIKE ? OR frame_number LIKE ?)";
+            $sql .= " AND (mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? 
+                      OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
             $searchTerm = "%$query%";
-            $params = array_fill(0, 4, $searchTerm);
+            $params = array_fill(0, 5, $searchTerm);
             $types = str_repeat('s', count($params));
         }
     }
     
-    $sql .= " ORDER BY brand, model LIMIT 10";
+    $sql .= " ORDER BY mi.brand, mi.model LIMIT 10";
     
     $stmt = $conn->prepare($sql);
     
@@ -741,9 +826,11 @@ function searchInventoryByEngine() {
     $includeLcp = isset($_GET['include_lcp']) ? true : false;
     $fuzzySearch = isset($_GET['fuzzy_search']) ? true : false;
     
-    $sql = "SELECT id, brand, model, color, engine_number, frame_number, lcp, current_branch, status
-            FROM motorcycle_inventory
-            WHERE status = 'available' AND current_branch = '$userBranch'"; // Added branch filter
+    $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
+                   mi.lcp, mi.current_branch, mi.status, i.invoice_number
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            WHERE mi.status = 'available' AND mi.current_branch = '$userBranch'";
     
     $params = [];
     $types = '';
@@ -751,29 +838,28 @@ function searchInventoryByEngine() {
     if (!empty($query)) {
         if ($field === 'engine_number') {
             if ($fuzzySearch) {
-                // Fuzzy search: allow partial matches anywhere in the engine number
-                $sql .= " AND (engine_number LIKE ? OR engine_number LIKE ? OR engine_number LIKE ?)";
-                $searchTerm1 = "%$query%"; // Matches anywhere in the string
-                $searchTerm2 = "$query%"; // Matches at the beginning
-                $searchTerm3 = "%$query"; // Matches at the end
+                $sql .= " AND (mi.engine_number LIKE ? OR mi.engine_number LIKE ? OR mi.engine_number LIKE ?)";
+                $searchTerm1 = "%$query%";
+                $searchTerm2 = "$query%";
+                $searchTerm3 = "%$query";
                 $params = [$searchTerm1, $searchTerm2, $searchTerm3];
                 $types = str_repeat('s', count($params));
             } else {
-                // Exact search (original behavior)
-                $sql .= " AND engine_number LIKE ?";
+                $sql .= " AND mi.engine_number LIKE ?";
                 $searchTerm = "%$query%";
                 $params[] = $searchTerm;
                 $types = 's';
             }
         } else {
-            $sql .= " AND (brand LIKE ? OR model LIKE ? OR engine_number LIKE ? OR frame_number LIKE ?)";
+            $sql .= " AND (mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? 
+                      OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
             $searchTerm = "%$query%";
-            $params = array_fill(0, 4, $searchTerm);
+            $params = array_fill(0, 5, $searchTerm);
             $types = str_repeat('s', count($params));
         }
     }
     
-    $sql .= " ORDER BY brand, model LIMIT 20"; // Increased limit for better results
+    $sql .= " ORDER BY mi.brand, mi.model LIMIT 20";
     
     $stmt = $conn->prepare($sql);
     
@@ -944,22 +1030,26 @@ function acceptTransfers() {
     }
     
     $placeholders = implode(',', array_fill(0, count($transferIds), '?'));
-    $types = str_repeat('i', count($transferIds));
+    $currentDate = date('Y-m-d');
     
     $conn->begin_transaction();
     
     try {
-        // Update transfer status to completed
+        // Update transfer status to completed and set date_received
         $updateTransfers = $conn->prepare("UPDATE inventory_transfers 
-                                         SET transfer_status = 'completed'
+                                         SET transfer_status = 'completed', date_received = ?
                                          WHERE id IN ($placeholders)");
-        $updateTransfers->bind_param($types, ...$transferIds);
+        
+        $params = array_merge([$currentDate], $transferIds);
+        $types = 's' . str_repeat('i', count($transferIds));
+        
+        $updateTransfers->bind_param($types, ...$params);
         $updateTransfers->execute();
         
         // Get motorcycle IDs and destination branches from these transfers
         $getMotorcycles = $conn->prepare("SELECT motorcycle_id, to_branch FROM inventory_transfers 
                                         WHERE id IN ($placeholders)");
-        $getMotorcycles->bind_param($types, ...$transferIds);
+        $getMotorcycles->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
         $getMotorcycles->execute();
         $result = $getMotorcycles->get_result();
         
@@ -970,20 +1060,38 @@ function acceptTransfers() {
         
         if (!empty($motorcycleUpdates)) {
             foreach ($motorcycleUpdates as $update) {
-                // NOW update the current_branch to the destination branch
                 $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
-                                                  SET current_branch = ?, status = 'available'
+                                                  SET current_branch = ?, status = 'available', date_received = ?
                                                   WHERE id = ?");
-                $updateMotorcycle->bind_param('si', $update['to_branch'], $update['motorcycle_id']);
+                $updateMotorcycle->bind_param('ssi', $update['to_branch'], $currentDate, $update['motorcycle_id']);
                 $updateMotorcycle->execute();
+            }
+        }
+        
+        // Get accepted details for receipt including invoice numbers
+        $acceptedDetails = [];
+        foreach ($motorcycleUpdates as $update) {
+            $detailStmt = $conn->prepare("SELECT mi.brand, mi.model, mi.engine_number, mi.frame_number, mi.color, i.invoice_number
+                                         FROM motorcycle_inventory mi
+                                         LEFT JOIN invoices i ON mi.invoice_id = i.id
+                                         WHERE mi.id = ?");
+            $detailStmt->bind_param('i', $update['motorcycle_id']);
+            $detailStmt->execute();
+            $detailResult = $detailStmt->get_result();
+            
+            if ($detailRow = $detailResult->fetch_assoc()) {
+                $acceptedDetails[] = $detailRow;
             }
         }
         
         $conn->commit();
         echo json_encode([
             'success' => true,
-            'message' => 'Successfully accepted ' . count($transferIds) . ' transfer(s)'
+            'message' => 'Successfully accepted ' . count($transferIds) . ' transfer(s)',
+            'date_received' => $currentDate,
+            'accepted_details' => $acceptedDetails
         ]);
+        
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode([
@@ -1007,17 +1115,17 @@ function getMonthlyInventory() {
     $year = $yearMonth[0];
     $monthNum = $yearMonth[1];
     
-    // Calculate start and end dates for the month
+    
     $monthStart = "$year-$monthNum-01";
     $monthEnd = date("Y-m-t", strtotime($monthStart));
     
-    // Get beginning inventory balance
+    
     $beginningInventory = getBeginningInventory($monthStart, $branch);
     
-    // Get all inventory movements during the month
+    
     $inventoryMovements = getInventoryMovements($monthStart, $monthEnd, $branch);
     
-    // Process data to calculate IN, OUT, and ending balance
+    
     $processedData = processInventoryData($beginningInventory, $inventoryMovements, $monthStart, $monthEnd, $branch);
     
     echo json_encode([
@@ -1069,7 +1177,7 @@ function getBeginningInventory($monthStart, $branchFilter) {
 function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     global $conn;
     
-    // Get deliveries (INs) during the month
+  
    $sqlDeliveries = "SELECT 
                     brand, model, color, current_branch,
                     engine_number, frame_number, lcp,
@@ -1095,7 +1203,7 @@ function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     $stmt->execute();
     $deliveries = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Get transfers IN (to this branch) during the month
+    
     $sqlTransfersIn = "SELECT 
                         mi.brand, mi.model, mi.color, 
                         it.to_branch as current_branch,
@@ -1121,7 +1229,7 @@ function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     $stmt->execute();
     $transfersIn = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Get transfers OUT (from this branch) during the month
+    
     $sqlTransfersOut = "SELECT 
                         mi.brand, mi.model, mi.color, 
                         it.from_branch as current_branch,
@@ -1147,7 +1255,7 @@ function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
     $stmt->execute();
     $transfersOut = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Get returns to head office (special OUT category)
+    
     $sqlReturns = "SELECT 
                     mi.brand, mi.model, mi.color, 
                     it.from_branch as current_branch,
@@ -1185,7 +1293,7 @@ function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
 function processInventoryData($beginningInventory, $inventoryMovements, $monthStart, $monthEnd, $branchFilter) {
     $processed = [];
 
-    // Process beginning inventory
+    
     foreach ($beginningInventory as $key => $item) {
         $processed[$key] = [
             'brand' => $item['brand'],
@@ -1202,7 +1310,7 @@ function processInventoryData($beginningInventory, $inventoryMovements, $monthSt
         ];
     }
 
-    // Process deliveries (INs)
+    
     foreach ($inventoryMovements['deliveries'] as $delivery) {
         $key = $delivery['brand'] . '|' . $delivery['model'] . '|' . $delivery['color'] . '|' . $delivery['current_branch'];
 
@@ -1328,5 +1436,24 @@ function calculateSummary($processedData) {
     }
     
     return $summary;
+}
+function checkInvoiceNumber() {
+    global $conn;
+    
+    if (empty($_POST['invoice_number'])) {
+        echo json_encode(['exists' => false]);
+        return;
+    }
+    
+    $invoiceNumber = sanitizeInput($_POST['invoice_number']);
+    
+    $stmt = $conn->prepare("SELECT id FROM invoices WHERE invoice_number = ?");
+    $stmt->bind_param('s', $invoiceNumber);
+    $stmt->execute();
+    
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+    
+    echo json_encode(['exists' => $exists]);
 }
 ?>
