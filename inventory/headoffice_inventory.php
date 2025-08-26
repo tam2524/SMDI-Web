@@ -443,7 +443,8 @@
                 </button>
                 <div class='collapse navbar-collapse' id='navbarCollapse'>
                     <div class='navbar-nav'>
-                        <a href='staffDashboard.html' class='nav-item nav-link active'>Home</a>
+                            <a href="../inventory/headoffice_inventory.php" class="nav-item nav-link active">Home</a>
+
                         <a href='../api/logout.php' class='nav-item nav-link active'>Logout</a>
                     </div>
                 </div>
@@ -660,9 +661,11 @@
                                 <input type='date' class='form-control' id='dateDelivered' required>
                             </div>
                             <div class='col-md-6 mb-3'>
-                                <label for='branch' class='form-label'>Branch</label>
+                            <label for='branch' class='form-label'>Branch</label>
+                            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
+                                <!-- Admin can select any branch -->
                                 <select class='form-select' id='branch' required>
-                                     <option value='HEADOFFICE'>Head Office</option>
+                                    <option value='HEADOFFICE'>Head Office</option>
                                     <option value='RXS-S'>RXS-S</option>
                                     <option value='RXS-H'>RXS-H</option>
                                     <option value='ANT-1'>ANT-1</option>
@@ -694,7 +697,12 @@
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='CEBU'>CEBU</option>
                                 </select>
-                            </div>
+                            <?php } else { ?>
+                                <!-- Regular users can only add to their own branch -->
+                                <input type='text' class='form-control' id='branch' value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                                <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
+                            <?php } ?>
+                        </div>
                         </div>
 
                         <hr>
@@ -718,51 +726,55 @@
         </div>
     </div>
 
-    <!-- Model Form Template ( Hidden ) -->
-    <template id='modelFormTemplate'>
-        <div class='model-form card mb-3'>
-            <div class='card-header d-flex justify-content-between align-items-center'>
-                <span class='model-number'>Model #1</span>
-                <button type='button' class='btn btn-sm btn-danger remove-model-btn'>
-                    <i class='bi bi-trash'></i> Remove
-                </button>
-            </div>
-            <div class='card-body'>
-                <div class='row'>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>Brand</label>
-                        <select class='form-select model-brand' required>
-                            <option value=''>Select Brand</option>
-                            <option value='Suzuki'>Suzuki</option>
-                            <option value='Honda'>Honda</option>
-                            <option value='Kawasaki'>Kawasaki</option>
-                            <option value='Yamaha'>Yamaha</option>
-                        </select>
-                    </div>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>Model Name</label>
-                        <input type='text' class='form-control model-name' required>
-                    </div>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>Quantity</label>
-                        <input type='number' class='form-control model-quantity' min='1' value='1' required>
-                    </div>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>LCP</label>
-                        <input type='number' step='0.01' class='form-control model-lcp'>
-                    </div>
+  <!-- Update the model form template in your HTML -->
+<template id="modelFormTemplate">
+    <div class="model-form card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="model-number">Model #1</span>
+            <button type="button" class="btn btn-sm btn-danger remove-model-btn">
+                <i class="bi bi-trash"></i> Remove
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Brand</label>
+                    <select class="form-select model-brand" required>
+                        <option value="">Select Brand</option>
+                        <option value="Suzuki">Suzuki</option>
+                        <option value="Honda">Honda</option>
+                        <option value="Kawasaki">Kawasaki</option>
+                        <option value="Yamaha">Yamaha</option>
+                    </select>
                 </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Model Name</label>
+                    <input type="text" class="form-control model-name" required>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-control model-quantity" min="1" value="1" required>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Color</label>
+                    <input type="text" class="form-control model-color" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">LCP</label>
+                    <input type="number" step="0.01" class="form-control model-lcp">
+                </div>
+            </div>
 
-                <!-- Specific Model Details Container -->
-                <div class='specific-details-container mt-3' style='display: none;'>
-                    <h6 class='fw-semibold mb-3'>Specific Model Details</h6>
-                    <div class='specific-details-rows'>
-                        <!-- Individual rows will be added here dynamically -->
-                    </div>
+            <!-- Specific Model Details Container -->
+            <div class="specific-details-container mt-3" style="display: none;">
+                <h6 class="fw-semibold mb-3">Specific Model Details</h6>
+                <div class="specific-details-rows">
+                    <!-- Individual rows will be added here dynamically -->
                 </div>
             </div>
         </div>
-    </template>
+    </div>
+</template>
 
     <!-- Edit Motorcycle Modal -->
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
@@ -783,8 +795,10 @@
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='editInvoiceNumber'>
+                                <input type='text' class='form-control' id='editInvoiceNumber' readonly>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editBrand' class='form-label'>Brand</label>
                                 <select class='form-select' id='editBrand' required>
@@ -798,6 +812,8 @@
                                 <label for='editModel' class='form-label'>Model</label>
                                 <input type='text' class='form-control' id='editModel' required>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editEngineNumber' class='form-label'>Engine Number</label>
                                 <input type='text' class='form-control' id='editEngineNumber' required>
@@ -806,6 +822,8 @@
                                 <label for='editFrameNumber' class='form-label'>Frame Number</label>
                                 <input type='text' class='form-control' id='editFrameNumber' required>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editColor' class='form-label'>Color</label>
                                 <input type='text' class='form-control' id='editColor' required>
@@ -814,14 +832,50 @@
                                 <label for='editLcp' class='form-label'>LCP</label>
                                 <input type='number' step='0.01' class='form-control' id='editLcp'>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
-                                <label for='editCurrentBranch' class='form-label'>Current Branch</label>
-                                <select class='form-select' id='editCurrentBranch' required>
-                                    <option value='HEADOFFICE'>Head Office</option>
-                                    <option value='RXS-S'>RXS-S</option>
-                                    <option value='RXS-H'>RXS-H</option>
-                                    <!-- Add other branches as needed -->
-                                </select>
+                                <label for='editCurrentBranch' class='form-label'>Branch</label>
+                                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
+                                    <!-- Admin can select any branch -->
+                                    <select class='form-select' id='editCurrentBranch' required>
+                                        <option value='HEADOFFICE'>Head Office</option>
+                                        <option value='RXS-S'>RXS-S</option>
+                                        <option value='RXS-H'>RXS-H</option>
+                                        <option value='ANT-1'>ANT-1</option>
+                                        <option value='ANT-2'>ANT-2</option>
+                                        <option value='SDH'>SDH</option>
+                                        <option value='SDS'>SDS</option>
+                                        <option value='JAR-1'>JAR-1</option>
+                                        <option value='JAR-2'>JAR-2</option>
+                                        <option value='SKM'>SKM</option>
+                                        <option value='SKS'>SKS</option>
+                                        <option value='ALTA'>ALTA</option>
+                                        <option value='EMAP'>EMAP</option>
+                                        <option value='CUL'>CUL</option>
+                                        <option value='BAC'>BAC</option>
+                                        <option value='PAS-1'>PAS-1</option>
+                                        <option value='PAS-2'>PAS-2</option>
+                                        <option value='BAL'>BAL</option>
+                                        <option value='GUIM'>GUIM</option>
+                                        <option value='PEMDI'>PEMDI</option>
+                                        <option value='EEM'>EEM</option>
+                                        <option value='AJU'>AJU</option>
+                                        <option value='BAIL'>BAIL</option>
+                                        <option value='3SMB'>MINDORO MB</option>
+                                        <option value='3SMIN'>MINDORO 3S</option>
+                                        <option value='MAN'>MANSALAY</option>
+                                        <option value='K-RIDERS'>K-RIDERS</option>
+                                        <option value='IBAJAY'>IBAJAY</option>
+                                        <option value='NUMANCIA'>NUMANCIA</option>
+                                        <option value='HEADOFFICE'>HEADOFFICE</option>
+                                        <option value='CEBU'>CEBU</option>
+                                    </select>
+                                <?php } else { ?>
+                                    <!-- Regular users can only add to their own branch -->
+                                    <input type='text' class='form-control' id='editCurrentBranch' value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                                    <input type='hidden' id='editCurrentBranchHidden' value="<?php echo $_SESSION['user_branch']; ?>">
+                                <?php } ?>
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editStatus' class='form-label'>Status</label>

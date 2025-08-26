@@ -312,7 +312,8 @@ function renderInventoryCards(data) {
             brands[brand].forEach(item => {
                 html += `
                     <div class="col-xl-1 col-lg-2 col-md-3 col-sm-4 col-6 model-card-container px-1 mb-2">
-                        <div class="model-card d-flex justify-content-between align-items-center ${brandColor}">
+                        <div class="model-card d-flex justify-content-between align-items-center ${brandColor}" 
+                             data-brand="${item.brand}" data-model="${item.model}" onclick="filterByModel('${item.brand}', '${item.model}')">
                             <div class="model-name" title="${item.model}">${item.model}</div>
                             <div class="quantity-badge">${item.total_quantity}</div>
                         </div>
@@ -323,6 +324,20 @@ function renderInventoryCards(data) {
     }
     
     $('#inventoryCards').html(html);
+}
+
+// Update the filterByModel function to handle the search correctly
+function filterByModel(brand, model) {
+    // Switch to the management tab
+    $('#management-tab').tab('show');
+    
+    // Set the search input to just the model name (not brand + model)
+    $('#searchInventory').val(model);
+    currentInventoryQuery = model;
+    currentInventoryPage = 1;
+    
+    // Load the filtered table
+    loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
 }
 function loadInventoryTable(page = 1, sort = '', query = '') {
     $('#inventoryTableBody').html('<tr><td colspan="11" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
@@ -456,9 +471,6 @@ function renderInventoryTable(data) {
                             <button class="btn btn-outline-primary edit-btn">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-outline-info transfer-btn">
-                                <i class="bi bi-truck"></i>
-                            </button>
                         </div>
                     </td>
                 </tr>
@@ -483,10 +495,7 @@ function setupTableActionButtons() {
             function() { returnToHeadOffice(id); }
         );
     });
-    $('.transfer-btn').click(function() {
-        const id = $(this).closest('tr').data('id');
-        loadMotorcycleForTransfer(id);
-    });
+   
 }
 
 function getStatusBadgeClass(status) {
@@ -525,6 +534,13 @@ function addModelForm() {
         updateSpecificDetailsFields(this);
     });
     
+    // Add a hidden field for branch in each model form
+    const branchInput = document.createElement('input');
+    branchInput.type = 'hidden';
+    branchInput.className = 'model-branch';
+    branchInput.value = currentBranch;
+    clone.querySelector('.card-body').appendChild(branchInput);
+    
     // Add initial specific details for quantity 1
     setTimeout(() => {
         updateSpecificDetailsFields(quantityInput);
@@ -533,11 +549,15 @@ function addModelForm() {
     $('#modelFormsContainer').append(clone);
 }
 
+// Update the updateSpecificDetailsFields function
 function updateSpecificDetailsFields(quantityInput) {
     const quantity = parseInt(quantityInput.value) || 1;
     const container = $(quantityInput).closest('.model-form').find('.specific-details-container');
     const detailsRows = container.find('.specific-details-row');
     const existingRows = detailsRows.length;
+    
+    // Get the color from the model form
+    const color = $(quantityInput).closest('.model-form').find('.model-color').val();
     
     // Show/hide the container based on quantity
     if (quantity > 0) {
@@ -554,17 +574,13 @@ function updateSpecificDetailsFields(quantityInput) {
         for (let i = existingRows; i < quantity; i++) {
             const rowHtml = `
                 <div class="specific-details-row row g-3 align-items-end mb-3 border-bottom pb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label mb-1">Engine Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control engine-number" placeholder="Engine Number" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label mb-1">Frame Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control frame-number" placeholder="Frame Number" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label mb-1">Color <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control color" placeholder="Color" required>
                     </div>
                 </div>
             `;
@@ -596,7 +612,6 @@ function addMotorcycle() {
         models: []
     };
     
-    // Validate required fields
     if (!formData.invoice_number || !formData.date_delivered || !formData.branch) {
         showErrorModal('Please fill in invoice number, date delivered, and branch');
         return;
@@ -608,28 +623,28 @@ function addMotorcycle() {
         const modelData = {
             brand: $(this).find('.model-brand').val(),
             model: $(this).find('.model-name').val(),
+            color: $(this).find('.model-color').val(), // Get color from model level
             lcp: $(this).find('.model-lcp').val(),
             quantity: $(this).find('.model-quantity').val(),
             details: []
         };
         
-        // Validate model data
-        if (!modelData.brand || !modelData.model || !modelData.quantity) {
+         // Validate model data
+        if (!modelData.brand || !modelData.model || !modelData.quantity || !modelData.color) {
             showErrorModal('Please fill in all required fields for each model');
             hasErrors = true;
             return false; // Break out of the loop
         }
-        
         // Collect specific details
         $(this).find('.specific-details-row').each(function() {
             const detail = {
                 engine_number: $(this).find('.engine-number').val(),
-                frame_number: $(this).find('.frame-number').val(),
-                color: $(this).find('.color').val()
+                frame_number: $(this).find('.frame-number').val()
+                // Color is now at the model level, not detail level
             };
             
-            if (!detail.engine_number || !detail.frame_number || !detail.color) {
-                showErrorModal('Please fill in all engine number, frame number, and color fields');
+           if (!detail.engine_number || !detail.frame_number) {
+                showErrorModal('Please fill in all engine number and frame number fields');
                 hasErrors = true;
                 return false;
             }
@@ -739,7 +754,7 @@ function loadMotorcycleForEdit(id) {
                 $('#editModel').val(data.model);
                 $('#editEngineNumber').val(data.engine_number);
                 $('#editFrameNumber').val(data.frame_number);
-                $('#editInvoiceNumber').val(data.invoice_number || ''); // NEW FIELD
+                $('#editInvoiceNumber').val(data.invoice_number || ''); 
                 $('#editColor').val(data.color);
                 $('#editLcp').val(data.lcp);
                 $('#editCurrentBranch').val(data.current_branch);
@@ -1598,22 +1613,20 @@ function viewMotorcycleDetails(id) {
     });
 }
 
-$('#addMotorcycleModal').on('shown.bs.modal', function() {
-    if (!isAdmin) {
-        // For non-admin users, set the branch to their current branch and make it readonly
-        $('#branch').val(currentBranch).prop('readonly', true);
-    } else {
-        // For admin users, enable the dropdown
-        $('#branch').prop('readonly', false);
-    }
-});
-
-// Reset the branch field when modal is hidden
-$('#addMotorcycleModal').on('hidden.bs.modal', function() {
-    if (!isAdmin) {
-        $('#branch').val(currentBranch);
-    }
-});
+ $('#addMotorcycleModal').on('shown.bs.modal', function() {
+        if (!isAdmin) {
+            // For non-admin users, set the branch to their current branch
+            $('#branch').val(currentBranch).prop('readonly', true);
+        } else {
+            // For admin users, enable the dropdown
+            $('#branch').prop('readonly', false);
+        }
+    });
+    $('#addMotorcycleModal').on('hidden.bs.modal', function() {
+        if (!isAdmin) {
+            $('#branch').val(currentBranch);
+        }
+    });
 
 // =======================
 // Monthly Inventory Report

@@ -80,15 +80,15 @@ function getInventoryDashboard() {
     
     $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
     
-    $sql = "SELECT model, brand, COUNT(*) as total_quantity 
+    $sql = "SELECT model, brand, color, COUNT(*) as total_quantity 
             FROM motorcycle_inventory 
             WHERE status = 'available'";
     
     if (!empty($search)) {
-        $sql .= " AND (model LIKE '%$search%' OR brand LIKE '%$search%')";
+        $sql .= " AND (model LIKE '%$search%' OR brand LIKE '%$search%' OR color LIKE '%$search%')";
     }
     
-    $sql .= " GROUP BY model, brand ORDER BY total_quantity DESC";
+    $sql .= " GROUP BY model, brand, color ORDER BY total_quantity DESC";
     
     $result = $conn->query($sql);
     
@@ -102,7 +102,6 @@ function getInventoryDashboard() {
         echo json_encode(['success' => false, 'message' => 'Error fetching inventory data: ' . $conn->error]);
     }
 }
-
 function getMotorcycleTransfers() {
     global $conn;
     
@@ -166,6 +165,7 @@ function getInventoryTable() {
     $types = '';
 
     if (!empty($search)) {
+        // Improved search to better handle model names
         $where .= " AND (mi.model LIKE ? OR mi.brand LIKE ? OR mi.engine_number LIKE ? 
                   OR mi.frame_number LIKE ? OR mi.color LIKE ? OR i.invoice_number LIKE ?)";
         $searchTerm = "%$search%";
@@ -312,6 +312,7 @@ function addMotorcycle() {
             foreach ($_POST['models'] as $modelIndex => $modelData) {
                 $brand = sanitizeInput($modelData['brand']);
                 $modelName = sanitizeInput($modelData['model']);
+                $color = sanitizeInput($modelData['color']); // Get color from model level
                 $lcp = !empty($modelData['lcp']) ? floatval($modelData['lcp']) : null;
                 
                 // Check if details exist and is an array
@@ -319,10 +320,9 @@ function addMotorcycle() {
                     foreach ($modelData['details'] as $detailIndex => $detail) {
                         $engineNumber = sanitizeInput($detail['engine_number']);
                         $frameNumber = sanitizeInput($detail['frame_number']);
-                        $color = sanitizeInput($detail['color']);
                         
                         // Validate required detail fields
-                        if (empty($engineNumber) || empty($frameNumber) || empty($color)) {
+                        if (empty($engineNumber) || empty($frameNumber)) {
                             throw new Exception("Missing required detail fields for model $modelIndex, detail $detailIndex");
                         }
                         

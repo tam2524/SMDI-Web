@@ -292,7 +292,7 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <div class="navbar-nav">
-                        <a href="staffDashboard.html" class="nav-item nav-link active">Home</a>
+                        <a href="../inventory/branch_inventory.php" class="nav-item nav-link active">Home</a>
 
                         <a href="../api/logout.php" class="nav-item nav-link active">Logout</a>
                     </div>
@@ -577,6 +577,7 @@
     </template>
 
     <!-- Edit Motorcycle Modal -->
+    <!-- Edit Motorcycle Modal -->
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -595,8 +596,10 @@
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='editInvoiceNumber'>
+                                <input type='text' class='form-control' id='editInvoiceNumber' readonly>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editBrand' class='form-label'>Brand</label>
                                 <select class='form-select' id='editBrand' required>
@@ -610,6 +613,8 @@
                                 <label for='editModel' class='form-label'>Model</label>
                                 <input type='text' class='form-control' id='editModel' required>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editEngineNumber' class='form-label'>Engine Number</label>
                                 <input type='text' class='form-control' id='editEngineNumber' required>
@@ -618,6 +623,8 @@
                                 <label for='editFrameNumber' class='form-label'>Frame Number</label>
                                 <input type='text' class='form-control' id='editFrameNumber' required>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editColor' class='form-label'>Color</label>
                                 <input type='text' class='form-control' id='editColor' required>
@@ -626,14 +633,50 @@
                                 <label for='editLcp' class='form-label'>LCP</label>
                                 <input type='number' step='0.01' class='form-control' id='editLcp'>
                             </div>
+                        </div>
+                        <div class='row'>
                             <div class='col-md-6 mb-3'>
-                                <label for='editCurrentBranch' class='form-label'>Current Branch</label>
-                                <select class='form-select' id='editCurrentBranch' required>
-                                    <option value='HEADOFFICE'>Head Office</option>
-                                    <option value='RXS-S'>RXS-S</option>
-                                    <option value='RXS-H'>RXS-H</option>
-                                    <!-- Add other branches as needed -->
-                                </select>
+                                <label for='editCurrentBranch' class='form-label'>Branch</label>
+                                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
+                                    <!-- Admin can select any branch -->
+                                    <select class='form-select' id='editCurrentBranch' required>
+                                        <option value='HEADOFFICE'>Head Office</option>
+                                        <option value='RXS-S'>RXS-S</option>
+                                        <option value='RXS-H'>RXS-H</option>
+                                        <option value='ANT-1'>ANT-1</option>
+                                        <option value='ANT-2'>ANT-2</option>
+                                        <option value='SDH'>SDH</option>
+                                        <option value='SDS'>SDS</option>
+                                        <option value='JAR-1'>JAR-1</option>
+                                        <option value='JAR-2'>JAR-2</option>
+                                        <option value='SKM'>SKM</option>
+                                        <option value='SKS'>SKS</option>
+                                        <option value='ALTA'>ALTA</option>
+                                        <option value='EMAP'>EMAP</option>
+                                        <option value='CUL'>CUL</option>
+                                        <option value='BAC'>BAC</option>
+                                        <option value='PAS-1'>PAS-1</option>
+                                        <option value='PAS-2'>PAS-2</option>
+                                        <option value='BAL'>BAL</option>
+                                        <option value='GUIM'>GUIM</option>
+                                        <option value='PEMDI'>PEMDI</option>
+                                        <option value='EEM'>EEM</option>
+                                        <option value='AJU'>AJU</option>
+                                        <option value='BAIL'>BAIL</option>
+                                        <option value='3SMB'>MINDORO MB</option>
+                                        <option value='3SMIN'>MINDORO 3S</option>
+                                        <option value='MAN'>MANSALAY</option>
+                                        <option value='K-RIDERS'>K-RIDERS</option>
+                                        <option value='IBAJAY'>IBAJAY</option>
+                                        <option value='NUMANCIA'>NUMANCIA</option>
+                                        <option value='HEADOFFICE'>HEADOFFICE</option>
+                                        <option value='CEBU'>CEBU</option>
+                                    </select>
+                                <?php } else { ?>
+                                    <!-- Regular users can only add to their own branch -->
+                                    <input type='text' class='form-control' id='editCurrentBranch' value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                                    <input type='hidden' id='editCurrentBranchHidden' value="<?php echo $_SESSION['user_branch']; ?>">
+                                <?php } ?>
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editStatus' class='form-label'>Status</label>
