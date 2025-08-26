@@ -283,7 +283,7 @@
         </div>
         <div class="container px-0">
             <nav class="navbar navbar-light bg-white navbar-expand-lg">
-                <a href="index.html" class="navbar-brand">
+                <a class="navbar-brand">
                     <img src="../assets/img/smdi_logo.jpg" alt="SMDI Logo" class="logo">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"

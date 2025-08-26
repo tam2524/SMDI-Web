@@ -443,8 +443,8 @@
                 </button>
                 <div class='collapse navbar-collapse' id='navbarCollapse'>
                     <div class='navbar-nav'>
-                            <a href="../inventory/headoffice_inventory.php" class="nav-item nav-link active">Home</a>
-
+                           <a href='admin_dashboard.php' class='nav-item nav-link active'>Home</a>
+                        <a href='admin_inventory.php' class='nav-item nav-link active'>Inventory</a>
                         <a href='../api/logout.php' class='nav-item nav-link active'>Logout</a>
                     </div>
                 </div>
@@ -662,8 +662,6 @@
                             </div>
                             <div class='col-md-6 mb-3'>
                             <label for='branch' class='form-label'>Branch</label>
-                            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
-                                <!-- Admin can select any branch -->
                                 <select class='form-select' id='branch' required>
                                     <option value='HEADOFFICE'>Head Office</option>
                                     <option value='RXS-S'>RXS-S</option>
@@ -697,11 +695,7 @@
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='CEBU'>CEBU</option>
                                 </select>
-                            <?php } else { ?>
-                                <!-- Regular users can only add to their own branch -->
-                                <input type='text' class='form-control' id='branch' value="<?php echo $_SESSION['user_branch']; ?>" readonly>
-                                <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
-                            <?php } ?>
+                           
                         </div>
                         </div>
 
@@ -1339,7 +1333,7 @@
     <script>
     const currentBranch = '<?php echo $_SESSION['user_branch'] ?? 'RXS-S'; ?>';
     </script>
-    <script src='../js/inventory_management.js'></script>
+    <script src='../js/admin_inventory.js'></script>
 </body>
 
 </html>
