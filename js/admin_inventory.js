@@ -53,7 +53,6 @@ function setupEventListeners() {
     $('#exportMonthlyReportToPDF').click(generateMonthlyReportPDF);
     $('#exportMonthlyReport').click(exportMonthlyReport);
 
-    $('#transferSelectedBtn').prop('disabled', false);
     $('#transferSelectedBtn').click(transferSelectedMotorcycles);
 
     $('#addMotorcycleForm').submit(function(e) { e.preventDefault(); addMotorcycle(); });

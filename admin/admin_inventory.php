@@ -506,10 +506,6 @@
                                     data-bs-target='#addMotorcycleModal'>
                                     <i class='bi bi-plus-circle'></i> Add Motorcycle
                                 </button>
-
-                                <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
-                                    <i class='bi bi-truck'></i> Transfer
-                                </button>
 <!-- 
                                 <button type='button' class='btn btn-info me-2' id='generateMonthlyInventory'>
                                     <i class='bi bi-calendar-month'></i> Monthly Inventory Report
@@ -1069,7 +1065,6 @@
                                             </label>
                                             <select class='form-select form-select-sm' id='multipleToBranch' required>
                                                 <option value=''>Select Destination Branch</option>
-
                                             </select>
                                         </div>
 
@@ -1203,14 +1198,14 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div> <!-- End row -->
-                                </div> <!-- End p-4 -->
-                            </div> <!-- End Right Panel -->
-                        </div> <!-- End row -->
+                                    </div> 
+                                </div> 
+                            </div>
+                        </div> 
                     </form>
-                </div> <!-- End modal-body -->
-            </div> <!-- End modal-content -->
-        </div> <!-- End modal-dialog -->
+                </div>
+            </div> 
+        </div>
     </div>
 
     <!-- Incoming Transfers Modal -->
