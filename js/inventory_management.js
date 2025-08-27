@@ -17,6 +17,7 @@ let currentReportData = null;
 let currentReportMonth = null;
 let currentReportBranch = null;
 let modelCount = 0;
+let currentUserRole = 'USER'; 
 // =======================
 // Document Ready
 // =======================

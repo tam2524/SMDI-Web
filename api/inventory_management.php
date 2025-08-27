@@ -84,9 +84,19 @@ function getInventoryDashboard() {
     
     $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
     
+    // Get user information from session
+    $userBranch = isset($_SESSION['user_branch']) ? $_SESSION['user_branch'] : '';
+    $userPosition = isset($_SESSION['position']) ? $_SESSION['position'] : '';
+    
     $sql = "SELECT model, brand, color, COUNT(*) as total_quantity 
             FROM motorcycle_inventory 
             WHERE status = 'available'";
+    
+    // Apply branch filter if user is not from HEADOFFICE and not an admin/IT
+    if (!empty($userBranch) && $userBranch !== 'HEADOFFICE' && 
+        !in_array(strtoupper($userPosition), ['ADMIN', 'IT STAFF', 'HEAD'])) {
+        $sql .= " AND current_branch = '$userBranch'";
+    }
     
     if (!empty($search)) {
         $sql .= " AND (model LIKE '%$search%' OR brand LIKE '%$search%' OR color LIKE '%$search%')";
@@ -132,6 +142,8 @@ function getInventoryTable() {
     global $conn;
 
     $isAdmin = isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+    $userBranch = isset($_SESSION['user_branch']) ? $_SESSION['user_branch'] : '';
+    $userPosition = isset($_SESSION['position']) ? $_SESSION['position'] : '';
 
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $perPage = 10;
@@ -154,12 +166,9 @@ function getInventoryTable() {
     $search = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
     $where = "WHERE mi.status != 'deleted'";
 
-    if (!$isAdmin) {
-        if (!isset($_SESSION['user_branch'])) {
-            echo json_encode(['success' => false, 'message' => 'User branch not set']);
-            return;
-        }
-        $userBranch = $_SESSION['user_branch'];
+    // Apply branch filter if user is not from HEADOFFICE and not an admin/IT
+    if (!empty($userBranch) && $userBranch !== 'HEADOFFICE' && 
+        !in_array(strtoupper($userPosition), ['ADMIN', 'IT STAFF', 'HEAD'])) {
         $where .= " AND mi.current_branch = '$userBranch'";
     }
 

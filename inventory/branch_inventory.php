@@ -87,6 +87,76 @@
         margin-bottom: 20px;
     }
 
+    .model-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: white;
+        transition: all 0.3s ease;
+        height: 70px;
+        margin-bottom: 10px;
+    }
+
+    .model-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: #000f71;
+    }
+
+    .model-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #333;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .quantity-badge {
+        background-color: #000f71;
+        color: white;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        min-width: 40px;
+        text-align: center;
+    }
+
+    .nav-tabs .nav-link.active {
+        font-weight: 600;
+        border-bottom: 3px solid #000f71;
+    }
+
+    .branch-marker {
+        background-color: #000f71;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    .modal.fade.show {
+        display: block !important;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-backdrop.fade.show {
+        opacity: 0.5 !important;
+    }
+
+    @media (min-width: 1200px) {
+        .model-card-container {
+            flex: 0 0 10%;
+            max-width: 10%;
+        }
+    }
+
     /* Pagination Styles */
     .pagination {
         display: flex;
@@ -148,7 +218,230 @@
     .sortable-header:hover {
         background-color: #f8f9fa;
     }
-    
+
+    /* Brand-specific colors */
+    .border-primary {
+        border-color: #000f71 !important;
+    }
+
+    .bg-primary-light {
+        background-color: rgba(0, 15, 113, 0.1) !important;
+    }
+
+    .border-danger {
+        border-color: #dc3545 !important;
+    }
+
+    .bg-danger-light {
+        background-color: rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .border-black {
+        border-color: #000000ff !important;
+    }
+
+    .bg-black-light {
+        background-color: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .border-success {
+        border-color: #28a745 !important;
+    }
+
+    .bg-success-light {
+        background-color: rgba(40, 167, 69, 0.1) !important;
+    }
+
+    /* Update model card hover effect */
+    .model-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        opacity: 0.9;
+    }
+
+    /* Update quantity badge to match brand */
+    .model-card.border-primary .quantity-badge {
+        background-color: #000f71;
+    }
+
+    .model-card.border-danger .quantity-badge {
+        background-color: #dc3545;
+    }
+
+    .model-card.border-black .quantity-badge {
+        background-color: #000000;
+    }
+
+    .model-card.border-success .quantity-badge {
+        background-color: #28a745;
+    }
+
+    .btn-group {
+        margin-right: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-group .btn {
+        border-radius: 0;
+        border-left: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-group .btn:first-child {
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+        border-left: none;
+    }
+
+    .btn-group .btn:last-child {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+    }
+
+    .btn-group .btn:hover {
+        background-color: #0069d9;
+        color: white;
+    }
+
+    .btn-group .btn i {
+        margin-right: 5px;
+    }
+
+    .card-header .btn-link {
+        text-decoration: none;
+        color: #000f71;
+        font-weight: 600;
+        width: 100%;
+        text-align: left;
+        padding: 0.75rem 1.25rem;
+    }
+
+    .card-header .btn-link:hover {
+        color: #000f71;
+        text-decoration: underline;
+    }
+
+    .card-header .btn-link:after {
+        content: '\f078';
+        font-family: 'Font Awesome 5 Free';
+        font-weight: 900;
+        float: right;
+        transition: transform 0.3s;
+    }
+
+    .card-header .btn-link[ aria-expanded='true']:after {
+        transform: rotate(180deg);
+    }
+
+    .card-body {
+        padding: 1rem 1.25rem;
+    }
+
+    .table-sm th,
+    .table-sm td {
+        padding: 0.5rem;
+    }
+
+    /* Add these styles to your existing CSS */
+    .transfer-search-result {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: white;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .transfer-search-result:hover {
+        border-color: #0d6efd;
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .transfer-search-result.selected {
+        border-color: #198754;
+        background-color: #d1e7dd;
+    }
+
+    .transfer-search-result .engine-number {
+        font-weight: 600;
+        color: #0d6efd;
+        font-size: 0.95rem;
+    }
+
+    .transfer-search-result .model-info {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+
+    .transfer-search-result .branch-info {
+        font-size: 0.8rem;
+        color: #868e96;
+    }
+
+    .selected-motorcycle-item {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: white;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .selected-motorcycle-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .card-header {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
+
+    /* Scrollbar styling */
+    #searchResults::-webkit-scrollbar,
+    #selectedMotorcyclesList::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #searchResults::-webkit-scrollbar-track,
+    #selectedMotorcyclesList::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    #searchResults::-webkit-scrollbar-thumb,
+    #selectedMotorcyclesList::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+
+    #searchResults::-webkit-scrollbar-thumb:hover,
+    #selectedMotorcyclesList::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
     .specific-details-container {
         background-color: #f8f9fa;
         border-radius: 8px;
@@ -167,96 +460,6 @@
         margin-bottom: 0;
         border-bottom: none;
     }
-   .receipt-container {
-    font-family: 'Courier New', monospace;
-    background: white;
-    padding: 25px;
-    border: 3px solid #000;
-    border-radius: 10px;
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.receipt-header {
-    text-align: center;
-    border-bottom: 3px double #000;
-    padding-bottom: 20px;
-    margin-bottom: 25px;
-}
-
-.receipt-header h4 {
-    font-weight: bold;
-    margin: 0 0 5px 0;
-    color: #000;
-    font-size: 1.2em;
-}
-
-.receipt-header p {
-    margin: 3px 0;
-    color: #666;
-}
-
-.receipt-details {
-    margin-bottom: 25px;
-}
-
-.receipt-item {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    padding: 8px 0;
-}
-
-.receipt-item .label {
-    font-weight: bold;
-    color: #000;
-}
-
-.receipt-item .value {
-    color: #333;
-    font-weight: normal;
-}
-
-.receipt-items h6 {
-    text-align: center;
-    margin: 20px 0 15px 0;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 1.1em;
-}
-
-.receipt-signature {
-    margin-top: 40px;
-    padding-top: 20px;
-}
-
-.signature-line {
-    border-top: 1px solid #000;
-    margin-top: 60px;
-    padding-top: 10px;
-    text-align: center;
-    font-size: 0.95em;
-}
-
-.receipt-footer {
-    text-align: center;
-    margin-top: 30px;
-    font-size: 0.85em;
-    color: #666;
-    border-top: 1px dashed #000;
-    padding-top: 15px;
-}
-
-/* Print optimization */
-@media print {
-    .receipt-container {
-        border: none;
-        padding: 15px;
-    }
-    body {
-        background: white !important;
-    }
-}
 
 /* Sell button styling */
 .sell-btn {
@@ -323,8 +526,12 @@
             <div class="card-body">
                 <ul class="nav nav-tabs mb-4" id="inventoryTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab"
-                            data-bs-target="#dashboard" type="button" role="tab">Dashboard</button>
+                        <button class="nav-link active" id="find-tab" data-bs-toggle="tab"
+                            data-bs-target="#find" type="button" role="tab">Find</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="inventory-tab" data-bs-toggle="tab"
+                            data-bs-target="#inventory" type="button" role="tab">Overview</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="management-tab" data-bs-toggle="tab" data-bs-target="#management"
@@ -333,8 +540,9 @@
                 </ul>
 
                 <div class="tab-content" id="inventoryTabContent">
-                    <!-- Dashboard Tab -->
-                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                     
+
+                    <div class="tab-pane fade show active" id="find" role="tabpanel">
                         <div class="container-fluid py-5">
                             <div class="card mb-4">
                                 <div class="card-body">
@@ -369,6 +577,8 @@
                             </div>
                         </div>
                     </div>
+
+                
 
                     <!-- Management Tab -->
                     <div class="tab-pane fade" id="management" role="tabpanel">
@@ -435,6 +645,32 @@
                                 </li>
                             </ul>
                         </nav>
+                    </div>
+
+                    <div class='tab-pane fade show active' id='inventory' role='tabpanel'>
+                        <div class='row mb-4'>
+                            <div class='col-md-6'>
+                                <h4>Inventory Overview</h4>
+                            </div>
+                            <div class='col-md-6 text-end'>
+                                <div class='input-group' style='max-width: 300px; margin-left: auto;'>
+                                    <input type='text' id='searchDashboard' class='form-control'
+                                        placeholder='Search models...'>
+                                    <button class='btn btn-primary text-white' type='button' id='searchDashboardBtn'>
+                                        <i class='bi bi-search'></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='row' id='inventoryCards'>
+                            <!-- Inventory cards will be loaded here -->
+                            <div class='col-12 text-center py-5'>
+                                <div class='spinner-border text-primary' role='status'>
+                                    <span class='visually-hidden'>Loading...</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1164,6 +1400,10 @@
 
     <script>
     const currentBranch = '<?php echo $_SESSION['user_branch'] ?? 'RXS-S'; ?>';
+    const currentUserBranch = "<?php echo isset($_SESSION['user_branch']) ? $_SESSION['user_branch'] : ''; ?>";
+    const currentUserPosition = "<?php echo isset($_SESSION['position']) ? $_SESSION['position'] : ''; ?>";
+    const isHeadOffice = currentUserBranch === 'HEADOFFICE';
+    const isAdminUser = ['ADMIN', 'IT STAFF', 'HEAD'].includes(currentUserPosition.toUpperCase());
     </script>
     <script src="../js/inventory_management.js"></script>
 </body>
