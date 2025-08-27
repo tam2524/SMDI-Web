@@ -510,10 +510,10 @@
                                 <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
                                     <i class='bi bi-truck'></i> Transfer
                                 </button>
-<!-- 
+
                                 <button type='button' class='btn btn-info me-2' id='generateMonthlyInventory'>
                                     <i class='bi bi-calendar-month'></i> Monthly Inventory Report
-                                </button> -->
+                                </button>
                             </div>
                             <div class='input-group' style='max-width: 300px;'>
                                 <input type='text' id='searchInventory' class='form-control'
