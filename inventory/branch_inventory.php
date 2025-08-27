@@ -257,6 +257,19 @@
         background: white !important;
     }
 }
+
+/* Sell button styling */
+.sell-btn {
+    margin-left: 5px;
+}
+
+/* Modal field styling */
+#codFields, #installmentFields {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
     </style>
 </head>
 
@@ -445,27 +458,29 @@
         </div>
     </div>
 
-<!-- Add Motorcycle Modal -->
-<div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel' aria-hidden='true'>
-    <div class='modal-dialog modal-lg'>
-        <div class='modal-content'>
-            <div class='modal-header'>
-                <h5 class='modal-title' id='addMotorcycleModalLabel'>Add Motorcycle to Inventory</h5>
-                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-            </div>
-            <div class='modal-body'>
-                <form id='addMotorcycleForm'>
-                    <!-- Invoice Information -->
-                    <div class='row mb-4'>
-                        <div class='col-md-6 mb-3'>
-                            <label for='invoiceNumber' class='form-label'>Invoice Number/MT</label>
-                            <input type='text' class='form-control' id='invoiceNumber' required>
-                        </div>
-                        <div class='col-md-6 mb-3'>
-                            <label for='dateDelivered' class='form-label'>Date Delivered</label>
-                            <input type='date' class='form-control' id='dateDelivered' required>
-                        </div>
-                        <div class='col-md-6 mb-3'>
+
+    <!-- Add Motorcycle Modal -->
+    <div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='addMotorcycleModalLabel'>Add Motorcycle to Inventory</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='addMotorcycleForm'>
+                        <!-- Invoice Information -->
+                        <div class='row mb-4'>
+                            <div class='col-md-6 mb-3'>
+                                <label for='invoiceNumber' class='form-label'>Invoice Number/MT</label>
+                                <input type='text' class='form-control' id='invoiceNumber' required>
+                            </div>
+                            <div class='col-md-6 mb-3'>
+                                <label for='dateDelivered' class='form-label'>Date Delivered</label>
+                                <input type='date' class='form-control' id='dateDelivered' required>
+                            </div>
+                            <div class='col-md-6 mb-3'>
                             <label for='branch' class='form-label'>Branch</label>
                             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
                                 <!-- Admin can select any branch -->
@@ -508,75 +523,79 @@
                                 <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
                             <?php } ?>
                         </div>
-                    </div>
+                        </div>
 
-                    <hr>
+                        <hr>
 
-                    <!-- Motorcycle Models -->
-                    <h5 class='mb-3'>Motorcycle Models</h5>
-                    <div id='modelFormsContainer'>
-                        <!-- Model forms will be added here dynamically -->
-                    </div>
+                        <!-- Motorcycle Models -->
+                        <h5 class='mb-3'>Motorcycle Models</h5>
+                        <div id='modelFormsContainer'>
+                            <!-- Model forms will be added here dynamically -->
+                        </div>
 
-                    <button type='button' id='addModelBtn' class='btn btn-secondary mt-3'>
-                        <i class='bi bi-plus-circle'></i> Add Another Model
-                    </button>
+                        <button type='button' id='addModelBtn' class='btn btn-secondary mt-3'>
+                            <i class='bi bi-plus-circle'></i> Add Another Model
+                        </button>
 
-                    <div class='d-grid mt-4'>
-                        <button type='submit' class='btn btn-primary text-white'>Add Motorcycles</button>
-                    </div>
-                </form>
+                        <div class='d-grid mt-4'>
+                            <button type='submit' class='btn btn-primary text-white'>Add Motorcycles</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
-    <!-- Model Form Template -->
-    <template id='modelFormTemplate'>
-        <div class='model-form card mb-3'>
-            <div class='card-header d-flex justify-content-between align-items-center'>
-                <span class='model-number'>Model #1</span>
-                <button type='button' class='btn btn-sm btn-danger remove-model-btn'>
-                    <i class='bi bi-trash'></i> Remove
-                </button>
-            </div>
-            <div class='card-body'>
-                <div class='row'>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>Brand</label>
-                        <select class='form-select model-brand' required>
-                            <option value=''>Select Brand</option>
-                            <option value='Suzuki'>Suzuki</option>
-                            <option value='Honda'>Honda</option>
-                            <option value='Kawasaki'>Kawasaki</option>
-                            <option value='Yamaha'>Yamaha</option>
-                        </select>
-                    </div>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>Model Name</label>
-                        <input type='text' class='form-control model-name' required>
-                    </div>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>Quantity</label>
-                        <input type='number' class='form-control model-quantity' min='1' value='1' required>
-                    </div>
-                    <div class='col-md-6 mb-3'>
-                        <label class='form-label'>LCP</label>
-                        <input type='number' step='0.01' class='form-control model-lcp'>
-                    </div>
-                </div>
 
-                <!-- Specific Model Details Container -->
-                <div class='specific-details-container mt-3' style='display: none;'>
-                    <h6 class='fw-semibold mb-3'>Specific Model Details</h6>
-                    <div class='specific-details-rows'>
-                        <!-- Individual rows will be added here dynamically -->
-                    </div>
+  <!-- Update the model form template in your HTML -->
+<template id="modelFormTemplate">
+    <div class="model-form card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="model-number">Model #1</span>
+            <button type="button" class="btn btn-sm btn-danger remove-model-btn">
+                <i class="bi bi-trash"></i> Remove
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Brand</label>
+                    <select class="form-select model-brand" required>
+                        <option value="">Select Brand</option>
+                        <option value="Suzuki">Suzuki</option>
+                        <option value="Honda">Honda</option>
+                        <option value="Kawasaki">Kawasaki</option>
+                        <option value="Yamaha">Yamaha</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Model Name</label>
+                    <input type="text" class="form-control model-name" required>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-control model-quantity" min="1" value="1" required>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Color</label>
+                    <input type="text" class="form-control model-color" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">LCP</label>
+                    <input type="number" step="0.01" class="form-control model-lcp">
+                </div>
+            </div>
+
+            <!-- Specific Model Details Container -->
+            <div class="specific-details-container mt-3" style="display: none;">
+                <h6 class="fw-semibold mb-3">Specific Model Details</h6>
+                <div class="specific-details-rows">
+                    <!-- Individual rows will be added here dynamically -->
                 </div>
             </div>
         </div>
-    </template>
+    </div>
+</template>
 
-    <!-- Edit Motorcycle Modal -->
     <!-- Edit Motorcycle Modal -->
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
         aria-hidden='true'>
@@ -673,19 +692,19 @@
                                         <option value='CEBU'>CEBU</option>
                                     </select>
                                 <?php } else { ?>
-                                    <!-- Regular users can only add to their own branch -->
                                     <input type='text' class='form-control' id='editCurrentBranch' value="<?php echo $_SESSION['user_branch']; ?>" readonly>
                                     <input type='hidden' id='editCurrentBranchHidden' value="<?php echo $_SESSION['user_branch']; ?>">
                                 <?php } ?>
                             </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editStatus' class='form-label'>Status</label>
-                                <select class='form-select' id='editStatus' required>
-                                    <option value='available'>Available</option>
-                                    <option value='sold'>Sold</option>
-                                    <option value='transferred'>Transferred</option>
-                                </select>
-                            </div>
+                           <div class='col-md-6 mb-3'>
+    <label for='editStatus' class='form-label'>Status</label>
+    <select class='form-select' id='editStatus' disabled>
+        <option value='available'>Available</option>
+        <option value='sold'>Sold</option>
+        <option value='transferred'>Transferred</option>
+    </select>
+</div>
+
                         </div>
                         <div class='d-grid'>
                             <button type='submit' class='btn btn-primary text-white'>Save Changes</button>
@@ -990,6 +1009,71 @@
         </div> <!-- End modal-dialog -->
     </div>
 
+    <!-- Sell Motorcycle Modal -->
+<div class="modal fade" id="sellMotorcycleModal" tabindex="-1" aria-labelledby="sellMotorcycleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sellMotorcycleModalLabel">Mark Motorcycle as Sold</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="saleForm">
+                    <input type="hidden" id="sellMotorcycleId">
+                    
+                    <div class="mb-3">
+                        <label for="saleDate" class="form-label">Sale Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="saleDate" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Customer Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="customerName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="paymentType" class="form-label">Payment Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="paymentType" onchange="handlePaymentTypeChange()" required>
+                            <option value="">Select Payment Type</option>
+                            <option value="COD">Cash on Delivery (COD)</option>
+                            <option value="Installment">Installment</option>
+                        </select>
+                    </div>
+                    
+                    <!-- COD Fields -->
+                    <div id="codFields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="drNumber" class="form-label">DR Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="drNumber">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="codAmount" class="form-label">COD Amount <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" id="codAmount">
+                        </div>
+                    </div>
+                    
+                    <!-- Installment Fields -->
+                    <div id="installmentFields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="terms" class="form-label">Terms (months) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="terms" min="1">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="monthlyAmortization" class="form-label">Monthly Amortization <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" id="monthlyAmortization">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitSale()">Mark as Sold</button>
+            </div>
+        </div>
+    </div>
+</div>
        <!-- Receipt Modal -->
 <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">

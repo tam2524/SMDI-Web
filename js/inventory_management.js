@@ -85,6 +85,7 @@ function setupEventListeners() {
         }
     });
 
+       $('#paymentType').change(handlePaymentTypeChange);
     $(document).on('click', '.page-link', function(e) {
         e.preventDefault();
         if ($(this).parent().hasClass('disabled')) return;
@@ -447,6 +448,7 @@ function updateInventoryPaginationControls(totalPages) {
     $('#paginationControls').html(paginationHtml);
 }
 
+// Update the renderInventoryTable function to include the sell button
 function renderInventoryTable(data) {
     let html = '';
     
@@ -465,12 +467,15 @@ function renderInventoryTable(data) {
                     <td>${item.color}</td>
                     <td>${formatCurrency(item.lcp)}</td>
                     <td>${item.current_branch}</td>
-                  
                     <td>
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-primary edit-btn">
                                 <i class="bi bi-pencil"></i>
                             </button>
+                         <button class="btn btn-outline-danger sell-btn">
+    <i class="bi"></i> ₱
+</button>
+
                         </div>
                     </td>
                 </tr>
@@ -495,8 +500,21 @@ function setupTableActionButtons() {
             function() { returnToHeadOffice(id); }
         );
     });
+     $('.sell-btn').click(function() {
+        const id = $(this).closest('tr').data('id');
+        sellMotorcycle(id);
+    });
+
+    // Add this to your setupTableActionButtons function
+$('#markAsSoldBtn').click(function() {
+    const id = $('#editId').val();
+    $('#editMotorcycleModal').modal('hide');
+    sellMotorcycle(id);
+});
    
 }
+
+
 
 function getStatusBadgeClass(status) {
     switch(status) {
@@ -556,10 +574,10 @@ function updateSpecificDetailsFields(quantityInput) {
     const detailsRows = container.find('.specific-details-row');
     const existingRows = detailsRows.length;
     
-    // Get the color from the model form
+    
     const color = $(quantityInput).closest('.model-form').find('.model-color').val();
     
-    // Show/hide the container based on quantity
+   
     if (quantity > 0) {
         container.show();
     } else {
@@ -570,7 +588,7 @@ function updateSpecificDetailsFields(quantityInput) {
     const rowsContainer = container.find('.specific-details-rows');
     
     if (quantity > existingRows) {
-        // Add rows
+        
         for (let i = existingRows; i < quantity; i++) {
             const rowHtml = `
                 <div class="specific-details-row row g-3 align-items-end mb-3 border-bottom pb-3">
@@ -623,7 +641,7 @@ function addMotorcycle() {
         const modelData = {
             brand: $(this).find('.model-brand').val(),
             model: $(this).find('.model-name').val(),
-            color: $(this).find('.model-color').val(), // Get color from model level
+            color: $(this).find('.model-color').val(), 
             lcp: $(this).find('.model-lcp').val(),
             quantity: $(this).find('.model-quantity').val(),
             details: []
@@ -633,14 +651,13 @@ function addMotorcycle() {
         if (!modelData.brand || !modelData.model || !modelData.quantity || !modelData.color) {
             showErrorModal('Please fill in all required fields for each model');
             hasErrors = true;
-            return false; // Break out of the loop
+            return false; 
         }
         // Collect specific details
         $(this).find('.specific-details-row').each(function() {
             const detail = {
                 engine_number: $(this).find('.engine-number').val(),
                 frame_number: $(this).find('.frame-number').val()
-                // Color is now at the model level, not detail level
             };
             
            if (!detail.engine_number || !detail.frame_number) {
@@ -659,7 +676,7 @@ function addMotorcycle() {
     
     if (hasErrors) return;
     
-    // Send data to server
+    
     $.ajax({
         url: '../api/inventory_management.php',
         method: 'POST',
@@ -702,14 +719,13 @@ function updateMotorcycle() {
         model: $('#editModel').val(),
         engine_number: $('#editEngineNumber').val(),
         frame_number: $('#editFrameNumber').val(),
-        invoice_number: $('#editInvoiceNumber').val(), // NEW FIELD
+        invoice_number: $('#editInvoiceNumber').val(), 
         color: $('#editColor').val(),
         lcp: $('#editLcp').val(),
         current_branch: $('#editCurrentBranch').val(),
         status: $('#editStatus').val()
     };
     
-    // Validate required fields
     if (!formData.id || !formData.date_delivered || !formData.brand || !formData.model || 
         !formData.engine_number || !formData.frame_number || !formData.color) {
         showErrorModal('Please fill in all required fields');
@@ -788,9 +804,9 @@ function loadMotorcycleForTransfer(id) {
                 
                 const $toBranch = $('#toBranch');
                 $toBranch.empty().append('<option value="">Select Branch</option>');
-                
-                const branches = ['HEADOFFICE', 'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2', 'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2', 'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJU', 'BAIL', 'MINDORO MB', 'MINDORO 3S', 'MANSALAY', 'K-RIDERS', 'IBAJAY', 'NUMANCIA', 'CEBU'];
-                
+
+                const branches = ['HEADOFFICE', 'MAMB', 'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2', 'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2', 'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJU', 'BAIL', 'MINDORO MB', 'MINDORO 3S', 'MANSALAY', 'K-RIDERS', 'IBAJAY', 'NUMANCIA', 'CEBU'];
+
                 branches.forEach(branch => {
                     if (branch !== data.current_branch) {
                         $toBranch.append(`<option value="${branch}">${branch}</option>`);
@@ -853,12 +869,12 @@ function transferMotorcycle() {
 // Invoice Validation
 // =======================
 
-// Check invoice number on input change
+
 $('#invoiceNumber').on('blur', function() {
     checkInvoiceNumber($(this).val());
 });
 
-// Check invoice number on form submit
+
 $('#addMotorcycleForm').on('submit', function(e) {
     const invoiceNumber = $('#invoiceNumber').val();
     if (invoiceNumber) {
@@ -887,14 +903,14 @@ function checkInvoiceNumber(invoiceNumber, isSubmit = false) {
             } else {
                 clearInvoiceError();
                 if (isSubmit) {
-                    // If checking on submit and no error, actually submit the form
+                  
                     $('#addMotorcycleForm').off('submit').submit();
                 }
             }
         },
         error: function() {
             if (isSubmit) {
-                // If check fails, proceed with submission anyway
+                
                 $('#addMotorcycleForm').off('submit').submit();
             }
         }
@@ -905,10 +921,10 @@ function showInvoiceError(message) {
     $('#invoiceNumber').addClass('is-invalid');
     $('#invoiceNumber').removeClass('is-valid');
     
-    // Remove existing error message if any
+    
     $('#invoiceNumber').next('.invalid-feedback').remove();
     
-    // Add error message
+    
     $('#invoiceNumber').after(`<div class="invalid-feedback">${message}</div>`);
 }
 
@@ -919,18 +935,105 @@ function clearInvoiceError() {
 }
 
 
+// =======================
+// Sale Functions
+// =======================
+function sellMotorcycle(id) {
+    
+    $('#sellMotorcycleId').val(id);
+    
+   
+    $('#saleForm')[0].reset();
+    $('#codFields').hide();
+    $('#installmentFields').hide();
+    
+
+    $('#sellMotorcycleModal').modal('show');
+}
+
+function handlePaymentTypeChange() {
+    const paymentType = $('#paymentType').val();
+    
+
+    $('#codFields').hide();
+    $('#installmentFields').hide();
+    
+
+    if (paymentType === 'COD') {
+        $('#codFields').show();
+    } else if (paymentType === 'Installment') {
+        $('#installmentFields').show();
+    }
+}
+
+function submitSale() {
+    const formData = {
+        action: 'sell_motorcycle',
+        motorcycle_id: $('#sellMotorcycleId').val(),
+        sale_date: $('#saleDate').val(),
+        customer_name: $('#customerName').val(),
+        payment_type: $('#paymentType').val()
+    };
+    
+
+    if (formData.payment_type === 'COD') {
+        formData.dr_number = $('#drNumber').val();
+        formData.cod_amount = $('#codAmount').val();
+    } else if (formData.payment_type === 'Installment') {
+        formData.terms = $('#terms').val();
+        formData.monthly_amortization = $('#monthlyAmortization').val();
+    }
+    
+
+    if (!formData.sale_date || !formData.customer_name || !formData.payment_type) {
+        showErrorModal('Please fill in all required fields');
+        return;
+    }
+    
+    if (formData.payment_type === 'COD' && (!formData.dr_number || !formData.cod_amount)) {
+        showErrorModal('Please fill in DR Number and COD Amount for COD payment');
+        return;
+    }
+    
+    if (formData.payment_type === 'Installment' && (!formData.terms || !formData.monthly_amortization)) {
+        showErrorModal('Please fill in Terms and Monthly Amortization for Installment payment');
+        return;
+    }
+    
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'POST',
+        data: formData,
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                $('#sellMotorcycleModal').modal('hide');
+                showSuccessModal('Motorcycle marked as sold successfully!');
+                
+
+                loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
+            } else {
+                showErrorModal(response.message || 'Error marking motorcycle as sold');
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('Error marking motorcycle as sold: ' + error);
+        }
+    });
+}
+
 
 // =======================
 // Transfer Functions
 // =======================
 function transferSelectedMotorcycles() {
     
-    // Populate the modal
+
     $('#multipleFromBranch').val(currentBranch);
     $('#multipleTransferDate').val(new Date().toISOString().split('T')[0]);
     $('#selectedCount').text('0');
     
-    // Clear previous selections
+
     selectedMotorcycles = [];
     updateSelectedMotorcyclesList();
     $('#engineSearch').val('');
@@ -942,23 +1045,23 @@ function transferSelectedMotorcycles() {
     `);
     $('#searchResultsCount').text('0');
     
-    // Populate toBranch dropdown
+    
     const $toBranch = $('#multipleToBranch');
     $toBranch.empty().append('<option value="">Select Destination Branch</option>');
     
-    const branches = ['HEADOFFICE','RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2', 'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2', 'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJU', 'BAIL', 'MINDORO MB', 'MINDORO 3S', 'MANSALAY', 'K-RIDERS', 'IBAJAY', 'NUMANCIA',  'CEBU'];
-    
+ const branches = ['HEADOFFICE', 'MAMB', 'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2', 'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2', 'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJU', 'BAIL', 'MINDORO MB', 'MINDORO 3S', 'MANSALAY', 'K-RIDERS', 'IBAJAY', 'NUMANCIA', 'CEBU'];
+
     branches.forEach(branch => {
         if (branch !== currentBranch) {
             $toBranch.append(`<option value="${branch}">${branch}</option>`);
         }
     });
     
-    // Show the modal
+
     $('#multipleTransferModal').modal('show');
 }
 function performMultipleTransfers() {
-    // Get IDs from the selectedMotorcycles array instead of modal data
+    
     const selectedIds = selectedMotorcycles.map(m => m.id);
     
     if (selectedIds.length === 0) {
@@ -975,7 +1078,7 @@ function performMultipleTransfers() {
         notes: $('#multipleTransferNotes').val()
     };
     
-    // Validate required fields
+
     if (!formData.motorcycle_ids || !formData.from_branch || !formData.to_branch || !formData.transfer_date) {
         showErrorModal('Please fill in all required fields');
         return;
@@ -997,7 +1100,6 @@ function performMultipleTransfers() {
                 showSuccessModal('Transfer initiated successfully! Motorcycles will remain at current branch until accepted by destination.');
                 loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
                 
-                // Clear selection
                 selectedMotorcycles = [];
                 updateSelectedMotorcyclesList();
                 $('#engineSearch').val('');
@@ -1033,7 +1135,7 @@ function searchMotorcyclesByEngine() {
         success: function(response) {
             if (response.success) {
                 if (response.data.length === 0) {
-                    // Show message that no matching motorcycles found in current branch
+
                     $('#searchResults').html(`
                         <div class='text-center text-muted py-4'>
                             <i class='bi bi-search display-6 text-muted mb-2'></i>
@@ -1102,7 +1204,7 @@ function toggleMotorcycleSelection(id, engineNumber, brand, model, color, curren
     const index = selectedMotorcycles.findIndex(m => m.id === id);
     
     if (index === -1) {
-        // Add to selection
+
         selectedMotorcycles.push({
             id: id,
             engine_number: engineNumber,
@@ -1113,13 +1215,12 @@ function toggleMotorcycleSelection(id, engineNumber, brand, model, color, curren
             lcp: lcp || 0
         });
     } else {
-        // Remove from selection
+
         selectedMotorcycles.splice(index, 1);
     }
     
     updateSelectedMotorcyclesList();
     updateTransferSummary();
-    // Refresh search results to update button states
     searchMotorcyclesByEngine();
 }
 
@@ -1128,14 +1229,13 @@ function updateTransferSummary() {
     const $totalLcpValue = $('#totalLcpValue');
     const $selectionProgress = $('#selectionProgress');
     
-    // Update counts
+
     $selectedCount.text(selectedMotorcycles.length);
     
-    // Calculate total LCP
+
     const totalLcp = selectedMotorcycles.reduce((sum, motorcycle) => sum + (parseFloat(motorcycle.lcp) || 0), 0);
     $totalLcpValue.text(formatCurrency(totalLcp));
-    
-    // Update progress bar (optional visual indicator)
+
     const progressPercentage = Math.min((selectedMotorcycles.length / 10) * 100, 100);
     $selectionProgress.css('width', progressPercentage + '%');
 }
@@ -1213,18 +1313,18 @@ function checkIncomingTransfers() {
         dataType: 'json',
         success: function(response) {
             if (response.success && response.data.length > 0) {
-                // Filter out transfers we've already shown
+              
                 const newTransfers = response.data.filter(transfer => 
                     !shownTransferIds.includes(transfer.transfer_id)
                 );
                 
                 if (newTransfers.length > 0) {
                     showIncomingTransfersModal(newTransfers);
-                    // Update shown transfer IDs
+                   
                     newTransfers.forEach(transfer => {
                         shownTransferIds.push(transfer.transfer_id);
                     });
-                    // Update the last check time
+                    
                     lastCheckTime = new Date().toISOString();
                 }
             }
@@ -1259,7 +1359,6 @@ function showIncomingTransfersModal(transfers) {
         });
     }
     
-    // Show the modal if not already shown
     if (!hasShownIncomingTransfers) {
         $('#incomingTransfersModal').modal('show');
         hasShownIncomingTransfers = true;
@@ -1283,6 +1382,7 @@ function initMap(currentBranch) {
             const branchCoordinates = {
                 'RXS-S': { lat: 11.581639063474135, lng: 122.75283046163139 },
                 'RXS-H': { lat: 11.591933174094493, lng: 122.75177370058198 },
+                'MAMB': { lat: 11.430722236714315, lng: 122.60106183558217 },
                 'ANT-1': { lat: 10.747081312946916, lng: 121.94138590805788 },
                 'ANT-2': { lat: 10.749653220828158, lng: 121.94142882340054 },
                 'SDH': { lat: 10.697818450677735, lng: 122.56464019830032 },
@@ -1425,7 +1525,6 @@ function viewModelDetails(id) {
                 </div>
             `;
 
-            // Add transfer history if available
             if (item.transfer_history && item.transfer_history.length > 0) {
                 detailsHTML += `
                     <hr>
@@ -1481,13 +1580,10 @@ function viewModelDetails(id) {
 
             $('#motorcycleDetails').html(detailsHTML);
 
-            // Setup map if coordinates exist
             if (item.latitude && item.longitude) {
-                // Use a small delay to ensure the modal is fully rendered
                 setTimeout(() => {
                     const container = document.getElementById('mapid');
                     if (container) {
-                        // Clear any existing map
                         if (container._leaflet_id) {
                             container._leaflet_id = null;
                         }
@@ -1503,8 +1599,6 @@ function viewModelDetails(id) {
                     }
                 }, 100);
             }
-
-            // Show the modal
             $('#detailsModal').modal('show');
 
         } else {
@@ -1564,7 +1658,6 @@ function searchModels() {
 }
 
 function viewMotorcycleDetails(id) {
-    // Show loading state in modal
     $('#detailsModal .modal-body').html('<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div></div>');
     
     $.get('../api/inventory_management.php', {
@@ -1574,7 +1667,6 @@ function viewMotorcycleDetails(id) {
         if (response.success) {
             const data = response.data;
             
-            // Simple modal content without map
             $('#detailsModal .modal-body').html(`
                 <div class="row">
                     <div class="col-md-6">
@@ -1600,7 +1692,6 @@ function viewMotorcycleDetails(id) {
                 </div>
             `);
             
-            // Show the modal
             $('#detailsModal').modal('show');
             
         } else {
@@ -1615,10 +1706,9 @@ function viewMotorcycleDetails(id) {
 
  $('#addMotorcycleModal').on('shown.bs.modal', function() {
         if (!isAdmin) {
-            // For non-admin users, set the branch to their current branch
+           
             $('#branch').val(currentBranch).prop('readonly', true);
         } else {
-            // For admin users, enable the dropdown
             $('#branch').prop('readonly', false);
         }
     });
@@ -1632,17 +1722,14 @@ function viewMotorcycleDetails(id) {
 // Monthly Inventory Report
 // =======================
 function showMonthlyInventoryOptions() {
-    // Populate branches dropdown if not already done
     if ($('#selectedBranch option').length <= 1) {
         populateBranchesDropdown();
     }
     
-    // Set current month as default
     const now = new Date();
     const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     $('#selectedMonth').val(currentMonth);
     
-    // Show the options modal
     $('#monthlyInventoryOptionsModal').modal('show');
 }
 
@@ -1659,7 +1746,7 @@ function toggleReportOptions() {
 }
 function populateBranchesDropdown() {
     const branches = [
-        'HEADOFFICE', 'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 
+        'HEADOFFICE', 'MAMB', 'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 
         'JAR-1', 'JAR-2', 'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 
         'PAS-1', 'PAS-2', 'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJU', 'BAIL', 
         '3SMB', '3SMIN', 'MAN', 'K-RIDERS', 'IBAJAY', 'NUMANCIA', 'CEBU'
@@ -1695,12 +1782,10 @@ function generateMonthlyInventoryReport() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                // Store the data globally for PDF export
                 currentReportData = response.data;
                 currentReportMonth = response.month;
                 currentReportBranch = response.branch;
                 
-                // Show in modal if needed
                 renderMonthlyInventoryReport(response.data, response.month, response.branch);
                 $('#monthlyInventoryReportModal').modal('show');
             } else {
@@ -1861,7 +1946,6 @@ function renderMonthlyInventoryReport(data, month, branch) {
 
     $('#monthlyReportContent').html(html);
     
-    // Add CSS to make the modal scrollable
     $('<style>')
         .prop('type', 'text/css')
         .html(`
@@ -1882,7 +1966,6 @@ function renderMonthlyInventoryReport(data, month, branch) {
 }
 
 function generateMonthlyReportPDF() {
-    // Check if we have report data available
     if (!currentReportData || !currentReportMonth) {
         showErrorModal('Please generate a report first before exporting to PDF');
         return;
@@ -1892,7 +1975,6 @@ function generateMonthlyReportPDF() {
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString('default', { month: 'long' });
     const branchName = currentReportBranch === 'all' ? 'All Branches' : currentReportBranch;
 
-    // Calculate totals
     let totalIn = 0;
     let totalOut = 0;
     currentReportData.forEach(item => {
@@ -1901,7 +1983,6 @@ function generateMonthlyReportPDF() {
     });
     const endingBalance = totalIn - totalOut;
 
-    // Build table rows
     const rowsHtml = currentReportData.map((item, index) => {
         const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-light';
         return `
@@ -1916,7 +1997,6 @@ function generateMonthlyReportPDF() {
         `;
     }).join('');
 
-    // Full HTML content
     const html = `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
@@ -2011,7 +2091,6 @@ function exportMonthlyReportToPDF() {
     };
 
     html2pdf().set(opt).from(reportEl).save().then(() => {
-        // Hide it again after exporting
         reportEl.style.display = 'none';
     });
 }
@@ -2019,14 +2098,12 @@ function exportMonthlyReportToPDF() {
 function exportMonthlyReport() {
     let csvContent = "data:text/csv;charset=utf-8,";
     
-    // Get headers
     const headers = [];
     $('#monthlyReportContent thead th').each(function() {
         headers.push($(this).text().trim());
     });
     csvContent += headers.join(',') + '\n';
     
-    // Get data rows
     $('#monthlyReportContent tbody tr').each(function() {
         const row = [];
         $(this).find('td').each(function() {

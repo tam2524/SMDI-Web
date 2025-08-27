@@ -588,7 +588,6 @@
                     <div class='mb-3'>
                         <label class='form-label'>Select Branch</label>
                         <select class='form-select' id='selectedBranch'>
-                            <!-- Branches will be populated dynamically -->
                         </select>
                     </div>
                 </div>
@@ -827,7 +826,6 @@
                             <div class='col-md-6 mb-3'>
                                 <label for='editCurrentBranch' class='form-label'>Branch</label>
                                 <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
-                                    <!-- Admin can select any branch -->
                                     <select class='form-select' id='editCurrentBranch' required>
                                         <option value='HEADOFFICE'>Head Office</option>
                                         <option value='RXS-S'>RXS-S</option>
@@ -1085,7 +1083,6 @@
                                                 rows='3' placeholder='Optional notes about this transfer...'></textarea>
                                         </div>
                                     </fieldset>
-
                                     <hr>
 
                                     <!-- Transfer Summary Section -->
@@ -1245,8 +1242,6 @@
             </div>
         </div>
     </div>
-
-    
 
     <!-- Confirmation Modal -->
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
