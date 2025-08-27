@@ -1778,7 +1778,7 @@ function generateMonthlyInventoryReport() {
         data: {
             action: 'get_monthly_inventory',
             month: month,
-            branch: branch
+            branch: branch || 'all'
         },
         dataType: 'json',
         success: function(response) {
@@ -1798,173 +1798,177 @@ function generateMonthlyInventoryReport() {
         }
     });
 }
+    function renderMonthlyInventoryReport(data, month, branch) {
+        const [year, monthNum] = month.split('-');
+        const monthName = new Date(year, monthNum - 1, 1).toLocaleString('default', { month: 'long' });
+        const branchName = branch === 'all' ? 'All Branches' : branch;
 
-function renderMonthlyInventoryReport(data, month, branch) {
-    const [year, monthNum] = month.split('-');
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString('default', { month: 'long' });
-    const branchName = branch === 'all' ? 'All Branches' : branch;
+        data.sort((a, b) => a.model.localeCompare(b.model));
 
-    data.sort((a, b) => a.model.localeCompare(b.model));
-    
-    let totalIn = 0;
-    let totalOut = 0;
-    data.forEach(item => {
-        totalIn += item.in_qty;
-        totalOut += item.out_qty;
-    });
-    const endingBalance = totalIn - totalOut;
+        // Inventory totals
+        let totalIn = 0;
+        let totalOut = 0;
+        let totalLcpIn = 0;
+        let totalLcpOut = 0;
+        let totalLcpEnding = 0;
 
-    let html = `
-        <div class="report-header text-center mb-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
-                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-            </div>
-            <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY INVENTORY REPORT</h5>
-            <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
-            ${branch !== 'all' ? `<p class="mb-1"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>` : ''}
-            <p class="text-muted small mb-0" style="font-size: 0.85rem;">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-8">
-                <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
-                    <table class="table table-sm mb-0">
-                        <thead>
-                            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
-                                <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 60px;">QTY</th>
-                                <th class="py-3" style="font-weight: 600; color: #495057;">MODEL</th>
-                                <th class="py-3" style="font-weight: 600; color: #495057;">COLOR</th>
-                                <th class="py-3" style="font-weight: 600; color: #495057;">BRAND</th>
-                                <th class="py-3" style="font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                                <th class="py-3" style="font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-    `;
+        data.forEach(item => {
+            totalIn += item.in_qty || 0;
+            totalOut += item.out_qty || 0;
 
-    if (data.length === 0) {
-        html += `
-            <tr>
-                <td colspan="6" class="text-center py-5 text-muted" style="font-style: italic;">No inventory data found for this period</td>
-            </tr>
-        `;
-    } else {
-        data.forEach((item, index) => {
-            const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-light';
-            html += `
-                <tr class="${rowClass}">
-                    <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">1</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
-                    <td class="py-2">${escapeHtml(item.engine_number)}</td>
-                    <td class="py-2">${escapeHtml(item.frame_number)}</td>
-                </tr>
-            `;
+            const lcp = parseFloat(item.lcp) || 0;
+            totalLcpIn += lcp * (item.in_qty || 0);
+            totalLcpOut += lcp * (item.out_qty || 0);
+            totalLcpEnding += lcp * (item.ending_balance || 0);
         });
-    }
 
-    html += `
-                        </tbody>
-                    </table>
+        const endingBalance = totalIn - totalOut;
+
+        let html = `
+            <div class="report-header text-center mb-4">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                    <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
                 </div>
+                <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY INVENTORY REPORT</h5>
+                <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
+                ${branch !== 'all' ? `<p class="mb-1"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>` : ''}
+                <p class="text-muted small mb-0" style="font-size: 0.85rem;">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
             
-            <div class="col-md-4">
-                <div class="summary-section" style="position: sticky; top: 20px;">
-                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 8px;">
-                        <div class="card-header bg-transparent border-0 pt-4 pb-3">
-                            <h6 class="card-title text-center mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">INVENTORY SUMMARY</h6>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
+                                    <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 60px;">QTY</th>
+                                    <th class="py-3" style="font-weight: 600; color: #495057;">MODEL</th>
+                                    <th class="py-3" style="font-weight: 600; color: #495057;">COLOR</th>
+                                    <th class="py-3" style="font-weight: 600; color: #495057;">BRAND</th>
+                                    <th class="py-3" style="font-weight: 600; color: #495057;">ENGINE NUMBER</th>
+                                    <th class="py-3" style="font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                                    <th class="py-3" style="font-weight: 600; color: #495057;">LCP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+
+        if (data.length === 0) {
+            html += `
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted" style="font-style: italic;">No inventory data found for this period</td>
+                </tr>
+            `;
+        } else {
+            data.forEach((item, index) => {
+                const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-light';
+                html += `
+                    <tr class="${rowClass}">
+                        <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">1</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
+                        <td class="py-2">${escapeHtml(item.engine_number)}</td>
+                        <td class="py-2">${escapeHtml(item.frame_number)}</td>
+                          <td class="py-2 text-end">${formatCurrency(item.lcp)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="summary-section" style="position: sticky; top: 20px;">
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 8px;">
+                            <div class="card-header bg-transparent border-0 pt-4 pb-3">
+                                <h6 class="card-title text-center mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">INVENTORY SUMMARY</h6>
+                            </div>
+                            <div class="card-body px-4 pb-4 pt-0">
+                                <div class="summary-item d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid #f1f3f4;">
+                                    <div>
+                                        <div class="fw-semibold" style="color: #495057;">IN</div>
+                                        <small class="text-muted" style="font-size: 0.8rem;">Inventory added during period</small>
+                                    </div>
+                                    <span class="fs-5 fw-bold" style="color: #28a745;">${totalIn}</span>
+                                </div>
+                                
+                                <div class="summary-item d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid #f1f3f4;">
+                                    <div>
+                                        <div class="fw-semibold" style="color: #495057;">OUT</div>
+                                        <small class="text-muted" style="font-size: 0.8rem;">Inventory transferred out</small>
+                                    </div>
+                                    <span class="fs-5 fw-bold" style="color: #dc3545;">${totalOut}</span>
+                                </div>
+                                
+                                <div class="summary-item d-flex justify-content-between align-items-center pt-2">
+                                    <div>
+                                        <div class="fw-bold" style="color: #000f71;">ENDING BALANCE</div>
+                                        <small class="text-muted" style="font-size: 0.8rem;">Remaining inventory</small>
+                                    </div>
+                                    <span class="fs-4 fw-bold" style="color: #000f71;">${endingBalance}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body px-4 pb-4 pt-0">
-                            <div class="summary-item d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid #f1f3f4;">
-                                <div>
-                                    <div class="fw-semibold" style="color: #495057;">IN</div>
-                                    <small class="text-muted" style="font-size: 0.8rem;">Inventory added during period</small>
-                                </div>
-                                <span class="fs-5 fw-bold" style="color: #28a745;">${totalIn}</span>
+                        
+                        <!-- LCP Value Summary -->
+                        <div class="card border-0 shadow-sm" style="border-radius: 8px;">
+                            <div class="card-header bg-transparent border-0 pt-4 pb-3">
+                                <h6 class="card-title text-center mb-0 text-black" style="font-weight: 600; letter-spacing: 0.5px;">LCP VALUE SUMMARY</h6>
                             </div>
-                            
-                            <div class="summary-item d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid #f1f3f4;">
-                                <div>
-                                    <div class="fw-semibold" style="color: #495057;">OUT</div>
-                                    <small class="text-muted" style="font-size: 0.8rem;">Inventory transferred out</small>
+                            <div class="card-body px-4 pb-4 pt-0">
+                                <div class="summary-item d-flex justify-content-between align-items-center">
+                                    <div class="fw-semibold text-secondary">Ending LCP Value</div>
+                                    <span class="fs-6 fw-bold text-info">${formatCurrency(totalLcpEnding)}</span>
                                 </div>
-                                <span class="fs-5 fw-bold" style="color: #dc3545;">${totalOut}</span>
-                            </div>
-                            
-                            <div class="summary-item d-flex justify-content-between align-items-center pt-2">
-                                <div>
-                                    <div class="fw-bold" style="color: #000f71;">ENDING BALANCE</div>
-                                    <small class="text-muted" style="font-size: 0.8rem;">Remaining inventory</small>
-                                </div>
-                                <span class="fs-4 fw-bold" style="color: #000f71;">${endingBalance}</span>
                             </div>
                         </div>
                     </div>
-                    
-                   
                 </div>
             </div>
-        </div>
+            
+            <style>
+                .table-container { overflow: hidden; }
+                .table th { font-weight: 600; font-size: 0.9rem; }
+                .table td { font-size: 0.9rem; color: #495057; }
+                .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
+                .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
+            </style>
+        `;
+
+        $('#monthlyReportContent').html(html);
         
-        <style>
-            .table-container {
-                overflow: hidden;
-            }
-            .table th {
-                font-weight: 600;
-                font-size: 0.9rem;
-            }
-            .table td {
-                font-size: 0.9rem;
-                color: #495057;
-            }
-            .card {
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
-            }
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
-            
-            /* Modal scroll fix */
-            .modal-body {
-                max-height: calc(100vh - 200px);
-                overflow-y: auto;
-            }
-            
-            /* Table header sticky fix */
-            .table-container thead th {
-                position: sticky;
-                top: 0;
-                background-color: #f8f9fa;
-                z-index: 10;
-            }
-        </style>
-    `;
+        $('<style>')
+            .prop('type', 'text/css')
+            .html(`
+                #monthlyInventoryReportModal .modal-body {
+                    max-height: calc(100vh - 200px);
+                    overflow-y: auto;
+                }
+                #monthlyInventoryReportModal .modal-dialog {
+                    max-width: 95%;
+                    height: calc(100vh - 100px);
+                }
+                #monthlyInventoryReportModal .modal-content {
+                    height: 100%;
+                }
+            `)
+            .appendTo('head');
+    }
 
-    $('#monthlyReportContent').html(html);
-    
-    $('<style>')
-        .prop('type', 'text/css')
-        .html(`
-            #monthlyInventoryReportModal .modal-body {
-                max-height: calc(100vh - 200px);
-                overflow-y: auto;
-            }
-            #monthlyInventoryReportModal .modal-dialog {
-                max-width: 95%;
-                height: calc(100vh - 100px);
-            }
-            #monthlyInventoryReportModal .modal-content {
-                height: 100%;
-            }
-        `)
-        .appendTo('head');
-
-}
+document.addEventListener("DOMContentLoaded", function() {
+    const loggedInBranch = currentUserBranch; // <-- replace with actual branch variable
+    document.getElementById("selectedBranch").value = loggedInBranch;
+    document.getElementById("selectedBranch").setAttribute("disabled", true);
+});
 
 function generateMonthlyReportPDF() {
     if (!currentReportData || !currentReportMonth) {
@@ -1994,6 +1998,7 @@ function generateMonthlyReportPDF() {
                 <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.brand)}</td>
                 <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.engine_number)}</td>
                 <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.frame_number)}</td>
+                <td style="border: 1px solid #e9ecef; padding: 8px; text-align:right;">${formatCurrency(item.lcp)}</td> 
             </tr>
         `;
     }).join('');
@@ -2022,6 +2027,7 @@ function generateMonthlyReportPDF() {
                             <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
                             <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
                             <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">LCP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2054,7 +2060,19 @@ function generateMonthlyReportPDF() {
                 </div>
             </div>
             
-            
+            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;">
+    <h4 style="margin-bottom: 15px; color: #000f71; text-align: center;">LCP VALUE SUMMARY</h4>
+    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        
+        <tr>
+            <td style="padding: 8px; font-weight: 600; color: #495057;">Ending LCP Value</td>
+            <td style="padding: 8px; text-align: right; font-weight: bold; color: #17a2b8;">
+                ${formatCurrency(currentReportData.reduce((sum, item) => sum + (parseFloat(item.lcp) || 0) * (item.ending_balance || 0), 0))}
+            </td>
+        </tr>
+    </table>
+</div>
+
         </div>
     `;
 

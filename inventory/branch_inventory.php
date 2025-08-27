@@ -30,8 +30,9 @@
     <link rel="stylesheet" href="https://printjs-4de6.kxcdn.com/print.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+
+    <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
+    <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -583,13 +584,18 @@
                     <!-- Management Tab -->
                     <div class="tab-pane fade" id="management" role="tabpanel">
                         <div class="d-flex justify-content-between mb-4">
-                            <div>
-                                <button class="btn btn-primary text-white me-2" data-bs-toggle="modal"
-                                    data-bs-target="#addMotorcycleModal">
-                                    <i class="bi bi-plus-circle"></i> Add Motorcycle
+                           <div>
+                                <button class='btn btn-primary text-white me-2' data-bs-toggle='modal'
+                                    data-bs-target='#addMotorcycleModal'>
+                                    <i class='bi bi-plus-circle'></i> Add Motorcycle
                                 </button>
-                                <button id="transferSelectedBtn" class="btn btn-primary text-white" disabled>
-                                    <i class="bi bi-truck"></i> Transfer
+
+                                <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
+                                    <i class='bi bi-truck'></i> Transfer
+                                </button>
+
+                                <button type='button' class='btn btn-info me-2' id='generateMonthlyInventory'>
+                                    <i class='bi bi-calendar-month'></i> Monthly Inventory Report
                                 </button>
                             </div>
                             <div class="input-group" style="max-width: 300px;">
@@ -647,7 +653,7 @@
                         </nav>
                     </div>
 
-                    <div class='tab-pane fade show active' id='inventory' role='tabpanel'>
+                    <div class='tab-pane fade' id='inventory' role='tabpanel'>
                         <div class='row mb-4'>
                             <div class='col-md-6'>
                                 <h4>Inventory Overview</h4>
@@ -1151,6 +1157,7 @@
                                             <button type="submit" class="btn btn-success btn-sm">
                                                 <i class="bi bi-truck me-2"></i>Transfer Selected Motorcycles
                                             </button>
+                                            
                                         </div>
                                     </fieldset>
                                 </div>
@@ -1334,6 +1341,70 @@
         </div>
     </div>
 </div>
+
+    <!-- Monthly Inventory Report Options Modal -->
+    <div class='modal fade' id='monthlyInventoryOptionsModal' tabindex='-1'
+        aria-labelledby='monthlyInventoryOptionsModalLabel' aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='monthlyInventoryOptionsModalLabel'>Monthly Inventory Report</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <div class='mb-3'>
+                        <label class='form-label'>Select Month</label>
+                        <input type='month' class='form-control' id='selectedMonth' required>
+                    </div>
+                    <div class='mb-3'>
+    <label class='form-label'>Branch</label>
+    <input type='text' class='form-control' id='selectedBranch' value='<?php echo $_SESSION["branch"]; ?>' disabled>
+    <input type='hidden' id='selectedBranchHidden' name='selectedBranch' value='<?php echo $_SESSION["branch"]; ?>'>
+</div>
+
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-primary text-white' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'>Generate
+                        Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id='monthlyReportPrintContainer' style='display: none;'></div>
+
+    <!-- Monthly Inventory Report Modal -->
+    <div class='modal fade' id='monthlyInventoryReportModal' tabindex='-1'
+        aria-labelledby='monthlyInventoryReportModalLabel' aria-hidden='true'>
+        <div class='modal-dialog modal-xl'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly Inventory Report</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <div class='d-flex justify-content-between mb-3'>
+                        <div>
+                            <button class='btn btn-sm btn-outline-primary' id='exportMonthlyReportToPDF'>
+                                <i class='bi bi-printer'></i> Print Report
+                            </button>
+                            <button class='btn btn-sm btn-outline-success ms-2' id='exportMonthlyReport'>
+                                <i class='bi bi-file-earmark-excel'></i> Export to Excel
+                            </button>
+                        </div>
+                        <div class='text-muted small' id='monthlyReportTimestamp'></div>
+                    </div>
+                    <div id='monthlyReportContent'>
+                        <!-- Report content will be loaded here -->
+                    </div>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <!-- Confirmation Modal -->

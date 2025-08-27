@@ -1087,338 +1087,7 @@ function acceptTransfers() {
     }
 }
 
-function getMonthlyInventory() {
-    global $conn;
-    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
-    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
-    
-    if (empty($month)) {
-        echo json_encode(['success' => false, 'message' => 'Month parameter is required']);
-        return;
-    }
-    
-    $yearMonth = explode('-', $month);
-    $year = $yearMonth[0];
-    $monthNum = $yearMonth[1];
-    
-    
-    $monthStart = "$year-$monthNum-01";
-    $monthEnd = date("Y-m-t", strtotime($monthStart));
-    
-    
-    $beginningInventory = getBeginningInventory($monthStart, $branch);
-    
-    
-    $inventoryMovements = getInventoryMovements($monthStart, $monthEnd, $branch);
-    
-    
-    $processedData = processInventoryData($beginningInventory, $inventoryMovements, $monthStart, $monthEnd, $branch);
-    
-    echo json_encode([
-        'success' => true, 
-        'data' => array_values($processedData),
-        'month' => $month,
-        'branch' => $branch,
-        'summary' => calculateSummary($processedData)
-    ]);
-}
 
-function getBeginningInventory($monthStart, $branchFilter) {
-    global $conn;
-    
-   $sql = "SELECT 
-            brand, model, color, current_branch,
-            engine_number, frame_number, lcp,
-            1 as beginning_balance
-        FROM motorcycle_inventory 
-        WHERE date_delivered < ? 
-        AND status != 'deleted'";
-
-    
-    $params = [$monthStart];
-    $types = 's';
-    
-    if (!empty($branchFilter) && $branchFilter !== 'all') {
-        $sql .= " AND current_branch = ?";
-        $params[] = $branchFilter;
-        $types .= 's';
-    }
-    
-    $sql .= " GROUP BY brand, model, color, current_branch";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $beginningInventory = [];
-    while ($row = $result->fetch_assoc()) {
-        $key = $row['brand'] . '|' . $row['model'] . '|' . $row['color'] . '|' . $row['current_branch'];
-        $beginningInventory[$key] = $row;
-    }
-    
-    return $beginningInventory;
-}
-
-function getInventoryMovements($monthStart, $monthEnd, $branchFilter) {
-    global $conn;
-    
-  
-   $sqlDeliveries = "SELECT 
-                    brand, model, color, current_branch,
-                    engine_number, frame_number, lcp,
-                    1 as in_qty
-                FROM motorcycle_inventory 
-                WHERE date_delivered BETWEEN ? AND ?
-                AND status != 'deleted'";
-
-    
-    $params = [$monthStart, $monthEnd];
-    $types = 'ss';
-    
-    if (!empty($branchFilter) && $branchFilter !== 'all') {
-        $sqlDeliveries .= " AND current_branch = ?";
-        $params[] = $branchFilter;
-        $types .= 's';
-    }
-    
-    $sqlDeliveries .= " GROUP BY brand, model, color, current_branch";
-    
-    $stmt = $conn->prepare($sqlDeliveries);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $deliveries = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
-    
-    $sqlTransfersIn = "SELECT 
-                        mi.brand, mi.model, mi.color, 
-                        it.to_branch as current_branch,
-                        COUNT(*) as in_qty
-                    FROM inventory_transfers it
-                    JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
-                    WHERE it.transfer_date BETWEEN ? AND ?
-                    AND it.transfer_status = 'completed'";
-    
-    $paramsIn = [$monthStart, $monthEnd];
-    $typesIn = 'ss';
-    
-    if (!empty($branchFilter) && $branchFilter !== 'all') {
-        $sqlTransfersIn .= " AND it.to_branch = ?";
-        $paramsIn[] = $branchFilter;
-        $typesIn .= 's';
-    }
-    
-    $sqlTransfersIn .= " GROUP BY mi.brand, mi.model, mi.color, it.to_branch";
-    
-    $stmt = $conn->prepare($sqlTransfersIn);
-    $stmt->bind_param($typesIn, ...$paramsIn);
-    $stmt->execute();
-    $transfersIn = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
-    
-    $sqlTransfersOut = "SELECT 
-                        mi.brand, mi.model, mi.color, 
-                        it.from_branch as current_branch,
-                        COUNT(*) as out_qty
-                    FROM inventory_transfers it
-                    JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
-                    WHERE it.transfer_date BETWEEN ? AND ?
-                    AND it.transfer_status = 'completed'";
-    
-    $paramsOut = [$monthStart, $monthEnd];
-    $typesOut = 'ss';
-    
-    if (!empty($branchFilter) && $branchFilter !== 'all') {
-        $sqlTransfersOut .= " AND it.from_branch = ?";
-        $paramsOut[] = $branchFilter;
-        $typesOut .= 's';
-    }
-    
-    $sqlTransfersOut .= " GROUP BY mi.brand, mi.model, mi.color, it.from_branch";
-    
-    $stmt = $conn->prepare($sqlTransfersOut);
-    $stmt->bind_param($typesOut, ...$paramsOut);
-    $stmt->execute();
-    $transfersOut = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
-    
-    $sqlReturns = "SELECT 
-                    mi.brand, mi.model, mi.color, 
-                    it.from_branch as current_branch,
-                    COUNT(*) as out_qty
-                FROM inventory_transfers it
-                JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
-                WHERE it.transfer_date BETWEEN ? AND ?
-                AND it.to_branch = 'HEADOFFICE'
-                AND it.transfer_status = 'completed'";
-    
-    $paramsReturns = [$monthStart, $monthEnd];
-    $typesReturns = 'ss';
-    
-    if (!empty($branchFilter) && $branchFilter !== 'all') {
-        $sqlReturns .= " AND it.from_branch = ?";
-        $paramsReturns[] = $branchFilter;
-        $typesReturns .= 's';
-    }
-    
-    $sqlReturns .= " GROUP BY mi.brand, mi.model, mi.color, it.from_branch";
-    
-    $stmt = $conn->prepare($sqlReturns);
-    $stmt->bind_param($typesReturns, ...$paramsReturns);
-    $stmt->execute();
-    $returns = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    
-    return [
-        'deliveries' => $deliveries,
-        'transfers_in' => $transfersIn,
-        'transfers_out' => $transfersOut,
-        'returns' => $returns
-    ];
-}
-
-function processInventoryData($beginningInventory, $inventoryMovements, $monthStart, $monthEnd, $branchFilter) {
-    $processed = [];
-
-    
-    foreach ($beginningInventory as $key => $item) {
-        $processed[$key] = [
-            'brand' => $item['brand'],
-            'model' => $item['model'],
-            'color' => $item['color'],
-            'current_branch' => $item['current_branch'],
-            'engine_number' => isset($item['engine_number']) ? $item['engine_number'] : null,
-            'frame_number' => isset($item['frame_number']) ? $item['frame_number'] : null,
-            'lcp' => isset($item['lcp']) ? $item['lcp'] : null,
-            'beginning_balance' => (int)$item['beginning_balance'],
-            'in_qty' => 0,
-            'out_qty' => 0,
-            'ending_balance' => (int)$item['beginning_balance']
-        ];
-    }
-
-    
-    foreach ($inventoryMovements['deliveries'] as $delivery) {
-        $key = $delivery['brand'] . '|' . $delivery['model'] . '|' . $delivery['color'] . '|' . $delivery['current_branch'];
-
-        if (!isset($processed[$key])) {
-            $processed[$key] = [
-                'brand' => $delivery['brand'],
-                'model' => $delivery['model'],
-                'color' => $delivery['color'],
-                'current_branch' => $delivery['current_branch'],
-                'engine_number' => isset($delivery['engine_number']) ? $delivery['engine_number'] : null,
-                'frame_number' => isset($delivery['frame_number']) ? $delivery['frame_number'] : null,
-                'lcp' => isset($delivery['lcp']) ? $delivery['lcp'] : null,
-                'beginning_balance' => 0,
-                'in_qty' => 0,
-                'out_qty' => 0,
-                'ending_balance' => 0
-            ];
-        }
-
-        $processed[$key]['in_qty'] += (int)$delivery['in_qty'];
-        $processed[$key]['ending_balance'] += (int)$delivery['in_qty'];
-    }
-
-    foreach ($inventoryMovements['transfers_in'] as $transfer) {
-        $key = $transfer['brand'] . '|' . $transfer['model'] . '|' . $transfer['color'] . '|' . $transfer['current_branch'];
-
-        if (!isset($processed[$key])) {
-            $processed[$key] = [
-                'brand' => $transfer['brand'],
-                'model' => $transfer['model'],
-                'color' => $transfer['color'],
-                'current_branch' => $transfer['current_branch'],
-                'engine_number' => isset($transfer['engine_number']) ? $transfer['engine_number'] : null,
-                'frame_number' => isset($transfer['frame_number']) ? $transfer['frame_number'] : null,
-                'lcp' => isset($transfer['lcp']) ? $transfer['lcp'] : null,
-                'beginning_balance' => 0,
-                'in_qty' => 0,
-                'out_qty' => 0,
-                'ending_balance' => 0
-            ];
-        }
-
-        $processed[$key]['in_qty'] += (int)$transfer['in_qty'];
-        $processed[$key]['ending_balance'] += (int)$transfer['in_qty'];
-    }
-
-    foreach ($inventoryMovements['transfers_out'] as $transfer) {
-        $key = $transfer['brand'] . '|' . $transfer['model'] . '|' . $transfer['color'] . '|' . $transfer['current_branch'];
-
-        if (!isset($processed[$key])) {
-            $processed[$key] = [
-                'brand' => $transfer['brand'],
-                'model' => $transfer['model'],
-                'color' => $transfer['color'],
-                'current_branch' => $transfer['current_branch'],
-                'engine_number' => isset($transfer['engine_number']) ? $transfer['engine_number'] : null,
-                'frame_number' => isset($transfer['frame_number']) ? $transfer['frame_number'] : null,
-                'lcp' => isset($transfer['lcp']) ? $transfer['lcp'] : null,
-                'beginning_balance' => 0,
-                'in_qty' => 0,
-                'out_qty' => 0,
-                'ending_balance' => 0
-            ];
-        }
-
-        $processed[$key]['out_qty'] += (int)$transfer['out_qty'];
-        $processed[$key]['ending_balance'] -= (int)$transfer['out_qty'];
-    }
-
-    foreach ($inventoryMovements['returns'] as $return) {
-        $key = $return['brand'] . '|' . $return['model'] . '|' . $return['color'] . '|' . $return['current_branch'];
-
-        if (!isset($processed[$key])) {
-            $processed[$key] = [
-                'brand' => $return['brand'],
-                'model' => $return['model'],
-                'color' => $return['color'],
-                'current_branch' => $return['current_branch'],
-                'engine_number' => isset($return['engine_number']) ? $return['engine_number'] : null,
-                'frame_number' => isset($return['frame_number']) ? $return['frame_number'] : null,
-                'lcp' => isset($return['lcp']) ? $return['lcp'] : null,
-                'beginning_balance' => 0,
-                'in_qty' => 0,
-                'out_qty' => 0,
-                'ending_balance' => 0
-            ];
-        }
-
-        $processed[$key]['out_qty'] += (int)$return['out_qty'];
-        $processed[$key]['ending_balance'] -= (int)$return['out_qty'];
-
-        if (!isset($processed[$key]['returns_to_head_office'])) {
-            $processed[$key]['returns_to_head_office'] = 0;
-        }
-        $processed[$key]['returns_to_head_office'] += (int)$return['out_qty'];
-    }
-
-    return $processed;
-}
-
-function calculateSummary($processedData) {
-    $summary = [
-        'total_beginning' => 0,
-        'total_in' => 0,
-        'total_out' => 0,
-        'total_ending' => 0,
-        'total_returns' => 0
-    ];
-    
-    foreach ($processedData as $item) {
-        $summary['total_beginning'] += $item['beginning_balance'];
-        $summary['total_in'] += $item['in_qty'];
-        $summary['total_out'] += $item['out_qty'];
-        $summary['total_ending'] += $item['ending_balance'];
-        
-        if (isset($item['returns_to_head_office'])) {
-            $summary['total_returns'] += $item['returns_to_head_office'];
-        }
-    }
-    
-    return $summary;
-}
 function checkInvoiceNumber() {
     global $conn;
     
@@ -1491,4 +1160,128 @@ function sellMotorcycle() {
         echo json_encode(['success' => false, 'message' => 'Error selling motorcycle: ' . $e->getMessage()]);
     }
 }
+
+function getMonthlyInventory() {
+    global $conn;
+    
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    
+    if (empty($month)) {
+        echo json_encode(['success' => false, 'message' => 'Month parameter is required']);
+        return;
+    }
+    
+    // Get user session info
+    $userBranch   = $_SESSION['user_branch'] ?? '';
+    $userPosition = $_SESSION['position'] ?? '';
+    
+    // Date range
+    $startDate = date('Y-m-01', strtotime($month));
+    $endDate   = date('Y-m-t', strtotime($month));
+    
+    $sql = "
+        SELECT 
+            mi.id,
+            mi.brand,
+            mi.model,
+            mi.color,
+            mi.engine_number,
+            mi.frame_number,
+            mi.lcp,
+            mi.current_branch,
+            mi.date_delivered,
+            i.invoice_number,
+            
+            -- IN
+            CASE 
+                WHEN mi.date_delivered BETWEEN ? AND ? THEN 1 ELSE 0 
+            END as in_qty,
+            
+            -- OUT
+            (SELECT COUNT(*) FROM inventory_transfers it 
+             WHERE it.motorcycle_id = mi.id 
+             AND it.transfer_date BETWEEN ? AND ? 
+             AND it.transfer_status = 'completed') as out_qty,
+             
+            -- Ending balance
+            CASE 
+                WHEN mi.date_delivered <= ? 
+                     AND NOT EXISTS (
+                         SELECT 1 FROM inventory_transfers it2 
+                         WHERE it2.motorcycle_id = mi.id
+                         AND it2.transfer_date <= ?
+                         AND it2.transfer_status = 'completed'
+                     )
+                THEN 1 ELSE 0 
+            END as ending_balance
+             
+        FROM motorcycle_inventory mi
+        LEFT JOIN invoices i ON mi.invoice_id = i.id
+        WHERE mi.status != 'deleted'
+    ";
+    
+    $params = [$startDate, $endDate, $startDate, $endDate, $endDate, $endDate];
+    $types  = 'ssssss';
+    
+    // Branch filter
+    if ($branch !== 'all') {
+        $sql .= " AND mi.current_branch = ?";
+        $params[] = $branch;
+        $types   .= 's';
+    }
+    
+    // Restrict non-admin users
+    if (!empty($userBranch) && $userBranch !== 'HEADOFFICE' && 
+        !in_array(strtoupper($userPosition), ['ADMIN', 'IT STAFF', 'HEAD'])) {
+        $sql .= " AND mi.current_branch = ?";
+        $params[] = $userBranch;
+        $types   .= 's';
+    }
+    
+    $sql .= " ORDER BY mi.brand, mi.model";
+    
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+        return;
+    }
+    
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $data = [];
+    $summary = ['in' => 0, 'out' => 0, 'ending' => 0, 'lcp' => ['begin' => 0, 'added' => 0, 'ending' => 0]];
+    
+    while ($row = $result->fetch_assoc()) {
+        $row['in_qty']       = (int)$row['in_qty'];
+        $row['out_qty']      = (int)$row['out_qty'];
+        $row['ending_balance'] = (int)$row['ending_balance'];
+        
+        // Update summary
+        $summary['in']     += $row['in_qty'];
+        $summary['out']    += $row['out_qty'];
+        $summary['ending'] += $row['ending_balance'];
+        
+        // LCP calculations
+        if ($row['in_qty'] > 0) {
+            $summary['lcp']['added'] += (float)$row['lcp'];
+        }
+        if ($row['ending_balance'] > 0) {
+            $summary['lcp']['ending'] += (float)$row['lcp'];
+        }
+        
+        $data[] = $row;
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'data'    => $data,
+        'month'   => $month,
+        'branch'  => $branch,
+        'summary' => $summary
+    ]);
+}
+
 ?>
