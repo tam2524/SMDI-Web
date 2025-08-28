@@ -9,24 +9,13 @@
     <meta content='width=device-width, initial-scale=1.0' name='viewport'>
     <meta content='' name='keywords'>
     <meta content='' name='description'>
-
     <link rel='icon' href='../assets/img/smdi_logosmall.png' type='image/png'>
-
-    <!-- Icon Font Stylesheet -->
     <link rel='stylesheet' href='https://use.fontawesome.com/releases/v5.15.4/css/all.css' />
     <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css' rel='stylesheet'>
-
-    <!-- Libraries Stylesheet -->
     <link href='../lib/lightbox/css/lightbox.min.css' rel='stylesheet'>
     <link href='../lib/owlcarousel/assets/owl.carousel.min.css' rel='stylesheet'>
-
-    <!-- Bootstrap CSS -->
     <link href='../css/bootstrap.min.css' rel='stylesheet'>
-
-    <!-- Template Stylesheet -->
     <link href='../css/style.css' rel='stylesheet'>
-
-    <!-- PrintJS -->
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script>
@@ -36,14 +25,12 @@
 
     <style>
     .model-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 10px 12px;
-        background: white;
-        transition: all 0.3s ease;
-        height: 70px;
-        margin-bottom: 10px;
-    }
+    min-height: 70px;
+    height: auto;
+    padding: 10px;
+    word-wrap: break-word;
+    white-space: normal;
+}
 
     .model-card:hover {
         transform: translateY(-3px);
@@ -52,14 +39,14 @@
     }
 
     .model-name {
-        font-size: 0.9rem;
+         font-size: 0.9rem;
         font-weight: 600;
         color: #333;
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.2;
+}
 
     .quantity-badge {
         background-color: #000f71;
@@ -105,7 +92,6 @@
         }
     }
 
-    /* Pagination Styles */
     .pagination {
         display: flex;
         justify-content: center;
@@ -167,7 +153,6 @@
         background-color: #f8f9fa;
     }
 
-    /* Brand-specific colors */
     .border-primary {
         border-color: #000f71 !important;
     }
@@ -200,14 +185,12 @@
         background-color: rgba(40, 167, 69, 0.1) !important;
     }
 
-    /* Update model card hover effect */
     .model-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         opacity: 0.9;
     }
 
-    /* Update quantity badge to match brand */
     .model-card.border-primary .quantity-badge {
         background-color: #000f71;
     }
@@ -289,7 +272,6 @@
         padding: 0.5rem;
     }
 
-    /* Add these styles to your existing CSS */
     .transfer-search-result {
         border: 1px solid #e9ecef;
         border-radius: 8px;
@@ -367,7 +349,6 @@
         font-weight: 500;
     }
 
-    /* Scrollbar styling */
     #searchResults::-webkit-scrollbar,
     #selectedMotorcyclesList::-webkit-scrollbar {
         width: 6px;
@@ -412,14 +393,12 @@
 </head>
 
 <body>
-    <!-- Loading Spinner -->
     <div class='spinner-container' id='loadingSpinner'>
         <div class='spinner-border text-primary' role='status'>
             <span class='visually-hidden'>Loading...</span>
         </div>
     </div>
 
-    <!-- Navbar -->
     <div class='container-fluid fixed-top bg-white'>
         <div class='container topbar bg-primary d-none d-lg-block'>
             <div class='d-flex justify-content-between'>
@@ -452,7 +431,6 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <main class='container-fluid py-5' style='margin-top: 20px;'>
         <div class='card mb-4'>
             <div class='card-header bg-white'>
@@ -471,7 +449,6 @@
                 </ul>
 
                 <div class='tab-content' id='inventoryTabContent'>
-                    <!-- Dashboard Tab -->
                     <div class='tab-pane fade show active' id='dashboard' role='tabpanel'>
                         <div class='row mb-4'>
                             <div class='col-md-6'>
@@ -489,7 +466,6 @@
                         </div>
 
                         <div class='row' id='inventoryCards'>
-                            <!-- Inventory cards will be loaded here -->
                             <div class='col-12 text-center py-5'>
                                 <div class='spinner-border text-primary' role='status'>
                                     <span class='visually-hidden'>Loading...</span>
@@ -498,7 +474,6 @@
                         </div>
                     </div>
 
-                    <!-- Management Tab -->
                     <div class='tab-pane fade' id='management' role='tabpanel'>
                         <div class='d-flex justify-content-between mb-4'>
                             <div>
@@ -535,14 +510,12 @@
                                         <th>Engine No.</th>
                                         <th>Frame No.</th>
                                         <th>Color</th>
-                                        <th>LCP</th>
+                                        <th>Inventory Cost</th>
                                         <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
-                                        <!-- <th class = 'sortable-header' data-sort = 'status'>Status</th> -->
                                         <th class='no-print'>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id='inventoryTableBody'>
-                                    <!-- Inventory data will be loaded here -->
                                     <tr>
                                         <td colspan='11' class='text-center py-5'>
                                             <div class='spinner-border text-primary' role='status'>
@@ -554,7 +527,6 @@
                             </table>
                         </div>
 
-                        <!-- Pagination -->
                         <nav aria-label='Inventory pagination'>
                             <ul id='paginationControls' class='pagination'>
                                 <li id='prevPage' class='page-item disabled'>
@@ -575,7 +547,6 @@
         </div>
     </main>
 
-    <!-- Monthly Inventory Report Options Modal -->
     <div class='modal fade' id='monthlyInventoryOptionsModal' tabindex='-1'
         aria-labelledby='monthlyInventoryOptionsModalLabel' aria-hidden='true'>
         <div class='modal-dialog'>
@@ -607,7 +578,6 @@
 
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
-    <!-- Monthly Inventory Report Modal -->
     <div class='modal fade' id='monthlyInventoryReportModal' tabindex='-1'
         aria-labelledby='monthlyInventoryReportModalLabel' aria-hidden='true'>
         <div class='modal-dialog modal-xl'>
@@ -629,7 +599,6 @@
                         <div class='text-muted small' id='monthlyReportTimestamp'></div>
                     </div>
                     <div id='monthlyReportContent'>
-                        <!-- Report content will be loaded here -->
                     </div>
                 </div>
                 <div class='modal-footer'>
@@ -639,7 +608,6 @@
         </div>
     </div>
 
-    <!-- Add Motorcycle Modal -->
     <div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -650,7 +618,6 @@
                 </div>
                 <div class='modal-body'>
                     <form id='addMotorcycleForm'>
-                        <!-- Invoice Information -->
                         <div class='row mb-4'>
                             <div class='col-md-6 mb-3'>
                                 <label for='invoiceNumber' class='form-label'>Invoice Number/MT</label>
@@ -663,42 +630,44 @@
                             <div class='col-md-6 mb-3'>
                             <label for='branch' class='form-label'>Branch</label>
                             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
-                                <!-- Admin can select any branch -->
                                 <select class='form-select' id='branch' required>
-                                    <option value='HEADOFFICE'>Head Office</option>
-                                    <option value='RXS-S'>RXS-S</option>
-                                    <option value='RXS-H'>RXS-H</option>
-                                    <option value='ANT-1'>ANT-1</option>
-                                    <option value='ANT-2'>ANT-2</option>
-                                    <option value='SDH'>SDH</option>
-                                    <option value='SDS'>SDS</option>
-                                    <option value='JAR-1'>JAR-1</option>
-                                    <option value='JAR-2'>JAR-2</option>
-                                    <option value='SKM'>SKM</option>
-                                    <option value='SKS'>SKS</option>
-                                    <option value='ALTA'>ALTA</option>
-                                    <option value='EMAP'>EMAP</option>
-                                    <option value='CUL'>CUL</option>
-                                    <option value='BAC'>BAC</option>
-                                    <option value='PAS-1'>PAS-1</option>
-                                    <option value='PAS-2'>PAS-2</option>
-                                    <option value='BAL'>BAL</option>
-                                    <option value='GUIM'>GUIM</option>
-                                    <option value='PEMDI'>PEMDI</option>
-                                    <option value='EEM'>EEM</option>
-                                    <option value='AJU'>AJU</option>
-                                    <option value='BAIL'>BAIL</option>
-                                    <option value='3SMB'>MINDORO MB</option>
-                                    <option value='3SMIN'>MINDORO 3S</option>
-                                    <option value='MAN'>MANSALAY</option>
-                                    <option value='K-RIDERS'>K-RIDERS</option>
-                                    <option value='IBAJAY'>IBAJAY</option>
-                                    <option value='NUMANCIA'>NUMANCIA</option>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
-                                    <option value='CEBU'>CEBU</option>
+<option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+<option value='MAMBUSAO'>MAMBUSAO</option>
+<option value='SIGMA'>SIGMA</option>
+<option value='PRC'>PRC</option>
+<option value='CUARTERO'>CUARTERO</option>
+<option value='JAMINDAN'>JAMINDAN</option>
+<option value='ROXAS HONDA'>ROXAS HONDA</option>
+<option value='ANTIQUE-1'>ANTIQUE-1</option>
+<option value='ANTIQUE-2'>ANTIQUE-2</option>
+<option value='DELGADO HONDA'>DELGADO HONDA</option>
+<option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+<option value='JARO-1'>JARO-1</option>
+<option value='JARO-2'>JARO-2</option>
+<option value='KALIBO MABINI'>KALIBO MABINI</option>
+<option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+<option value='ALTAVAS'>ALTAVAS</option>
+<option value='EMAP'>EMAP</option>
+<option value='CULASI'>CULASI</option>
+<option value='BACOLOD'>BACOLOD</option>
+<option value='PASSI-1'>PASSI-1</option>
+<option value='PASSI-2'>PASSI-2</option>
+<option value='BALASAN'>BALASAN</option>
+<option value='GUIMARAS'>GUIMARAS</option>
+<option value='PEMDI'>PEMDI</option>
+<option value='EEMSI'>EEMSI</option>
+<option value='AJUY'>AJUY</option>
+<option value='BAILAN'>BAILAN</option>
+<option value='3SMB'>3SMB</option>
+<option value='3SMINDORO'>3SMINDORO</option>
+<option value='MANSALAY'>MANSALAY</option>
+<option value='K-RIDERS'>K-RIDERS</option>
+<option value='IBAJAY'>IBAJAY</option>
+<option value='NUMANCIA'>NUMANCIA</option>
+<option value='CEBU'>CEBU</option>
                                 </select>
                             <?php } else { ?>
-                                <!-- Regular users can only add to their own branch -->
                                 <input type='text' class='form-control' id='branch' value="<?php echo $_SESSION['user_branch']; ?>" readonly>
                                 <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
                             <?php } ?>
@@ -707,10 +676,8 @@
 
                         <hr>
 
-                        <!-- Motorcycle Models -->
                         <h5 class='mb-3'>Motorcycle Models</h5>
                         <div id='modelFormsContainer'>
-                            <!-- Model forms will be added here dynamically -->
                         </div>
 
                         <button type='button' id='addModelBtn' class='btn btn-secondary mt-3'>
@@ -726,7 +693,6 @@
         </div>
     </div>
 
-  <!-- Update the model form template in your HTML -->
 <template id="modelFormTemplate">
     <div class="model-form card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -760,23 +726,20 @@
                     <input type="text" class="form-control model-color" required>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <label class="form-label">LCP</label>
-                    <input type="number" step="0.01" class="form-control model-lcp">
+                    <label class="form-label">Inventory Cost</label>
+                    <input type="number" step="0.01" class="form-control model-inventoryCost">
                 </div>
             </div>
 
-            <!-- Specific Model Details Container -->
             <div class="specific-details-container mt-3" style="display: none;">
                 <h6 class="fw-semibold mb-3">Specific Model Details</h6>
                 <div class="specific-details-rows">
-                    <!-- Individual rows will be added here dynamically -->
                 </div>
             </div>
         </div>
     </div>
 </template>
 
-    <!-- Edit Motorcycle Modal -->
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -829,8 +792,8 @@
                                 <input type='text' class='form-control' id='editColor' required>
                             </div>
                             <div class='col-md-6 mb-3'>
-                                <label for='editLcp' class='form-label'>LCP</label>
-                                <input type='number' step='0.01' class='form-control' id='editLcp'>
+                                <label for='editInventoryCost' class='form-label'>Inventory Cost</label>
+                                <input type='number' step='0.01' class='form-control' id='editInventoryCost'>
                             </div>
                         </div>
                         <div class='row'>
@@ -839,37 +802,41 @@
                                 <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
                                     <!-- Admin can select any branch -->
                                     <select class='form-select' id='editCurrentBranch' required>
-                                        <option value='HEADOFFICE'>Head Office</option>
-                                        <option value='RXS-S'>RXS-S</option>
-                                        <option value='RXS-H'>RXS-H</option>
-                                        <option value='ANT-1'>ANT-1</option>
-                                        <option value='ANT-2'>ANT-2</option>
-                                        <option value='SDH'>SDH</option>
-                                        <option value='SDS'>SDS</option>
-                                        <option value='JAR-1'>JAR-1</option>
-                                        <option value='JAR-2'>JAR-2</option>
-                                        <option value='SKM'>SKM</option>
-                                        <option value='SKS'>SKS</option>
-                                        <option value='ALTA'>ALTA</option>
-                                        <option value='EMAP'>EMAP</option>
-                                        <option value='CUL'>CUL</option>
-                                        <option value='BAC'>BAC</option>
-                                        <option value='PAS-1'>PAS-1</option>
-                                        <option value='PAS-2'>PAS-2</option>
-                                        <option value='BAL'>BAL</option>
-                                        <option value='GUIM'>GUIM</option>
-                                        <option value='PEMDI'>PEMDI</option>
-                                        <option value='EEM'>EEM</option>
-                                        <option value='AJU'>AJU</option>
-                                        <option value='BAIL'>BAIL</option>
-                                        <option value='3SMB'>MINDORO MB</option>
-                                        <option value='3SMIN'>MINDORO 3S</option>
-                                        <option value='MAN'>MANSALAY</option>
-                                        <option value='K-RIDERS'>K-RIDERS</option>
-                                        <option value='IBAJAY'>IBAJAY</option>
-                                        <option value='NUMANCIA'>NUMANCIA</option>
-                                        <option value='HEADOFFICE'>HEADOFFICE</option>
-                                        <option value='CEBU'>CEBU</option>
+                                       <option value='HEADOFFICE'>HEADOFFICE</option>
+<option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+<option value='MAMBUSAO'>MAMBUSAO</option>
+<option value='SIGMA'>SIGMA</option>
+<option value='PRC'>PRC</option>
+<option value='CUARTERO'>CUARTERO</option>
+<option value='JAMINDAN'>JAMINDAN</option>
+<option value='ROXAS HONDA'>ROXAS HONDA</option>
+<option value='ANTIQUE-1'>ANTIQUE-1</option>
+<option value='ANTIQUE-2'>ANTIQUE-2</option>
+<option value='DELGADO HONDA'>DELGADO HONDA</option>
+<option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+<option value='JARO-1'>JARO-1</option>
+<option value='JARO-2'>JARO-2</option>
+<option value='KALIBO MABINI'>KALIBO MABINI</option>
+<option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+<option value='ALTAVAS'>ALTAVAS</option>
+<option value='EMAP'>EMAP</option>
+<option value='CULASI'>CULASI</option>
+<option value='BACOLOD'>BACOLOD</option>
+<option value='PASSI-1'>PASSI-1</option>
+<option value='PASSI-2'>PASSI-2</option>
+<option value='BALASAN'>BALASAN</option>
+<option value='GUIMARAS'>GUIMARAS</option>
+<option value='PEMDI'>PEMDI</option>
+<option value='EEMSI'>EEMSI</option>
+<option value='AJUY'>AJUY</option>
+<option value='BAILAN'>BAILAN</option>
+<option value='3SMB'>3SMB</option>
+<option value='3SMINDORO'>3SMINDORO</option>
+<option value='MANSALAY'>MANSALAY</option>
+<option value='K-RIDERS'>K-RIDERS</option>
+<option value='IBAJAY'>IBAJAY</option>
+<option value='NUMANCIA'>NUMANCIA</option>
+<option value='CEBU'>CEBU</option>
                                     </select>
                                 <?php } else { ?>
                                     <!-- Regular users can only add to their own branch -->
@@ -895,76 +862,7 @@
         </div>
     </div>
 
-    <!-- Transfer Motorcycle Modal -->
-    <div class='modal fade' id='transferMotorcycleModal' tabindex='-1' aria-labelledby='transferMotorcycleModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='transferMotorcycleModalLabel'>Transfer Motorcycle</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <form id='transferMotorcycleForm'>
-                        <input type='hidden' id='transferId'>
-                        <div class='mb-3'>
-                            <label for='fromBranch' class='form-label'>From Branch</label>
-                            <input type='text' class='form-control' id='fromBranch' readonly>
-                        </div>
-                        <div class='mb-3'>
-                            <label for='toBranch' class='form-label'>To Branch</label>
-                            <select class='form-select' id='toBranch' required>
-                                <option value='HEADOFFICE'>Head Office</option>
-                                <option value='RXS-S'>RXS-S</option>
-                                <option value='RXS-H'>RXS-H</option>
-                                <option value='ANT-1'>ANT-1</option>
-                                <option value='ANT-2'>ANT-2</option>
-                                <option value='SDH'>SDH</option>
-                                <option value='SDS'>SDS</option>
-                                <option value='JAR-1'>JAR-1</option>
-                                <option value='JAR-2'>JAR-2</option>
-                                <option value='SKM'>SKM</option>
-                                <option value='SKS'>SKS</option>
-                                <option value='ALTA'>ALTA</option>
-                                <option value='EMAP'>EMAP</option>
-                                <option value='CUL'>CUL</option>
-                                <option value='BAC'>BAC</option>
-                                <option value='PAS-1'>PAS-1</option>
-                                <option value='PAS-2'>PAS-2</option>
-                                <option value='BAL'>BAL</option>
-                                <option value='GUIM'>GUIM</option>
-                                <option value='PEMDI'>PEMDI</option>
-                                <option value='EEM'>EEM</option>
-                                <option value='AJU'>AJU</option>
-                                <option value='BAIL'>BAIL</option>
-                                <option value='3SMB'>MINDORO MB</option>
-                                <option value='3SMIN'>MINDORO 3S</option>
-                                <option value='MAN'>MANSALAY</option>
-                                <option value='K-RIDERS'>K-RIDERS</option>
-                                <option value='IBAJAY'>IBAJAY</option>
-                                <option value='NUMANCIA'>NUMANCIA</option>
-                                <option value='HEADOFFICE'>HEADOFFICE</option>
-                                <option value='CEBU'>CEBU</option>
-                            </select>
-                        </div>
-                        <div class='mb-3'>
-                            <label for='transferDate' class='form-label'>Transfer Date</label>
-                            <input type='date' class='form-control' id='transferDate' required>
-                        </div>
-                        <div class='mb-3'>
-                            <label for='transferNotes' class='form-label'>Notes</label>
-                            <textarea class='form-control' id='transferNotes' rows='3'></textarea>
-                        </div>
-                        <div class='d-grid'>
-                            <button type='submit' class='btn btn-primary text-white'>Transfer Motorcycle</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- View Details Modal -->
     <div class='modal fade' id='viewDetailsModal' tabindex='-1' aria-labelledby='viewDetailsModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -1002,7 +900,7 @@
                                 <hr>
                                 <p><strong>Current Branch:</strong> <span id='detailCurrentBranch'></span></p>
                                 <p><strong>Status:</strong> <span id='detailStatus'></span></p>
-                                <p><strong>LCP:</strong> <span id='detailLcp'></span></p>
+                                <p><strong>Inventory Cost:</strong> <span id='detailInventoryCost'></span></p>
                             </div>
                         </div>
                         <div class='col-md-6'>
@@ -1027,7 +925,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id='transferHistoryBody'>
-                                    <!-- Transfer history will be loaded here -->
                                 </tbody>
                             </table>
                         </div>
@@ -1037,7 +934,6 @@
         </div>
     </div>
 
-    <!-- Multiple Transfer Modal - Improved Layout -->
     <div class='modal fade' id='multipleTransferModal' tabindex='-1' aria-labelledby='multipleTransferModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -1052,7 +948,6 @@
                 <div class='modal-body p-0'>
                     <form id='multipleTransferForm'>
                         <div class='row g-0'>
-                            <!-- Transfer Details ( Left Panel ) -->
                             <div class='col-md-4 border-end bg-light'>
                                 <div class='p-4'>
                                     <fieldset>
@@ -1099,7 +994,6 @@
 
                                     <hr>
 
-                                    <!-- Transfer Summary Section -->
                                     <fieldset>
                                         <legend class='fs-6 fw-semibold text-black mb-3'>
                                             <i class='bi bi-calculator me-2'></i>Transfer Summary
@@ -1112,8 +1006,8 @@
                                                 <span class='badge bg-primary' id='selectedCount'>0</span>
                                             </div>
                                             <div class='d-flex justify-content-between align-items-center'>
-                                                <span class='small fw-semibold'>Total LCP Value:</span>
-                                                <span class='fw-bold text-success' id='totalLcpValue'>₱0.00</span>
+                                                <span class='small fw-semibold'>Total Inventory Cost Value:</span>
+                                                <span class='fw-bold text-success' id='totalInventoryCostValue'>₱0.00</span>
                                             </div>
                                         </div>
 
@@ -1130,14 +1024,11 @@
                                 </div>
                             </div>
 
-                            <!-- Motorcycle Selection ( Right Panel ) -->
                             <div class='col-md-8'>
                                 <div class='p-4'>
                                     <h6 class='fw-semibold text-primary mb-4'>
                                         <i class='bi bi-search me-2'></i>Motorcycle Selection
                                     </h6>
-
-                                    <!-- Search Form -->
                                     <div class='row g-2 mb-3 align-items-end'>
                                         <div class='col-md-8'>
                                             <label class='form-label small fw-semibold'>
@@ -1158,9 +1049,7 @@
                                     <div class='form-text small text-muted mb-4'>You can search using full or partial
                                         engine numbers.</div>
 
-                                    <!-- Search & Selected Results Panels -->
                                     <div class='row g-3'>
-                                        <!-- Search Results -->
                                         <div class='col-md-6'>
                                             <div class='card h-100 shadow-sm'>
                                                 <div
@@ -1182,8 +1071,6 @@
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <!-- Selected Items -->
                                         <div class='col-md-6'>
                                             <div class='card h-100 shadow-sm'>
                                                 <div
@@ -1209,17 +1096,16 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div> <!-- End row -->
-                                </div> <!-- End p-4 -->
-                            </div> <!-- End Right Panel -->
-                        </div> <!-- End row -->
+                                    </div> 
+                                </div> 
+                            </div> 
+                        </div>
                     </form>
-                </div> <!-- End modal-body -->
-            </div> <!-- End modal-content -->
-        </div> <!-- End modal-dialog -->
+                </div> 
+            </div> 
+        </div> 
     </div>
 
-    <!-- Incoming Transfers Modal -->
     <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -1244,7 +1130,6 @@
                                 </tr>
                             </thead>
                             <tbody id='incomingTransfersBody'>
-                                <!-- Content will be loaded dynamically -->
                             </tbody>
                         </table>
                     </div>
@@ -1257,9 +1142,6 @@
         </div>
     </div>
 
-    
-
-    <!-- Confirmation Modal -->
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
@@ -1279,7 +1161,6 @@
         </div>
     </div>
 
-    <!-- Success Modal -->
     <div class='modal fade' id='successModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -1298,7 +1179,6 @@
         </div>
     </div>
 
-    <!-- Error Modal -->
     <div class='modal fade' id='errorModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -1317,7 +1197,6 @@
         </div>
     </div>
 
-    <!-- Warning Modal -->
     <div class='modal fade' id='warningModal' tabindex='-1' role='dialog' aria-labelledby='warningModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog' role='document'>
