@@ -900,6 +900,18 @@ function transferMultipleMotorcycles() {
     $conn->begin_transaction();
 
     try {
+        // Get motorcycle details for receipt before updating
+        $motorcycleDetails = [];
+        $getDetailsStmt = $conn->prepare("SELECT id, brand, model, color, engine_number, frame_number, inventory_cost 
+                                        FROM motorcycle_inventory WHERE id IN ($placeholders)");
+        $getDetailsStmt->bind_param($types, ...$motorcycleIds);
+        $getDetailsStmt->execute();
+        $detailsResult = $getDetailsStmt->get_result();
+        
+        while ($row = $detailsResult->fetch_assoc()) {
+            $motorcycleDetails[] = $row;
+        }
+
         // Update each motorcycle with new inventory cost
         $updateStmt = $conn->prepare( "UPDATE motorcycle_inventory 
                                     SET current_branch = ?, status = 'transferred', inventory_cost = ?
@@ -911,7 +923,8 @@ function transferMultipleMotorcycles() {
             $updateStmt->execute();
         }
 
-        // Insert transfer records
+        // Insert transfer records and get the transfer IDs
+        $transferIds = [];
         $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers 
                                       (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status)
                                       VALUES (?, ?, ?, ?, ?, ?, 'pending')" );
@@ -919,14 +932,29 @@ function transferMultipleMotorcycles() {
         foreach ( $motorcycleIds as $id ) {
             $transferStmt->bind_param( 'isssis', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes );
             $transferStmt->execute();
+            $transferIds[] = $conn->insert_id;
         }
 
         $conn->commit();
+        
+        // Calculate totals for receipt
+        $totalCost = array_sum($inventoryCosts);
+        
         echo json_encode( [
             'success' => true,
             'message' => 'Successfully initiated transfer for ' . count( $motorcycleIds ) . ' motorcycle(s)',
             'transferred_count' => count( $motorcycleIds ),
-            'to_branch' => $toBranch
+            'to_branch' => $toBranch,
+            'receipt_data' => [
+                'transfer_ids' => $transferIds,
+                'from_branch' => $fromBranch,
+                'to_branch' => $toBranch,
+                'transfer_date' => $transferDate,
+                'notes' => $notes,
+                'motorcycles' => $motorcycleDetails,
+                'total_count' => count( $motorcycleIds ),
+                'total_cost' => $totalCost
+            ]
         ] );
     } catch ( Exception $e ) {
         $conn->rollback();

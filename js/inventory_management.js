@@ -1113,32 +1113,110 @@ function performMultipleTransfers() {
     method: "POST",
     data: formData,
     dataType: "json",
-    success: function (response) {
-      if (response.success) {
+    // In the performMultipleTransfers function, update the AJAX success handler:
+success: function (response) {
+    if (response.success) {
         $("#multipleTransferModal").modal("hide");
+        
+        // Show receipt modal with transfer details
+        showTransferReceipt(response.receipt_data);
+        
         showSuccessModal(
-          "Transfer initiated successfully! Motorcycles will remain at current branch until accepted by destination."
+            "Transfer initiated successfully! Motorcycles will remain at current branch until accepted by destination."
         );
         loadInventoryTable(
-          currentInventoryPage,
-          currentInventorySort,
-          currentInventoryQuery
+            currentInventoryPage,
+            currentInventorySort,
+            currentInventoryQuery
         );
 
         selectedMotorcycles = [];
         updateSelectedMotorcyclesList();
         $("#engineSearch").val("");
         $("#searchResults").html(
-          '<div class="text-center text-muted py-3">Search for motorcycles using engine number</div>'
+            '<div class="text-center text-muted py-3">Search for motorcycles using engine number</div>'
         );
-      } else {
+    } else {
         showErrorModal(response.message || "Error initiating transfer");
-      }
-    },
+    }
+},
     error: function (xhr, status, error) {
       showErrorModal("Error initiating transfer: " + error);
     },
   });
+}
+
+function showTransferReceipt(receiptData) {
+    if (!receiptData) return;
+    
+    // Set header information
+    $("#receiptDate").text(new Date().toLocaleDateString());
+    $("#receiptTransferId").text(receiptData.transfer_ids.join(', '));
+    $("#receiptFromBranch").text(receiptData.from_branch);
+    $("#receiptToBranch").text(receiptData.to_branch);
+    
+    // Set notes or show default message
+    if (receiptData.notes && receiptData.notes.trim() !== '') {
+        $("#receiptNotes").text(receiptData.notes);
+    } else {
+        $("#receiptNotes").text('No notes provided.');
+    }
+    
+    // Populate motorcycles list
+    const $receiptList = $("#receiptMotorcyclesList");
+    $receiptList.empty();
+    
+    let totalCost = 0;
+    
+    receiptData.motorcycles.forEach((motorcycle, index) => {
+        const cost = parseFloat(motorcycle.inventory_cost) || 0;
+        totalCost += cost;
+        
+        $receiptList.append(`
+            <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(motorcycle.brand)}</td>
+                <td>${escapeHtml(motorcycle.model)}</td>
+                <td>${escapeHtml(motorcycle.color)}</td>
+                <td>${escapeHtml(motorcycle.engine_number)}</td>
+                <td>${escapeHtml(motorcycle.frame_number)}</td>
+                <td class="text-end">${formatCurrency(cost)}</td>
+            </tr>
+        `);
+    });
+    
+    // Set totals
+    $("#receiptTotalCount").text(receiptData.total_count);
+    $("#receiptTotalCost").text(formatCurrency(totalCost));
+    
+    // Show the modal
+    $("#transferReceiptModal").modal("show");
+    
+    // Add print functionality
+    $("#printReceiptBtn").off("click").on("click", function() {
+        printReceipt();
+    });
+}
+
+function printReceipt() {
+    const receiptContent = document.getElementById("transferReceiptModal").querySelector(".modal-content");
+    const originalDisplay = receiptContent.style.display;
+    
+    // Show the content for printing
+    receiptContent.style.display = "block";
+    
+    const opt = {
+        margin: 10,
+        filename: 'transfer_receipt.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(receiptContent).save().then(() => {
+        // Restore original display
+        receiptContent.style.display = originalDisplay;
+    });
 }
 function searchMotorcyclesByEngine() {
   const searchTerm = $("#engineSearch").val().trim();

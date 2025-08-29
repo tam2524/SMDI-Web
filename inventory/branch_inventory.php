@@ -454,6 +454,46 @@
         border-radius: 5px;
         margin-top: 10px;
     }
+    .receipt-header {
+    border-bottom: 2px solid #000f71;
+    padding-bottom: 15px;
+}
+
+.receipt-header h5 {
+    color: #000f71;
+    font-weight: 600;
+}
+
+#receiptMotorcyclesList tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+#receiptMotorcyclesList td {
+    padding: 8px;
+    vertical-align: middle;
+}
+
+@media print {
+    .modal-header,
+    .modal-footer {
+        display: none !important;
+    }
+    
+    .modal-body {
+        padding: 0;
+        display: block !important;
+    }
+    
+    .modal-dialog {
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .modal-content {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
     </style>
 </head>
 
@@ -1288,6 +1328,80 @@
         </div>
     </div>
 
+    <div class='modal fade' id='transferReceiptModal' tabindex='-1' aria-labelledby='transferReceiptModalLabel' aria-hidden='true'>
+    <div class='modal-dialog modal-xl'>
+        <div class='modal-content'>
+            <div class='modal-header bg-primary text-white'>
+                <h5 class='modal-title text-white' id='transferReceiptModalLabel'>
+                    <i class='bi bi-receipt me-2'></i>Transfer Receipt
+                </h5>
+                <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <div class='receipt-header mb-4'>
+                    <div class='row'>
+                        <div class='col-md-6'>
+                            <h5 class='mb-1'>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h5>
+                            <p class='mb-0 text-muted'>Motorcycle Transfer Receipt</p>
+                        </div>
+                        <div class='col-md-6 text-end'>
+                            <p class='mb-0'><strong>Date:</strong> <span id='receiptDate'></span></p>
+                            <p class='mb-0'><strong>Transfer ID:</strong> <span id='receiptTransferId'></span></p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class='row'>
+                        <div class='col-md-6'>
+                            <p class='mb-1'><strong>From:</strong> <span id='receiptFromBranch'></span></p>
+                        </div>
+                        <div class='col-md-6'>
+                            <p class='mb-1'><strong>To:</strong> <span id='receiptToBranch'></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class='table-responsive'>
+                    <table class='table table-bordered table-sm'>
+                        <thead class='table-light'>
+                            <tr>
+                                <th>#</th>
+                                <th>Brand</th>
+                                <th>Model</th>
+                                <th>Color</th>
+                                <th>Engine Number</th>
+                                <th>Frame Number</th>
+                                <th class='text-end'>Inventory Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id='receiptMotorcyclesList'>
+                        </tbody>
+                        <tfoot class='table-group-divider'>
+                            <tr>
+                                <td colspan='6' class='text-end fw-bold'>Total Motorcycles:</td>
+                                <td class='text-end fw-bold' id='receiptTotalCount'>0</td>
+                            </tr>
+                            <tr>
+                                <td colspan='6' class='text-end fw-bold'>Total Inventory Cost:</td>
+                                <td class='text-end fw-bold' id='receiptTotalCost'>₱0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class='mt-4'>
+                    <h6>Transfer Notes:</h6>
+                    <p id='receiptNotes' class='text-muted fst-italic'>No notes provided.</p>
+                </div>
+            </div>
+            <div class='modal-footer'>
+                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
+                    <i class='bi bi-printer me-2'></i>Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
     <div class='modal fade' id='successModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
