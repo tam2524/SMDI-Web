@@ -2313,35 +2313,24 @@ function generateReportPDF() {
     }
 }
 
-function generateInventoryReportPDF() {
+function generateTransferredReportPDF() {
+    if (!currentReportData || !currentReportMonth || currentReportType !== 'transferred') {
+        showErrorModal("Please generate a transferred summary report first before exporting to PDF");
+        return;
+    }
+    
     const [year, monthNum] = currentReportMonth.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
         month: "long",
     });
-    const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
 
-    const totalIn = currentReportSummary?.in || 0;
-    const totalOut = currentReportSummary?.out || 0;
-    const endingBalance = currentReportSummary?.ending || 0;
-    const endingInventoryCostValue = currentReportSummary?.inventory_cost?.ending || 0;
+    // ✅ Compute totals (use summary if available, else calculate)
+    const totalTransferred = currentReportSummary?.total_transferred || currentReportData.length;
+    const totalInventoryCost = currentReportSummary?.total_inventory_cost || currentReportData.reduce((sum, item) => {
+        return sum + (parseFloat(item.inventory_cost) || 0);
+    }, 0);
 
-    const rowsHtml = currentReportData
-        .map((item, index) => {
-            return `
-                <tr>
-                    <td style="text-align:center; border: 1px solid #e9ecef; padding: 8px;">${index + 1}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.model)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.color)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.brand)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.engine_number)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.frame_number)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px; text-align:right;">${formatCurrency(item.inventory_cost)}</td> 
-                </tr>
-            `;
-        })
-        .join("");
-
-    const html = `
+    let html = `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
@@ -2349,9 +2338,9 @@ function generateInventoryReportPDF() {
                     <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
                     <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
                 </div>
-                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
+                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY SUMMARY OF TRANSFERRED STOCKS</h5>
                 <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-                ${currentReportBranch !== "all" ? `<p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>` : ""}
+                <p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${currentReportBranch}</span></p>
                 <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
@@ -2360,75 +2349,112 @@ function generateInventoryReportPDF() {
                 })}</p>
             </div>
             
+            <!-- Summary Section -->
+            <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #000f71, #1a237e); color: white; border-radius: 10px; width: 45%;">
+                    <div style="font-weight: 600; margin-bottom: 10px; font-size: 16px;">TOTAL TRANSFERRED</div>
+                    <div style="font-size: 28px; font-weight: bold;">${totalTransferred}</div>
+                    <div style="font-size: 12px; opacity: 0.9;">Motorcycles transferred</div>
+                </div>
+                
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border-radius: 10px; width: 45%;">
+                    <div style="font-weight: 600; margin-bottom: 10px; font-size: 16px;">TOTAL INVENTORY COST</div>
+                    <div style="font-size: 28px; font-weight: bold;">${formatCurrency(totalInventoryCost)}</div>
+                    <div style="font-size: 12px; opacity: 0.9;">Total value transferred</div>
+                </div>
+            </div>
+    `;
+
+    if (currentReportData.length === 0) {
+        html += `
+            <div style="text-align: center; padding: 40px; color: #6c757d; font-style: italic;">
+                No transfers found for ${monthName} ${year} from ${currentReportBranch} branch.
+            </div>
+        `;
+    } else {
+        html += `
             <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
                     <thead>
-                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                            <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">#</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align:right;">Inventory Cost</th>
+                        <tr style="background-color: #343a40; color: white;">
+                            <th style="padding: 10px; font-weight: 600; text-align: center; width: 30px;">#</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Invoice Number</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Model</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Brand</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Color</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Engine Number</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Frame Number</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Transfer Date</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Transferred To</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: right;">Inventory Cost</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${currentReportData.length === 0 ? `
-                            <tr>
-                                <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">No inventory data found for this period</td>
-                            </tr>
-                        ` : rowsHtml}
+        `;
+
+        currentReportData.forEach((item, index) => {
+            // Get brand color for PDF
+            let brandColor = '#000000'; // Default black
+            switch (item.brand.toLowerCase()) {
+                case 'honda':
+                    brandColor = '#dc3545'; // Red
+                    break;
+                case 'yamaha':
+                    brandColor = '#000000'; // Black
+                    break;
+                case 'suzuki':
+                    brandColor = '#007bff'; // Blue
+                    break;
+                case 'kawasaki':
+                    brandColor = '#28a745'; // Green
+                    break;
+            }
+
+            html += `
+                <tr style="${index % 2 === 0 ? 'background-color: #f8f9fa;' : ''}">
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: center;">${index + 1}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.invoice_number || 'N/A')}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; color: ${brandColor}; font-weight: bold;">${escapeHtml(item.brand)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; font-family: monospace;">${escapeHtml(item.engine_number)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; font-family: monospace;">${escapeHtml(item.frame_number)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${formatDate(item.transfer_date)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; background-color: #17a2b8; color: white; border-radius: 3px; text-align: center;">${escapeHtml(item.transferred_to)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: right; font-weight: bold;">${formatCurrency(item.inventory_cost)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
                     </tbody>
+                    <tfoot>
+                        <tr style="background-color: #e9ecef;">
+                            <td colspan="9" style="padding: 10px; text-align: right; font-weight: bold;">Total:</td>
+                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatCurrency(totalInventoryCost)}</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
-            
-            <div style="display: flex; justify-content: space-around; margin-top: 30px;">
-                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">IN</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #28a745;">${totalIn}</div>
-                    <div style="font-size: 11px; color: #6c757d;">Inventory added</div>
-                </div>
-                
-                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">OUT</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #dc3545;">${totalOut}</div>
-                    <div style="font-size: 11px; color: #6c757d;">Inventory transferred</div>
-                </div>
-                
-                <div style="text-align: center; padding: 15px; background: #000f71; border-radius: 8px; width: 30%;">
-                    <div style="font-weight: 600; color: white; margin-bottom: 5px;">ENDING BALANCE</div>
-                    <div style="font-size: 24px; font-weight: bold; color: white;">${endingBalance}</div>
-                    <div style="font-size: 11px; color: rgba(255,255,255,0.8);">Remaining inventory</div>
-                </div>
-            </div>
-            
-            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <tr>
-                        <td style="padding: 8px; font-weight: 600; color: #495057;">Ending Inventory Cost Value</td>
-                        <td style="padding: 8px; text-align: right; font-weight: bold; color: #17a2b8;">
-                            ${formatCurrency(endingInventoryCostValue)}
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-    `;
+        `;
+    }
+
+    html += `</div>`;
 
     const container = document.createElement("div");
     container.innerHTML = html;
 
     const opt = {
         margin: 0.5,
-        filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
+        filename: `Monthly_Transferred_Summary_${currentReportMonth}_${currentReportBranch}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+        jsPDF: { unit: "in", format: "letter", orientation: "landscape" }
     };
 
     html2pdf().set(opt).from(container).save();
 }
+
 
 function generateTransferredSummary(month, branch) {
     $("#monthlyReportContent").html(
@@ -2451,11 +2477,7 @@ function generateTransferredSummary(month, branch) {
                 currentReportBranch = response.branch;
                 currentReportType = 'transferred'; // Set report type
                 
-                renderTransferredSummaryReport(
-                    response.data,
-                    response.month,
-                    response.branch
-                );
+                renderTransferredSummaryReport(response.data, response.month, response.branch, response.summary);
                 $("#monthlyInventoryReportModal").modal("show");
             } else {
                 showErrorModal(response.message || "Error generating transferred summary");
@@ -2467,134 +2489,78 @@ function generateTransferredSummary(month, branch) {
     });
 }
 
-function generateTransferredReportPDF() {
-    if (!currentReportData || !currentReportMonth || currentReportType !== 'transferred') {
-        showErrorModal("Please generate a transferred summary report first before exporting to PDF");
-        return;
-    }
 
-    const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
-        month: "long",
-    });
-
-    let html = `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                    <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
-                    <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-                </div>
-                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY SUMMARY OF TRANSFERRED STOCKS</h5>
-                <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-                <p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${currentReportBranch}</span></p>
-                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                })}</p>
-            </div>
-    `;
-
-    if (currentReportData.length === 0) {
-        html += `
-            <div style="text-align: center; padding: 40px; color: #6c757d; font-style: italic;">
-                No transfers found for ${monthName} ${year} from ${currentReportBranch} branch.
-            </div>
-        `;
-    } else {
-        html += `
-            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Invoice Number</th> <!-- ADDED -->
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Model</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Brand</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Color</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Engine Number</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Frame Number</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Transfer Date</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Transferred To</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: right;">Inventory Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-
-        currentReportData.forEach((item, index) => {
-            html += `
-                <tr style="${index % 2 === 0 ? 'background-color: #f8f9fa;' : ''}">
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.invoice_number || 'N/A')}</td> <!-- ADDED -->
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.engine_number)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.frame_number)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${formatDate(item.transfer_date)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.transferred_to)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: right;">${formatCurrency(item.inventory_cost)}</td>
-                </tr>
-            `;
-        });
-
-        html += `
-                    </tbody>
-                </table>
-            </div>
-            
-            <div style="text-align: center; margin-top: 20px;">
-                <div style="display: inline-block; background-color: #000f71; color: white; padding: 10px 20px; border-radius: 5px;">
-                    <strong>Total Transfers: ${currentReportData.length}</strong>
-                </div>
-            </div>
-        `;
-    }
-
-    html += `</div>`;
-
-    const container = document.createElement("div");
-    container.innerHTML = html;
-
-    const opt = {
-        margin: 0.5,
-        filename: `Monthly_Transferred_Summary_${currentReportMonth}_${currentReportBranch}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "in", format: "letter", orientation: "landscape" }
-    };
-
-    html2pdf().set(opt).from(container).save();
-}
-function renderTransferredSummaryReport(data, month, branch) {
+function renderTransferredSummaryReport(data, month, branch, summary) {
     const [year, monthNum] = month.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
         month: "long",
     });
 
+    // Use the summary data passed to the function, not from response.data
+    const totalTransferred = summary?.total_transferred || 0;
+    const totalInventoryCost = summary?.total_inventory_cost || 0;
+
     let html = `
         <div class="report-header text-center mb-4">
-            <h4>Monthly Summary of Transferred Stocks</h4>
-            <h6 class="mb-2 text-muted">${monthName} ${year}</h6>
-            <p class="mb-1"><span class="text-muted">Branch:</span> ${branch}</p>
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
+                </h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY SUMMARY OF TRANSFERRED STOCKS</h5>
+            <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
+            <p class="mb-1"><span style="color: #6c757d;">Branch:</span> 
+             <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
+            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
+                Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                })}
+            </p>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #000f71, #1a237e); color: white;">
+                    <div class="card-body py-4">
+                        <h6 class="card-title mb-2 text-white">TOTAL TRANSFERRED</h6>
+                        <h3 class="mb-0 text-white">${totalTransferred}</h3>
+                        <small>Motorcycles transferred</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+                    <div class="card-body py-4">
+                        <h6 class="card-title mb-2 text-white">TOTAL INVENTORY COST</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalInventoryCost)}</h3>
+                        <small>Total value transferred</small>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
     if (data.length === 0) {
         html += `
-            <div class="alert alert-info">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>
                 No transfers found for ${monthName} ${year} from ${branch} branch.
             </div>
         `;
     } else {
         html += `
             <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
                         <tr>
-                            <th>Invoice Number</th> <!-- ADDED: Invoice Number column -->
+                            <th>#</th>
+                            <th>Invoice Number</th>
                             <th>Model</th>
                             <th>Brand</th>
                             <th>Color</th>
@@ -2602,30 +2568,56 @@ function renderTransferredSummaryReport(data, month, branch) {
                             <th>Frame Number</th>
                             <th>Transfer Date</th>
                             <th>Transferred To</th>
-                            <th>Inventory Cost</th>
+                            <th class="text-end">Inventory Cost</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
 
-        data.forEach(item => {
+        data.forEach((item, index) => {
+            // Get brand color
+            let brandColor = '';
+            switch (item.brand.toLowerCase()) {
+                case 'honda':
+                    brandColor = 'text-danger'; // Red
+                    break;
+                case 'yamaha':
+                    brandColor = 'text-dark'; // Black
+                    break;
+                case 'suzuki':
+                    brandColor = 'text-primary'; // Blue
+                    break;
+                case 'kawasaki':
+                    brandColor = 'text-success'; // Green
+                    break;
+                default:
+                    brandColor = 'text-secondary';
+            }
+
             html += `
                 <tr>
-                    <td>${escapeHtml(item.invoice_number || 'N/A')}</td> <!-- ADDED: Invoice Number -->
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(item.invoice_number || 'N/A')}</td>
                     <td>${escapeHtml(item.model)}</td>
-                    <td>${escapeHtml(item.brand)}</td>
+                    <td class="${brandColor} fw-bold">${escapeHtml(item.brand)}</td>
                     <td>${escapeHtml(item.color)}</td>
-                    <td>${escapeHtml(item.engine_number)}</td>
-                    <td>${escapeHtml(item.frame_number)}</td>
+                    <td><code>${escapeHtml(item.engine_number)}</code></td>
+                    <td><code>${escapeHtml(item.frame_number)}</code></td>
                     <td>${formatDate(item.transfer_date)}</td>
-                    <td>${escapeHtml(item.transferred_to)}</td>
-                    <td>${formatCurrency(item.inventory_cost)}</td>
+                    <td><span class="badge bg-info">${escapeHtml(item.transferred_to)}</span></td>
+                    <td class="text-end fw-bold">${formatCurrency(item.inventory_cost)}</td>
                 </tr>
             `;
         });
 
         html += `
                     </tbody>
+                    <tfoot class="table-group-divider">
+                        <tr class="table-active">
+                            <td colspan="9" class="text-end fw-bold">Total:</td>
+                            <td class="text-end fw-bold">${formatCurrency(totalInventoryCost)}</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         `;
@@ -2647,7 +2639,8 @@ function formatDate(dateString) {
 }
 
 function formatCurrency(amount) {
-  if (!amount) return "N/A";
+  if (amount === null || amount === undefined) return "N/A";
+  if (isNaN(amount)) return "N/A";
   return (
     "₱" +
     parseFloat(amount).toLocaleString("en-PH", {
@@ -2656,6 +2649,7 @@ function formatCurrency(amount) {
     })
   );
 }
+
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);

@@ -1154,9 +1154,9 @@ function getMonthlyInventory() {
     $startDate = date('Y-m-01', strtotime($month));
     $endDate   = date('Y-m-t', strtotime($month));
 
-    // 1. Get current branch motorcycles count (including sold)
+    // 1. Get current branch motorcycles count and cost (including sold for IN calculation)
     $sqlCurrent = "
-        SELECT COUNT(*) as count_current 
+        SELECT COUNT(*) as count_current, COALESCE(SUM(inventory_cost), 0) as cost_current
         FROM motorcycle_inventory 
         WHERE current_branch = ? AND status != 'deleted'
     ";
@@ -1165,26 +1165,31 @@ function getMonthlyInventory() {
     $stmtCurrent->execute();
     $currentResult = $stmtCurrent->get_result()->fetch_assoc();
     $countCurrent = (int)$currentResult['count_current'];
+    $costCurrent = (float)$currentResult['cost_current'];
 
-    // 2. Get transfers from branch count (count ALL transfers)
+    // 2. Get transfers from branch count and total cost
     $sqlTransfers = "
-        SELECT COUNT(*) as count_transfers 
-        FROM inventory_transfers 
-        WHERE from_branch = ? 
-        AND transfer_date BETWEEN ? AND ? 
-        AND transfer_status = 'completed'
+        SELECT COUNT(*) as count_transfers, COALESCE(SUM(mi.inventory_cost), 0) as cost_transfers
+        FROM inventory_transfers it
+        JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
+        WHERE it.from_branch = ? 
+        AND it.transfer_date BETWEEN ? AND ? 
+        AND it.transfer_status = 'completed'
     ";
     $stmtTransfers = $conn->prepare($sqlTransfers);
     $stmtTransfers->bind_param('sss', $branch, $startDate, $endDate);
     $stmtTransfers->execute();
     $transfersResult = $stmtTransfers->get_result()->fetch_assoc();
     $countTransfers = (int)$transfersResult['count_transfers'];
+    $costTransfers = (float)$transfersResult['cost_transfers'];
 
     // 3. Calculate IN: current branch count + transfers from count
     $countIn = $countCurrent + $countTransfers;
+    $costIn = $costCurrent + $costTransfers;
 
     // 4. Calculate OUT: only transfers from branch during the month
     $countOut = $countTransfers;
+    $costOut = $costTransfers;
 
     // 5. Calculate ENDING = motorcycles with current_branch = branch AND status = 'available'
     $sqlEnding = "
@@ -1199,8 +1204,8 @@ function getMonthlyInventory() {
     $countEnding = (int)$endingResult['count_ending'];
     $costEnding = (float)$endingResult['cost_ending'];
 
-    // 6. Get detailed data for current branch motorcycles
-    $sqlData = "SELECT * FROM motorcycle_inventory WHERE current_branch = ? AND status != 'deleted'";
+    // 6. Get detailed data for current branch motorcycles (EXCLUDE SOLD MODELS)
+    $sqlData = "SELECT * FROM motorcycle_inventory WHERE current_branch = ? AND status = 'available'";
     $stmtData = $conn->prepare($sqlData);
     $stmtData->bind_param('s', $branch);
     $stmtData->execute();
@@ -1222,14 +1227,15 @@ function getMonthlyInventory() {
         ];
     }
 
-    // 7. Get transfer details for the month
+    // 7. Get transfer details for the month (only include available motorcycles)
     $sqlTransferDetails = "
-        SELECT it.*, mi.brand, mi.model, mi.engine_number, mi.frame_number
+        SELECT it.*, mi.brand, mi.model, mi.engine_number, mi.frame_number, mi.inventory_cost
         FROM inventory_transfers it
         JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
         WHERE it.from_branch = ? 
         AND it.transfer_date BETWEEN ? AND ? 
         AND it.transfer_status = 'completed'
+        AND mi.status = 'available'
         ORDER BY it.transfer_date DESC
     ";
     $stmtTransferDetails = $conn->prepare($sqlTransferDetails);
@@ -1242,23 +1248,51 @@ function getMonthlyInventory() {
         $transferDetails[] = $row;
     }
 
+    // 8. Get sold count and cost for breakdown (but don't include in data table)
+    $sqlSold = "
+        SELECT COUNT(*) as count_sold, COALESCE(SUM(inventory_cost), 0) as cost_sold
+        FROM motorcycle_inventory 
+        WHERE current_branch = ? AND status = 'sold'
+    ";
+    $stmtSold = $conn->prepare($sqlSold);
+    $stmtSold->bind_param('s', $branch);
+    $stmtSold->execute();
+    $soldResult = $stmtSold->get_result()->fetch_assoc();
+    $countSold = (int)$soldResult['count_sold'];
+    $costSold = (float)$soldResult['cost_sold'];
+
     $response = [
         'success' => true,
-        'data' => $data,
+        'data' => $data, // This now only includes available motorcycles
         'month' => $month,
         'branch' => $branch,
         'summary' => [
             'in' => $countIn,
-            'out' => $countOut, // Only transfers from branch
+            'out' => $countOut,
             'ending' => $countEnding,
+            'inventory_cost' => [
+                'in' => $costIn,
+                'out' => $costOut,
+                'ending' => $costEnding
+            ],
             'breakdown' => [
                 'current_branch_count' => $countCurrent,
-                'transfers_from_count' => $countTransfers
+                'current_branch_cost' => $costCurrent,
+                'available_count' => $countEnding, // Same as ending count
+                'sold_count' => $countSold,
+                'sold_cost' => $costSold,
+                'transfers_from_count' => $countTransfers,
+                'transfers_from_cost' => $costTransfers
             ]
         ],
         'transfer_details' => $transferDetails,
         'inventory_cost_formatted' => [
-            'ending' => number_format($costEnding, 2)
+            'in' => number_format($costIn, 2),
+            'out' => number_format($costOut, 2),
+            'ending' => number_format($costEnding, 2),
+            'current_branch' => number_format($costCurrent, 2),
+            'sold' => number_format($costSold, 2),
+            'transfers_from' => number_format($costTransfers, 2)
         ]
     ];
 
@@ -1288,9 +1322,11 @@ function getMonthlyTransferredSummary() {
                 mi.inventory_cost,
                 it.transfer_date,
                 it.to_branch as transferred_to,
-                it.from_branch as transferred_from
+                it.from_branch as transferred_from,
+                i.invoice_number
             FROM motorcycle_inventory mi
             INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
             WHERE it.from_branch = ?
             AND it.transfer_date BETWEEN ? AND ?
             AND it.transfer_status = 'completed'
@@ -1302,16 +1338,24 @@ function getMonthlyTransferredSummary() {
     $result = $stmt->get_result();
 
     $data = [];
+    $totalTransferred = 0;
+    $totalInventoryCost = 0;
+    
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
+        $totalTransferred++;
+        $totalInventoryCost += (float)$row['inventory_cost'];
     }
 
     echo json_encode([
         'success' => true,
         'data' => $data,
         'month' => $month,
-        'branch' => $branch
+        'branch' => $branch,
+        'summary' => [
+            'total_transferred' => $totalTransferred,
+            'total_inventory_cost' => $totalInventoryCost
+        ]
     ]);
 }
-
 ?>
