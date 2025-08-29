@@ -367,7 +367,6 @@
         font-weight: 500;
     }
 
-    /* Scrollbar styling */
     #searchResults::-webkit-scrollbar,
     #selectedMotorcyclesList::-webkit-scrollbar {
         width: 6px;
@@ -577,7 +576,7 @@
         <div class='modal-dialog'>
             <div class='modal-content'>
                 <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyInventoryOptionsModalLabel'>Monthly Inventory Report</h5>
+                    <h5 class='modal-title' id='monthlyInventoryOptionsModalLabel'>Monthly Inventory Balance Report</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
@@ -608,7 +607,7 @@
         <div class='modal-dialog modal-xl'>
             <div class='modal-content'>
                 <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly Inventory Report</h5>
+                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly Inventory Balance Report</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>

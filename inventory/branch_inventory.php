@@ -91,15 +91,15 @@
         border-color: #000f71;
     }
 
-      .model-name {
-         font-size: 0.9rem;
+    .model-name {
+        font-size: 0.9rem;
         font-weight: 600;
         color: #333;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    line-height: 1.2;
-}
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        line-height: 1.2;
+    }
 
     .quantity-badge {
         background-color: #000f71;
@@ -551,9 +551,9 @@
                             <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
                                 <i class='bi bi-truck'></i> Transfer
                             </button>
-
-                            <button type='button' class='btn btn-info me-2' id='generateMonthlyInventory'>
-                                <i class='bi bi-calendar-month'></i> Monthly Inventory Report
+                            <!-- Replace your current report buttons with this single button -->
+                            <button type="button" class="btn btn-info me-2" id="generateReportsButton">
+                                <i class="bi bi-file-earmark-text"></i> Generate Reports
                             </button>
                         </div>
                         <div class='input-group' style='max-width: 300px;'>
@@ -656,40 +656,40 @@
 
                                 <select class='form-select' id='branch' required>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
-<option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
-<option value='MAMBUSAO'>MAMBUSAO</option>
-<option value='SIGMA'>SIGMA</option>
-<option value='PRC'>PRC</option>
-<option value='CUARTERO'>CUARTERO</option>
-<option value='JAMINDAN'>JAMINDAN</option>
-<option value='ROXAS HONDA'>ROXAS HONDA</option>
-<option value='ANTIQUE-1'>ANTIQUE-1</option>
-<option value='ANTIQUE-2'>ANTIQUE-2</option>
-<option value='DELGADO HONDA'>DELGADO HONDA</option>
-<option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
-<option value='JARO-1'>JARO-1</option>
-<option value='JARO-2'>JARO-2</option>
-<option value='KALIBO MABINI'>KALIBO MABINI</option>
-<option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
-<option value='ALTAVAS'>ALTAVAS</option>
-<option value='EMAP'>EMAP</option>
-<option value='CULASI'>CULASI</option>
-<option value='BACOLOD'>BACOLOD</option>
-<option value='PASSI-1'>PASSI-1</option>
-<option value='PASSI-2'>PASSI-2</option>
-<option value='BALASAN'>BALASAN</option>
-<option value='GUIMARAS'>GUIMARAS</option>
-<option value='PEMDI'>PEMDI</option>
-<option value='EEMSI'>EEMSI</option>
-<option value='AJUY'>AJUY</option>
-<option value='BAILAN'>BAILAN</option>
-<option value='3SMB'>3SMB</option>
-<option value='3SMINDORO'>3SMINDORO</option>
-<option value='MANSALAY'>MANSALAY</option>
-<option value='K-RIDERS'>K-RIDERS</option>
-<option value='IBAJAY'>IBAJAY</option>
-<option value='NUMANCIA'>NUMANCIA</option>
-<option value='CEBU'>CEBU</option>
+                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+                                    <option value='MAMBUSAO'>MAMBUSAO</option>
+                                    <option value='SIGMA'>SIGMA</option>
+                                    <option value='PRC'>PRC</option>
+                                    <option value='CUARTERO'>CUARTERO</option>
+                                    <option value='JAMINDAN'>JAMINDAN</option>
+                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
+                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
+                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
+                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
+                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+                                    <option value='JARO-1'>JARO-1</option>
+                                    <option value='JARO-2'>JARO-2</option>
+                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
+                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+                                    <option value='ALTAVAS'>ALTAVAS</option>
+                                    <option value='EMAP'>EMAP</option>
+                                    <option value='CULASI'>CULASI</option>
+                                    <option value='BACOLOD'>BACOLOD</option>
+                                    <option value='PASSI-1'>PASSI-1</option>
+                                    <option value='PASSI-2'>PASSI-2</option>
+                                    <option value='BALASAN'>BALASAN</option>
+                                    <option value='GUIMARAS'>GUIMARAS</option>
+                                    <option value='PEMDI'>PEMDI</option>
+                                    <option value='EEMSI'>EEMSI</option>
+                                    <option value='AJUY'>AJUY</option>
+                                    <option value='BAILAN'>BAILAN</option>
+                                    <option value='3SMB'>3SMB</option>
+                                    <option value='3SMINDORO'>3SMINDORO</option>
+                                    <option value='MANSALAY'>MANSALAY</option>
+                                    <option value='K-RIDERS'>K-RIDERS</option>
+                                    <option value='IBAJAY'>IBAJAY</option>
+                                    <option value='NUMANCIA'>NUMANCIA</option>
+                                    <option value='CEBU'>CEBU</option>
                                 </select>
                                 <?php } else {
         ?>
@@ -829,41 +829,41 @@
                                 <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
             ?>
                                 <select class='form-select' id='editCurrentBranch' required>
-                                  <option value='HEADOFFICE'>HEADOFFICE</option>
-<option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
-<option value='MAMBUSAO'>MAMBUSAO</option>
-<option value='SIGMA'>SIGMA</option>
-<option value='PRC'>PRC</option>
-<option value='CUARTERO'>CUARTERO</option>
-<option value='JAMINDAN'>JAMINDAN</option>
-<option value='ROXAS HONDA'>ROXAS HONDA</option>
-<option value='ANTIQUE-1'>ANTIQUE-1</option>
-<option value='ANTIQUE-2'>ANTIQUE-2</option>
-<option value='DELGADO HONDA'>DELGADO HONDA</option>
-<option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
-<option value='JARO-1'>JARO-1</option>
-<option value='JARO-2'>JARO-2</option>
-<option value='KALIBO MABINI'>KALIBO MABINI</option>
-<option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
-<option value='ALTAVAS'>ALTAVAS</option>
-<option value='EMAP'>EMAP</option>
-<option value='CULASI'>CULASI</option>
-<option value='BACOLOD'>BACOLOD</option>
-<option value='PASSI-1'>PASSI-1</option>
-<option value='PASSI-2'>PASSI-2</option>
-<option value='BALASAN'>BALASAN</option>
-<option value='GUIMARAS'>GUIMARAS</option>
-<option value='PEMDI'>PEMDI</option>
-<option value='EEMSI'>EEMSI</option>
-<option value='AJUY'>AJUY</option>
-<option value='BAILAN'>BAILAN</option>
-<option value='3SMB'>3SMB</option>
-<option value='3SMINDORO'>3SMINDORO</option>
-<option value='MANSALAY'>MANSALAY</option>
-<option value='K-RIDERS'>K-RIDERS</option>
-<option value='IBAJAY'>IBAJAY</option>
-<option value='NUMANCIA'>NUMANCIA</option>
-<option value='CEBU'>CEBU</option>
+                                    <option value='HEADOFFICE'>HEADOFFICE</option>
+                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+                                    <option value='MAMBUSAO'>MAMBUSAO</option>
+                                    <option value='SIGMA'>SIGMA</option>
+                                    <option value='PRC'>PRC</option>
+                                    <option value='CUARTERO'>CUARTERO</option>
+                                    <option value='JAMINDAN'>JAMINDAN</option>
+                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
+                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
+                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
+                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
+                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+                                    <option value='JARO-1'>JARO-1</option>
+                                    <option value='JARO-2'>JARO-2</option>
+                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
+                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+                                    <option value='ALTAVAS'>ALTAVAS</option>
+                                    <option value='EMAP'>EMAP</option>
+                                    <option value='CULASI'>CULASI</option>
+                                    <option value='BACOLOD'>BACOLOD</option>
+                                    <option value='PASSI-1'>PASSI-1</option>
+                                    <option value='PASSI-2'>PASSI-2</option>
+                                    <option value='BALASAN'>BALASAN</option>
+                                    <option value='GUIMARAS'>GUIMARAS</option>
+                                    <option value='PEMDI'>PEMDI</option>
+                                    <option value='EEMSI'>EEMSI</option>
+                                    <option value='AJUY'>AJUY</option>
+                                    <option value='BAILAN'>BAILAN</option>
+                                    <option value='3SMB'>3SMB</option>
+                                    <option value='3SMINDORO'>3SMINDORO</option>
+                                    <option value='MANSALAY'>MANSALAY</option>
+                                    <option value='K-RIDERS'>K-RIDERS</option>
+                                    <option value='IBAJAY'>IBAJAY</option>
+                                    <option value='NUMANCIA'>NUMANCIA</option>
+                                    <option value='CEBU'>CEBU</option>
                                 </select>
                                 <?php } else {
                 ?>
@@ -893,7 +893,7 @@
         </div>
     </div>
 
-    
+
     <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -1008,7 +1008,8 @@
                                             </div>
                                             <div class='d-flex justify-content-between align-items-center'>
                                                 <span class='small fw-semibold'>Total Inventory Cost Value:</span>
-                                                <span class='fw-bold text-success' id='totalInventoryCostValue'>₱0.00</span>
+                                                <span class='fw-bold text-success'
+                                                    id='totalInventoryCostValue'>₱0.00</span>
                                             </div>
                                         </div>
 
@@ -1204,32 +1205,36 @@
         </div>
     </div>
 
-    <div class='modal fade' id='monthlyInventoryOptionsModal' tabindex='-1'
-        aria-labelledby='monthlyInventoryOptionsModalLabel' aria-hidden='true'>
-        <div class='modal-dialog'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyInventoryOptionsModalLabel'>Monthly Inventory Report</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+    <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1"
+        aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class='modal-body'>
-                    <div class='mb-3'>
-                        <label class='form-label'>Select Month</label>
-                        <input type='month' class='form-control' id='selectedMonth' required>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Month</label>
+                        <input type="month" class="form-control" id="reportMonth" required>
                     </div>
-                    <div class='mb-3'>
-                        <label class='form-label'>Branch</label>
-                        <input type='text' class='form-control' id='selectedBranch'
-                            value='<?php echo $_SESSION["branch"]; ?>' disabled>
-                        <input type='hidden' id='selectedBranchHidden' name='selectedBranch'
-                            value='<?php echo $_SESSION["branch"]; ?>'>
+                    <div class="mb-3">
+                        <label class="form-label">Select Branch</label>
+                        <select class="form-select" id="reportBranch">
+                            <!-- Options will be populated dynamically -->
+                        </select>
                     </div>
-
+                    <div class="mb-3">
+                        <label class="form-label">Select Report Type</label>
+                        <select class="form-select" id="reportType" required>
+                            <option value="inventory">Monthly Inventory Balance Report</option>
+                            <option value="transferred">Monthly Summary of Transferred Stocks</option>
+                        </select>
+                    </div>
                 </div>
-                <div class='modal-footer'>
-                    <button type='button' class='btn btn-primary text-white' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'>Generate
-                        Report</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate Report</button>
                 </div>
             </div>
         </div>
@@ -1242,7 +1247,7 @@
         <div class='modal-dialog modal-xl'>
             <div class='modal-content'>
                 <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly Inventory Report</h5>
+                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly  Report</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
@@ -1250,9 +1255,6 @@
                         <div>
                             <button class='btn btn-sm btn-outline-primary' id='exportMonthlyReportToPDF'>
                                 <i class='bi bi-printer'></i> Print Report
-                            </button>
-                            <button class='btn btn-sm btn-outline-success ms-2' id='exportMonthlyReport'>
-                                <i class='bi bi-file-earmark-excel'></i> Export to Excel
                             </button>
                         </div>
                         <div class='text-muted small' id='monthlyReportTimestamp'></div>
@@ -1318,6 +1320,8 @@
             </div>
         </div>
     </div>
+
+
 
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>

@@ -16,22 +16,22 @@ let branchesMatch = true;
 let currentReportData = null;
 let currentReportMonth = null;
 let currentReportBranch = null;
+let currentReportType = null; 
+let currentReportSummary = null;
 let modelCount = 0;
 let currentUserRole = "USER";
+
 // =======================
-// Document Ready
+// Document Ready & Event Listeners
 // =======================
 $(document).ready(function () {
   shownTransferIds = [];
-
   loadInventoryDashboard();
   loadInventoryTable();
   setupEventListeners();
   loadBranchInventory(currentBranch);
   setInterval(checkIncomingTransfers, 1000);
-
   addModelForm();
-
   setTimeout(() => {
     if ($("#branchMap").length) {
       map = initMap(currentBranch);
@@ -39,31 +39,66 @@ $(document).ready(function () {
   }, 300);
 });
 
-// =======================
-// Event Listeners
-// =======================
 function setupEventListeners() {
-   $('body').on('input', '.engine-number, #editEngineNumber', function() {
-        this.value = this.value.toUpperCase();
-    });
-    
-    $('body').on('input', '.frame-number, #editFrameNumber', function() {
-        this.value = this.value.toUpperCase();
-    });
-    $("#searchModelBtn").click(searchModels);
+  // Input formatting
+  $('body').on('input', '.engine-number, #editEngineNumber', function() {
+    this.value = this.value.toUpperCase();
+  });
+  $('body').on('input', '.frame-number, #editFrameNumber', function() {
+    this.value = this.value.toUpperCase();
+  });
+
+  // Search & filter
+  $("#searchModelBtn").click(searchModels);
   $("#searchModel").keypress(function (e) {
     if (e.which === 13) searchModels();
   });
+  $("#searchInventoryBtn").click(function () {
+    currentInventoryQuery = $("#searchInventory").val();
+    currentInventoryPage = 1;
+    loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
+  });
+  $("#searchInventory").keypress(function (e) {
+    if (e.which == 13) {
+      currentInventoryQuery = $(this).val();
+      currentInventoryPage = 1;
+      loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
+    }
+  });
+  $("#searchDashboardBtn").click(function () {
+    loadInventoryDashboard($("#searchDashboard").val());
+  });
+  $("#searchDashboard").keypress(function (e) {
+    if (e.which == 13) {
+      loadInventoryDashboard($(this).val());
+    }
+  });
 
-  $("#generateMonthlyInventory").click(showMonthlyInventoryOptions);
-  $("#reportPeriod").change(toggleReportOptions);
-  $("#generateReportBtn").click(generateMonthlyInventoryReport);
-  $("#exportMonthlyReportToPDF").click(generateMonthlyReportPDF);
-  $("#exportMonthlyReport").click(exportMonthlyReport);
+  // Inventory Table Pagination & Sorting
+  $(document).on("click", ".page-link", function (e) {
+    e.preventDefault();
+    if ($(this).parent().hasClass("disabled")) return;
+    const oldPage = currentInventoryPage;
+    if ($(this).attr("id") === "prevPage") {
+      currentInventoryPage = Math.max(1, currentInventoryPage - 1);
+    } else if ($(this).attr("id") === "nextPage") {
+      currentInventoryPage = Math.min(totalInventoryPages, currentInventoryPage + 1);
+    } else {
+      currentInventoryPage = parseInt($(this).data("page"));
+    }
+    if (currentInventoryPage !== oldPage) {
+      loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
+    }
+  });
+  $(document).on("click", ".sortable-header", function () {
+    const sortField = $(this).data("sort");
+    currentInventorySort = currentInventorySort === sortField + "_asc"
+      ? sortField + "_desc"
+      : sortField + "_asc";
+    loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
+  });
 
-  $("#transferSelectedBtn").prop("disabled", false);
-  $("#transferSelectedBtn").click(transferSelectedMotorcycles);
-
+  // Add/Edit Motorcycle
   $("#addMotorcycleForm").submit(function (e) {
     e.preventDefault();
     addMotorcycle();
@@ -73,101 +108,65 @@ function setupEventListeners() {
     updateMotorcycle();
   });
 
-  $("#searchInventoryBtn").click(function () {
-    currentInventoryQuery = $("#searchInventory").val();
-    currentInventoryPage = 1;
-    loadInventoryTable(
-      currentInventoryPage,
-      currentInventorySort,
-      currentInventoryQuery
-    );
+  // Model Management
+  $("#addModelBtn").click(function () {
+    addModelForm();
   });
-
-  $("#searchInventory").keypress(function (e) {
-    if (e.which == 13) {
-      currentInventoryQuery = $(this).val();
-      currentInventoryPage = 1;
-      loadInventoryTable(
-        currentInventoryPage,
-        currentInventorySort,
-        currentInventoryQuery
-      );
-    }
-  });
-
-  $("#searchDashboardBtn").click(function () {
-    loadInventoryDashboard($("#searchDashboard").val());
-  });
-
-  $("#searchDashboard").keypress(function (e) {
-    if (e.which == 13) {
-      loadInventoryDashboard($(this).val());
-    }
-  });
-
-  $("#paymentType").change(handlePaymentTypeChange);
-  $(document).on("click", ".page-link", function (e) {
+  $("#addMotorcycleForm").submit(function (e) {
     e.preventDefault();
-    if ($(this).parent().hasClass("disabled")) return;
-    const oldPage = currentInventoryPage;
-    if ($(this).attr("id") === "prevPage") {
-      currentInventoryPage = Math.max(1, currentInventoryPage - 1);
-    } else if ($(this).attr("id") === "nextPage") {
-      currentInventoryPage = Math.min(
-        totalInventoryPages,
-        currentInventoryPage + 1
-      );
-    } else {
-      currentInventoryPage = parseInt($(this).data("page"));
-    }
-    if (currentInventoryPage !== oldPage) {
-      loadInventoryTable(
-        currentInventoryPage,
-        currentInventorySort,
-        currentInventoryQuery
-      );
-    }
+    addMotorcycle();
   });
 
-  $(document).on("click", ".sortable-header", function () {
-    const sortField = $(this).data("sort");
-    currentInventorySort =
-      currentInventorySort === sortField + "_asc"
-        ? sortField + "_desc"
-        : sortField + "_asc";
-    loadInventoryTable(
-      currentInventoryPage,
-      currentInventorySort,
-      currentInventoryQuery
-    );
-  });
-
+  // Transfer
+  $("#transferSelectedBtn").prop("disabled", false);
+  $("#transferSelectedBtn").click(transferSelectedMotorcycles);
   $("#multipleTransferForm").submit(function (e) {
     e.preventDefault();
     performMultipleTransfers();
   });
-
   $("#multipleTransferModal").on("hidden.bs.modal", function () {
     selectedMotorcycles = [];
     updateSelectedMotorcyclesList();
     $("#engineSearch").val("");
-    $("#searchResults").html(
-      '<div class="text-center text-muted py-3">Search for motorcycles using engine number</div>'
-    );
+    $("#searchResults").html('<div class="text-center text-muted py-3">Search for motorcycles using engine number</div>');
   });
 
+  // Transfer selection/search
+  $("#searchEngineBtn").click(searchMotorcyclesByEngine);
+  $("#engineSearch").keypress(function (e) {
+    if (e.which == 13) {
+      searchMotorcyclesByEngine();
+      e.preventDefault();
+    }
+  });
+  $("#clearSearchBtn").click(function () {
+    $("#engineSearch").val("");
+    $("#searchResults").html(`
+      <div class='text-center text-muted py-4'>
+        <i class='bi bi-search display-6 text-muted mb-2'></i>
+        <p>Search for motorcycles to display results</p>
+      </div>
+    `);
+    $("#searchResultsCount").text("0");
+  });
+  $("#clearSelectionBtn").click(function () {
+    selectedMotorcycles = [];
+    updateSelectedMotorcyclesList();
+    $("#searchResults .transfer-search-result").removeClass("selected");
+    $("#searchResults .select-btn").removeClass("btn-danger").addClass("btn-success").text("Select");
+  });
+
+  // Incoming Transfers
   $("#acceptAllTransfersBtn").click(function () {
     const transferIds = [];
     $("#incomingTransfersBody tr").each(function () {
       const id = $(this).data("transfer-id");
       if (id) transferIds.push(id);
     });
-
     if (transferIds.length === 0) {
       showErrorModal("No transfers to accept");
       return;
     }
-
     $.ajax({
       url: "../api/inventory_management.php",
       method: "POST",
@@ -179,17 +178,11 @@ function setupEventListeners() {
       dataType: "json",
       success: function (response) {
         if (response.success) {
-          showSuccessModal(
-            response.message ||
-              "Transfers accepted successfully! Received on: " +
-                response.date_received
-          );
+          showSuccessModal(response.message || "Transfers accepted successfully! Received on: " + response.date_received);
           $("#incomingTransfersModal").modal("hide");
-
           setTimeout(function () {
             window.location.reload();
           }, 2000);
-
           hasShownIncomingTransfers = false;
         } else {
           showErrorModal(response.message || "Error accepting transfers");
@@ -200,48 +193,24 @@ function setupEventListeners() {
       },
     });
   });
-
   $(document).on("hidden.bs.modal", "#incomingTransfersModal", function () {
     hasShownIncomingTransfers = false;
   });
-  $("#searchEngineBtn").click(searchMotorcyclesByEngine);
-  $("#engineSearch").keypress(function (e) {
-    if (e.which == 13) {
-      searchMotorcyclesByEngine();
-      e.preventDefault();
-    }
+
+  // Sale
+  $("#paymentType").change(handlePaymentTypeChange);
+
+  // Reports
+  $('#generateReportsButton').click(showMonthlyReportOptions);
+  $('#generateReportBtn').click(generateReport);
+  $(document).on('click', '#exportMonthlyReportToPDF', function() {
+    generateReportPDF();
   });
 
-  $("#clearSearchBtn").click(function () {
-    $("#engineSearch").val("");
-    $("#searchResults").html(`
-        <div class='text-center text-muted py-4'>
-            <i class='bi bi-search display-6 text-muted mb-2'></i>
-            <p>Search for motorcycles to display results</p>
-        </div>
-    `);
-    $("#searchResultsCount").text("0");
-  });
-
-  $("#clearSelectionBtn").click(function () {
-    selectedMotorcycles = [];
-    updateSelectedMotorcyclesList();
-    $("#searchResults .transfer-search-result").removeClass("selected");
-    $("#searchResults .select-btn")
-      .removeClass("btn-danger")
-      .addClass("btn-success")
-      .text("Select");
-  });
-
-  $("#addModelBtn").click(function () {
-    addModelForm();
-  });
-  $("#addMotorcycleForm").submit(function (e) {
-    e.preventDefault();
-    addMotorcycle();
-  });
+  // Monthly Inventory Modal
+  $("#generateMonthlyInventory").click(showMonthlyInventoryOptions);
+  $("#reportPeriod").change(toggleReportOptions);
 }
-
 
 // =======================
 // Modal Functions
@@ -273,7 +242,6 @@ function showConfirmationModal(message, title, callback) {
   });
   modal.modal("show");
 }
-
 // =======================
 // Inventory Table & Pagination
 // =======================
@@ -594,7 +562,6 @@ function getStatusBadgeClass(status) {
 // =======================
 // Model Management
 // =======================
-
 function addModelForm() {
   modelCount++;
   const template = document.getElementById("modelFormTemplate");
@@ -877,16 +844,12 @@ function loadMotorcycleForEdit(id) {
   });
 }
 
-
-
 // =======================
 // Invoice Validation
 // =======================
-
 $("#invoiceNumber").on("blur", function () {
   checkInvoiceNumber($(this).val());
 });
-
 $("#addMotorcycleForm").on("submit", function (e) {
   const invoiceNumber = $("#invoiceNumber").val();
   if (invoiceNumber) {
@@ -894,7 +857,6 @@ $("#addMotorcycleForm").on("submit", function (e) {
     checkInvoiceNumber(invoiceNumber, true);
   }
 });
-
 function checkInvoiceNumber(invoiceNumber, isSubmit = false) {
   if (!invoiceNumber) return;
 
@@ -941,6 +903,7 @@ function clearInvoiceError() {
   $("#invoiceNumber").addClass("is-valid");
   $("#invoiceNumber").next(".invalid-feedback").remove();
 }
+
 
 // =======================
 // Sale Functions
@@ -1036,7 +999,6 @@ function submitSale() {
     },
   });
 }
-
 // =======================
 // Transfer Functions
 // =======================
@@ -1405,16 +1367,6 @@ function saveCost(motorcycleId) {
     showErrorModal("Please enter a valid cost value.");
   }
 }
-
-// Function to update the transfer summary
-function updateTransferSummary() {
-  const totalInventoryCost = selectedMotorcycles.reduce(
-    (sum, motorcycle) => sum + (parseFloat(motorcycle.inventory_cost) || 0),
-    0
-  );
-  
-  $("#totalInventoryCostValue").text(formatCurrency(totalInventoryCost));
-}
 function removeMotorcycleFromSelection(id) {
   const index = selectedMotorcycles.findIndex((m) => m.id === id);
   if (index !== -1) {
@@ -1494,7 +1446,6 @@ function showIncomingTransfersModal(transfers) {
     hasShownIncomingTransfers = true;
   }
 }
-
 // =======================
 // Branch Inventory & Map
 // =======================
@@ -1790,7 +1741,6 @@ function viewModelDetails(id) {
     $("#detailsModal").modal("show");
   });
 }
-
 // =======================
 // Search Models
 // =======================
@@ -1928,12 +1878,11 @@ $("#addMotorcycleModal").on("hidden.bs.modal", function () {
     $("#branch").val(currentBranch);
   }
 });
-
 // =======================
 // Monthly Inventory Report
 // =======================
 function showMonthlyInventoryOptions() {
-  if ($("#selectedBranch option").length <= 1) {
+  if ($("#reportBranch option").length <= 1) {
     populateBranchesDropdown();
   }
 
@@ -1994,55 +1943,50 @@ function populateBranchesDropdown() {
     "CEBU",
   ];
 
-  const $dropdown = $("#selectedBranch");
+  const $dropdown = $("#reportBranch");
   branches.forEach((branch) => {
     $dropdown.append(`<option value="${branch}">${branch}</option>`);
   });
 }
 
-function generateMonthlyInventoryReport() {
-  const month = $("#selectedMonth").val();
-  const branch = $("#selectedBranch").val();
-
-  if (!month) {
-    showErrorModal("Please select a month");
-    return;
-  }
-
-  $("#monthlyInventoryOptionsModal").modal("hide");
-  $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
-  );
-
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "GET",
-    data: {
-      action: "get_monthly_inventory",
-      month: month,
-      branch: branch || "all",
-    },
-    dataType: "json",
-   success: function (response) {
-  if (response.success) {
-    currentReportData = response.data;
-    currentReportMonth = response.month;
-    currentReportBranch = response.branch;
-    currentReportSummary = response.summary; 
-
-    renderMonthlyInventoryReport(
-      response.data,
-      response.month,
-      response.branch,
-      response.summary // ✅ pass it down
+function generateMonthlyInventoryReport(month, branch) {
+    $("#monthlyInventoryOptionsModal").modal("hide");
+    $("#monthlyReportContent").html(
+        '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
     );
-    $("#monthlyInventoryReportModal").modal("show");
-  } else {
-    showErrorModal(response.message || "Error generating report");
-  }
-},
 
-  });
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_monthly_inventory",
+            month: month,
+            branch: branch || "all",
+        },
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                currentReportData = response.data;
+                currentReportMonth = response.month;
+                currentReportBranch = response.branch;
+                currentReportSummary = response.summary;
+                currentReportType = 'inventory'; // Set report type
+                
+                renderMonthlyInventoryReport(
+                    response.data,
+                    response.month,
+                    response.branch,
+                    response.summary
+                );
+                $("#monthlyInventoryReportModal").modal("show");
+            } else {
+                showErrorModal(response.message || "Error generating report");
+            }
+        },
+        error: function (xhr, status, error) {
+            showErrorModal("Error generating report: " + error);
+        }
+    });
 }
 function renderMonthlyInventoryReport(data, month, branch, summary) {
   const [year, monthNum] = month.split("-");
@@ -2069,7 +2013,7 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
         </h4>
         <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
       </div>
-      <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY INVENTORY REPORT</h5>
+      <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
       <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
       ${
         branch !== "all"
@@ -2173,11 +2117,6 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
           
           <!-- Inventory Cost Value Summary -->
           <div class="card border-0 shadow-sm" style="border-radius: 8px;">
-            <div class="card-header bg-transparent border-0 pt-4 pb-3">
-              <h6 class="card-title text-center mb-0 text-black" style="font-weight: 600; letter-spacing: 0.5px;">
-                Inventory Cost VALUE SUMMARY
-              </h6>
-            </div>
             <div class="card-body px-4 pb-4 pt-0">
               <div class="summary-item d-flex justify-content-between align-items-center">
                 <div class="fw-semibold text-secondary">Ending Inventory Cost Value</div>
@@ -2223,166 +2162,11 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
 
 document.addEventListener("DOMContentLoaded", function () {
   const loggedInBranch = currentUserBranch;
-  document.getElementById("selectedBranch").value = loggedInBranch;
-  document.getElementById("selectedBranch").setAttribute("disabled", true);
+  document.getElementById("reportBranch").value = loggedInBranch;
+  document.getElementById("reportBranch").setAttribute("disabled", true);
 });
 
-function generateMonthlyReportPDF() {
-  if (!currentReportData || !currentReportMonth) {
-    showErrorModal("Please generate a report first before exporting to PDF");
-    return;
-  }
 
-  const [year, monthNum] = currentReportMonth.split("-");
-  const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
-    month: "long",
-  });
-  const branchName =
-    currentReportBranch === "all" ? "All Branches" : currentReportBranch;
-
-  const totalIn = currentReportSummary.in;
-  const totalOut = currentReportSummary.out;
-  const endingBalance = currentReportSummary.ending;
-
-  // ✅ Fix: calculate ending inventory cost properly
-  const endingInventoryCostValue =
-    currentReportSummary.lcp?.ending ??
-    currentReportData.reduce(
-      (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
-      0
-    );
-
-  const rowsHtml = currentReportData
-    .map((item, index) => {
-      const rowClass = index % 2 === 0 ? "bg-white" : "bg-light";
-      return `
-        <tr class="${rowClass}">
-            <td style="text-align:center; border: 1px solid #e9ecef; padding: 8px;">${
-              index + 1
-            }</td>
-            <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(
-              item.model
-            )}</td>
-            <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(
-              item.color
-            )}</td>
-            <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(
-              item.brand
-            )}</td>
-            <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(
-              item.engine_number
-            )}</td>
-            <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(
-              item.frame_number
-            )}</td>
-            <td style="border: 1px solid #e9ecef; padding: 8px; text-align:right;">${formatCurrency(
-              item.inventory_cost
-            )}</td> 
-        </tr>
-      `;
-    })
-    .join("");
-
-  const html = `
-    <div style="font-family: Arial, sans-serif; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-          <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-          <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
-          <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-        </div>
-        <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY REPORT</h5>
-        <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-        ${
-          currentReportBranch !== "all"
-            ? `<p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>`
-            : ""
-        }
-        <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString(
-          "en-US",
-          {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }
-        )}</p>
-      </div>
-      
-      <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-          <thead>
-            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-              <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">#</th>
-              <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
-              <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
-              <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
-              <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-              <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
-              <th style="padding: 12px; font-weight: 600; color: #495057; text-align:right;">Inventory Cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              currentReportData.length === 0
-                ? `
-                <tr>
-                  <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">No inventory data found for this period</td>
-                </tr>
-              `
-                : rowsHtml
-            }
-          </tbody>
-        </table>
-      </div>
-      
-      <div style="display: flex; justify-content: space-around; margin-top: 30px;">
-        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
-          <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">IN</div>
-          <div style="font-size: 24px; font-weight: bold; color: #28a745;">${totalIn}</div>
-          <div style="font-size: 11px; color: #6c757d;">Inventory added</div>
-        </div>
-        
-        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
-          <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">OUT</div>
-          <div style="font-size: 24px; font-weight: bold; color: #dc3545;">${totalOut}</div>
-          <div style="font-size: 11px; color: #6c757d;">Inventory transferred</div>
-        </div>
-        
-        <div style="text-align: center; padding: 15px; background: #000f71; border-radius: 8px; width: 30%;">
-          <div style="font-weight: 600; color: white; margin-bottom: 5px;">ENDING BALANCE</div>
-          <div style="font-size: 24px; font-weight: bold; color: white;">${endingBalance}</div>
-          <div style="font-size: 11px; color: rgba(255,255,255,0.8);">Remaining inventory</div>
-        </div>
-      </div>
-      
-      <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;">
-        <h4 style="margin-bottom: 15px; color: #000f71; text-align: center;">Inventory Cost VALUE SUMMARY</h4>
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-          <tr>
-            <td style="padding: 8px; font-weight: 600; color: #495057;">Ending Inventory Cost Value</td>
-            <td style="padding: 8px; text-align: right; font-weight: bold; color: #17a2b8;">
-              ${formatCurrency(endingInventoryCostValue)}
-            </td>
-          </tr>
-        </table>
-      </div>
-    </div>
-  `;
-
-  const container = document.createElement("div");
-  container.innerHTML = html;
-
-  const opt = {
-    margin: 0.5,
-    filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-  };
-
-  html2pdf().set(opt).from(container).save();
-}
 
 function exportMonthlyReportToPDF() {
   const reportEl = document.getElementById("monthlyReportPrintContainer");
@@ -2446,7 +2230,409 @@ function exportMonthlyReport() {
   link.click();
   document.body.removeChild(link);
 }
+// =======================
+// Report Generation Functions
+// =======================
+function showMonthlyReportOptions() {
+    // Get the current user's branch and position
+    const userBranch = currentUserBranch;
+    const userPosition = currentUserPosition;
+    const isAdminOrHeadOffice = isAdminUser || isHeadOffice;
 
+    // Set the current month as default
+    const now = new Date();
+    const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    $('#reportMonth').val(currentMonth);
+
+    // Handle branch selection based on user role
+    if (isAdminOrHeadOffice) {
+        // Admin/HeadOffice can select any branch
+        populateBranchesDropdown();
+        $('#reportBranch').prop('disabled', false);
+    } else {
+        // Regular users - auto-populate with their branch and disable selection
+        $('#reportBranch').empty().append(`<option value="${userBranch}">${userBranch}</option>`);
+        $('#reportBranch').val(userBranch).prop('disabled', true);
+    }
+
+    // Show the modal
+    $('#monthlyReportOptionsModal').modal('show');
+}
+
+
+
+function populateBranchesDropdown() {
+    const branches = [
+        'HEADOFFICE', 'ROXAS SUZUKI', 'MAMBUSAO', 'SIGMA', 'PRC', 'CUARTERO', 'JAMINDAN',
+        'ROXAS HONDA', 'ANTIQUE-1', 'ANTIQUE-2', 'DELGADO HONDA', 'DELGADO SUZUKI',
+        'JARO-1', 'JARO-2', 'KALIBO MABINI', 'KALIBO SUZUKI', 'ALTAVAS', 'EMAP', 'CULASI',
+        'BACOLOD', 'PASSI-1', 'PASSI-2', 'BALASAN', 'GUIMARAS', 'PEMDI', 'EEMSI', 'AJUY',
+        'BAILAN', '3SMB', '3SMINDORO', 'MANSALAY', 'K-RIDERS', 'IBAJAY', 'NUMANCIA', 'CEBU'
+    ];
+
+    const $dropdown = $('#reportBranch');
+    $dropdown.empty().append('<option value="">Select Branch</option>');
+    
+    branches.forEach(branch => {
+        $dropdown.append(`<option value="${branch}">${branch}</option>`);
+    });
+}
+function generateReport() {
+    const month = $('#reportMonth').val();
+    const branch = $('#reportBranch').val();
+    const reportType = $('#reportType').val();
+
+    // Validate month selection
+    if (!month) {
+        showErrorModal("Please select a month.");
+        return;
+    }
+
+    // For non-admin users, use their branch
+    const reportBranch = branch || currentUserBranch;
+
+    $('#monthlyReportOptionsModal').modal('hide');
+    $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
+
+    if (reportType === 'inventory') {
+        generateMonthlyInventoryReport(month, reportBranch);
+    } else if (reportType === 'transferred') {
+        generateTransferredSummary(month, reportBranch);
+    }
+}
+function generateReportPDF() {
+    if (!currentReportData || !currentReportMonth || !currentReportType) {
+        showErrorModal("Please generate a report first before exporting to PDF");
+        return;
+    }
+
+    if (currentReportType === 'inventory') {
+        generateInventoryReportPDF();
+    } else if (currentReportType === 'transferred') {
+        generateTransferredReportPDF();
+    }
+}
+
+function generateInventoryReportPDF() {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long",
+    });
+    const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
+
+    const totalIn = currentReportSummary?.in || 0;
+    const totalOut = currentReportSummary?.out || 0;
+    const endingBalance = currentReportSummary?.ending || 0;
+    const endingInventoryCostValue = currentReportSummary?.inventory_cost?.ending || 0;
+
+    const rowsHtml = currentReportData
+        .map((item, index) => {
+            return `
+                <tr>
+                    <td style="text-align:center; border: 1px solid #e9ecef; padding: 8px;">${index + 1}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.model)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.color)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.brand)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.engine_number)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.frame_number)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px; text-align:right;">${formatCurrency(item.inventory_cost)}</td> 
+                </tr>
+            `;
+        })
+        .join("");
+
+    const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+                </div>
+                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
+                <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
+                ${currentReportBranch !== "all" ? `<p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>` : ""}
+                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                })}</p>
+            </div>
+            
+            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">#</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align:right;">Inventory Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${currentReportData.length === 0 ? `
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">No inventory data found for this period</td>
+                            </tr>
+                        ` : rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="display: flex; justify-content: space-around; margin-top: 30px;">
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
+                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">IN</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #28a745;">${totalIn}</div>
+                    <div style="font-size: 11px; color: #6c757d;">Inventory added</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
+                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">OUT</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #dc3545;">${totalOut}</div>
+                    <div style="font-size: 11px; color: #6c757d;">Inventory transferred</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: #000f71; border-radius: 8px; width: 30%;">
+                    <div style="font-weight: 600; color: white; margin-bottom: 5px;">ENDING BALANCE</div>
+                    <div style="font-size: 24px; font-weight: bold; color: white;">${endingBalance}</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.8);">Remaining inventory</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: 600; color: #495057;">Ending Inventory Cost Value</td>
+                        <td style="padding: 8px; text-align: right; font-weight: bold; color: #17a2b8;">
+                            ${formatCurrency(endingInventoryCostValue)}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    `;
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const opt = {
+        margin: 0.5,
+        filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+    };
+
+    html2pdf().set(opt).from(container).save();
+}
+
+function generateTransferredSummary(month, branch) {
+    $("#monthlyReportContent").html(
+        '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    );
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_monthly_transferred_summary",
+            month: month,
+            branch: branch,
+        },
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                currentReportData = response.data;
+                currentReportMonth = response.month;
+                currentReportBranch = response.branch;
+                currentReportType = 'transferred'; // Set report type
+                
+                renderTransferredSummaryReport(
+                    response.data,
+                    response.month,
+                    response.branch
+                );
+                $("#monthlyInventoryReportModal").modal("show");
+            } else {
+                showErrorModal(response.message || "Error generating transferred summary");
+            }
+        },
+        error: function (xhr, status, error) {
+            showErrorModal("Error generating transferred summary: " + error);
+        }
+    });
+}
+
+function generateTransferredReportPDF() {
+    if (!currentReportData || !currentReportMonth || currentReportType !== 'transferred') {
+        showErrorModal("Please generate a transferred summary report first before exporting to PDF");
+        return;
+    }
+
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long",
+    });
+
+    let html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+                </div>
+                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY SUMMARY OF TRANSFERRED STOCKS</h5>
+                <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
+                <p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${currentReportBranch}</span></p>
+                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                })}</p>
+            </div>
+    `;
+
+    if (currentReportData.length === 0) {
+        html += `
+            <div style="text-align: center; padding: 40px; color: #6c757d; font-style: italic;">
+                No transfers found for ${monthName} ${year} from ${currentReportBranch} branch.
+            </div>
+        `;
+    } else {
+        html += `
+            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Invoice Number</th> <!-- ADDED -->
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Model</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Brand</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Color</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Engine Number</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Frame Number</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Transfer Date</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: left;">Transferred To</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align: right;">Inventory Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        currentReportData.forEach((item, index) => {
+            html += `
+                <tr style="${index % 2 === 0 ? 'background-color: #f8f9fa;' : ''}">
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.invoice_number || 'N/A')}</td> <!-- ADDED -->
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.engine_number)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.frame_number)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${formatDate(item.transfer_date)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.transferred_to)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: right;">${formatCurrency(item.inventory_cost)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <div style="display: inline-block; background-color: #000f71; color: white; padding: 10px 20px; border-radius: 5px;">
+                    <strong>Total Transfers: ${currentReportData.length}</strong>
+                </div>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const opt = {
+        margin: 0.5,
+        filename: `Monthly_Transferred_Summary_${currentReportMonth}_${currentReportBranch}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "in", format: "letter", orientation: "landscape" }
+    };
+
+    html2pdf().set(opt).from(container).save();
+}
+function renderTransferredSummaryReport(data, month, branch) {
+    const [year, monthNum] = month.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long",
+    });
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <h4>Monthly Summary of Transferred Stocks</h4>
+            <h6 class="mb-2 text-muted">${monthName} ${year}</h6>
+            <p class="mb-1"><span class="text-muted">Branch:</span> ${branch}</p>
+        </div>
+    `;
+
+    if (data.length === 0) {
+        html += `
+            <div class="alert alert-info">
+                No transfers found for ${monthName} ${year} from ${branch} branch.
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Invoice Number</th> <!-- ADDED: Invoice Number column -->
+                            <th>Model</th>
+                            <th>Brand</th>
+                            <th>Color</th>
+                            <th>Engine Number</th>
+                            <th>Frame Number</th>
+                            <th>Transfer Date</th>
+                            <th>Transferred To</th>
+                            <th>Inventory Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        data.forEach(item => {
+            html += `
+                <tr>
+                    <td>${escapeHtml(item.invoice_number || 'N/A')}</td> <!-- ADDED: Invoice Number -->
+                    <td>${escapeHtml(item.model)}</td>
+                    <td>${escapeHtml(item.brand)}</td>
+                    <td>${escapeHtml(item.color)}</td>
+                    <td>${escapeHtml(item.engine_number)}</td>
+                    <td>${escapeHtml(item.frame_number)}</td>
+                    <td>${formatDate(item.transfer_date)}</td>
+                    <td>${escapeHtml(item.transferred_to)}</td>
+                    <td>${formatCurrency(item.inventory_cost)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    $("#monthlyReportContent").html(html);
+}
 // =======================
 // Helper Functions
 // =======================

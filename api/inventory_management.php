@@ -63,6 +63,9 @@ switch ( $action ) {
     case 'get_monthly_inventory':
     getMonthlyInventory();
     break;
+    case 'get_monthly_transferred_summary':
+    getMonthlyTransferredSummary();
+    break;
     case 'check_invoice_number':
     checkInvoiceNumber();
     break;
@@ -1137,7 +1140,6 @@ function sellMotorcycle() {
         echo json_encode( [ 'success' => false, 'message' => 'Error selling motorcycle: ' . $e->getMessage() ] );
     }
 }
-
 function getMonthlyInventory() {
     global $conn;
 
@@ -1153,154 +1155,287 @@ function getMonthlyInventory() {
     $startDate = date('Y-m-01', strtotime($month));
     $endDate   = date('Y-m-t', strtotime($month));
 
-    // Get ALL relevant motorcycles - from both inventory and transfers
-    $sql = "
-        SELECT DISTINCT mi.id 
-        FROM motorcycle_inventory mi
-        WHERE mi.status != 'deleted'
-        AND (
-            mi.current_branch = ?
-            OR EXISTS (
-                SELECT 1 FROM inventory_transfers it 
-                WHERE it.motorcycle_id = mi.id 
-                AND it.transfer_date BETWEEN ? AND ? 
-                AND (it.from_branch = ? OR it.to_branch = ?)
-                AND it.transfer_status = 'completed'
-            )
-            OR (mi.date_delivered BETWEEN ? AND ? AND mi.current_branch = ?)
-        )
-    ";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ssssssss', $branch, $startDate, $endDate, $branch, $branch, $startDate, $endDate, $branch);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $allMotorcycleIds = array_column($result->fetch_all(MYSQLI_ASSOC), 'id');
+    // Get unique motorcycle IDs for IN calculation (three categories)
+    $inMotorcycleIds = [];
 
-    $data = [];
-    $summary = [
-        'in' => 0, 
-        'out' => 0, 
-        'ending' => 0,
-        'new_deliveries' => 0,
-        'transfers_in' => 0,
-        'transfers_out' => 0,
-        'inventory_cost' => ['begin' => 0.0, 'added' => 0.0, 'ending' => 0.0]
-    ];
+    // 1. New deliveries to the branch during the month
+    $deliveriesSql = "SELECT id FROM motorcycle_inventory 
+                     WHERE current_branch = ? 
+                     AND date_delivered BETWEEN ? AND ? 
+                     AND status != 'deleted'";
+    $stmtDeliveries = $conn->prepare($deliveriesSql);
+    $stmtDeliveries->bind_param('sss', $branch, $startDate, $endDate);
+    $stmtDeliveries->execute();
+    $deliveriesResult = $stmtDeliveries->get_result();
+    while ($row = $deliveriesResult->fetch_assoc()) {
+        $inMotorcycleIds[$row['id']] = 'new_delivery';
+    }
 
-    foreach ($allMotorcycleIds as $motorcycleId) {
-        // Get motorcycle details
-        $motorcycleSql = "SELECT * FROM motorcycle_inventory WHERE id = ? AND status != 'deleted'";
-        $stmtMotorcycle = $conn->prepare($motorcycleSql);
-        $stmtMotorcycle->bind_param('i', $motorcycleId);
-        $stmtMotorcycle->execute();
-        $motorcycle = $stmtMotorcycle->get_result()->fetch_assoc();
+    // 2. Transfers to the branch during the month
+    $transferToSql = "SELECT DISTINCT motorcycle_id FROM inventory_transfers 
+                     WHERE to_branch = ? 
+                     AND transfer_date BETWEEN ? AND ? 
+                     AND transfer_status = 'completed'";
+    $stmtTransferTo = $conn->prepare($transferToSql);
+    $stmtTransferTo->bind_param('sss', $branch, $startDate, $endDate);
+    $stmtTransferTo->execute();
+    $transferToResult = $stmtTransferTo->get_result();
+    while ($row = $transferToResult->fetch_assoc()) {
+        $inMotorcycleIds[$row['motorcycle_id']] = 'transfer_in';
+    }
 
-        if (!$motorcycle) continue;
-
-        // Check if it was delivered to this branch during the month
-        $newDelivery = ($motorcycle['date_delivered'] >= $startDate && 
-                       $motorcycle['date_delivered'] <= $endDate && 
-                       $motorcycle['current_branch'] == $branch) ? 1 : 0;
-
-        // Check transfers IN to this branch during the month
-        $transferInSql = "SELECT COUNT(*) as count FROM inventory_transfers 
-                         WHERE motorcycle_id = ? 
-                         AND transfer_date BETWEEN ? AND ? 
-                         AND to_branch = ? 
-                         AND transfer_status = 'completed'";
-        $stmtTransferIn = $conn->prepare($transferInSql);
-        $stmtTransferIn->bind_param('isss', $motorcycleId, $startDate, $endDate, $branch);
-        $stmtTransferIn->execute();
-        $transferInCount = (int)$stmtTransferIn->get_result()->fetch_assoc()['count'];
-        $transferIn = $transferInCount > 0 ? 1 : 0;
-
-        // Check transfers OUT from this branch during the month
-        $transferOutSql = "SELECT COUNT(*) as count FROM inventory_transfers 
-                          WHERE motorcycle_id = ? 
-                          AND transfer_date BETWEEN ? AND ? 
-                          AND from_branch = ? 
-                          AND transfer_status = 'completed'";
-        $stmtTransferOut = $conn->prepare($transferOutSql);
-        $stmtTransferOut->bind_param('isss', $motorcycleId, $startDate, $endDate, $branch);
-        $stmtTransferOut->execute();
-        $transferOutCount = (int)$stmtTransferOut->get_result()->fetch_assoc()['count'];
-        $transferOut = $transferOutCount > 0 ? 1 : 0;
-
-        // Check if currently in this branch and available
-        $endingBalance = ($motorcycle['current_branch'] == $branch && 
-                         $motorcycle['status'] == 'available') ? 1 : 0;
-
-        // Calculate IN quantity - only count once per motorcycle
-        $inQty = ($newDelivery || $transferIn) ? 1 : 0;
-
-        // OUT quantity
-        $outQty = $transferOut;
-
-        // -------------------
-        // UPDATE SUMMARY (always for all matching motorcycles)
-        // -------------------
-        $summary['in'] += (int)$inQty;
-        $summary['out'] += (int)$outQty;
-        $summary['ending'] += (int)$endingBalance;
-        $summary['new_deliveries'] += (int)$newDelivery;
-        $summary['transfers_in'] += (int)$transferIn;
-        $summary['transfers_out'] += (int)$transferOut;
-
-        if ($inQty > 0) {
-            $summary['inventory_cost']['added'] += (float)$motorcycle['inventory_cost'];
-        }
-        if ($endingBalance > 0) {
-            $summary['inventory_cost']['ending'] += (float)$motorcycle['inventory_cost'];
-        }
-
-        // -------------------
-        // BUILD DATA TABLE (only available units in branch)
-        // -------------------
-        if ($endingBalance > 0) {
-            $data[] = [
-                'id' => (int)$motorcycle['id'],
-                'brand' => $motorcycle['brand'],
-                'model' => $motorcycle['model'],
-                'color' => $motorcycle['color'],
-                'engine_number' => $motorcycle['engine_number'],
-                'frame_number' => $motorcycle['frame_number'],
-                'inventory_cost' => (float)$motorcycle['inventory_cost'],
-                'current_branch' => $motorcycle['current_branch'],
-                'date_delivered' => $motorcycle['date_delivered'],
-                'qty' => 1
-            ];
+    // 3. Motorcycles that were in the branch at the start of the month
+    $beginningSql = "SELECT id FROM motorcycle_inventory 
+                    WHERE current_branch = ? 
+                    AND status != 'deleted'
+                    AND (
+                        date_delivered < ? 
+                        OR id IN (
+                            SELECT motorcycle_id FROM inventory_transfers 
+                            WHERE to_branch = ? 
+                            AND transfer_date < ? 
+                            AND transfer_status = 'completed'
+                        )
+                    )
+                    AND id NOT IN (
+                        SELECT motorcycle_id FROM inventory_transfers 
+                        WHERE from_branch = ? 
+                        AND transfer_date < ? 
+                        AND transfer_status = 'completed'
+                    )";
+    $stmtBeginning = $conn->prepare($beginningSql);
+    $stmtBeginning->bind_param('ssssss', $branch, $startDate, $branch, $startDate, $branch, $startDate);
+    $stmtBeginning->execute();
+    $beginningResult = $stmtBeginning->get_result();
+    while ($row = $beginningResult->fetch_assoc()) {
+        if (!isset($inMotorcycleIds[$row['id']])) {
+            $inMotorcycleIds[$row['id']] = 'beginning';
         }
     }
 
-    // Ensure ints and floats are proper types before returning
-    $summary['in'] = (int)$summary['in'];
-    $summary['out'] = (int)$summary['out'];
-    $summary['ending'] = (int)$summary['ending'];
-    $summary['new_deliveries'] = (int)$summary['new_deliveries'];
-    $summary['transfers_in'] = (int)$summary['transfers_in'];
-    $summary['transfers_out'] = (int)$summary['transfers_out'];
-    $summary['inventory_cost']['added'] = (float)$summary['inventory_cost']['added'];
-    $summary['inventory_cost']['ending'] = (float)$summary['inventory_cost']['ending'];
+    // Get OUT count - distinct motorcycles transferred FROM the branch during the month
+    $outSql = "SELECT COUNT(DISTINCT motorcycle_id) as out_count 
+              FROM inventory_transfers 
+              WHERE from_branch = ? 
+              AND transfer_date BETWEEN ? AND ? 
+              AND transfer_status = 'completed'";
+    $stmtOut = $conn->prepare($outSql);
+    $stmtOut->bind_param('sss', $branch, $startDate, $endDate);
+    $stmtOut->execute();
+    $outResult = $stmtOut->get_result();
+    $outCount = $outResult->fetch_assoc()['out_count'];
 
-    // Add helper fields that make it easier for the frontend/print layout
+    // Get ENDING count - motorcycles currently in the branch with status = 'available'
+    $endingSql = "SELECT COUNT(*) as ending_count, SUM(inventory_cost) as ending_cost 
+                 FROM motorcycle_inventory 
+                 WHERE current_branch = ? 
+                 AND status = 'available' 
+                 AND status != 'deleted'";
+    $stmtEnding = $conn->prepare($endingSql);
+    $stmtEnding->bind_param('s', $branch);
+    $stmtEnding->execute();
+    $endingResult = $stmtEnding->get_result();
+    $endingData = $endingResult->fetch_assoc();
+    $endingCount = $endingData['ending_count'];
+    $endingCost = $endingData['ending_cost'] ?: 0;
+
+    // Get new deliveries to this branch during the month
+    $newDeliveriesSql = "SELECT COUNT(*) as new_count, SUM(inventory_cost) as new_cost 
+                        FROM motorcycle_inventory 
+                        WHERE current_branch = ? 
+                        AND date_delivered BETWEEN ? AND ? 
+                        AND status != 'deleted'";
+    $stmtNew = $conn->prepare($newDeliveriesSql);
+    $stmtNew->bind_param('sss', $branch, $startDate, $endDate);
+    $stmtNew->execute();
+    $newResult = $stmtNew->get_result();
+    $newData = $newResult->fetch_assoc();
+    $newCount = $newData['new_count'];
+    $newCost = $newData['new_cost'] ?: 0;
+
+    // Get transfers IN to this branch during the month
+    $transfersInSql = "SELECT COUNT(DISTINCT motorcycle_id) as in_count 
+                      FROM inventory_transfers 
+                      WHERE to_branch = ? 
+                      AND transfer_date BETWEEN ? AND ? 
+                      AND transfer_status = 'completed'";
+    $stmtTransfersIn = $conn->prepare($transfersInSql);
+    $stmtTransfersIn->bind_param('sss', $branch, $startDate, $endDate);
+    $stmtTransfersIn->execute();
+    $transfersInResult = $stmtTransfersIn->get_result();
+    $transfersInCount = $transfersInResult->fetch_assoc()['in_count'];
+
+    // Get transfers FROM this branch during the month
+    $transfersOutSql = "SELECT COUNT(DISTINCT motorcycle_id) as out_count 
+                       FROM inventory_transfers 
+                       WHERE from_branch = ? 
+                       AND transfer_date BETWEEN ? AND ? 
+                       AND transfer_status = 'completed'";
+    $stmtTransfersOut = $conn->prepare($transfersOutSql);
+    $stmtTransfersOut->bind_param('sss', $branch, $startDate, $endDate);
+    $stmtTransfersOut->execute();
+    $transfersOutResult = $stmtTransfersOut->get_result();
+    $transfersOutCount = $transfersOutResult->fetch_assoc()['out_count'];
+
+    // Calculate beginning inventory count and cost (inventory that existed before this month)
+    $beginningCountSql = "SELECT COUNT(*) as begin_count, SUM(inventory_cost) as begin_cost 
+                         FROM motorcycle_inventory 
+                         WHERE current_branch = ? 
+                         AND status != 'deleted'
+                         AND (
+                             date_delivered < ? 
+                             OR id IN (
+                                 SELECT motorcycle_id FROM inventory_transfers 
+                                 WHERE to_branch = ? 
+                                 AND transfer_date < ? 
+                                 AND transfer_status = 'completed'
+                             )
+                         )
+                         AND id NOT IN (
+                             SELECT motorcycle_id FROM inventory_transfers 
+                             WHERE from_branch = ? 
+                             AND transfer_date < ? 
+                             AND transfer_status = 'completed'
+                         )";
+    $stmtBeginningCount = $conn->prepare($beginningCountSql);
+    $stmtBeginningCount->bind_param('ssssss', $branch, $startDate, $branch, $startDate, $branch, $startDate);
+    $stmtBeginningCount->execute();
+    $beginningCountResult = $stmtBeginningCount->get_result();
+    $beginningData = $beginningCountResult->fetch_assoc();
+    $beginningCount = $beginningData['begin_count'];
+    $beginningCost = $beginningData['begin_cost'] ?: 0;
+
+    // Get detailed data for the table (current available inventory)
+    $dataSql = "SELECT * FROM motorcycle_inventory 
+               WHERE current_branch = ? 
+               AND status = 'available' 
+               AND status != 'deleted'
+               ORDER BY brand, model";
+    $stmtData = $conn->prepare($dataSql);
+    $stmtData->bind_param('s', $branch);
+    $stmtData->execute();
+    $dataResult = $stmtData->get_result();
+
+    $data = [];
+    while ($row = $dataResult->fetch_assoc()) {
+        $data[] = [
+            'id' => (int)$row['id'],
+            'brand' => $row['brand'],
+            'model' => $row['model'],
+            'color' => $row['color'],
+            'engine_number' => $row['engine_number'],
+            'frame_number' => $row['frame_number'],
+            'inventory_cost' => (float)$row['inventory_cost'],
+            'current_branch' => $row['current_branch'],
+            'date_delivered' => $row['date_delivered'],
+            'qty' => 1
+        ];
+    }
+
+    // Calculate IN count (all three categories)
+    $inCount = count($inMotorcycleIds);
+
+    $summary = [
+        'in' => (int)$inCount,
+        'out' => (int)$outCount,
+        'ending' => (int)$endingCount,
+        'new_deliveries' => (int)$newCount,
+        'transfers_in' => (int)$transfersInCount,
+        'transfers_out' => (int)$transfersOutCount,
+        'inventory_cost' => [
+            'begin' => (float)$beginningCost,
+            'added' => (float)$newCost,
+            'ending' => (float)$endingCost
+        ]
+    ];
+
+    // Debug info to show breakdown of IN categories
+    $inBreakdown = [
+        'new_deliveries' => 0,
+        'transfers_in' => 0,
+        'beginning' => 0
+    ];
+    
+    foreach ($inMotorcycleIds as $type) {
+        if (isset($inBreakdown[$type])) {
+            $inBreakdown[$type]++;
+        } else {
+            // Handle cases where type doesn't match expected keys
+            $inBreakdown[$type] = 1;
+        }
+    }
+
     $response = [
         'success' => true,
-        'data'    => $data,                   // table rows (only available models)
-        'month'   => $month,
-        'branch'  => $branch,
+        'data' => $data,
+        'month' => $month,
+        'branch' => $branch,
         'summary' => $summary,
-        'data_count' => count($data),         // visible rows count (table QTY)
-        'ending' => (int)$summary['ending'],  // top-level convenience (used by your code before)
-        // formatted cost for print (you can ignore if you prefer raw numbers)
+        'data_count' => count($data),
+        'ending' => (int)$endingCount,
         'inventory_cost_formatted' => [
-            'added'  => number_format($summary['inventory_cost']['added'], 2),
-            'ending' => number_format($summary['inventory_cost']['ending'], 2)
+            'begin' => number_format($beginningCost, 2),
+            'added' => number_format($newCost, 2),
+            'ending' => number_format($endingCost, 2)
+        ],
+        'debug' => [
+            'in_breakdown' => $inBreakdown,
+            'in_total' => $inCount,
+            'beginning_count' => $beginningCount
         ]
     ];
 
     echo json_encode($response);
 }
 
+function getMonthlyTransferredSummary() {
+    global $conn;
+
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
+
+    if (empty($month) || empty($branch)) {
+        echo json_encode(['success' => false, 'message' => 'Month and branch parameters are required']);
+        return;
+    }
+
+    // Date range for the selected month
+    $startDate = date('Y-m-01', strtotime($month));
+    $endDate = date('Y-m-t', strtotime($month));
+
+    $sql = "SELECT 
+                mi.model, 
+                mi.color, 
+                mi.brand, 
+                mi.engine_number, 
+                mi.frame_number, 
+                mi.inventory_cost,
+                it.transfer_date,
+                it.to_branch as transferred_to,
+                it.from_branch as transferred_from
+            FROM motorcycle_inventory mi
+            INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
+            WHERE it.from_branch = ?
+            AND it.transfer_date BETWEEN ? AND ?
+            AND it.transfer_status = 'completed'
+            ORDER BY it.transfer_date DESC, mi.model";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $branch, $startDate, $endDate);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'month' => $month,
+        'branch' => $branch
+    ]);
+}
 
 ?>
