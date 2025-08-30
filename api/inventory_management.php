@@ -69,6 +69,12 @@ switch ( $action ) {
     case 'check_invoice_number':
     checkInvoiceNumber();
     break;
+    case 'check_engine_number':
+    checkEngineNumber();
+    break;
+    case 'check_frame_number':
+    checkFrameNumber();
+    break;
     case 'sell_motorcycle':
     sellMotorcycle();
     break;
@@ -307,7 +313,6 @@ function addMotorcycle() {
 
             if ( !$invoiceStmt->execute() ) {
                 if ( $conn->errno == 1062 ) {
-
                     throw new Exception( 'DUPLICATE_INVOICE' );
                 }
                 throw new Exception( 'Error creating invoice: ' . $invoiceStmt->error );
@@ -331,20 +336,37 @@ function addMotorcycle() {
                             throw new Exception( "Missing required detail fields for model $modelIndex, detail $detailIndex" );
                         }
 
-                        $duplicateCheck = $conn->prepare( 'SELECT id FROM motorcycle_inventory WHERE engine_number = ? OR frame_number = ?' );
-                        if ( !$duplicateCheck ) {
-                            throw new Exception( 'Error preparing duplicate check: ' . $conn->error );
+                        // Enhanced duplicate checking with specific field identification
+                        $engineCheck = $conn->prepare( 'SELECT id, engine_number FROM motorcycle_inventory WHERE engine_number = ?' );
+                        if ( !$engineCheck ) {
+                            throw new Exception( 'Error preparing engine number duplicate check: ' . $conn->error );
                         }
 
-                        $duplicateCheck->bind_param( 'ss', $engineNumber, $frameNumber );
-                        if ( !$duplicateCheck->execute() ) {
-                            throw new Exception( 'Error executing duplicate check: ' . $duplicateCheck->error );
+                        $engineCheck->bind_param( 's', $engineNumber );
+                        if ( !$engineCheck->execute() ) {
+                            throw new Exception( 'Error executing engine number duplicate check: ' . $engineCheck->error );
                         }
 
-                        $duplicateResult = $duplicateCheck->get_result();
-                        if ( $duplicateResult->num_rows > 0 ) {
-                            $duplicateRow = $duplicateResult->fetch_assoc();
-                            throw new Exception( "Duplicate engine number ($engineNumber) or frame number ($frameNumber) found with ID: " . $duplicateRow[ 'id' ] );
+                        $engineResult = $engineCheck->get_result();
+                        if ( $engineResult->num_rows > 0 ) {
+                            $duplicateRow = $engineResult->fetch_assoc();
+                            throw new Exception( "DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists in the system (ID: " . $duplicateRow[ 'id' ] . ")" );
+                        }
+
+                        $frameCheck = $conn->prepare( 'SELECT id, frame_number FROM motorcycle_inventory WHERE frame_number = ?' );
+                        if ( !$frameCheck ) {
+                            throw new Exception( 'Error preparing frame number duplicate check: ' . $conn->error );
+                        }
+
+                        $frameCheck->bind_param( 's', $frameNumber );
+                        if ( !$frameCheck->execute() ) {
+                            throw new Exception( 'Error executing frame number duplicate check: ' . $frameCheck->error );
+                        }
+
+                        $frameResult = $frameCheck->get_result();
+                        if ( $frameResult->num_rows > 0 ) {
+                            $duplicateRow = $frameResult->fetch_assoc();
+                            throw new Exception( "DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists in the system (ID: " . $duplicateRow[ 'id' ] . ")" );
                         }
 
                         $stmt = $conn->prepare( "INSERT INTO motorcycle_inventory 
@@ -407,13 +429,28 @@ function updateMotorcycle() {
     $currentBranch = sanitizeInput( $_POST[ 'current_branch' ] );
     $status = sanitizeInput( $_POST[ 'status' ] );
 
-    $checkStmt = $conn->prepare( "SELECT id FROM motorcycle_inventory 
-                                WHERE (engine_number = ? OR frame_number = ?) AND id != ?" );
-    $checkStmt->bind_param( 'ssi', $engineNumber, $frameNumber, $id );
-    $checkStmt->execute();
+    // Enhanced duplicate checking for updates (excluding current record)
+    $engineCheckStmt = $conn->prepare( "SELECT id, engine_number FROM motorcycle_inventory 
+                                      WHERE engine_number = ? AND id != ?" );
+    $engineCheckStmt->bind_param( 'si', $engineNumber, $id );
+    $engineCheckStmt->execute();
+    $engineCheckResult = $engineCheckStmt->get_result();
+    
+    if ( $engineCheckResult->num_rows > 0 ) {
+        $duplicateRow = $engineCheckResult->fetch_assoc();
+        echo json_encode( [ 'success' => false, 'message' => "DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" ] );
+        return;
+    }
 
-    if ( $checkStmt->get_result()->num_rows > 0 ) {
-        echo json_encode( [ 'success' => false, 'message' => 'Another motorcycle with this engine or frame number already exists' ] );
+    $frameCheckStmt = $conn->prepare( "SELECT id, frame_number FROM motorcycle_inventory 
+                                     WHERE frame_number = ? AND id != ?" );
+    $frameCheckStmt->bind_param( 'si', $frameNumber, $id );
+    $frameCheckStmt->execute();
+    $frameCheckResult = $frameCheckStmt->get_result();
+    
+    if ( $frameCheckResult->num_rows > 0 ) {
+        $duplicateRow = $frameCheckResult->fetch_assoc();
+        echo json_encode( [ 'success' => false, 'message' => "DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" ] );
         return;
     }
 
@@ -430,6 +467,7 @@ function updateMotorcycle() {
         echo json_encode( [ 'success' => false, 'message' => 'Error updating motorcycle: ' . $conn->error ] );
     }
 }
+
 
 function deleteMotorcycle() {
     global $conn;
@@ -1128,6 +1166,62 @@ function checkInvoiceNumber() {
     $stmt->bind_param( 's', $invoiceNumber );
     $stmt->execute();
 
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+
+    echo json_encode( [ 'exists' => $exists ] );
+}
+
+function checkEngineNumber() {
+    global $conn;
+
+    if ( empty( $_POST[ 'engine_number' ] ) ) {
+        echo json_encode( [ 'exists' => false ] );
+        return;
+    }
+
+    $engineNumber = sanitizeInput( $_POST[ 'engine_number' ] );
+    $excludeId = isset( $_POST[ 'exclude_id' ] ) ? intval( $_POST[ 'exclude_id' ] ) : 0;
+
+    if ( $excludeId > 0 ) {
+        // For updates - exclude current record
+        $stmt = $conn->prepare( 'SELECT id FROM motorcycle_inventory WHERE engine_number = ? AND id != ?' );
+        $stmt->bind_param( 'si', $engineNumber, $excludeId );
+    } else {
+        // For new records
+        $stmt = $conn->prepare( 'SELECT id FROM motorcycle_inventory WHERE engine_number = ?' );
+        $stmt->bind_param( 's', $engineNumber );
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+
+    echo json_encode( [ 'exists' => $exists ] );
+}
+
+function checkFrameNumber() {
+    global $conn;
+
+    if ( empty( $_POST[ 'frame_number' ] ) ) {
+        echo json_encode( [ 'exists' => false ] );
+        return;
+    }
+
+    $frameNumber = sanitizeInput( $_POST[ 'frame_number' ] );
+    $excludeId = isset( $_POST[ 'exclude_id' ] ) ? intval( $_POST[ 'exclude_id' ] ) : 0;
+
+    if ( $excludeId > 0 ) {
+        // For updates - exclude current record
+        $stmt = $conn->prepare( 'SELECT id FROM motorcycle_inventory WHERE frame_number = ? AND id != ?' );
+        $stmt->bind_param( 'si', $frameNumber, $excludeId );
+    } else {
+        // For new records
+        $stmt = $conn->prepare( 'SELECT id FROM motorcycle_inventory WHERE frame_number = ?' );
+        $stmt->bind_param( 's', $frameNumber );
+    }
+
+    $stmt->execute();
     $result = $stmt->get_result();
     $exists = $result->num_rows > 0;
 

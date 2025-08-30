@@ -904,6 +904,110 @@ function clearInvoiceError() {
   $("#invoiceNumber").next(".invalid-feedback").remove();
 }
 
+// =======================
+// Engine Number Validation
+// =======================
+$(document).on("blur", ".engine-number", function () {
+  checkEngineNumber($(this).val(), $(this));
+});
+
+$(document).on("blur", "#editEngineNumber", function () {
+  const excludeId = $("#editId").val();
+  checkEngineNumber($(this).val(), $(this), excludeId);
+});
+
+function checkEngineNumber(engineNumber, $element, excludeId = 0) {
+  if (!engineNumber) return;
+
+  const data = {
+    action: "check_engine_number",
+    engine_number: engineNumber,
+  };
+
+  if (excludeId > 0) {
+    data.exclude_id = excludeId;
+  }
+
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "POST",
+    data: data,
+    dataType: "json",
+    success: function (response) {
+      if (response.exists) {
+        showFieldError($element, "This engine number already exists in the system");
+      } else {
+        clearFieldError($element);
+      }
+    },
+    error: function () {
+      // On error, clear any existing error to avoid blocking the user
+      clearFieldError($element);
+    },
+  });
+}
+
+// =======================
+// Frame Number Validation
+// =======================
+$(document).on("blur", ".frame-number", function () {
+  checkFrameNumber($(this).val(), $(this));
+});
+
+$(document).on("blur", "#editFrameNumber", function () {
+  const excludeId = $("#editId").val();
+  checkFrameNumber($(this).val(), $(this), excludeId);
+});
+
+function checkFrameNumber(frameNumber, $element, excludeId = 0) {
+  if (!frameNumber) return;
+
+  const data = {
+    action: "check_frame_number",
+    frame_number: frameNumber,
+  };
+
+  if (excludeId > 0) {
+    data.exclude_id = excludeId;
+  }
+
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "POST",
+    data: data,
+    dataType: "json",
+    success: function (response) {
+      if (response.exists) {
+        showFieldError($element, "This frame number already exists in the system");
+      } else {
+        clearFieldError($element);
+      }
+    },
+    error: function () {
+      // On error, clear any existing error to avoid blocking the user
+      clearFieldError($element);
+    },
+  });
+}
+
+// =======================
+// Generic Field Error Functions
+// =======================
+function showFieldError($element, message) {
+  $element.addClass("is-invalid");
+  $element.removeClass("is-valid");
+
+  $element.next(".invalid-feedback").remove();
+
+  $element.after(`<div class="invalid-feedback">${message}</div>`);
+}
+
+function clearFieldError($element) {
+  $element.removeClass("is-invalid");
+  $element.addClass("is-valid");
+  $element.next(".invalid-feedback").remove();
+}
+
 
 // =======================
 // Sale Functions
