@@ -862,7 +862,7 @@ function getCurrentBranch() {
 function transferMultipleMotorcycles() {
     global $conn;
 
-    $required = [ 'motorcycle_ids', 'from_branch', 'to_branch', 'transfer_date', 'inventory_costs' ];
+    $required = [ 'motorcycle_ids', 'from_branch', 'to_branch', 'transfer_date', 'inventory_costs', 'transfer_invoice_number' ];
     foreach ( $required as $field ) {
         if ( empty( $_POST[ $field ] ) ) {
             echo json_encode( [ 'success' => false, 'message' => "Missing required field: $field" ] );
@@ -875,11 +875,23 @@ function transferMultipleMotorcycles() {
     $fromBranch = sanitizeInput( $_POST[ 'from_branch' ] );
     $toBranch = sanitizeInput( $_POST[ 'to_branch' ] );
     $transferDate = sanitizeInput( $_POST[ 'transfer_date' ] );
+    $transferInvoiceNumber = sanitizeInput( $_POST[ 'transfer_invoice_number' ] );
     $notes = isset( $_POST[ 'notes' ] ) ? sanitizeInput( $_POST[ 'notes' ] ) : '';
     $transferredBy = isset( $_SESSION[ 'user_id' ] ) ? $_SESSION[ 'user_id' ] : 0;
 
     if ( $fromBranch === $toBranch ) {
         echo json_encode( [ 'success' => false, 'message' => 'Cannot transfer to the same branch' ] );
+        return;
+    }
+
+    // Check if transfer invoice number already exists
+    $checkInvoiceStmt = $conn->prepare("SELECT id FROM inventory_transfers WHERE transfer_invoice_number = ?");
+    $checkInvoiceStmt->bind_param('s', $transferInvoiceNumber);
+    $checkInvoiceStmt->execute();
+    $invoiceResult = $checkInvoiceStmt->get_result();
+    
+    if ($invoiceResult->num_rows > 0) {
+        echo json_encode([ 'success' => false, 'message' => 'Transfer invoice number already exists' ]);
         return;
     }
 
@@ -923,14 +935,14 @@ function transferMultipleMotorcycles() {
             $updateStmt->execute();
         }
 
-        // Insert transfer records and get the transfer IDs
+        // Insert transfer records with the same transfer invoice number
         $transferIds = [];
         $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers 
-                                      (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status)
-                                      VALUES (?, ?, ?, ?, ?, ?, 'pending')" );
+                                      (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
+                                      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)" );
 
         foreach ( $motorcycleIds as $id ) {
-            $transferStmt->bind_param( 'isssis', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes );
+            $transferStmt->bind_param( 'isssiss', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $transferInvoiceNumber );
             $transferStmt->execute();
             $transferIds[] = $conn->insert_id;
         }
@@ -945,6 +957,7 @@ function transferMultipleMotorcycles() {
             'message' => 'Successfully initiated transfer for ' . count( $motorcycleIds ) . ' motorcycle(s)',
             'transferred_count' => count( $motorcycleIds ),
             'to_branch' => $toBranch,
+            'transfer_invoice_number' => $transferInvoiceNumber,
             'receipt_data' => [
                 'transfer_ids' => $transferIds,
                 'from_branch' => $fromBranch,
@@ -953,7 +966,8 @@ function transferMultipleMotorcycles() {
                 'notes' => $notes,
                 'motorcycles' => $motorcycleDetails,
                 'total_count' => count( $motorcycleIds ),
-                'total_cost' => $totalCost
+                'total_cost' => $totalCost,
+                'transfer_invoice_number' => $transferInvoiceNumber
             ]
         ] );
     } catch ( Exception $e ) {

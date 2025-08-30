@@ -1078,18 +1078,27 @@ function performMultipleTransfers() {
     return costInput ? parseFloat(costInput.value) || motorcycle.inventory_cost : motorcycle.inventory_cost;
   });
 
+  // Get the transfer invoice number from user input
+  const transferInvoiceNumber = $("#multipleTransferInvoiceNumber").val().trim();
+
   if (selectedIds.length === 0) {
     showErrorModal("Please select at least one motorcycle to transfer");
     return;
   }
 
- const formData = {
+  if (!transferInvoiceNumber) {
+    showErrorModal("Please enter a transfer invoice number");
+    return;
+  }
+
+  const formData = {
     action: "transfer_multiple_motorcycles",
     motorcycle_ids: selectedIds.join(","),
-    inventory_costs: inventoryCosts.join(","), // Send inventory costs
+    inventory_costs: inventoryCosts.join(","),
     from_branch: $("#multipleFromBranch").val(),
     to_branch: $("#multipleToBranch").val(),
     transfer_date: $("#multipleTransferDate").val(),
+    transfer_invoice_number: transferInvoiceNumber,
     notes: $("#multipleTransferNotes").val(),
   };
 
@@ -1097,7 +1106,8 @@ function performMultipleTransfers() {
     !formData.motorcycle_ids ||
     !formData.from_branch ||
     !formData.to_branch ||
-    !formData.transfer_date
+    !formData.transfer_date ||
+    !formData.transfer_invoice_number
   ) {
     showErrorModal("Please fill in all required fields");
     return;
@@ -1113,9 +1123,8 @@ function performMultipleTransfers() {
     method: "POST",
     data: formData,
     dataType: "json",
-    // In the performMultipleTransfers function, update the AJAX success handler:
-success: function (response) {
-    if (response.success) {
+    success: function (response) {
+      if (response.success) {
         $("#multipleTransferModal").modal("hide");
         
         // Show receipt modal with transfer details
@@ -1136,10 +1145,10 @@ success: function (response) {
         $("#searchResults").html(
             '<div class="text-center text-muted py-3">Search for motorcycles using engine number</div>'
         );
-    } else {
+      } else {
         showErrorModal(response.message || "Error initiating transfer");
-    }
-},
+      }
+    },
     error: function (xhr, status, error) {
       showErrorModal("Error initiating transfer: " + error);
     },
@@ -1152,6 +1161,7 @@ function showTransferReceipt(receiptData) {
     // Set header information
     $("#receiptDate").text(new Date().toLocaleDateString());
     $("#receiptTransferId").text(receiptData.transfer_ids.join(', '));
+    $("#receiptInvoiceNo").text(receiptData.transfer_invoice_number || 'N/A');
     $("#receiptFromBranch").text(receiptData.from_branch);
     $("#receiptToBranch").text(receiptData.to_branch);
     
@@ -1199,24 +1209,177 @@ function showTransferReceipt(receiptData) {
 }
 
 function printReceipt() {
-    const receiptContent = document.getElementById("transferReceiptModal").querySelector(".modal-content");
-    const originalDisplay = receiptContent.style.display;
+    // Create a printable version of the receipt
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Transfer Receipt</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    color: #333;
+                }
+                .receipt-header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #000;
+                    padding-bottom: 15px;
+                }
+                .receipt-header h2 {
+                    margin: 0;
+                    color: #000f71;
+                    font-size: 24px;
+                }
+                .receipt-header h3 {
+                    margin: 5px 0;
+                    font-size: 18px;
+                    color: #555;
+                }
+                .company-info {
+                    margin-bottom: 15px;
+                }
+                .receipt-details {
+                    margin-bottom: 20px;
+                }
+                .receipt-details .row {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 8px;
+                }
+                .receipt-details .label {
+                    font-weight: bold;
+                    width: 120px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                }
+                table th {
+                    background-color: #f8f9fa;
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                    font-weight: bold;
+                }
+                table td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                }
+                .total-row {
+                    font-weight: bold;
+                    background-color: #f8f9fa;
+                }
+                .notes-section {
+                    margin-top: 20px;
+                    padding-top: 10px;
+                    border-top: 1px dashed #ddd;
+                }
+                .footer {
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #777;
+                }
+                @media print {
+                    body {
+                        padding: 0;
+                    }
+                    .no-print {
+                        display: none !important;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-header">
+                <h2>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h2>
+                <h3>Motorcycle Transfer Receipt</h3>
+            </div>
+            
+            <div class="company-info">
+                <div><strong>Address:</strong> 1031, Victoria Building, Roxas Avenue, Roxas City, 5800</div>
+            </div>
+            
+            <div class="receipt-details">
+                <div class="row">
+                    <div class="label">Date:</div>
+                    <div>${$("#receiptDate").text()}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Transfer Invoice No:</div>
+                    <div>${$("#receiptInvoiceNo").text()}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Transfer ID:</div>
+                    <div>${$("#receiptTransferId").text()}</div>
+                </div>
+                <div class="row">
+                    <div class="label">From Branch:</div>
+                    <div>${$("#receiptFromBranch").text()}</div>
+                </div>
+                <div class="row">
+                    <div class="label">To Branch:</div>
+                    <div>${$("#receiptToBranch").text()}</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Brand</th>
+                        <th>Model</th>
+                        <th>Color</th>
+                        <th>Engine Number</th>
+                        <th>Frame Number</th>
+                        <th>Inventory Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${$("#receiptMotorcyclesList").html()}
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="6" style="text-align: right;">Total Motorcycles:</td>
+                        <td>${$("#receiptTotalCount").text()}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="6" style="text-align: right;">Total Inventory Cost:</td>
+                        <td>${$("#receiptTotalCost").text()}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <div class="notes-section">
+                <div><strong>Transfer Notes:</strong></div>
+                <div>${$("#receiptNotes").text()}</div>
+            </div>
+            
+            <div class="footer">
+                <div>Generated on: ${new Date().toLocaleString()}</div>
+                <div>Thank you for your business!</div>
+            </div>
+        </body>
+        </html>
+    `;
     
-    // Show the content for printing
-    receiptContent.style.display = "block";
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
     
-    const opt = {
-        margin: 10,
-        filename: 'transfer_receipt.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    // Wait for content to load before printing
+    printWindow.onload = function() {
+        printWindow.focus();
+        setTimeout(function() {
+            printWindow.print();
+            // printWindow.close(); // Uncomment if you want to automatically close after printing
+        }, 250);
     };
-    
-    html2pdf().set(opt).from(receiptContent).save().then(() => {
-        // Restore original display
-        receiptContent.style.display = originalDisplay;
-    });
 }
 function searchMotorcyclesByEngine() {
   const searchTerm = $("#engineSearch").val().trim();

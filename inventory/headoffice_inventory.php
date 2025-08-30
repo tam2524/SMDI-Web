@@ -1081,173 +1081,174 @@
         </div>
     </div>
 
-    <div class='modal fade' id='multipleTransferModal' tabindex='-1' aria-labelledby='multipleTransferModalLabel'
+<div class='modal fade' id='multipleTransferModal' tabindex='-1' aria-labelledby='multipleTransferModalLabel'
         aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header bg-primary text-white'>
-                    <h5 class='modal-title text-white' id='multipleTransferModalLabel'>
-                        <i class='bi bi-truck me-2 text-white'></i>Transfer Multiple Motorcycles
-                    </h5>
-                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header bg-primary text-white'>
+                <h5 class='modal-title text-white' id='multipleTransferModalLabel'>
+                    <i class='bi bi-truck me-2 text-white'></i>Transfer Multiple Motorcycles
+                </h5>
+                <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
                         aria-label='Close'></button>
-                </div>
-                <div class='modal-body p-0'>
-                    <form id='multipleTransferForm'>
-                        <div class='row g-0'>
-                            <div class='col-md-4 border-end bg-light'>
-                                <div class='p-4'>
-                                    <fieldset>
-                                        <legend class='fs-6 fw-semibold text-black mb-4'>
-                                            <i class='bi bi-geo-alt me-2'></i>Transfer Information
-                                        </legend>
+            </div>
+            <div class='modal-body p-0'>
+                <form id='multipleTransferForm'>
+                    <div class='row g-0'>
+                        <div class='col-md-4 border-end bg-light'>
+                            <div class='p-4'>
+                                <fieldset>
+                                    <legend class='fs-6 fw-semibold text-black mb-4'>
+                                        <i class='bi bi-geo-alt me-2'></i>Transfer Information
+                                    </legend>
 
-                                        <div class='mb-3'>
-                                            <label for='multipleInvoiceNumber' class='form-label small fw-semibold'>
-                                                <i class='bi bi-geo-alt me-1'></i>Invoice No. / MT
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm'
-                                                id='multipleInvoiceNumber' readonly>
-                                        </div>
+                                    <!-- Transfer Invoice Number Input -->
+                                    <div class='mb-3'>
+                                        <label for='multipleTransferInvoiceNumber' class='form-label small fw-semibold'>
+                                            <i class='bi bi-receipt me-1'></i>Transfer Invoice No. <span class='text-danger'>*</span>
+                                        </label>
+                                        <input type='text' class='form-control form-control-sm'
+                                                id='multipleTransferInvoiceNumber' required
+                                                placeholder="Enter transfer invoice number">
+                                    </div>
 
-                                        <div class='mb-3'>
-                                            <label for='multipleFromBranch' class='form-label small fw-semibold'>
-                                                <i class='bi bi-geo-alt me-1'></i>From Branch
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm'
+                                    <div class='mb-3'>
+                                        <label for='multipleFromBranch' class='form-label small fw-semibold'>
+                                            <i class='bi bi-geo-alt me-1'></i>From Branch
+                                        </label>
+                                        <input type='text' class='form-control form-control-sm'
                                                 id='multipleFromBranch' readonly>
-                                        </div>
+                                    </div>
 
-                                        <div class='mb-3'>
-                                            <label for='multipleToBranch' class='form-label small fw-semibold'>
-                                                <i class='bi bi-geo-alt-fill me-1'></i>To Branch <span
+                                    <div class='mb-3'>
+                                        <label for='multipleToBranch' class='form-label small fw-semibold'>
+                                            <i class='bi bi-geo-alt-fill me-1'></i>To Branch <span
                                                     class='text-danger'>*</span>
-                                            </label>
-                                            <select class='form-select form-select-sm' id='multipleToBranch' required>
-                                                <option value=''>Select Destination Branch</option>
+                                        </label>
+                                        <select class='form-select form-select-sm' id='multipleToBranch' required>
+                                            <option value=''>Select Destination Branch</option>
+                                            <!-- Options will be populated dynamically -->
+                                        </select>
+                                    </div>
 
-                                            </select>
-                                        </div>
-
-                                        <div class='mb-3'>
-                                            <label for='multipleTransferDate' class='form-label small fw-semibold'>
-                                                <i class='bi bi-calendar me-1'></i>Transfer Date <span
+                                    <div class='mb-3'>
+                                        <label for='multipleTransferDate' class='form-label small fw-semibold'>
+                                            <i class='bi bi-calendar me-1'></i>Transfer Date <span
                                                     class='text-danger'>*</span>
-                                            </label>
-                                            <input type='date' class='form-control form-control-sm'
+                                        </label>
+                                        <input type='date' class='form-control form-control-sm'
                                                 id='multipleTransferDate' required>
-                                        </div>
+                                    </div>
 
-                                        <div class='mb-4'>
-                                            <label for='multipleTransferNotes' class='form-label small fw-semibold'>
-                                                <i class='bi bi-chat-text me-1'></i>Transfer Notes
-                                            </label>
-                                            <textarea class='form-control form-control-sm' id='multipleTransferNotes'
+                                    <div class='mb-4'>
+                                        <label for='multipleTransferNotes' class='form-label small fw-semibold'>
+                                            <i class='bi bi-chat-text me-1'></i>Transfer Notes
+                                        </label>
+                                        <textarea class='form-control form-control-sm' id='multipleTransferNotes'
                                                 rows='3' placeholder='Optional notes about this transfer...'></textarea>
-                                        </div>
-                                    </fieldset>
+                                    </div>
+                                </fieldset>
 
-                                    <hr>
+                                <hr>
 
-                                    <fieldset>
-                                        <legend class='fs-6 fw-semibold text-black mb-3'>
-                                            <i class='bi bi-calculator me-2'></i>Transfer Summary
-                                        </legend>
+                                <fieldset>
+                                    <legend class='fs-6 fw-semibold text-black mb-3'>
+                                        <i class='bi bi-calculator me-2'></i>Transfer Summary
+                                    </legend>
 
-                                        <div class='summary-card p-3 mb-3'
+                                    <div class='summary-card p-3 mb-3'
                                             style='background: white; border-radius: 8px; border: 1px solid #e9ecef;'>
-                                            <div class='d-flex justify-content-between align-items-center mb-2'>
-                                                <span class='small fw-semibold'>Total Units:</span>
-                                                <span class='badge bg-primary' id='selectedCount'>0</span>
-                                            </div>
-                                            <div class='d-flex justify-content-between align-items-center'>
-                                                <span class='small fw-semibold'>Total Inventory Cost Value:</span>
-                                                <span class='fw-bold text-success'
+                                        <div class='d-flex justify-content-between align-items-center mb-2'>
+                                            <span class='small fw-semibold'>Total Units:</span>
+                                            <span class='badge bg-primary' id='selectedCount'>0</span>
+                                        </div>
+                                        <div class='d-flex justify-content-between align-items-center'>
+                                            <span class='small fw-semibold'>Total Inventory Cost Value:</span>
+                                            <span class='fw-bold text-success'
                                                     id='totalInventoryCostValue'>₱0.00</span>
-                                            </div>
-                                        </div>
-
-                                        <div class='progress mb-4' style='height: 6px;'>
-                                            <div class='progress-bar' id='selectionProgress' style='width: 0%'></div>
-                                        </div>
-
-                                        <div class='d-grid'>
-                                            <button type='submit' class='btn btn-success btn-sm'>
-                                                <i class='bi bi-truck me-2'></i>Transfer Selected Motorcycles
-                                            </button>
-                                        </div>
-                                    </fieldset>
-                                </div>
-                            </div>
-
-                            <div class='col-md-8'>
-                                <div class='p-4'>
-                                    <h6 class='fw-semibold text-primary mb-4'>
-                                        <i class='bi bi-search me-2'></i>Motorcycle Selection
-                                    </h6>
-                                    <div class='row g-2 mb-3 align-items-end'>
-                                        <div class='col-md-8'>
-                                            <label class='form-label small fw-semibold'>
-                                                <i class='bi bi-upc-scan me-1'></i>Search by Engine Number
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm' id='engineSearch'
-                                                placeholder='Enter engine number...'>
-                                        </div>
-                                        <div class='col-md-4'>
-                                            <div class='d-flex gap-2'>
-                                                <button class='btn btn-primary btn-sm w-100 text-white' type='button'
-                                                    id='searchEngineBtn'>
-                                                    <i class='bi bi-search me-1'></i>Search
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
-                                    <div class='form-text small text-muted mb-4'>You can search using full or partial
-                                        engine numbers.</div>
 
-                                    <div class='row g-3'>
-                                        <div class='col-md-6'>
-                                            <div class='card h-100 shadow-sm'>
-                                                <div
+                                    <div class='progress mb-4' style='height: 6px;'>
+                                        <div class='progress-bar' id='selectionProgress' style='width: 0%'></div>
+                                    </div>
+
+                                    <div class='d-grid'>
+                                        <button type='submit' class='btn btn-success btn-sm'>
+                                            <i class='bi bi-truck me-2'></i>Transfer Selected Motorcycles
+                                        </button>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <div class='col-md-8'>
+                            <div class='p-4'>
+                                <h6 class='fw-semibold text-primary mb-4'>
+                                    <i class='bi bi-search me-2'></i>Motorcycle Selection
+                                </h6>
+                                <div class='row g-2 mb-3 align-items-end'>
+                                    <div class='col-md-8'>
+                                        <label class='form-label small fw-semibold'>
+                                            <i class='bi bi-upc-scan me-1'></i>Search by Engine Number
+                                        </label>
+                                        <input type='text' class='form-control form-control-sm' id='engineSearch'
+                                                placeholder='Enter engine number...'>
+                                    </div>
+                                    <div class='col-md-4'>
+                                        <div class='d-flex gap-2'>
+                                            <button class='btn btn-primary btn-sm w-100 text-white' type='button'
+                                                    id='searchEngineBtn'>
+                                                <i class='bi bi-search me-1'></i>Search
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class='form-text small text-muted mb-4'>You can search using full or partial
+                                    engine numbers.</div>
+
+                                <div class='row g-3'>
+                                    <div class='col-md-6'>
+                                        <div class='card h-100 shadow-sm'>
+                                            <div
                                                     class='card-header py-2 bg-light d-flex justify-content-between align-items-center'>
-                                                    <span class='fw-semibold small'>
-                                                        <i class='bi bi-list-check me-1'></i>Search Results
-                                                    </span>
-                                                    <span class='badge bg-secondary' id='searchResultsCount'>0</span>
-                                                </div>
-                                                <div class='card-body p-0'>
-                                                    <div class='search-results-container'
+                                                <span class='fw-semibold small'>
+                                                    <i class='bi bi-list-check me-1'></i>Search Results
+                                                </span>
+                                                <span class='badge bg-secondary' id='searchResultsCount'>0</span>
+                                            </div>
+                                            <div class='card-body p-0'>
+                                                <div class='search-results-container'
                                                         style='max-height: 300px; overflow-y: auto;' id='searchResults'>
-                                                        <div class='text-center text-muted py-5'>
-                                                            <i class='bi bi-search display-6 mb-2'></i>
-                                                            <p class='small'>Search for motorcycles to display results
-                                                            </p>
-                                                        </div>
+                                                    <div class='text-center text-muted py-5'>
+                                                        <i class='bi bi-search display-6 mb-2'></i>
+                                                        <p class='small'>Search for motorcycles to display results
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class='col-md-6'>
-                                            <div class='card h-100 shadow-sm'>
-                                                <div
+                                    </div>
+                                    <div class='col-md-6'>
+                                        <div class='card h-100 shadow-sm'>
+                                            <div
                                                     class='card-header py-2 bg-light d-flex justify-content-between align-items-center'>
-                                                    <span class='fw-semibold small'>
-                                                        <i class='bi bi-check-circle me-1'></i>Selected Items
-                                                    </span>
-                                                    <button type='button'
+                                                <span class='fw-semibold small'>
+                                                    <i class='bi bi-check-circle me-1'></i>Selected Items
+                                                </span>
+                                                <button type='button'
                                                         class='btn btn-outline-danger btn-sm py-0 px-2'
                                                         id='clearSelectionBtn' title='Clear All'>
-                                                        <i class='bi bi-trash'></i>
-                                                    </button>
-                                                </div>
-                                                <div class='card-body p-0'>
-                                                    <div class='selected-items-container'
+                                                    <i class='bi bi-trash'></i>
+                                                </button>
+                                            </div>
+                                            <div class='card-body p-0'>
+                                                <div class='selected-items-container'
                                                         style='max-height: 300px; overflow-y: auto;'
                                                         id='selectedMotorcyclesList'>
-                                                        <div class='text-center text-muted py-5'>
-                                                            <i class='bi bi-inbox display-6 mb-2'></i>
-                                                            <p class='small'>No motorcycles selected</p>
-                                                        </div>
+                                                    <div class='text-center text-muted py-5'>
+                                                        <i class='bi bi-inbox display-6 mb-2'></i>
+                                                        <p class='small'>No motorcycles selected</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1256,11 +1257,12 @@
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
     <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
@@ -1316,8 +1318,8 @@
                         </div>
                         <div class='col-md-6 text-end'>
                             <p class='mb-0'><strong>Date:</strong> <span id='receiptDate'></span></p>
-                            <p class='mb-0'><strong>Invoice No:</strong> <span id='receiptInvoiceNo'></span></p>
-                            <p class='mb-0'><strong>Transfer ID:</strong> <span id='receiptTransferId'></span></p>
+                            <p class='mb-0'><strong>Transfer Invoice No:</strong> <span id='receiptInvoiceNo'></span></p> 
+                            <!-- <p class='mb-0'><strong>Transfer ID:</strong> <span id='receiptTransferId'></span></p> -->
                         </div>
                     </div>
                     <hr>
@@ -1366,9 +1368,9 @@
             </div>
             <div class='modal-footer'>
                 <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
+                <!-- <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
                     <i class='bi bi-printer me-2'></i>Print Receipt
-                </button>
+                </button> -->
             </div>
         </div>
     </div>
