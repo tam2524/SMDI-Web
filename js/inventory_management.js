@@ -2119,6 +2119,240 @@ $("#addMotorcycleModal").on("hidden.bs.modal", function () {
     $("#branch").val(currentBranch);
   }
 });
+
+
+// =======================
+// Monthly Motorcycle Report
+// =======================
+
+
+// Show/hide brand filter based on report type selection
+$('#reportType').change(function() {
+    if ($(this).val() === 'motorcycle') {
+        $('#brandFilterContainer').show();
+    } else {
+        $('#brandFilterContainer').hide();
+    }
+});
+
+// Initialize the visibility on page load
+$(document).ready(function() {
+    if ($('#reportType').val() === 'motorcycle') {
+        $('#brandFilterContainer').show();
+    }
+});
+
+// Function to generate motorcycle report
+function generateMotorcycleReport(branch, brandFilter) {
+    $('#monthlyReportOptionsModal').modal('hide');
+    $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
+
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: {
+            action: 'get_available_motorcycles_report',
+            branch: branch,
+            brand: brandFilter
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                currentReportData = response.data;
+                currentReportType = 'motorcycle'; // Set report type
+                renderMotorcycleReport(response.data, branch, brandFilter);
+                $('#monthlyInventoryReportModal').modal('show');
+            } else {
+                showErrorModal(response.message || 'Error generating report');
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('Error generating report: ' + error);
+        }
+    });
+}
+
+// Function to render motorcycle report
+// Function to render motorcycle report
+function renderMotorcycleReport(data, branch, brandFilter) {
+    const timestamp = new Date().toLocaleString();
+    $('#monthlyReportTimestamp').text('Generated on: ' + timestamp);
+    $('#monthlyInventoryReportModalLabel').text('Available Motorcycle Units Report');
+    
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
+                </h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057; font-weight: 500;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
+            <p class="text-muted">
+                ${brandFilter === 'all' ? 'ALL BRANDS' : brandFilter.toUpperCase()} | 
+                ${branch ? branch : 'ALL BRANCHES'}
+            </p>
+            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
+                Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                })}
+            </p>
+        </div>
+    `;
+    
+    if (data.length === 0) {
+        html += `
+            <div class="alert alert-info text-center">
+                No available motorcycles found for the selected criteria.
+            </div>
+        `;
+    } else {
+        // Group by branch
+        const branches = {};
+        data.forEach(item => {
+            if (!branches[item.current_branch]) {
+                branches[item.current_branch] = [];
+            }
+            branches[item.current_branch].push(item);
+        });
+        
+        // Create report sections for each branch
+        Object.keys(branches).forEach(branch => {
+            const branchData = branches[branch];
+            
+            html += `
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">${branch} - ${branchData.length} units</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
+                                        <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 60px;">QTY</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">MODEL</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">COLOR</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">BRAND</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">ENGINE NUMBER</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">Inventory Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            branchData.forEach(item => {
+                html += `
+                    <tr>
+                        <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">1</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
+                        <td class="py-2">${escapeHtml(item.engine_number)}</td>
+                        <td class="py-2">${escapeHtml(item.frame_number)}</td>
+                        <td class="py-2 text-end">${formatCurrency(item.inventory_cost)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Add summary
+        const totalUnits = data.length;
+        const totalValue = data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+        
+        html += `
+            <div class="alert alert-primary mt-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Total Units:</strong> ${totalUnits}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <strong>Total Inventory Value:</strong> ${formatCurrency(totalValue)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    $('#monthlyReportContent').html(html);
+    
+    // Add styling for the modal
+    $("<style>")
+        .prop("type", "text/css")
+        .html(`
+            #monthlyInventoryReportModal .modal-body {
+                max-height: calc(100vh - 200px);
+                overflow-y: auto;
+            }
+            #monthlyInventoryReportModal .modal-dialog {
+                max-width: 95%;
+                height: calc(100vh - 100px);
+            }
+            #monthlyInventoryReportModal .modal-content {
+                height: 100%;
+            }
+            .table-container { overflow: hidden; }
+            .table th { font-weight: 600; font-size: 0.9rem; }
+            .table td { font-size: 0.9rem; color: #495057; }
+            .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+            .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
+            .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
+        `)
+        .appendTo("head");
+    
+    // Update export button for motorcycle report
+    $('#exportMonthlyReportToPDF').off('click').on('click', function() {
+        exportMotorcycleReportToPDF(html, branch, brandFilter);
+    });
+}
+
+// Function to export motorcycle report to PDF
+// Function to export motorcycle report to PDF
+function exportMotorcycleReportToPDF(html, branch, brandFilter) {
+    const printWindow = window.open('', '_blank');
+    const title = `Motorcycle_Inventory_Report_${brandFilter}_${branch || 'all'}_${new Date().toISOString().slice(0, 10)}`;
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${title}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .report-header { text-align: center; margin-bottom: 20px; }
+                .report-header h4 { color: #000f71; font-weight: 600; }
+                .report-header h5 { color: #495057; font-weight: 500; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f8f9fa; font-weight: 600; }
+                .summary { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 5px; }
+                .card { margin-bottom: 20px; border: 1px solid #e9ecef; border-radius: 6px; }
+                .card-header { background-color: #f8f9fa; padding: 10px; border-bottom: 1px solid #e9ecef; }
+            </style>
+        </head>
+        <body>
+            ${html}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.print();
+}
 // =======================
 // Monthly Inventory Report
 // =======================
@@ -2230,6 +2464,8 @@ function generateMonthlyInventoryReport(month, branch) {
         }
     });
 }
+
+
 function renderMonthlyInventoryReport(data, month, branch, summary) {
   const [year, monthNum] = month.split("-");
   const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
@@ -2524,12 +2760,6 @@ function generateReport() {
     const branch = $('#reportBranch').val();
     const reportType = $('#reportType').val();
 
-    // Validate month selection
-    if (!month) {
-        showErrorModal("Please select a month.");
-        return;
-    }
-
     // For non-admin users, use their branch
     const reportBranch = branch || currentUserBranch;
 
@@ -2537,13 +2767,27 @@ function generateReport() {
     $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
 
     if (reportType === 'inventory') {
+        // Validate month selection for inventory reports
+        if (!month) {
+            showErrorModal("Please select a month.");
+            return;
+        }
         generateMonthlyInventoryReport(month, reportBranch);
     } else if (reportType === 'transferred') {
+        // Validate month selection for transferred reports
+        if (!month) {
+            showErrorModal("Please select a month.");
+            return;
+        }
         generateTransferredSummary(month, reportBranch);
+    } else if (reportType === 'motorcycle') {
+        // No month validation needed for motorcycle report
+        const brandFilter = $('#reportBrandFilter').val();
+        generateMotorcycleReport(reportBranch, brandFilter);
     }
 }
 function generateReportPDF() {
-    if (!currentReportData || !currentReportMonth || !currentReportType) {
+    if (!currentReportData || !currentReportType) {
         showErrorModal("Please generate a report first before exporting to PDF");
         return;
     }
@@ -2552,7 +2796,26 @@ function generateReportPDF() {
         generateInventoryReportPDF();
     } else if (currentReportType === 'transferred') {
         generateTransferredReportPDF();
+    } else if (currentReportType === 'motorcycle') {
+        generateMotorcycleReportPDF();
     }
+}
+
+// Add this function for motorcycle report PDF export
+function generateMotorcycleReportPDF() {
+    const reportContent = $('#monthlyReportContent').html();
+    const brandFilter = $('#reportBrandFilter').val();
+    const branch = $('#reportBranch').val() || currentUserBranch;
+    
+    exportMotorcycleReportToPDF(reportContent, branch, brandFilter);
+}
+// Add this function for motorcycle report PDF export
+function generateMotorcycleReportPDF() {
+    const reportContent = $('#monthlyReportContent').html();
+    const brandFilter = $('#reportBrandFilter').val();
+    const branch = $('#reportBranch').val() || currentUserBranch;
+    
+    exportMotorcycleReportToPDF(reportContent, branch, brandFilter);
 }
 
 function generateTransferredReportPDF() {

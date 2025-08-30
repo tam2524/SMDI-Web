@@ -78,39 +78,42 @@
     }
 
     .model-card {
-        min-height: 70px;
-        height: auto;
-        padding: 10px;
-        word-wrap: break-word;
-        white-space: normal;
-    }
+    min-height: 70px;
+    height: auto;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f9f9f9;
+    box-sizing: border-box;
+}
 
-    .model-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-color: #000f71;
-    }
+.model-name {
+    flex: 1 1 auto;                /* allow shrinking but not overlap */
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #333;
+    overflow-wrap: break-word;     /* wrap long text */
+    word-break: break-word;        /* extra safety */
+    line-height: 1.2;
+    margin-right: 10px;            /* give space before badge */
+}
 
-    .model-name {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #333;
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
-        line-height: 1.2;
-    }
+.quantity-badge {
+    background-color: #000f71;
+    color: white;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: center;
+    flex-shrink: 0;                /* always stay visible */
+}
 
-    .quantity-badge {
-        background-color: #000f71;
-        color: white;
-        border-radius: 20px;
-        padding: 3px 10px;
-        font-size: 0.9rem;
-        font-weight: bold;
-        min-width: 40px;
-        text-align: center;
-    }
 
     .nav-tabs .nav-link.active {
         font-weight: 600;

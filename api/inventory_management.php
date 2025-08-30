@@ -72,6 +72,10 @@ switch ( $action ) {
     case 'sell_motorcycle':
     sellMotorcycle();
     break;
+    case 'get_available_motorcycles_report':
+    getAvailableMotorcyclesReport();
+    break;
+
     default:
     echo json_encode( [ 'success' => false, 'message' => 'Invalid action' ] );
     break;
@@ -1399,5 +1403,45 @@ function getMonthlyTransferredSummary() {
             'total_inventory_cost' => $totalInventoryCost
         ]
     ]);
+}
+
+function getAvailableMotorcyclesReport() {
+    global $conn;
+    
+    $brand = isset($_GET['brand']) ? sanitizeInput($_GET['brand']) : 'all';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
+    
+    $userBranch = isset($_SESSION['user_branch']) ? $_SESSION['user_branch'] : '';
+    $userPosition = isset($_SESSION['position']) ? $_SESSION['position'] : '';
+    
+    $sql = "SELECT mi.*, i.invoice_number 
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            WHERE mi.status = 'available'";
+    
+    if ($brand !== 'all') {
+        $sql .= " AND mi.brand = '$brand'";
+    }
+    
+    if (!empty($branch)) {
+        $sql .= " AND mi.current_branch = '$branch'";
+    } elseif (!empty($userBranch) && $userBranch !== 'HEADOFFICE' &&
+        !in_array(strtoupper($userPosition), ['ADMIN', 'IT STAFF', 'HEAD'])) {
+        $sql .= " AND mi.current_branch = '$userBranch'";
+    }
+    
+    $sql .= " ORDER BY mi.current_branch, mi.brand, mi.model";
+    
+    $result = $conn->query($sql);
+    
+    if ($result) {
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        echo json_encode(['success' => true, 'data' => $data]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error fetching report data: ' . $conn->error]);
+    }
 }
 ?>

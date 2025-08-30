@@ -590,7 +590,6 @@
         </div>
     </main>
 
-<!-- Add this modal for report options -->
 <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1" aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -614,6 +613,17 @@
                     <select class="form-select" id="reportType" required>
                         <option value="inventory">Monthly Inventory Balance Report</option>
                         <option value="transferred">Monthly Summary of Transferred Stocks</option>
+                        <option value="motorcycle">Available Motorcycle Units Report</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="brandFilterContainer" style="display: none;">
+                    <label class="form-label">Filter by Brand</label>
+                    <select class="form-select" id="reportBrandFilter">
+                        <option value="all">ALL BRANDS</option>
+                        <option value="Suzuki">SUZUKI</option>
+                        <option value="Honda">HONDA</option>
+                        <option value="Kawasaki">KAWASAKI</option>
+                        <option value="Yamaha">YAMAHA</option>
                     </select>
                 </div>
             </div>
