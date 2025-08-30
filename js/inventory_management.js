@@ -2320,8 +2320,6 @@ function renderMotorcycleReport(data, branch, brandFilter) {
     });
 }
 
-// Function to export motorcycle report to PDF
-// Function to export motorcycle report to PDF
 function exportMotorcycleReportToPDF(html, branch, brandFilter) {
     const printWindow = window.open('', '_blank');
     const title = `Motorcycle_Inventory_Report_${brandFilter}_${branch || 'all'}_${new Date().toISOString().slice(0, 10)}`;
@@ -2351,7 +2349,11 @@ function exportMotorcycleReportToPDF(html, branch, brandFilter) {
     `);
     
     printWindow.document.close();
-    printWindow.print();
+    printWindow.focus();
+    setTimeout(function() {
+        printWindow.print();
+        // printWindow.close(); // Uncomment if you want to automatically close after printing
+    }, 250);
 }
 // =======================
 // Monthly Inventory Report
@@ -2741,7 +2743,7 @@ function showMonthlyReportOptions() {
 
 function populateBranchesDropdown() {
     const branches = [
-        'HEADOFFICE', 'ROXAS SUZUKI',   "BAILAN",'MAMBUSAO', 'SIGMA', 'PRC', 'CUARTERO', 'JAMINDAN',
+        'ALL','HEADOFFICE', 'ROXAS SUZUKI',   "BAILAN",'MAMBUSAO', 'SIGMA', 'PRC', 'CUARTERO', 'JAMINDAN',
         'ROXAS HONDA', 'ANTIQUE-1', 'ANTIQUE-2', 'DELGADO HONDA', 'DELGADO SUZUKI',
         'JARO-1', 'JARO-2', 'KALIBO MABINI', 'KALIBO SUZUKI', 'ALTAVAS', 'EMAP', 'CULASI',
         'BACOLOD', 'PASSI-1', 'PASSI-2', 'BALASAN', 'GUIMARAS', 'PEMDI', 'EEMSI', 'AJUY',
@@ -2799,6 +2801,144 @@ function generateReportPDF() {
     } else if (currentReportType === 'motorcycle') {
         generateMotorcycleReportPDF();
     }
+}
+function generateInventoryReportPDF() {
+    if (!currentReportData || !currentReportMonth || currentReportType !== 'inventory') {
+        showErrorModal("Please generate an inventory report first before exporting to PDF");
+        return;
+    }
+    
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long",
+    });
+    const branchName = currentReportBranch === 'all' ? 'ALL BRANCHES' : currentReportBranch;
+
+    // Use summary values from backend
+    const totalIn = currentReportSummary?.in || 0;
+    const totalOut = currentReportSummary?.out || 0;
+    const endingBalance = currentReportSummary?.ending || 0;
+    const totalLcpEnding = currentReportSummary?.inventory_cost?.ending || 0;
+
+    let html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                    <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+                </div>
+                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
+                <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
+                <p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>
+                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                })}</p>
+            </div>
+            
+            <!-- Summary Section -->
+            <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #000f71, #1a237e); color: white; border-radius: 10px; width: 45%;">
+                    <div style="font-weight: 600; margin-bottom: 10px; font-size: 16px;">TOTAL IN</div>
+                    <div style="font-size: 28px; font-weight: bold;">${totalIn}</div>
+                    <div style="font-size: 12px; opacity: 0.9;">Inventory added during period</div>
+                </div>
+                
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #dc3545, #c82333); color: white; border-radius: 10px; width: 45%;">
+                    <div style="font-weight: 600; margin-bottom: 10px; font-size: 16px;">TOTAL OUT</div>
+                    <div style="font-size: 28px; font-weight: bold;">${totalOut}</div>
+                    <div style="font-size: 12px; opacity: 0.9;">Inventory transferred out</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border-radius: 10px; margin-bottom: 30px;">
+                <div style="font-weight: 600; margin-bottom: 10px; font-size: 18px;">ENDING BALANCE</div>
+                <div style="font-size: 32px; font-weight: bold;">${endingBalance}</div>
+                <div style="font-size: 14px; opacity: 0.9;">Remaining inventory value: ${formatCurrency(totalLcpEnding)}</div>
+            </div>
+    `;
+
+    if (currentReportData.length === 0) {
+        html += `
+            <div style="text-align: center; padding: 40px; color: #6c757d; font-style: italic;">
+                No inventory data found for ${monthName} ${year} in ${branchName}.
+            </div>
+        `;
+    } else {
+        html += `
+            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                    <thead>
+                        <tr style="background-color: #343a40; color: white;">
+                            <th style="padding: 10px; font-weight: 600; text-align: center; width: 30px;">#</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Model</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Brand</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Color</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Engine Number</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Frame Number</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: right;">Inventory Cost</th>
+                            <th style="padding: 10px; font-weight: 600; text-align: left;">Branch</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        currentReportData.forEach((item, index) => {
+            // Get brand color for PDF
+            let brandColor = '#000000'; // Default black
+            switch (item.brand.toLowerCase()) {
+                case 'honda':
+                    brandColor = '#dc3545'; // Red
+                    break;
+                case 'yamaha':
+                    brandColor = '#000000'; // Black
+                    break;
+                case 'suzuki':
+                    brandColor = '#000f71'; // Blue
+                    break;
+                case 'kawasaki':
+                    brandColor = '#28a745'; // Green
+                    break;
+            }
+
+            html += `
+                <tr style="${index % 2 === 0 ? 'background-color: #f8f9fa;' : ''}">
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: center;">${index + 1}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; color: ${brandColor}; font-weight: bold;">${escapeHtml(item.brand)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; font-family: monospace;">${escapeHtml(item.engine_number)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; font-family: monospace;">${escapeHtml(item.frame_number)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: right; font-weight: bold;">${formatCurrency(item.inventory_cost)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.current_branch)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const opt = {
+        margin: 0.5,
+        filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+    };
+
+    html2pdf().set(opt).from(container).save();
 }
 
 // Add this function for motorcycle report PDF export

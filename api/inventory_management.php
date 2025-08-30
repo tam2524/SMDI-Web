@@ -1200,30 +1200,41 @@ function getMonthlyInventory() {
     $startDate = date('Y-m-01', strtotime($month));
     $endDate   = date('Y-m-t', strtotime($month));
 
+    // Handle "all" branches case
+    $branchCondition = ($branch === 'all') ? "1=1" : "current_branch = ?";
+    $branchParamType = ($branch === 'all') ? "" : "s";
+    
     // 1. Get current branch motorcycles count and cost (including sold for IN calculation)
     $sqlCurrent = "
         SELECT COUNT(*) as count_current, COALESCE(SUM(inventory_cost), 0) as cost_current
         FROM motorcycle_inventory 
-        WHERE current_branch = ? AND status != 'deleted'
+        WHERE $branchCondition AND status != 'deleted'
     ";
     $stmtCurrent = $conn->prepare($sqlCurrent);
-    $stmtCurrent->bind_param('s', $branch);
+    if ($branch !== 'all') {
+        $stmtCurrent->bind_param($branchParamType, $branch);
+    }
     $stmtCurrent->execute();
     $currentResult = $stmtCurrent->get_result()->fetch_assoc();
     $countCurrent = (int)$currentResult['count_current'];
     $costCurrent = (float)$currentResult['cost_current'];
 
     // 2. Get transfers from branch count and total cost
+    $transfersCondition = ($branch === 'all') ? "1=1" : "it.from_branch = ?";
     $sqlTransfers = "
         SELECT COUNT(*) as count_transfers, COALESCE(SUM(mi.inventory_cost), 0) as cost_transfers
         FROM inventory_transfers it
         JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
-        WHERE it.from_branch = ? 
+        WHERE $transfersCondition 
         AND it.transfer_date BETWEEN ? AND ? 
         AND it.transfer_status = 'completed'
     ";
     $stmtTransfers = $conn->prepare($sqlTransfers);
-    $stmtTransfers->bind_param('sss', $branch, $startDate, $endDate);
+    if ($branch === 'all') {
+        $stmtTransfers->bind_param('ss', $startDate, $endDate);
+    } else {
+        $stmtTransfers->bind_param('sss', $branch, $startDate, $endDate);
+    }
     $stmtTransfers->execute();
     $transfersResult = $stmtTransfers->get_result()->fetch_assoc();
     $countTransfers = (int)$transfersResult['count_transfers'];
@@ -1241,19 +1252,23 @@ function getMonthlyInventory() {
     $sqlEnding = "
         SELECT COUNT(*) as count_ending, COALESCE(SUM(inventory_cost),0) as cost_ending
         FROM motorcycle_inventory
-        WHERE current_branch = ? AND status = 'available'
+        WHERE $branchCondition AND status = 'available'
     ";
     $stmtEnding = $conn->prepare($sqlEnding);
-    $stmtEnding->bind_param('s', $branch);
+    if ($branch !== 'all') {
+        $stmtEnding->bind_param($branchParamType, $branch);
+    }
     $stmtEnding->execute();
     $endingResult = $stmtEnding->get_result()->fetch_assoc();
     $countEnding = (int)$endingResult['count_ending'];
     $costEnding = (float)$endingResult['cost_ending'];
 
     // 6. Get detailed data for current branch motorcycles (EXCLUDE SOLD MODELS)
-    $sqlData = "SELECT * FROM motorcycle_inventory WHERE current_branch = ? AND status = 'available'";
+    $sqlData = "SELECT * FROM motorcycle_inventory WHERE $branchCondition AND status = 'available'";
     $stmtData = $conn->prepare($sqlData);
-    $stmtData->bind_param('s', $branch);
+    if ($branch !== 'all') {
+        $stmtData->bind_param($branchParamType, $branch);
+    }
     $stmtData->execute();
     $resultData = $stmtData->get_result();
 
@@ -1274,18 +1289,23 @@ function getMonthlyInventory() {
     }
 
     // 7. Get transfer details for the month (only include available motorcycles)
+    $transferDetailsCondition = ($branch === 'all') ? "1=1" : "it.from_branch = ?";
     $sqlTransferDetails = "
         SELECT it.*, mi.brand, mi.model, mi.engine_number, mi.frame_number, mi.inventory_cost
         FROM inventory_transfers it
         JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
-        WHERE it.from_branch = ? 
+        WHERE $transferDetailsCondition 
         AND it.transfer_date BETWEEN ? AND ? 
         AND it.transfer_status = 'completed'
         AND mi.status = 'available'
         ORDER BY it.transfer_date DESC
     ";
     $stmtTransferDetails = $conn->prepare($sqlTransferDetails);
-    $stmtTransferDetails->bind_param('sss', $branch, $startDate, $endDate);
+    if ($branch === 'all') {
+        $stmtTransferDetails->bind_param('ss', $startDate, $endDate);
+    } else {
+        $stmtTransferDetails->bind_param('sss', $branch, $startDate, $endDate);
+    }
     $stmtTransferDetails->execute();
     $transferDetailsResult = $stmtTransferDetails->get_result();
 
@@ -1298,10 +1318,12 @@ function getMonthlyInventory() {
     $sqlSold = "
         SELECT COUNT(*) as count_sold, COALESCE(SUM(inventory_cost), 0) as cost_sold
         FROM motorcycle_inventory 
-        WHERE current_branch = ? AND status = 'sold'
+        WHERE $branchCondition AND status = 'sold'
     ";
     $stmtSold = $conn->prepare($sqlSold);
-    $stmtSold->bind_param('s', $branch);
+    if ($branch !== 'all') {
+        $stmtSold->bind_param($branchParamType, $branch);
+    }
     $stmtSold->execute();
     $soldResult = $stmtSold->get_result()->fetch_assoc();
     $countSold = (int)$soldResult['count_sold'];
@@ -1348,16 +1370,20 @@ function getMonthlyTransferredSummary() {
     global $conn;
 
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
-    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
 
-    if (empty($month) || empty($branch)) {
-        echo json_encode(['success' => false, 'message' => 'Month and branch parameters are required']);
+    if (empty($month)) {
+        echo json_encode(['success' => false, 'message' => 'Month parameter is required']);
         return;
     }
 
     // Date range for the selected month
     $startDate = date('Y-m-01', strtotime($month));
     $endDate = date('Y-m-t', strtotime($month));
+
+    // Handle "all" branches case
+    $branchCondition = ($branch === 'all') ? "1=1" : "it.from_branch = ?";
+    $branchParamType = ($branch === 'all') ? "" : "s";
 
     $sql = "SELECT 
                 mi.model, 
@@ -1373,13 +1399,17 @@ function getMonthlyTransferredSummary() {
             FROM motorcycle_inventory mi
             INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
             LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE it.from_branch = ?
+            WHERE $branchCondition
             AND it.transfer_date BETWEEN ? AND ?
             AND it.transfer_status = 'completed'
             ORDER BY it.transfer_date DESC, mi.model";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('sss', $branch, $startDate, $endDate);
+    if ($branch === 'all') {
+        $stmt->bind_param('ss', $startDate, $endDate);
+    } else {
+        $stmt->bind_param('sss', $branch, $startDate, $endDate);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -1409,7 +1439,7 @@ function getAvailableMotorcyclesReport() {
     global $conn;
     
     $brand = isset($_GET['brand']) ? sanitizeInput($_GET['brand']) : 'all';
-    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
     
     $userBranch = isset($_SESSION['user_branch']) ? $_SESSION['user_branch'] : '';
     $userPosition = isset($_SESSION['position']) ? $_SESSION['position'] : '';
@@ -1423,10 +1453,12 @@ function getAvailableMotorcyclesReport() {
         $sql .= " AND mi.brand = '$brand'";
     }
     
-    if (!empty($branch)) {
+    // Handle branch filter
+    if ($branch !== 'all') {
         $sql .= " AND mi.current_branch = '$branch'";
     } elseif (!empty($userBranch) && $userBranch !== 'HEADOFFICE' &&
         !in_array(strtoupper($userPosition), ['ADMIN', 'IT STAFF', 'HEAD'])) {
+        // For non-admin users, default to their branch if no branch specified
         $sql .= " AND mi.current_branch = '$userBranch'";
     }
     
