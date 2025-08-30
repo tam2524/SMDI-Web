@@ -6,6 +6,7 @@ let totalInventoryPages = 1;
 let currentInventorySort = "";
 let currentInventoryQuery = "";
 let selectedRecordIds = [];
+let selectedTransferIds = [];
 let hasShownIncomingTransfers = false;
 let shownTransferIds = [];
 let lastCheckTime = new Date().toISOString();
@@ -73,6 +74,154 @@ function setupEventListeners() {
       loadInventoryDashboard($(this).val());
     }
   });
+
+   // Transfer selection event listeners
+    $("#selectAllTransfers, #selectAllTransfersHeader").change(function() {
+        const isChecked = $(this).prop('checked');
+        $("#selectAllTransfers, #selectAllTransfersHeader").prop('checked', isChecked);
+        
+        $(".transfer-checkbox").prop('checked', isChecked);
+        
+        if (isChecked) {
+            selectedTransferIds = [];
+            $(".transfer-checkbox").each(function() {
+                selectedTransferIds.push($(this).val());
+            });
+        } else {
+            selectedTransferIds = [];
+        }
+        
+        updateTransferSelection();
+    });
+
+    // Individual transfer selection
+    $(document).on('change', '.transfer-checkbox', function() {
+        const transferId = $(this).val();
+        const isChecked = $(this).prop('checked');
+        
+        if (isChecked) {
+            if (!selectedTransferIds.includes(transferId)) {
+                selectedTransferIds.push(transferId);
+            }
+        } else {
+            selectedTransferIds = selectedTransferIds.filter(id => id !== transferId);
+        }
+        
+        // Update select all checkboxes
+        const totalCheckboxes = $('.transfer-checkbox').length;
+        const checkedCheckboxes = $('.transfer-checkbox:checked').length;
+        
+        $("#selectAllTransfers, #selectAllTransfersHeader").prop('checked', 
+            totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes);
+        
+        updateTransferSelection();
+    });
+
+    $(document).on('click', '.transfer-row', function(e) {
+        if (e.target.type !== 'checkbox') {
+            const checkbox = $(this).find('.transfer-checkbox');
+            checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
+        }
+    });
+// Accept selected transfers - IMPROVED VERSION
+$(document).off('click', '#acceptSelectedBtn').on('click', '#acceptSelectedBtn', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (selectedTransferIds.length === 0) {
+        showErrorModal("Please select at least one transfer to accept");
+        return;
+    }
+    
+    const selectedCount = selectedTransferIds.length;
+    
+    // Create a unique confirmation modal for transfers
+    const confirmHtml = `
+        <div class="modal fade" id="transferAcceptConfirmModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Accept Selected Transfers</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to accept ${selectedCount} selected transfer(s)?</p>
+                        <p class="text-info"><small>These motorcycles will be added to your branch inventory.</small></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" id="confirmAcceptTransfersBtn">Accept Transfers</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    $('#transferAcceptConfirmModal').remove();
+    
+    // Add new modal to body
+    $('body').append(confirmHtml);
+    
+    // Show modal
+    $('#transferAcceptConfirmModal').modal('show');
+    
+    // Handle confirm button
+    $('#confirmAcceptTransfersBtn').off('click').on('click', function() {
+        $('#transferAcceptConfirmModal').modal('hide');
+        acceptSelectedTransfers();
+    });
+});
+
+// Reject selected transfers - IMPROVED VERSION
+$(document).off('click', '#rejectSelectedBtn').on('click', '#rejectSelectedBtn', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (selectedTransferIds.length === 0) {
+        showErrorModal("Please select at least one transfer to reject");
+        return;
+    }
+    
+    const selectedCount = selectedTransferIds.length;
+    
+    // Create a unique confirmation modal for rejection
+    const confirmHtml = `
+        <div class="modal fade" id="transferRejectConfirmModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject Selected Transfers</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to reject ${selectedCount} selected transfer(s)?</p>
+                        <p class="text-warning"><small><i class="bi bi-exclamation-triangle me-1"></i>This action cannot be undone. Motorcycles will be returned to their original branches.</small></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmRejectTransfersBtn">Reject Transfers</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    $('#transferRejectConfirmModal').remove();
+    
+    // Add new modal to body
+    $('body').append(confirmHtml);
+    
+    // Show modal
+    $('#transferRejectConfirmModal').modal('show');
+    
+    // Handle confirm button
+    $('#confirmRejectTransfersBtn').off('click').on('click', function() {
+        $('#transferRejectConfirmModal').modal('hide');
+        rejectSelectedTransfers();
+    });
+});
 
   // Inventory Table Pagination & Sorting
   $(document).on("click", ".page-link", function (e) {
@@ -156,43 +305,7 @@ function setupEventListeners() {
     $("#searchResults .select-btn").removeClass("btn-danger").addClass("btn-success").text("Select");
   });
 
-  // Incoming Transfers
-  $("#acceptAllTransfersBtn").click(function () {
-    const transferIds = [];
-    $("#incomingTransfersBody tr").each(function () {
-      const id = $(this).data("transfer-id");
-      if (id) transferIds.push(id);
-    });
-    if (transferIds.length === 0) {
-      showErrorModal("No transfers to accept");
-      return;
-    }
-    $.ajax({
-      url: "../api/inventory_management.php",
-      method: "POST",
-      data: {
-        action: "accept_transfers",
-        transfer_ids: transferIds.join(","),
-        current_branch: currentBranch,
-      },
-      dataType: "json",
-      success: function (response) {
-        if (response.success) {
-          showSuccessModal(response.message || "Transfers accepted successfully! Received on: " + response.date_received);
-          $("#incomingTransfersModal").modal("hide");
-          setTimeout(function () {
-            window.location.reload();
-          }, 2000);
-          hasShownIncomingTransfers = false;
-        } else {
-          showErrorModal(response.message || "Error accepting transfers");
-        }
-      },
-      error: function (xhr, status, error) {
-        showErrorModal("Error accepting transfers: " + error);
-      },
-    });
-  });
+
   $(document).on("hidden.bs.modal", "#incomingTransfersModal", function () {
     hasShownIncomingTransfers = false;
   });
@@ -235,13 +348,21 @@ function showConfirmationModal(message, title, callback) {
   $("#confirmationMessage").text(message);
   $("#confirmationModalLabel").text(title);
   const modal = $("#confirmationModal");
+  
+  // Remove all existing click handlers to prevent conflicts
   modal.off("click", "#confirmActionBtn");
+  
+  // Add new click handler
   modal.on("click", "#confirmActionBtn", function () {
     modal.modal("hide");
-    if (typeof callback === "function") callback();
+    if (typeof callback === "function") {
+      callback();
+    }
   });
+  
   modal.modal("show");
 }
+
 // =======================
 // Inventory Table & Pagination
 // =======================
@@ -486,15 +607,24 @@ function renderInventoryTable(data) {
 
   if (data.length === 0) {
     html =
-      '<tr><td colspan="11" class="text-center py-5 text-muted">No inventory data found</td></tr>';
+      '<tr><td colspan="12" class="text-center py-5 text-muted">No inventory data found</td></tr>';
   } else {
     data.forEach((item) => {
+      // Add category badge styling
+      let categoryBadge = '';
+      if (item.category === 'brandnew') {
+        categoryBadge = '<span class="badge bg-success">Brand New</span>';
+      } else if (item.category === 'repo') {
+        categoryBadge = '<span class="badge bg-warning text-dark">Repo</span>';
+      }
+
       html += `
                 <tr data-id="${item.id}">
                 <td>${item.invoice_number || "N/A"}</td>
                     <td>${formatDate(item.date_delivered)}</td>
                     <td>${item.brand}</td>
                     <td>${item.model}</td>
+                    <td>${categoryBadge}</td>
                     <td>${item.engine_number}</td>
                     <td>${item.frame_number}</td>
                     <td>${item.color}</td>
@@ -519,6 +649,7 @@ function renderInventoryTable(data) {
   $("#inventoryTableBody").html(html);
   setupTableActionButtons();
 }
+
 
 function setupTableActionButtons() {
   $(".edit-btn").click(function () {
@@ -677,6 +808,7 @@ function addMotorcycle() {
     const modelData = {
       brand: $(this).find(".model-brand").val(),
       model: $(this).find(".model-name").val(),
+      category: $(this).find(".model-category").val(),
       color: $(this).find(".model-color").val(),
       inventory_cost: $(this).find(".model-inventoryCost").val(),
       quantity: $(this).find(".model-quantity").val(),
@@ -686,6 +818,7 @@ function addMotorcycle() {
     if (
       !modelData.brand ||
       !modelData.model ||
+      !modelData.category ||
       !modelData.quantity ||
       !modelData.color
     ) {
@@ -693,6 +826,7 @@ function addMotorcycle() {
       hasErrors = true;
       return false;
     }
+    
     $(this)
       .find(".specific-details-row")
       .each(function () {
@@ -756,6 +890,7 @@ function addMotorcycle() {
     },
   });
 }
+
 function updateMotorcycle() {
   const formData = {
     action: "update_motorcycle",
@@ -763,6 +898,7 @@ function updateMotorcycle() {
     date_delivered: $("#editDateDelivered").val(),
     brand: $("#editBrand").val(),
     model: $("#editModel").val(),
+    category: $("#editCategory").val(),
     engine_number: $("#editEngineNumber").val(),
     frame_number: $("#editFrameNumber").val(),
     invoice_number: $("#editInvoiceNumber").val(),
@@ -777,6 +913,7 @@ function updateMotorcycle() {
     !formData.date_delivered ||
     !formData.brand ||
     !formData.model ||
+    !formData.category ||
     !formData.engine_number ||
     !formData.frame_number ||
     !formData.color
@@ -809,6 +946,7 @@ function updateMotorcycle() {
   });
 }
 
+
 function loadMotorcycleForEdit(id) {
   $.ajax({
     url: "../api/inventory_management.php",
@@ -825,6 +963,7 @@ function loadMotorcycleForEdit(id) {
         $("#editDateDelivered").val(data.date_delivered);
         $("#editBrand").val(data.brand);
         $("#editModel").val(data.model);
+        $("#editCategory").val(data.category);
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
         $("#editInvoiceNumber").val(data.invoice_number || "");
@@ -843,6 +982,7 @@ function loadMotorcycleForEdit(id) {
     },
   });
 }
+
 
 // =======================
 // Invoice Validation
@@ -1173,6 +1313,8 @@ function transferSelectedMotorcycles() {
 
   $("#multipleTransferModal").modal("show");
 }
+
+
 function performMultipleTransfers() {
   const selectedIds = selectedMotorcycles.map((m) => m.id);
   
@@ -1313,84 +1455,142 @@ function showTransferReceipt(receiptData) {
 }
 
 function printReceipt() {
+    // Get current date for filename
+    const currentDate = new Date().toISOString().slice(0, 10);
+    const title = `Transfer_Receipt_${$("#receiptInvoiceNo").text()}_${currentDate}`;
+    
     // Create a printable version of the receipt
     const printContent = `
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Transfer Receipt</title>
+            <title>${title}</title>
             <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 0;
-                    padding: 20px;
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 20px; 
                     color: #333;
+                    line-height: 1.4;
                 }
-                .receipt-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    border-bottom: 2px solid #000;
+                
+                .report-header { 
+                    text-align: center; 
+                    margin-bottom: 20px; 
+                    border-bottom: 2px solid #000f71;
                     padding-bottom: 15px;
                 }
-                .receipt-header h2 {
-                    margin: 0;
-                    color: #000f71;
+                
+                .report-header h4 { 
+                    color: #000f71; 
+                    font-weight: 600; 
+                    margin: 0 0 5px 0;
                     font-size: 24px;
                 }
-                .receipt-header h3 {
-                    margin: 5px 0;
-                    font-size: 18px;
-                    color: #555;
+                
+                .report-header h5 { 
+                    color: #495057; 
+                    font-weight: 500; 
+                    margin: 0;
+                    font-size: 16px;
                 }
-                .company-info {
-                    margin-bottom: 15px;
-                }
-                .receipt-details {
+                
+                .company-address {
+                    text-align: center;
+                    color: #666;
+                    font-size: 14px;
                     margin-bottom: 20px;
                 }
-                .receipt-details .row {
+                
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-bottom: 20px; 
+                }
+                
+                th, td { 
+                    border: 1px solid #ddd; 
+                    padding: 8px; 
+                    text-align: left; 
+                    font-size: 13px;
+                }
+                
+                th { 
+                    background-color: #f8f9fa; 
+                    font-weight: 600; 
+                    color: #495057;
+                }
+                
+                .summary { 
+                    margin-top: 20px; 
+                    padding: 15px; 
+                    background-color: #e9ecef; 
+                    border-radius: 5px; 
+                }
+                
+                .card { 
+                    margin-bottom: 20px; 
+                    border: 1px solid #e9ecef; 
+                    border-radius: 6px; 
+                }
+                
+                .card-header { 
+                    background-color: #f8f9fa; 
+                    padding: 10px; 
+                    border-bottom: 1px solid #e9ecef; 
+                    font-weight: 600;
+                    color: #495057;
+                }
+                
+                .card-body {
+                    padding: 15px;
+                }
+                
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                
+                .info-row {
                     display: flex;
                     justify-content: space-between;
                     margin-bottom: 8px;
+                    padding: 5px 0;
+                    border-bottom: 1px dotted #ddd;
                 }
-                .receipt-details .label {
-                    font-weight: bold;
-                    width: 120px;
+                
+                .info-label {
+                    font-weight: 600;
+                    color: #495057;
                 }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 20px;
+                
+                .info-value {
+                    color: #333;
                 }
-                table th {
-                    background-color: #f8f9fa;
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                    text-align: left;
-                    font-weight: bold;
-                }
-                table td {
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                }
+                
                 .total-row {
-                    font-weight: bold;
                     background-color: #f8f9fa;
+                    font-weight: 600;
                 }
+                
                 .notes-section {
                     margin-top: 20px;
-                    padding-top: 10px;
-                    border-top: 1px dashed #ddd;
                 }
-                .footer {
+                
+                .footer-info {
                     margin-top: 30px;
+                    padding-top: 15px;
+                    border-top: 1px solid #ddd;
                     text-align: center;
                     font-size: 12px;
-                    color: #777;
+                    color: #666;
                 }
+                
                 @media print {
                     body {
-                        padding: 0;
+                        margin: 0;
+                        padding: 15px;
                     }
                     .no-print {
                         display: none !important;
@@ -1399,92 +1599,109 @@ function printReceipt() {
             </style>
         </head>
         <body>
-            <div class="receipt-header">
-                <h2>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h2>
-                <h3>Motorcycle Transfer Receipt</h3>
+            <div class="report-header">
+                <h4>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                <h5>Motorcycle Transfer Receipt</h5>
             </div>
             
-            <div class="company-info">
-                <div><strong>Address:</strong> 1031, Victoria Building, Roxas Avenue, Roxas City, 5800</div>
+            <div class="company-address">
+                1031, Victoria Building, Roxas Avenue, Roxas City, 5800
             </div>
             
-            <div class="receipt-details">
-                <div class="row">
-                    <div class="label">Date:</div>
-                    <div>${$("#receiptDate").text()}</div>
+            <div class="info-grid">
+                <div class="card">
+                    <div class="card-header">Transfer Information</div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <span class="info-label">Date:</span>
+                            <span class="info-value">${$("#receiptDate").text()}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Transfer Invoice No:</span>
+                            <span class="info-value">${$("#receiptInvoiceNo").text()}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="row">
-                    <div class="label">Transfer Invoice No:</div>
-                    <div>${$("#receiptInvoiceNo").text()}</div>
-                </div>
-                <div class="row">
-                    <div class="label">Transfer ID:</div>
-                    <div>${$("#receiptTransferId").text()}</div>
-                </div>
-                <div class="row">
-                    <div class="label">From Branch:</div>
-                    <div>${$("#receiptFromBranch").text()}</div>
-                </div>
-                <div class="row">
-                    <div class="label">To Branch:</div>
-                    <div>${$("#receiptToBranch").text()}</div>
+                
+                <div class="card">
+                    <div class="card-header">Branch Information</div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <span class="info-label">From Branch:</span>
+                            <span class="info-value">${$("#receiptFromBranch").text()}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">To Branch:</span>
+                            <span class="info-value">${$("#receiptToBranch").text()}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Brand</th>
-                        <th>Model</th>
-                        <th>Color</th>
-                        <th>Engine Number</th>
-                        <th>Frame Number</th>
-                        <th>Inventory Cost</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${$("#receiptMotorcyclesList").html()}
-                </tbody>
-                <tfoot>
-                    <tr class="total-row">
-                        <td colspan="6" style="text-align: right;">Total Motorcycles:</td>
-                        <td>${$("#receiptTotalCount").text()}</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td colspan="6" style="text-align: right;">Total Inventory Cost:</td>
-                        <td>${$("#receiptTotalCost").text()}</td>
-                    </tr>
-                </tfoot>
-            </table>
-            
-            <div class="notes-section">
-                <div><strong>Transfer Notes:</strong></div>
-                <div>${$("#receiptNotes").text()}</div>
+            <div class="card">
+                <div class="card-header">Transferred Motorcycles</div>
+                <div class="card-body">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Brand</th>
+                                <th>Model</th>
+                                <th>Color</th>
+                                <th>Engine Number</th>
+                                <th>Frame Number</th>
+                                <th>Inventory Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${$("#receiptMotorcyclesList").html()}
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="6" style="text-align: right; font-weight: 600;">Total Motorcycles:</td>
+                                <td style="font-weight: 600;">${$("#receiptTotalCount").text()}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="6" style="text-align: right; font-weight: 600;">Total Inventory Cost:</td>
+                                <td style="font-weight: 600;">${$("#receiptTotalCost").text()}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
             
-            <div class="footer">
+            <div class="card notes-section">
+                <div class="card-header">Transfer Notes</div>
+                <div class="card-body">
+                    <div>${$("#receiptNotes").text() || 'No additional notes provided.'}</div>
+                </div>
+            </div>
+            
+           
+            
+            <div class="footer-info">
                 <div>Generated on: ${new Date().toLocaleString()}</div>
-                <div>Thank you for your business!</div>
+                <div>Document Reference: ${$("#receiptInvoiceNo").text()}</div>
+                
             </div>
         </body>
         </html>
     `;
     
     // Create a new window for printing
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    const printWindow = window.open('', '_blank');
     printWindow.document.write(printContent);
     printWindow.document.close();
+    printWindow.focus();
     
     // Wait for content to load before printing
-    printWindow.onload = function() {
-        printWindow.focus();
-        setTimeout(function() {
-            printWindow.print();
-            // printWindow.close(); // Uncomment if you want to automatically close after printing
-        }, 250);
-    };
+    setTimeout(function() {
+        printWindow.print();
+        // printWindow.close(); // Uncomment if you want to automatically close after printing
+    }, 250);
 }
+
+
 function searchMotorcyclesByEngine() {
   const searchTerm = $("#engineSearch").val().trim();
 
@@ -1615,28 +1832,22 @@ function toggleMotorcycleSelection(
   }
 
   updateSelectedMotorcyclesList();
-  updateTransferSummary();
+  updateTransferSummary(); // This will now handle motorcycle selection context
   searchMotorcyclesByEngine();
 }
 
-function updateTransferSummary() {
-  const $selectedCount = $("#selectedCount");
-  const $totalInventoryCostValue = $("#totalInventoryCostValue");
-  const $selectionProgress = $("#selectionProgress");
-
-  $selectedCount.text(selectedMotorcycles.length);
-
-  const totalInventoryCost = selectedMotorcycles.reduce(
-    (sum, motorcycle) => sum + (parseFloat(motorcycle.inventory_cost) || 0),
-    0
-  );
-  $totalInventoryCostValue.text(formatCurrency(totalInventoryCost));
-
-  const progressPercentage = Math.min(
-    (selectedMotorcycles.length / 10) * 100,
-    100
-  );
-  $selectionProgress.css("width", progressPercentage + "%");
+// Function to update transfer summary
+function updateTransferSummary(transfers) {
+  // Add null/undefined check
+  if (!transfers || !Array.isArray(transfers)) {
+    transfers = [];
+  }
+  
+  const totalUnits = transfers.length;
+  const fromBranches = [...new Set(transfers.map(t => t.from_branch))].join(', ');
+  
+  $("#summaryTotalUnits").text(totalUnits);
+  $("#summaryFromBranches").text(fromBranches);
 }
 
 function updateSelectedMotorcyclesList() {
@@ -1644,11 +1855,16 @@ function updateSelectedMotorcyclesList() {
 
   if (selectedMotorcycles.length === 0) {
     $selectedList.html(`
-            <div class='text-center text-muted py-4'>
-                <i class='bi bi-inbox display-6 text-muted mb-2'></i>
-                <p>No motorcycles selected</p>
-            </div>
-        `);
+      <div class='text-center text-muted py-4'>
+        <i class='bi bi-inbox display-6 text-muted mb-2'></i>
+        <p>No motorcycles selected</p>
+      </div>
+    `);
+    
+    // Reset summary values
+    $("#selectedCount").text("0");
+    $("#totalInventoryCostValue").text(formatCurrency(0));
+    $("#selectionProgress").css("width", "0%");
     return;
   }
 
@@ -1657,61 +1873,77 @@ function updateSelectedMotorcyclesList() {
     const inventoryCostValue = motorcycle.inventory_cost ? formatCurrency(motorcycle.inventory_cost) : "N/A";
 
     html += `
-            <div class="selected-motorcycle-item">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-1">
-                            <span class="badge bg-primary me-2">${index + 1}</span>
-                            <span class="fw-semibold text-primary">${motorcycle.engine_number}</span>
-                        </div>
-                        <div class="small text-muted mb-1">${motorcycle.brand} ${motorcycle.model} - ${motorcycle.color}</div>
-                        <div class="small">
-                            <i class="bi bi-geo-alt me-1"></i>${motorcycle.current_branch}
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                            onclick="removeMotorcycleFromSelection(${motorcycle.id})">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
-                <!-- Add inventory cost input field -->
-                <div class="mt-2">
-                    <label class="form-label small">Inventory Cost</label>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text"></span>
-                        <input type="number" step="0.01" class="form-control" 
-                               id="inventory-cost-${motorcycle.id}" 
-                               value="${motorcycle.inventory_cost || ''}" 
-                               placeholder="Enter inventory cost">
-                        <button class="btn btn-outline-success" type="button" onclick="saveCost(${motorcycle.id})">
-                            <i class="bi bi-check-lg"></i> Save
-                        </button>
-                    </div>
-                </div>
+      <div class="selected-motorcycle-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center mb-1">
+              <span class="badge bg-primary me-2">${index + 1}</span>
+              <span class="fw-semibold text-primary">${motorcycle.engine_number}</span>
             </div>
-        `;
+            <div class="small text-muted mb-1">${motorcycle.brand} ${motorcycle.model} - ${motorcycle.color}</div>
+            <div class="small">
+              <i class="bi bi-geo-alt me-1"></i>${motorcycle.current_branch}
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger" 
+                  onclick="removeMotorcycleFromSelection(${motorcycle.id})">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <!-- Add inventory cost input field -->
+        <div class="mt-2">
+          <label class="form-label small">Inventory Cost</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text">₱</span>
+            <input type="number" step="0.01" class="form-control" 
+                   id="inventory-cost-${motorcycle.id}" 
+                   value="${motorcycle.inventory_cost || ''}" 
+                   placeholder="Enter inventory cost"
+                   onchange="updateMotorcycleCost(${motorcycle.id}, this.value)">
+            <button class="btn btn-outline-success" type="button" onclick="saveCost(${motorcycle.id})">
+              <i class="bi bi-check-lg"></i> Save
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   });
 
   $selectedList.html(html);
+  
+  // Update the transfer summary after updating the list
+  updateTransferSummary();
 }
 
+// Function to update motorcycle cost in real-time
+function updateMotorcycleCost(motorcycleId, newCost) {
+  const motorcycle = selectedMotorcycles.find(m => m.id === motorcycleId);
+  if (motorcycle) {
+    motorcycle.inventory_cost = parseFloat(newCost) || 0;
+    updateTransferSummary(); // Update summary in real-time
+  }
+}
+
+
+// Function to save cost for a specific motorcycle
 // Function to save cost for a specific motorcycle
 function saveCost(motorcycleId) {
   const costInput = document.getElementById(`inventory-cost-${motorcycleId}`);
   const newCost = parseFloat(costInput.value);
   
-  if (!isNaN(newCost) && newCost > 0) {
+  if (!isNaN(newCost) && newCost >= 0) {
     // Update the motorcycle object
     const motorcycle = selectedMotorcycles.find(m => m.id === motorcycleId);
     if (motorcycle) {
       motorcycle.inventory_cost = newCost;
       showSuccessModal("Cost updated successfully!");
-      updateTransferSummary();
+      updateTransferSummary(); // Update summary after saving
     }
   } else {
     showErrorModal("Please enter a valid cost value.");
   }
 }
+
 function removeMotorcycleFromSelection(id) {
   const index = selectedMotorcycles.findIndex((m) => m.id === id);
   if (index !== -1) {
@@ -1764,33 +1996,255 @@ function checkIncomingTransfers() {
 function showIncomingTransfersModal(transfers) {
   const tbody = $("#incomingTransfersBody");
   tbody.empty();
+  selectedTransferIds = [];
 
   if (transfers.length === 0) {
     tbody.append(`
-            <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No incoming transfers found</td>
-            </tr>
-        `);
+      <tr>
+        <td colspan="9" class="text-center py-4 text-muted">No incoming transfers found</td>
+      </tr>
+    `);
+    $("#transferSummary").hide();
   } else {
     transfers.forEach((transfer) => {
+      const statusBadge = getTransferStatusBadge(transfer.transfer_status);
       tbody.append(`
-                <tr data-transfer-id="${transfer.transfer_id}">
-                    <td>${transfer.brand} ${transfer.model}</td>
-                    <td>${transfer.engine_number}</td>
-                    <td>${transfer.frame_number}</td>
-                    <td>${transfer.color}</td>
-                    <td>${formatDate(transfer.transfer_date)}</td>
-                    <td>${transfer.from_branch}</td>
-                </tr>
-            `);
+        <tr class="transfer-row" data-transfer-id="${transfer.transfer_id}">
+          <td>
+            <input type="checkbox" class="form-check-input transfer-checkbox" 
+                   value="${transfer.transfer_id}">
+          </td>
+          <td>${transfer.brand} ${transfer.model}</td>
+          <td><code>${transfer.engine_number}</code></td>
+          <td><code>${transfer.frame_number}</code></td>
+          <td>${transfer.color}</td>
+          <td>${formatDate(transfer.transfer_date)}</td>
+          <td>
+            <span class="badge bg-info">${transfer.from_branch}</span>
+          </td>
+          <td>${transfer.transfer_invoice_number || 'N/A'}</td>
+          <td>${statusBadge}</td>
+        </tr>
+      `);
     });
+    
+    // Pass the transfers parameter correctly
+    updateTransferSummary(transfers);
   }
+
+  updateTransferSelection();
 
   if (!hasShownIncomingTransfers) {
     $("#incomingTransfersModal").modal("show");
     hasShownIncomingTransfers = true;
   }
 }
+
+function getTransferStatusBadge(status) {
+    switch(status) {
+        case 'pending':
+            return '<span class="badge bg-warning text-dark status-badge">Pending</span>';
+        case 'completed':
+            return '<span class="badge bg-success status-badge">Completed</span>';
+        case 'rejected':
+            return '<span class="badge bg-danger status-badge">Rejected</span>';
+        default:
+            return '<span class="badge bg-secondary status-badge">Unknown</span>';
+    }
+}
+
+// Function to update transfer selection UI
+function updateTransferSelection() {
+    const selectedCount = selectedTransferIds.length;
+    
+    // Update counter
+    $("#selectedTransfersCount").text(`${selectedCount} selected`);
+    
+    // Enable/disable buttons
+    $("#acceptSelectedBtn, #rejectSelectedBtn").prop('disabled', selectedCount === 0);
+    
+    // Update row styling
+    $(".transfer-row").removeClass('selected');
+    selectedTransferIds.forEach(id => {
+        $(`.transfer-row[data-transfer-id='${id}']`).addClass('selected');
+    });
+    
+    // Show/hide summary
+    if (selectedCount > 0) {
+        updateSelectedTransfersSummary();
+        $("#transferSummary").show();
+    } else {
+        $("#transferSummary").hide();
+    }
+}
+
+// Function to update transfer summary
+// Function to update transfer summary
+function updateTransferSummary(transfers) {
+  // Handle different contexts - incoming transfers vs motorcycle selection
+  if (transfers && Array.isArray(transfers)) {
+    // This is for incoming transfers context
+    const totalUnits = transfers.length;
+    const fromBranches = transfers.length > 0 ? 
+      [...new Set(transfers.map(t => t.from_branch))].join(', ') : 
+      '-';
+    
+    $("#summaryTotalUnits").text(totalUnits);
+    $("#summaryFromBranches").text(fromBranches);
+  } else {
+    // This is for motorcycle selection context - calculate from selectedMotorcycles
+    const selectedCount = selectedMotorcycles.length;
+    const totalInventoryCost = selectedMotorcycles.reduce(
+      (sum, motorcycle) => sum + (parseFloat(motorcycle.inventory_cost) || 0),
+      0
+    );
+    
+    // Update the selection progress and cost
+    $("#selectedCount").text(selectedCount);
+    $("#totalInventoryCostValue").text(formatCurrency(totalInventoryCost));
+    
+    // Update progress bar
+    const progressPercentage = Math.min((selectedCount / 10) * 100, 100);
+    $("#selectionProgress").css("width", progressPercentage + "%");
+    
+    // Update branch summary if elements exist
+    if ($("#summaryTotalUnits").length) {
+      $("#summaryTotalUnits").text(selectedCount);
+    }
+    
+    // Get unique branches from selected motorcycles
+    const uniqueBranches = [...new Set(selectedMotorcycles.map(m => m.current_branch))];
+    if ($("#summaryFromBranches").length) {
+      $("#summaryFromBranches").text(uniqueBranches.join(', ') || '-');
+    }
+  }
+}
+
+// Function to update selected transfers summary
+function updateSelectedTransfersSummary() {
+    const selectedCount = selectedTransferIds.length;
+    const selectedBranches = [];
+    
+    selectedTransferIds.forEach(id => {
+        const row = $(`.transfer-row[data-transfer-id='${id}']`);
+        const branch = row.find('td:nth-child(7) .badge').text();
+        if (branch && !selectedBranches.includes(branch)) {
+            selectedBranches.push(branch);
+        }
+    });
+    
+    $("#summarySelectedCount").text(selectedCount);
+    $("#summaryFromBranches").text(selectedBranches.join(', ') || '-');
+}
+
+function acceptSelectedTransfers() {
+  if (selectedTransferIds.length === 0) {
+    showErrorModal("No transfers selected");
+    return;
+  }
+
+  // Show loading state
+  $("#acceptSelectedBtn").prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-2"></i>Processing...');
+
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "POST",
+    data: {
+      action: "accept_transfers",
+      transfer_ids: selectedTransferIds.join(","),
+      current_branch: currentBranch,
+    },
+    dataType: "json",
+    success: function(response) {
+      if (response.success) {
+        showSuccessModal(response.message || "Selected transfers accepted successfully!");
+        $("#incomingTransfersModal").modal("hide");
+        
+        // Reset state
+        selectedTransferIds = [];
+        hasShownIncomingTransfers = false;
+        
+        // Reload page after delay
+        setTimeout(function() {
+          window.location.reload();
+        }, 2000);
+      } else {
+        showErrorModal(response.message || "Error accepting transfers");
+        // Re-enable button
+        $("#acceptSelectedBtn").prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Accept Selected');
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error("AJAX Error:", xhr.responseText);
+      showErrorModal("Error accepting transfers: " + error);
+      // Re-enable button
+      $("#acceptSelectedBtn").prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Accept Selected');
+    },
+  });
+}
+
+
+// Function to reject selected transfers
+function rejectSelectedTransfers() {
+  if (selectedTransferIds.length === 0) {
+    showErrorModal("No transfers selected");
+    return;
+  }
+
+  // Show loading state
+  $("#rejectSelectedBtn").prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-2"></i>Processing...');
+
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "POST",
+    data: {
+      action: "reject_transfers",
+      transfer_ids: selectedTransferIds.join(","),
+      current_branch: currentBranch,
+    },
+    dataType: "json",
+    success: function(response) {
+      if (response.success) {
+        showSuccessModal(response.message || "Selected transfers rejected successfully!");
+        
+        // Remove rejected transfers from the modal
+        selectedTransferIds.forEach(id => {
+          $(`.transfer-row[data-transfer-id='${id}']`).fadeOut(300, function() {
+            $(this).remove();
+            
+            // Check if any transfers remain
+            if ($("#incomingTransfersBody tr:visible").length === 0) {
+              $("#incomingTransfersBody").html(`
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">No pending transfers remaining</td>
+                </tr>
+              `);
+              $("#transferSummary").hide();
+            }
+          });
+        });
+        
+        selectedTransferIds = [];
+        updateTransferSelection();
+        
+        // Re-enable button
+        $("#rejectSelectedBtn").prop('disabled', false).html('<i class="bi bi-x-circle me-1"></i>Reject Selected');
+      } else {
+        showErrorModal(response.message || "Error rejecting transfers");
+        // Re-enable button
+        $("#rejectSelectedBtn").prop('disabled', false).html('<i class="bi bi-x-circle me-1"></i>Reject Selected');
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error("AJAX Error:", xhr.responseText);
+      showErrorModal("Error rejecting transfers: " + error);
+      // Re-enable button
+      $("#rejectSelectedBtn").prop('disabled', false).html('<i class="bi bi-x-circle me-1"></i>Reject Selected');
+    },
+  });
+}
+
+
 // =======================
 // Branch Inventory & Map
 // =======================
