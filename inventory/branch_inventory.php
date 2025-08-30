@@ -497,6 +497,11 @@
         box-shadow: none !important;
     }
 }
+.navbar-nav .nav-link.disabled {
+    color: #6c757d; /* muted text color */
+    pointer-events: none;
+}
+
     </style>
 </head>
 
@@ -533,7 +538,17 @@
                         <a href='../inventory/branch_inventory.php' class='nav-item nav-link active'>Home</a>
 
                         <a href='../api/logout.php' class='nav-item nav-link active'>Logout</a>
+
+                        <?php if (isset($_SESSION['username'])): ?>
+       <span class='nav-item nav-link disabled' style='cursor: default; color: red;'>
+    <i class='fas fa-user-circle me-1'></i>
+    <?php echo htmlspecialchars($_SESSION['username']); ?>
+</span>
+
+    <?php endif; ?>
                     </div>
+
+                    
                 </div>
             </nav>
         </div>

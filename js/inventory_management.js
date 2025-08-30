@@ -2724,7 +2724,7 @@ function showMonthlyReportOptions() {
 
     // Handle branch selection based on user role
     if (isAdminOrHeadOffice) {
-        // Admin/HeadOffice can select any branch
+        // Admin/HeadOffice can select any branch including ALL BRANCHES
         populateBranchesDropdown();
         $('#reportBranch').prop('disabled', false);
     } else {
@@ -2761,7 +2761,7 @@ function generateReport() {
     const reportType = $('#reportType').val();
 
     // For non-admin users, use their branch
-    const reportBranch = branch || currentUserBranch;
+    const reportBranch = branch === 'ALL' ? 'all' : (branch || currentUserBranch);
 
     $('#monthlyReportOptionsModal').modal('hide');
     $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
