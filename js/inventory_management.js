@@ -2152,6 +2152,7 @@ function populateBranchesDropdown() {
     "MAMBUSAO",
     "SIGMA",
     "PRC",
+    "BAILAN",
     "CUARTERO",
     "JAMINDAN",
     "ROXAS HONDA",
@@ -2504,7 +2505,7 @@ function showMonthlyReportOptions() {
 
 function populateBranchesDropdown() {
     const branches = [
-        'HEADOFFICE', 'ROXAS SUZUKI', 'MAMBUSAO', 'SIGMA', 'PRC', 'CUARTERO', 'JAMINDAN',
+        'HEADOFFICE', 'ROXAS SUZUKI',   "BAILAN",'MAMBUSAO', 'SIGMA', 'PRC', 'CUARTERO', 'JAMINDAN',
         'ROXAS HONDA', 'ANTIQUE-1', 'ANTIQUE-2', 'DELGADO HONDA', 'DELGADO SUZUKI',
         'JARO-1', 'JARO-2', 'KALIBO MABINI', 'KALIBO SUZUKI', 'ALTAVAS', 'EMAP', 'CULASI',
         'BACOLOD', 'PASSI-1', 'PASSI-2', 'BALASAN', 'GUIMARAS', 'PEMDI', 'EEMSI', 'AJUY',
