@@ -1076,7 +1076,7 @@
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-primary' onclick='submitSale()'>Mark as Sold</button>
+                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as Sold</button>
                 </div>
             </div>
         </div>

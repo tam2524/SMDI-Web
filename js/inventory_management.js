@@ -1179,7 +1179,6 @@ function sellMotorcycle(id) {
 
   $("#saleForm")[0].reset();
   $("#codFields").hide();
-  $("#installmentFields").hide();
 
   $("#sellMotorcycleModal").modal("show");
 }
@@ -1188,12 +1187,9 @@ function handlePaymentTypeChange() {
   const paymentType = $("#paymentType").val();
 
   $("#codFields").hide();
-  $("#installmentFields").hide();
-
-  if (paymentType === "COD") {
+  // Show COD fields for both COD and Installment payment types
+  if (paymentType === "COD" || paymentType === "Installment") {
     $("#codFields").show();
-  } else if (paymentType === "Installment") {
-    $("#installmentFields").show();
   }
 }
 
@@ -1206,14 +1202,13 @@ function submitSale() {
     payment_type: $("#paymentType").val(),
   };
 
-  if (formData.payment_type === "COD") {
+  // For both COD and Installment, only collect DR number and amount
+  if (formData.payment_type === "COD" || formData.payment_type === "Installment") {
     formData.dr_number = $("#drNumber").val();
     formData.cod_amount = $("#codAmount").val();
-  } else if (formData.payment_type === "Installment") {
-    formData.terms = $("#terms").val();
-    formData.monthly_amortization = $("#monthlyAmortization").val();
   }
 
+  // Basic validation for required fields
   if (
     !formData.sale_date ||
     !formData.customer_name ||
@@ -1223,21 +1218,12 @@ function submitSale() {
     return;
   }
 
+  // Validation for DR Number and Amount (applies to both payment types)
   if (
-    formData.payment_type === "COD" &&
+    (formData.payment_type === "COD" || formData.payment_type === "Installment") &&
     (!formData.dr_number || !formData.cod_amount)
   ) {
-    showErrorModal("Please fill in DR Number and COD Amount for COD payment");
-    return;
-  }
-
-  if (
-    formData.payment_type === "Installment" &&
-    (!formData.terms || !formData.monthly_amortization)
-  ) {
-    showErrorModal(
-      "Please fill in Terms and Monthly Amortization for Installment payment"
-    );
+    showErrorModal("Please fill in DR Number and Amount");
     return;
   }
 
@@ -1265,6 +1251,7 @@ function submitSale() {
     },
   });
 }
+
 // =======================
 // Transfer Functions
 // =======================

@@ -1420,6 +1420,66 @@
         </div>
     </div>
 
+       <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='sellMotorcycleModalLabel'>Mark Motorcycle as Sold</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='saleForm'>
+                        <input type='hidden' id='sellMotorcycleId'>
+
+                        <div class='mb-3'>
+                            <label for='saleDate' class='form-label'>Sale Date <span
+                                    class='text-danger'>*</span></label>
+                            <input type='date' class='form-control' id='saleDate' required>
+                        </div>
+
+                        <div class='mb-3'>
+                            <label for='customerName' class='form-label'>Customer Name <span
+                                    class='text-danger'>*</span></label>
+                            <input type='text' class='form-control' id='customerName' required>
+                        </div>
+
+                        <div class='mb-3'>
+                            <label for='paymentType' class='form-label'>Payment Type <span
+                                    class='text-danger'>*</span></label>
+                            <select class='form-select' id='paymentType' onchange='handlePaymentTypeChange()' required>
+                                <option value=''>Select Payment Type</option>
+                                <option value='COD'>Cash on Delivery ( COD )</option>
+                                <option value='Installment'>Installment</option>
+                            </select>
+                        </div>
+
+                        <div id='codFields' style='display: none;'>
+                            <div class='mb-3'>
+                                <label for='drNumber' class='form-label'>DR Number <span
+                                        class='text-danger'>*</span></label>
+                                <input type='text' class='form-control' id='drNumber'>
+                            </div>
+
+                            <div class='mb-3'>
+                                <label for='codAmount' class='form-label'>COD Amount <span
+                                        class='text-danger'>*</span></label>
+                                <input type='number' step='0.01' class='form-control' id='codAmount'>
+                            </div>
+                        </div>
+
+                        
+                    </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as Sold</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
