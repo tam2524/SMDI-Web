@@ -591,12 +591,16 @@
                         <button class='nav-link active' id='inventory-tab' data-bs-toggle='tab'
                             data-bs-target='#inventory' type='button' role='tab'>Overview</button>
                     </li>
+                      <li class='nav-item' role='presentation'>
+                        <button class='nav-link' id='find-tab' data-bs-toggle='tab'
+                            data-bs-target='#find' type='button' role='tab'>Find</button>
+                    </li>
                     <li class='nav-item' role='presentation'>
                         <button class='nav-link' id='management-tab' data-bs-toggle='tab' data-bs-target='#management'
                             type='button' role='tab'>Inventory Management</button>
                     </li>
                 </ul>
-
+                
                 <div class='tab-content' id='inventoryTabContent'>
 
                     <div class='tab-pane fade show active' id='inventory' role='tabpanel'>
@@ -624,6 +628,32 @@
                         </div>
                     </div>
                 </div>
+
+                 <div class='tab-content' id='findTabContent'>           
+<div class="tab-pane fade" id="find" role="tabpanel">
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            <div class="col-md-12">
+                <!-- Search Bar -->
+                <div class="search-container mb-4">
+                    <div class="input-group">
+                        <input type="text" id="searchModel" class="form-control" placeholder="Search motorcycle model...">
+                        <button class="btn btn-primary text-white" id="searchModelBtn">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Available Inventory List -->
+                <div id="modelList" class="model-list mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+                    </div>
+                        </div>
                 <div class='tab-pane fade ' id='management' role='tabpanel'>
                     <div class='d-flex justify-content-between mb-4'>
                         <div>

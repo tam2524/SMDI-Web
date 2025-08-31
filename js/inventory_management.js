@@ -30,7 +30,6 @@ $(document).ready(function () {
   loadInventoryDashboard();
   loadInventoryTable();
   setupEventListeners();
-  loadBranchInventory(currentBranch);
   setInterval(checkIncomingTransfers, 1000);
   addModelForm();
   setTimeout(() => {
@@ -2248,147 +2247,7 @@ function rejectSelectedTransfers() {
 // =======================
 // Branch Inventory & Map
 // =======================
-function initMap(currentBranch) {
-  const map = L.map("branchMap").setView([11.5852, 122.7511], 10);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
-  }).addTo(map);
-
-  $.get(
-    "../api/inventory_management.php",
-    {
-      action: "get_branches_with_inventory",
-    },
-    function (response) {
-      if (response.success) {
-        const branchCoordinates = {
-          "ROXAS-SUZUKI": { lat: 11.581639063474135, lng: 122.75283046163139 },
-          "ROXAS-HONDA": { lat: 11.591933174094493, lng: 122.75177370058198 },
-          MAMBUSAO: { lat: 11.430722236714315, lng: 122.60106183558217 },
-          "ANTIQUE-1": { lat: 10.747081312946916, lng: 121.94138590805788 },
-          "ANTIQUE-2": { lat: 10.749653220828158, lng: 121.94142882340054 },
-          "DELGADO HONDA": { lat: 10.697818450677735, lng: 122.56464019830032 },
-          "DELGADO SUZUKI": {
-            lat: 10.697818450677735,
-            lng: 122.56464019830032,
-          },
-          "JARO-1": { lat: 10.746529482552543, lng: 122.56703172463938 },
-          "JARO-2": { lat: 10.749878260560397, lng: 122.56812797163823 },
-          "KALIBO MABINI": { lat: 11.726705198816557, lng: 122.36889838061255 },
-          "KALIBO SUZUKI": { lat: 11.702856917692344, lng: 122.36675785507218 },
-          ALTAVAS: { lat: 11.581991439599044, lng: 122.75273929376398 },
-          EMAP: { lat: 11.581991439599044, lng: 122.75273929376398 },
-          CULASI: { lat: 11.428798698065513, lng: 122.05695055376913 },
-          BACOLOD: { lat: 10.670965032727254, lng: 122.95977720190973 },
-          "PASSI-1": { lat: 11.105396570048141, lng: 122.64601950262048 },
-          "PASSI-2": { lat: 11.106284551766606, lng: 122.64677038445016 },
-          BALASAN: { lat: 11.46865937405874, lng: 123.09560889637078 },
-          GUIMARAS: { lat: 10.605846163901681, lng: 122.58799192677242 },
-          PEMDI: { lat: 10.65556975930108, lng: 122.93918296725195 },
-          EEMSI: { lat: 10.605758954854227, lng: 122.58813091469503 },
-          AJUY: { lat: 11.179194176167435, lng: 123.01975649183555 },
-          BAILAN: { lat: 11.450895697343983, lng: 122.82968507428964 },
-          "3SMB": { lat: 12.602606955880981, lng: 121.5037542414926 },
-          "3SMINDORO": { lat: 12.371133617009118, lng: 121.06330210820141 },
-          MANSALAY: { lat: 12.530846939769289, lng: 121.44707141396867 },
-          "K-RIDERS": { lat: 11.626344148372608, lng: 122.73960109140822 },
-          IBAJAY: { lat: 11.815513408059678, lng: 122.15988390959608 },
-          NUMANCIA: { lat: 11.716374415728836, lng: 122.35946468260876 },
-          HEADOFFICE: { lat: 11.58156063320175, lng: 122.75277786727027 },
-          CEBU: { lat: 10.315699, lng: 123.885437 },
-        };
-
-        response.data.forEach((branch) => {
-          if (branch.total_quantity > 0) {
-            const coord = branchCoordinates[branch.branch] || {
-              lat: 11.5852,
-              lng: 122.7511,
-            };
-            const isCurrent = branch.branch === currentBranch;
-
-            const marker = L.marker([coord.lat, coord.lng], {
-              icon: L.divIcon({
-                className: `branch-marker ${isCurrent ? "current-branch" : ""}`,
-                html: branch.branch.substring(0, 2),
-                iconSize: [30, 30],
-              }),
-            }).addTo(map);
-
-            marker.bindPopup(`
-                        <b>Branch ${branch.branch}</b><br>
-                        <small>${branch.total_quantity} units available</small>
-                    `);
-
-            marker.on("click", function () {
-              loadBranchInventory(branch.branch);
-            });
-          }
-        });
-      }
-    },
-    "json"
-  );
-
-  return map;
-}
-
-function loadBranchInventory(branchCode) {
-  $("#branchInfo").html(
-    `<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div></div>`
-  );
-  $("#modelList").empty();
-
-  $.get(
-    "../api/inventory_management.php",
-    {
-      action: "get_branch_inventory",
-      branch: branchCode,
-      status: "all",
-    },
-    function (response) {
-      if (response.success && response.data.length > 0) {
-        $("#branchInfo").html(`
-                <h6>Branch: <strong>${branchCode}</strong></h6>
-                <p class="small">${response.data.length} units available</p>
-            `);
-
-        const modelGroups = groupByModel(response.data);
-        let html = "";
-
-        Object.keys(modelGroups).forEach((model) => {
-          const items = modelGroups[model];
-          html += `
-                    <div class="card mb-2 model-item" data-model="${model}">
-                        <div class="card-body">
-                            <h6 class="card-title">${model}</h6>
-                            <p class="card-text small">
-                                ${items.length} available · 
-                                ${items[0].color} · 
-                                ${items[0].current_branch}
-                            </p>
-                        </div>
-                    </div>
-                `;
-        });
-
-        $("#modelList").html(html);
-
-        $(".model-item").click(function () {
-          const model = $(this).data("model");
-          viewModelDetails(modelGroups[model][0].id);
-        });
-      } else {
-        $("#branchInfo").html(`
-                <h6>Branch: <strong>${branchCode}</strong></h6>
-                <p class="text-muted">No inventory available</p>
-            `);
-        $("#modelList").html('<p class="text-muted">No models found</p>');
-      }
-    },
-    "json"
-  );
-}
 function viewModelDetails(id) {
   $("#motorcycleDetails").html(
     '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>'
@@ -2558,31 +2417,43 @@ function searchModels() {
       query: query,
     },
     function (response) {
-      if (response.success && response.data.length > 0) {
-        const modelGroups = groupByModel(response.data);
+      if (response.success && Array.isArray(response.data) && response.data.length > 0) {
         let html = "<h6>Search Results</h6>";
 
+        // ✅ group by model so one card per model
+        const modelGroups = {};
+        response.data.forEach((item) => {
+          const modelKey = item.model?.trim() || "Unknown Model"; // normalize key
+          if (!Array.isArray(modelGroups[modelKey])) {
+            modelGroups[modelKey] = [];
+          }
+          modelGroups[modelKey].push(item);
+        });
+
+        // ✅ render each model card
         Object.keys(modelGroups).forEach((model) => {
           const items = modelGroups[model];
+          const first = items[0]; // preview first unit
           html += `
-                    <div class="card mb-2 model-item" data-model="${model}" data-id="${items[0].id}">
-                        <div class="card-body">
-                            <h6 class="card-title">${model}</h6>
-                            <p class="card-text small">
-                                ${items.length} available · 
-                                ${items[0].color} · 
-                                ${items[0].current_branch}
-                            </p>
-                        </div>
-                    </div>
-                `;
+            <div class="card mb-2 model-item" data-model="${model}">
+              <div class="card-body">
+                <h6 class="card-title">${model}</h6>
+                <p class="card-text small">
+                  ${first.color} · ${first.current_branch} <br>
+                  ${items.length} unit(s) available
+                </p>
+              </div>
+            </div>
+          `;
         });
 
         $("#modelList").html(html);
 
+        // ✅ When a model card is clicked, show all its units in modal
         $(".model-item").click(function () {
-          const id = $(this).data("id");
-          viewMotorcycleDetails(id);
+          const model = $(this).data("model");
+          const items = modelGroups[model] || []; // fallback to []
+          viewModelDetails(items);
         });
       } else {
         $("#modelList").html(
@@ -2595,75 +2466,52 @@ function searchModels() {
   );
 }
 
-function viewMotorcycleDetails(id) {
-  $("#detailsModal .modal-body").html(
-    '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div></div>'
-  );
 
-  $.get(
-    "../api/inventory_management.php",
-    {
-      action: "get_motorcycle",
-      id: id,
-    },
-    function (response) {
-      if (response.success) {
-        const data = response.data;
+function viewModelDetails(units) {
+  let html = "";
 
-        $("#detailsModal .modal-body").html(`
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-black">Basic Information</h6>
-                        <hr>
-                        <p><strong>Invoice Number/MT:</strong> ${
-                          data.invoice_number || "N/A"
-                        }</p>
-                        <p><strong>Brand:</strong> ${data.brand}</p>
-                        <p><strong>Model:</strong> ${data.model}</p>
-                        <p><strong>Color:</strong> ${data.color}</p>
-                        <p><strong>Current Branch:</strong> ${
-                          data.current_branch
-                        }</p>
-                        <p><strong>Status:</strong> <span class="badge ${getStatusClass(
-                          data.status
-                        )}">
-                            ${
-                              data.status.charAt(0).toUpperCase() +
-                              data.status.slice(1)
-                            }
-                        </span></p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-black">Identification & Pricing</h6>
-                        <hr>
-                        <p><strong>Engine #:</strong> ${data.engine_number}</p>
-                        <p><strong>Frame #:</strong> ${data.frame_number}</p>
-                        <p><strong>Date Delivered:</strong> ${formatDate(
-                          data.date_delivered
-                        )}</p>
-                        <p><strong>Inventory Cost:</strong> ${
-                          data.inventory_cost ? formatCurrency(data.inventory_cost) : "N/A"
-                        }</p>
-                    </div>
-                </div>
-            `);
-
-        $("#detailsModal").modal("show");
-      } else {
-        $("#detailsModal .modal-body").html(
-          '<div class="alert alert-danger">Error loading motorcycle details</div>'
-        );
-        $("#detailsModal").modal("show");
-      }
-    },
-    "json"
-  ).fail(function () {
-    $("#detailsModal .modal-body").html(
-      '<div class="alert alert-danger">Error loading motorcycle details</div>'
-    );
-    $("#detailsModal").modal("show");
+  units.forEach((data, index) => {
+    html += `
+      <div class="card mb-3">
+        <div class="card-header">
+          Unit ${index + 1}
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-black">Basic Information</h6>
+              <hr>
+              <p><strong>Invoice Number/MT:</strong> ${data.invoice_number || "N/A"}</p>
+              <p><strong>Brand:</strong> ${data.brand}</p>
+              <p><strong>Model:</strong> ${data.model}</p>
+              <p><strong>Color:</strong> ${data.color}</p>
+              <p><strong>Current Branch:</strong> ${data.current_branch}</p>
+              <p><strong>Status:</strong> 
+                <span class="badge ${getStatusClass(data.status)}">
+                  ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}
+                </span>
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-black">Identification & Pricing</h6>
+              <hr>
+              <p><strong>Engine #:</strong> ${data.engine_number}</p>
+              <p><strong>Frame #:</strong> ${data.frame_number}</p>
+              <p><strong>Inventory Cost:</strong> ${
+                data.inventory_cost ? formatCurrency(data.inventory_cost) : "N/A"
+              }</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   });
+
+  $("#detailsModal .modal-body").html(html);
+  $("#detailsModal").modal("show");
 }
+
+
 
 $("#addMotorcycleModal").on("shown.bs.modal", function () {
   if (!isAdmin) {
