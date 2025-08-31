@@ -477,6 +477,68 @@
         /* muted text color */
         pointer-events: none;
     }
+    .brand-header {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.brand-header:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.brand-header h5 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-header .badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+}
+
+/* Brand-specific header colors */
+.brand-header.border-primary {
+  background: linear-gradient(135deg, rgba(0, 15, 113, 0.1), rgba(0, 15, 113, 0.05));
+  border-left: 4px solid #000f71;
+}
+
+.brand-header.border-danger {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+  border-left: 4px solid #dc3545;
+}
+
+.brand-header.border-black {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.05));
+  border-left: 4px solid #000000;
+}
+
+.brand-header.border-success {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+  border-left: 4px solid #28a745;
+}
+
+.brand-header.border-secondary {
+  background: linear-gradient(135deg, rgba(108, 117, 125, 0.1), rgba(108, 117, 125, 0.05));
+  border-left: 4px solid #6c757d;
+}
+
+/* Responsive adjustments for brand headers */
+@media (max-width: 768px) {
+  .brand-header h5 {
+    font-size: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .brand-header .badge {
+    align-self: flex-end;
+  }
+}
+
     </style>
 </head>
 

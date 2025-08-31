@@ -428,9 +428,9 @@ function renderInventoryCards(data) {
   let html = "";
 
   if (data.length === 0) {
-    html =
-      '<div class="col-12 text-center py-5 text-muted">No inventory data found</div>';
+    html = '<div class="col-12 text-center py-5 text-muted">No inventory data found</div>';
   } else {
+    // Group data by brand
     const brands = {};
     data.forEach((item) => {
       if (!brands[item.brand]) {
@@ -439,7 +439,12 @@ function renderInventoryCards(data) {
       brands[item.brand].push(item);
     });
 
-    for (const brand in brands) {
+    // Sort brands alphabetically for consistent display
+    const sortedBrands = Object.keys(brands).sort();
+
+    // Render each brand section
+    sortedBrands.forEach(brand => {
+      // Get brand color
       let brandColor = "";
       switch (brand.toLowerCase()) {
         case "suzuki":
@@ -458,22 +463,40 @@ function renderInventoryCards(data) {
           brandColor = "border-secondary bg-secondary-light";
       }
 
+      // Add brand header
+      html += `
+        <div class="col-12 mb-3">
+          <div class="brand-header p-3 ${brandColor}" style="border-radius: 8px; margin-bottom: 15px;">
+            <h5 class="mb-0 fw-bold text-uppercase" style="color: #333; letter-spacing: 1px;">
+              ${brand} <span class="badge bg-dark ms-2">${brands[brand].length} models</span>
+            </h5>
+          </div>
+        </div>
+      `;
+
+      // Add model cards for this brand
       brands[brand].forEach((item) => {
         html += `
-                    <div class="col-xl-1 col-lg-2 col-md-3 col-sm-4 col-6 model-card-container px-1 mb-2">
-                        <div class="model-card d-flex justify-content-between align-items-center ${brandColor}" 
-                             data-brand="${item.brand}" data-model="${item.model}" onclick="filterByModel('${item.brand}', '${item.model}')">
-                            <div class="model-name" title="${item.model}">${item.model}</div>
-                            <div class="quantity-badge">${item.total_quantity}</div>
-                        </div>
-                    </div>
-                `;
+          <div class="col-xl-1 col-lg-2 col-md-3 col-sm-4 col-6 model-card-container px-1 mb-2">
+            <div class="model-card d-flex justify-content-between align-items-center ${brandColor}" 
+                 data-brand="${item.brand}" data-model="${item.model}" onclick="filterByModel('${item.brand}', '${item.model}')">
+              <div class="model-name" title="${item.model}">${item.model}</div>
+              <div class="quantity-badge">${item.total_quantity}</div>
+            </div>
+          </div>
+        `;
       });
-    }
+
+      // Add a separator between brands (except for the last one)
+      if (brand !== sortedBrands[sortedBrands.length - 1]) {
+        html += '<div class="col-12"><hr class="my-4"></div>';
+      }
+    });
   }
 
   $("#inventoryCards").html(html);
 }
+
 
 function filterByModel(brand, model) {
   $("#management-tab").tab("show");
