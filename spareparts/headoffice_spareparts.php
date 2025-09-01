@@ -5,7 +5,7 @@
 
 <head>
     <meta charset='utf-8'>
-    <title>SMDI - INVENTORY | The Highest Levels of Service</title>
+    <title>SMDI - SPAREPARTS | The Highest Levels of Service</title>
     <meta content='width=device-width, initial-scale=1.0' name='viewport'>
     <meta content='' name='keywords'>
     <meta content='' name='description'>
@@ -19,535 +19,11 @@
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script>
-
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
-
-    <style>
-    .model-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-color: #000f71;
-    }
-
-    .model-card {
-        min-height: 70px;
-        height: auto;
-        padding: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 10px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        background: #f9f9f9;
-        box-sizing: border-box;
-    }
-
-    .model-name {
-        flex: 1 1 auto;
-        /* allow shrinking but not overlap */
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #333;
-        overflow-wrap: break-word;
-        /* wrap long text */
-        word-break: break-word;
-        /* extra safety */
-        line-height: 1.2;
-        margin-right: 10px;
-        /* give space before badge */
-    }
-
-    .quantity-badge {
-        background-color: #000f71;
-        color: white;
-        border-radius: 20px;
-        padding: 3px 10px;
-        font-size: 0.9rem;
-        font-weight: bold;
-        min-width: 40px;
-        text-align: center;
-        flex-shrink: 0;
-        /* always stay visible */
-    }
-
-    .nav-tabs .nav-link.active {
-        font-weight: 600;
-        border-bottom: 3px solid #000f71;
-    }
-
-    .branch-marker {
-        background-color: #000f71;
-        color: white;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-
-    .modal.fade.show {
-        display: block !important;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-backdrop.fade.show {
-        opacity: 0.5 !important;
-    }
-
-    @media (min-width: 1200px) {
-        .model-card-container {
-            flex: 0 0 10%;
-            max-width: 10%;
-        }
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 20px 0;
-    }
-
-    .pagination .page-item {
-        margin: 0 5px;
-    }
-
-    .pagination .page-link {
-        padding: 10px 15px;
-        border: 1px solid #000f71;
-        border-radius: 5px;
-        color: #000f71;
-        text-decoration: none;
-        transition: background-color 0.3s, color 0.3s;
-    }
-
-    .pagination .page-link:hover {
-        background-color: #000f71;
-        color: white;
-    }
-
-    .pagination .page-item.active .page-link {
-        background-color: #000f71;
-        color: white;
-        border-color: #000f71;
-    }
-
-    .pagination .page-item.disabled .page-link {
-        color: #ccc;
-        pointer-events: none;
-        background-color: white;
-        border-color: #ccc;
-    }
-
-    .pagination .page-item.disabled .page-link:hover {
-        background-color: white;
-        color: #ccc;
-    }
-
-    .no-print {
-        display: block;
-    }
-
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-    }
-
-    .sortable-header {
-        cursor: pointer;
-    }
-
-    .sortable-header:hover {
-        background-color: #f8f9fa;
-    }
-
-    .border-primary {
-        border-color: #000f71 !important;
-    }
-
-    .bg-primary-light {
-        background-color: rgba(0, 15, 113, 0.1) !important;
-    }
-
-    .border-danger {
-        border-color: #dc3545 !important;
-    }
-
-    .bg-danger-light {
-        background-color: rgba(220, 53, 69, 0.1) !important;
-    }
-
-    .border-black {
-        border-color: #000000ff !important;
-    }
-
-    .bg-black-light {
-        background-color: rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .border-success {
-        border-color: #28a745 !important;
-    }
-
-    .bg-success-light {
-        background-color: rgba(40, 167, 69, 0.1) !important;
-    }
-
-    .model-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        opacity: 0.9;
-    }
-
-    .model-card.border-primary .quantity-badge {
-        background-color: #000f71;
-    }
-
-    .model-card.border-danger .quantity-badge {
-        background-color: #dc3545;
-    }
-
-    .model-card.border-black .quantity-badge {
-        background-color: #000000;
-    }
-
-    .model-card.border-success .quantity-badge {
-        background-color: #28a745;
-    }
-
-    .btn-group {
-        margin-right: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-group .btn {
-        border-radius: 0;
-        border-left: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-group .btn:first-child {
-        border-top-left-radius: 4px;
-        border-bottom-left-radius: 4px;
-        border-left: none;
-    }
-
-    .btn-group .btn:last-child {
-        border-top-right-radius: 4px;
-        border-bottom-right-radius: 4px;
-    }
-
-    .btn-group .btn:hover {
-        background-color: #0069d9;
-        color: white;
-    }
-
-    .btn-group .btn i {
-        margin-right: 5px;
-    }
-
-    .card-header .btn-link {
-        text-decoration: none;
-        color: #000f71;
-        font-weight: 600;
-        width: 100%;
-        text-align: left;
-        padding: 0.75rem 1.25rem;
-    }
-
-    .card-header .btn-link:hover {
-        color: #000f71;
-        text-decoration: underline;
-    }
-
-    .card-header .btn-link:after {
-        content: '\f078';
-        font-family: 'Font Awesome 5 Free';
-        font-weight: 900;
-        float: right;
-        transition: transform 0.3s;
-    }
-
-    .card-header .btn-link[ aria-expanded='true']:after {
-        transform: rotate(180deg);
-    }
-
-    .card-body {
-        padding: 1rem 1.25rem;
-    }
-
-    .table-sm th,
-    .table-sm td {
-        padding: 0.5rem;
-    }
-
-    .transfer-row {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.transfer-row:hover {
-    background-color: #f8f9fa !important;
-}
-
-.transfer-row.selected {
-    background-color: #d1e7dd !important;
-}
-
-.transfer-checkbox {
-    cursor: pointer;
-}
-
-.status-badge {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-}
-
-#transferSummary {
-    border-left: 4px solid #0dcaf0;
-}
-
-
-    .transfer-search-result {
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 8px;
-        background: white;
-        transition: all 0.2s ease;
-        cursor: pointer;
-    }
-
-    .transfer-search-result:hover {
-        border-color: #0d6efd;
-        background-color: #f8f9fa;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .transfer-search-result.selected {
-        border-color: #198754;
-        background-color: #d1e7dd;
-    }
-
-    .transfer-search-result .engine-number {
-        font-weight: 600;
-        color: #0d6efd;
-        font-size: 0.95rem;
-    }
-
-    .transfer-search-result .model-info {
-        font-size: 0.85rem;
-        color: #6c757d;
-        margin-bottom: 4px;
-    }
-
-    .transfer-search-result .branch-info {
-        font-size: 0.8rem;
-        color: #868e96;
-    }
-
-    .selected-motorcycle-item {
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        padding: 10px;
-        margin-bottom: 8px;
-        background: white;
-        animation: fadeIn 0.3s ease;
-    }
-
-    .selected-motorcycle-item:hover {
-        background-color: #f8f9fa;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .card {
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        border: 1px solid rgba(0, 0, 0, 0.125);
-    }
-
-    .card-header {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-    }
-
-    .form-label {
-        font-weight: 500;
-    }
-
-    #searchResults::-webkit-scrollbar,
-    #selectedMotorcyclesList::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    #searchResults::-webkit-scrollbar-track,
-    #selectedMotorcyclesList::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 3px;
-    }
-
-    #searchResults::-webkit-scrollbar-thumb,
-    #selectedMotorcyclesList::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 3px;
-    }
-
-    #searchResults::-webkit-scrollbar-thumb:hover,
-    #selectedMotorcyclesList::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
-
-    .specific-details-container {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 15px;
-        border: 1px solid #e9ecef;
-    }
-
-    .specific-details-row {
-        background: white;
-        border-radius: 6px;
-        padding: 10px;
-        margin-bottom: 10px;
-    }
-
-    .specific-details-row:last-child {
-        margin-bottom: 0;
-        border-bottom: none;
-    }
-
-    .receipt-header {
-        border-bottom: 2px solid #000f71;
-        padding-bottom: 15px;
-    }
-
-    .receipt-header h5 {
-        color: #000f71;
-        font-weight: 600;
-    }
-
-    #receiptMotorcyclesList tr:nth-child(even) {
-        background-color: #f8f9fa;
-    }
-
-    #receiptMotorcyclesList td {
-        padding: 8px;
-        vertical-align: middle;
-    }
-
-    @media print {
-
-        .modal-header,
-        .modal-footer {
-            display: none !important;
-        }
-
-        .modal-body {
-            padding: 0;
-            display: block !important;
-        }
-
-        .modal-dialog {
-            max-width: 100% !important;
-            margin: 0 !important;
-        }
-
-        .modal-content {
-            border: none !important;
-            box-shadow: none !important;
-        }
-    }
-
-    .navbar-nav .nav-link.disabled {
-        color: #6c757d;
-        /* muted text color */
-        pointer-events: none;
-    }
-    .brand-header {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.brand-header:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.brand-header h5 {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand-header .badge {
-  font-size: 0.75rem;
-  padding: 0.35em 0.65em;
-}
-
-/* Brand-specific header colors */
-.brand-header.border-primary {
-  background: linear-gradient(135deg, rgba(0, 15, 113, 0.1), rgba(0, 15, 113, 0.05));
-  border-left: 4px solid #000f71;
-}
-
-.brand-header.border-danger {
-  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
-  border-left: 4px solid #dc3545;
-}
-
-.brand-header.border-black {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.05));
-  border-left: 4px solid #000000;
-}
-
-.brand-header.border-success {
-  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
-  border-left: 4px solid #28a745;
-}
-
-.brand-header.border-secondary {
-  background: linear-gradient(135deg, rgba(108, 117, 125, 0.1), rgba(108, 117, 125, 0.05));
-  border-left: 4px solid #6c757d;
-}
-
-/* Responsive adjustments for brand headers */
-@media (max-width: 768px) {
-  .brand-header h5 {
-    font-size: 1rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .brand-header .badge {
-    align-self: flex-end;
-  }
-}
-
-    </style>
 </head>
 
 <body>
-    <div class='spinner-container' id='loadingSpinner'>
-        <div class='spinner-border text-primary' role='status'>
-            <span class='visually-hidden'>Loading...</span>
-        </div>
-    </div>
 
     <div class='container-fluid fixed-top bg-white'>
         <div class='container topbar bg-primary d-none d-lg-block'>
@@ -592,7 +68,7 @@
     <main class='container-fluid py-5' style='margin-top: 20px;'>
         <div class='card mb-4'>
             <div class='card-header bg-white'>
-                <h1 class='h5 mb-0'>Motorcycle Inventory Management</h1>
+                <h1 class='h5 mb-0'>Spareparts Inventory Management</h1>
             </div>
             <div class='card-body'>
                 <ul class='nav nav-tabs mb-4' id='inventoryTabs' role='tablist'>
@@ -610,7 +86,7 @@
                     <div class='tab-pane fade show active' id='dashboard' role='tabpanel'>
                         <div class='row mb-4'>
                             <div class='col-md-6'>
-                                <h4>Inventory Overview</h4>
+                                <h4>Spareparts Inventory Overview</h4>
                             </div>
                             <div class='col-md-6 text-end'>
                                 <div class='input-group' style='max-width: 300px; margin-left: auto;'>
@@ -636,22 +112,21 @@
                         <div class='d-flex justify-content-between mb-4'>
                             <div>
                                 <button class='btn btn-primary text-white me-2' data-bs-toggle='modal'
-                                    data-bs-target='#addMotorcycleModal'>
-                                    <i class='bi bi-plus-circle'></i> Add Motorcycle
+                                    data-bs-target='#addSparepartsModal'>
+                                    <i class='bi bi-plus-circle'></i> Add Part
                                 </button>
 
                                 <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
                                     <i class='bi bi-truck'></i> Transfer
                                 </button>
 
-
-                                <!-- Replace your current report buttons with this single button -->
-                                <button type="button" class="btn btn-primary text-white me-2" id="generateReportsButton">
+                                <button type="button" class="btn btn-primary text-white me-2"
+                                    id="generateReportsButton">
                                     <i class="bi bi-file-earmark-text"></i> Generate Reports
                                 </button>
                                 <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
-    <i class="bi bi-receipt"></i> Search Transfer Receipt
-</button>
+                                    <i class="bi bi-receipt"></i> Search Transfer Receipt
+                                </button>
 
                             </div>
                             <div class='input-group' style='max-width: 300px;'>
@@ -790,12 +265,12 @@
         </div>
     </div>
 
-    <div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
+    <div class='modal fade' id='addSparepartsModal' tabindex='-1' aria-labelledby='addSparepartsModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
             <div class='modal-content'>
                 <div class='modal-header'>
-                    <h5 class='modal-title' id='addMotorcycleModalLabel'>Add Motorcycle to Inventory</h5>
+                    <h5 class='modal-title' id='addSparepartsModalLabel'>Add Motorcycle to Inventory</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
@@ -1081,7 +556,8 @@
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as Sold</button>
+                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as
+                        Sold</button>
                 </div>
             </div>
         </div>
@@ -1342,9 +818,9 @@
             </div>
         </div>
     </div>
-    
 
-    
+
+
     <template id='modelFormTemplate'>
         <div class='model-form card mb-3'>
             <div class='card-header d-flex justify-content-between align-items-center'>
@@ -1407,107 +883,111 @@
         </div>
     </template>
 
-<div class="modal fade" id="searchTransferReceiptModal" tabindex="-1" aria-labelledby="searchTransferReceiptModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="searchTransferReceiptModalLabel">Search Transfer Receipt</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="transferInvoiceSearch" class="form-label">Transfer Invoice Number</label>
-                    <input type="text" class="form-control" id="transferInvoiceSearch" placeholder="Enter transfer invoice number">
+    <div class="modal fade" id="searchTransferReceiptModal" tabindex="-1"
+        aria-labelledby="searchTransferReceiptModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="searchTransferReceiptModalLabel">Search Transfer Receipt</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div id="searchResultsContainer" class="mt-3" style="display: none;">
-                    <h6>Search Results:</h6>
-                    <div id="transferSearchResults" class="search-results"></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="transferInvoiceSearch" class="form-label">Transfer Invoice Number</label>
+                        <input type="text" class="form-control" id="transferInvoiceSearch"
+                            placeholder="Enter transfer invoice number">
+                    </div>
+                    <div id="searchResultsContainer" class="mt-3" style="display: none;">
+                        <h6>Search Results:</h6>
+                        <div id="transferSearchResults" class="search-results"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary text-white" id="searchTransferBtn">Search</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary text-white" id="searchTransferBtn">Search</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-   <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
+    <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
-    <div class='modal-dialog modal-xl'>
-        <div class='modal-content'>
-            <div class='modal-header bg-primary text-white'>
-                <h5 class='modal-title text-white' id='incomingTransfersModalLabel'>Incoming Units Transferred to Your Branch</h5>
-                <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal' aria-label='Close'></button>
-            </div>
-            <div class='modal-body'>
-                <div class='row mb-3'>
-                    <div class='col-md-6'>
-                        <div class='d-flex align-items-center'>
-                            <input type='checkbox' id='selectAllTransfers' class='form-check-input me-2'>
-                            <label for='selectAllTransfers' class='form-check-label fw-semibold'>Select All</label>
+        <div class='modal-dialog modal-xl'>
+            <div class='modal-content'>
+                <div class='modal-header bg-primary text-white'>
+                    <h5 class='modal-title text-white' id='incomingTransfersModalLabel'>Incoming Units Transferred to
+                        Your Branch</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
+                        aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <div class='row mb-3'>
+                        <div class='col-md-6'>
+                            <div class='d-flex align-items-center'>
+                                <input type='checkbox' id='selectAllTransfers' class='form-check-input me-2'>
+                                <label for='selectAllTransfers' class='form-check-label fw-semibold'>Select All</label>
+                            </div>
+                        </div>
+                        <div class='col-md-6 text-end'>
+                            <span class='badge bg-info' id='selectedTransfersCount'>0 selected</span>
                         </div>
                     </div>
-                    <div class='col-md-6 text-end'>
-                        <span class='badge bg-info' id='selectedTransfersCount'>0 selected</span>
+
+                    <div class='table-responsive'>
+                        <table class='table table-striped table-hover'>
+                            <thead class='table-dark'>
+                                <tr>
+                                    <th width='50'>
+                                        <input type='checkbox' id='selectAllTransfersHeader' class='form-check-input'>
+                                    </th>
+                                    <th>Model</th>
+                                    <th>Engine No.</th>
+                                    <th>Frame No.</th>
+                                    <th>Color</th>
+                                    <th>Transfer Date</th>
+                                    <th>From Branch</th>
+                                    <th>Transfer Invoice</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id='incomingTransfersBody'>
+                                <tr>
+                                    <td colspan='9' class='text-center py-4'>
+                                        <div class='spinner-border text-primary' role='status'>
+                                            <span class='visually-hidden'>Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                
-                <div class='table-responsive'>
-                    <table class='table table-striped table-hover'>
-                        <thead class='table-dark'>
-                            <tr>
-                                <th width='50'>
-                                    <input type='checkbox' id='selectAllTransfersHeader' class='form-check-input'>
-                                </th>
-                                <th>Model</th>
-                                <th>Engine No.</th>
-                                <th>Frame No.</th>
-                                <th>Color</th>
-                                <th>Transfer Date</th>
-                                <th>From Branch</th>
-                                <th>Transfer Invoice</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id='incomingTransfersBody'>
-                            <tr>
-                                <td colspan='9' class='text-center py-4'>
-                                    <div class='spinner-border text-primary' role='status'>
-                                        <span class='visually-hidden'>Loading...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class='alert alert-info mt-3' id='transferSummary' style='display: none;'>
-                    <h6 class='alert-heading'>Transfer Summary</h6>
-                    <div class='row'>
-                        <div class='col-md-4'>
-                            <strong>Selected Transfers:</strong> <span id='summarySelectedCount'>0</span>
-                        </div>
-                        <div class='col-md-4'>
-                            <strong>Total Units:</strong> <span id='summaryTotalUnits'>0</span>
-                        </div>
-                        <div class='col-md-4'>
-                            <strong>From Branches:</strong> <span id='summaryFromBranches'>-</span>
+
+                    <div class='alert alert-info mt-3' id='transferSummary' style='display: none;'>
+                        <h6 class='alert-heading'>Transfer Summary</h6>
+                        <div class='row'>
+                            <div class='col-md-4'>
+                                <strong>Selected Transfers:</strong> <span id='summarySelectedCount'>0</span>
+                            </div>
+                            <div class='col-md-4'>
+                                <strong>Total Units:</strong> <span id='summaryTotalUnits'>0</span>
+                            </div>
+                            <div class='col-md-4'>
+                                <strong>From Branches:</strong> <span id='summaryFromBranches'>-</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class='modal-footer'>
-                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                <button type='button' class='btn btn-warning me-2' id='rejectSelectedBtn' disabled>
-                    <i class='bi bi-x-circle me-1'></i>Reject Selected
-                </button>
-                <button type='button' class='btn btn-success' id='acceptSelectedBtn' disabled>
-                    <i class='bi bi-check-circle me-1'></i>Accept Selected
-                </button>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-warning me-2' id='rejectSelectedBtn' disabled>
+                        <i class='bi bi-x-circle me-1'></i>Reject Selected
+                    </button>
+                    <button type='button' class='btn btn-success' id='acceptSelectedBtn' disabled>
+                        <i class='bi bi-check-circle me-1'></i>Accept Selected
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 
     <div class='modal fade' id='transferReceiptModal' tabindex='-1' aria-labelledby='transferReceiptModalLabel'
@@ -1582,8 +1062,8 @@
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
                     <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
-                    <i class='bi bi-printer me-2'></i>Print Receipt
-                </button>
+                        <i class='bi bi-printer me-2'></i>Print Receipt
+                    </button>
                 </div>
             </div>
         </div>

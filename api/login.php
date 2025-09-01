@@ -43,7 +43,10 @@ if ($result->num_rows > 0) {
                 break;
             case 'Inventory':
                 header("Location: ../inventory/headoffice_inventory.php");
-                break;          
+                break;    
+            case 'Spareparts':
+                header("Location: ../spareparts/headoffice_spareparts.php");
+                break;           
             default:
                 // Fallback if no matching case
                 header("Location: ../login.html");

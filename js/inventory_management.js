@@ -39,6 +39,50 @@ $(document).ready(function () {
   }, 300);
 });
 
+// Modal management fixes
+$(document).ready(function() {
+    // Fix modal backdrop issues
+    $(document).on('show.bs.modal', '.modal', function() {
+        const zIndex = 1050 + (10 * $('.modal:visible').length);
+        $(this).css('z-index', zIndex);
+        setTimeout(() => {
+            $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+        }, 0);
+    });
+
+    // Clean up modal backdrops
+    $(document).on('hidden.bs.modal', '.modal', function() {
+        $('.modal:visible').length && $(document.body).addClass('modal-open');
+        
+        // Remove extra backdrops
+        if ($('.modal:visible').length === 0) {
+            $('.modal-backdrop').remove();
+            $(document.body).removeClass('modal-open');
+        }
+    });
+
+    // Ensure body scroll is restored when all modals are closed
+    $(document).on('hidden.bs.modal', function() {
+        if ($('.modal.show').length === 0) {
+            $('body').removeClass('modal-open').css('padding-right', '');
+        }
+    });
+});
+
+// Function to ensure modal is scrollable
+function ensureModalScrollable(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.overflowY = 'auto';
+        const modalBody = modal.querySelector('.modal-body');
+        if (modalBody) {
+            modalBody.style.overflowY = 'auto';
+            modalBody.style.maxHeight = 'calc(100vh - 200px)';
+        }
+    }
+}
+
+
 function setupEventListeners() {
   // Input formatting
   $('body').on('input', '.engine-number, #editEngineNumber', function() {
