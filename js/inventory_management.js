@@ -74,6 +74,17 @@ function setupEventListeners() {
     }
   });
 
+  $("#searchTransferReceiptBtn").click(function() {
+    $("#searchTransferReceiptModal").modal("show");
+});
+
+$("#searchTransferBtn").click(searchTransferReceipt);
+$("#transferInvoiceSearch").keypress(function(e) {
+    if (e.which === 13) {
+        searchTransferReceipt();
+        e.preventDefault();
+    }
+});
    // Transfer selection event listeners
     $("#selectAllTransfers, #selectAllTransfersHeader").change(function() {
         const isChecked = $(this).prop('checked');
@@ -324,6 +335,102 @@ $(document).off('click', '#rejectSelectedBtn').on('click', '#rejectSelectedBtn',
   $("#reportPeriod").change(toggleReportOptions);
 }
 
+function searchTransferReceipt() {
+    const transferInvoiceNumber = $("#transferInvoiceSearch").val().trim();
+    
+    if (!transferInvoiceNumber) {
+        showErrorModal("Please enter a transfer invoice number");
+        return;
+    }
+    
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "search_transfer_receipt",
+            transfer_invoice_number: transferInvoiceNumber
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                displayTransferSearchResults(response.data);
+            } else {
+                showErrorModal(response.message || "No transfer receipt found");
+                $("#searchResultsContainer").hide();
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal("Error searching transfer receipt: " + error);
+            $("#searchResultsContainer").hide();
+        }
+    });
+}
+
+// Add this function to display search results
+function displayTransferSearchResults(data) {
+    const $resultsContainer = $("#transferSearchResults");
+    $resultsContainer.empty();
+    
+    if (data.length === 0) {
+        $resultsContainer.html('<div class="text-center text-muted py-3">No transfer receipts found</div>');
+    } else {
+        data.forEach(transfer => {
+            const transferDate = formatDate(transfer.transfer_date);
+            $resultsContainer.append(`
+                <div class="transfer-result-item p-3 mb-2 border rounded" data-transfer-id="${transfer.id}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${transfer.transfer_invoice_number}</h6>
+                            <p class="mb-1 small">From: ${transfer.from_branch} → To: ${transfer.to_branch}</p>
+                            <p class="mb-0 small text-muted">Date: ${transferDate}</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary view-receipt-btn" 
+                                data-transfer-id="${transfer.id}"
+                                data-invoice-number="${transfer.transfer_invoice_number}">
+                            <i class="bi bi-eye"></i> View Receipt
+                        </button>
+                    </div>
+                </div>
+            `);
+        });
+    }
+    
+    $("#searchResultsContainer").show();
+    
+    // Add click handler for view receipt buttons
+    $(".view-receipt-btn").off("click").on("click", function() {
+        const transferId = $(this).data("transfer-id");
+        const invoiceNumber = $(this).data("invoice-number");
+        loadTransferReceipt(transferId, invoiceNumber);
+    });
+}
+
+// =======================
+// Search MT
+// =======================
+
+function loadTransferReceipt(transferId, invoiceNumber) {
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_transfer_receipt",
+            transfer_id: transferId
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                $("#searchTransferReceiptModal").modal("hide");
+                showTransferReceipt(response.data);
+            } else {
+                showErrorModal(response.message || "Error loading transfer receipt");
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal("Error loading transfer receipt: " + error);
+        }
+    });
+}
 // =======================
 // Modal Functions
 // =======================
@@ -3064,6 +3171,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
+
 function exportMonthlyReportToPDF() {
   const reportEl = document.getElementById("monthlyReportPrintContainer");
 
@@ -3219,24 +3327,34 @@ function generateReportPDF() {
     }
 }
 function generateInventoryReportPDF() {
-    if (!currentReportData || !currentReportMonth || currentReportType !== 'inventory') {
-        showErrorModal("Please generate an inventory report first before exporting to PDF");
-        return;
-    }
-    
     const [year, monthNum] = currentReportMonth.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
         month: "long",
     });
-    const branchName = currentReportBranch === 'all' ? 'ALL BRANCHES' : currentReportBranch;
+    const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
 
-    // Use summary values from backend
     const totalIn = currentReportSummary?.in || 0;
     const totalOut = currentReportSummary?.out || 0;
     const endingBalance = currentReportSummary?.ending || 0;
-    const totalLcpEnding = currentReportSummary?.inventory_cost?.ending || 0;
+    const endingInventoryCostValue = currentReportSummary?.inventory_cost?.ending || 0;
 
-    let html = `
+    const rowsHtml = currentReportData
+        .map((item, index) => {
+            return `
+                <tr>
+                    <td style="text-align:center; border: 1px solid #e9ecef; padding: 8px;">${index + 1}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.model)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.color)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.brand)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.engine_number)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.frame_number)}</td>
+                    <td style="border: 1px solid #e9ecef; padding: 8px; text-align:right;">${formatCurrency(item.inventory_cost)}</td> 
+                </tr>
+            `;
+        })
+        .join("");
+
+    const html = `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
@@ -3246,7 +3364,7 @@ function generateInventoryReportPDF() {
                 </div>
                 <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
                 <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-                <p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>
+                ${currentReportBranch !== "all" ? `<p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>` : ""}
                 <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
@@ -3255,93 +3373,61 @@ function generateInventoryReportPDF() {
                 })}</p>
             </div>
             
-            <!-- Summary Section -->
-            <div style="display: flex; justify-content: space-around; margin-bottom: 30px;">
-                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #000f71, #1a237e); color: white; border-radius: 10px; width: 45%;">
-                    <div style="font-weight: 600; margin-bottom: 10px; font-size: 16px;">TOTAL IN</div>
-                    <div style="font-size: 28px; font-weight: bold;">${totalIn}</div>
-                    <div style="font-size: 12px; opacity: 0.9;">Inventory added during period</div>
-                </div>
-                
-                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #dc3545, #c82333); color: white; border-radius: 10px; width: 45%;">
-                    <div style="font-weight: 600; margin-bottom: 10px; font-size: 16px;">TOTAL OUT</div>
-                    <div style="font-size: 28px; font-weight: bold;">${totalOut}</div>
-                    <div style="font-size: 12px; opacity: 0.9;">Inventory transferred out</div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border-radius: 10px; margin-bottom: 30px;">
-                <div style="font-weight: 600; margin-bottom: 10px; font-size: 18px;">ENDING BALANCE</div>
-                <div style="font-size: 32px; font-weight: bold;">${endingBalance}</div>
-                <div style="font-size: 14px; opacity: 0.9;">Remaining inventory value: ${formatCurrency(totalLcpEnding)}</div>
-            </div>
-    `;
-
-    if (currentReportData.length === 0) {
-        html += `
-            <div style="text-align: center; padding: 40px; color: #6c757d; font-style: italic;">
-                No inventory data found for ${monthName} ${year} in ${branchName}.
-            </div>
-        `;
-    } else {
-        html += `
             <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
-                        <tr style="background-color: #343a40; color: white;">
-                            <th style="padding: 10px; font-weight: 600; text-align: center; width: 30px;">#</th>
-                            <th style="padding: 10px; font-weight: 600; text-align: left;">Model</th>
-                            <th style="padding: 10px; font-weight: 600; text-align: left;">Brand</th>
-                            <th style="padding: 10px; font-weight: 600; text-align: left;">Color</th>
-                            <th style="padding: 10px; font-weight: 600; text-align: left;">Engine Number</th>
-                            <th style="padding: 10px; font-weight: 600; text-align: left;">Frame Number</th>
-                            <th style="padding: 10px; font-weight: 600; text-align: right;">Inventory Cost</th>
-                            <th style="padding: 10px; font-weight: 600; text-align: left;">Branch</th>
+                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">#</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align:right;">Inventory Cost</th>
                         </tr>
                     </thead>
                     <tbody>
-        `;
-
-        currentReportData.forEach((item, index) => {
-            // Get brand color for PDF
-            let brandColor = '#000000'; // Default black
-            switch (item.brand.toLowerCase()) {
-                case 'honda':
-                    brandColor = '#dc3545'; // Red
-                    break;
-                case 'yamaha':
-                    brandColor = '#000000'; // Black
-                    break;
-                case 'suzuki':
-                    brandColor = '#000f71'; // Blue
-                    break;
-                case 'kawasaki':
-                    brandColor = '#28a745'; // Green
-                    break;
-            }
-
-            html += `
-                <tr style="${index % 2 === 0 ? 'background-color: #f8f9fa;' : ''}">
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: center;">${index + 1}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; color: ${brandColor}; font-weight: bold;">${escapeHtml(item.brand)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; font-family: monospace;">${escapeHtml(item.engine_number)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; font-family: monospace;">${escapeHtml(item.frame_number)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef; text-align: right; font-weight: bold;">${formatCurrency(item.inventory_cost)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e9ecef;">${escapeHtml(item.current_branch)}</td>
-                </tr>
-            `;
-        });
-
-        html += `
+                        ${currentReportData.length === 0 ? `
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">No inventory data found for this period</td>
+                            </tr>
+                        ` : rowsHtml}
                     </tbody>
                 </table>
             </div>
-        `;
-    }
-
-    html += `</div>`;
+            
+            <div style="display: flex; justify-content: space-around; margin-top: 30px;">
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
+                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">IN</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #28a745;">${totalIn}</div>
+                    <div style="font-size: 11px; color: #6c757d;">Inventory added</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
+                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">OUT</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #dc3545;">${totalOut}</div>
+                    <div style="font-size: 11px; color: #6c757d;">Inventory transferred</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: #000f71; border-radius: 8px; width: 30%;">
+                    <div style="font-weight: 600; color: white; margin-bottom: 5px;">ENDING BALANCE</div>
+                    <div style="font-size: 24px; font-weight: bold; color: white;">${endingBalance}</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.8);">Remaining inventory</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: 600; color: #495057;">Ending Inventory Cost Value</td>
+                        <td style="padding: 8px; text-align: right; font-weight: bold; color: #17a2b8;">
+                            ${formatCurrency(endingInventoryCostValue)}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    `;
 
     const container = document.createElement("div");
     container.innerHTML = html;
@@ -3351,11 +3437,12 @@ function generateInventoryReportPDF() {
         filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
     };
 
     html2pdf().set(opt).from(container).save();
 }
+
 
 // Add this function for motorcycle report PDF export
 function generateMotorcycleReportPDF() {

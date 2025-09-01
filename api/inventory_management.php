@@ -84,6 +84,13 @@ switch ( $action ) {
     case 'get_available_motorcycles_report':
     getAvailableMotorcyclesReport();
     break;
+    case 'search_transfer_receipt':
+    searchTransferReceipt();
+    break;
+case 'get_transfer_receipt':
+    getTransferReceipt();
+    break;
+
 
     default:
     echo json_encode( [ 'success' => false, 'message' => 'Invalid action' ] );
@@ -1729,5 +1736,96 @@ function getAvailableMotorcyclesReport() {
     } else {
         echo json_encode(['success' => false, 'message' => 'Error fetching report data: ' . $conn->error]);
     }
+}
+
+function searchTransferReceipt() {
+    global $conn;
+    
+    $transferInvoiceNumber = isset($_GET['transfer_invoice_number']) ? sanitizeInput($_GET['transfer_invoice_number']) : '';
+    
+    if (empty($transferInvoiceNumber)) {
+        echo json_encode(['success' => false, 'message' => 'Transfer invoice number is required']);
+        return;
+    }
+    
+    $sql = "SELECT DISTINCT it.id, it.transfer_invoice_number, it.from_branch, it.to_branch, it.transfer_date
+            FROM inventory_transfers it
+            WHERE it.transfer_invoice_number LIKE ?
+            ORDER BY it.transfer_date DESC
+            LIMIT 10";
+    
+    $stmt = $conn->prepare($sql);
+    $searchTerm = "%$transferInvoiceNumber%";
+    $stmt->bind_param('s', $searchTerm);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+    
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
+function getTransferReceipt() {
+    global $conn;
+    
+    $transferId = isset($_GET['transfer_id']) ? intval($_GET['transfer_id']) : 0;
+    
+    if ($transferId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid transfer ID']);
+        return;
+    }
+    
+    // Get transfer header information
+    $headerSql = "SELECT it.*, u.username as transferred_by_name
+                 FROM inventory_transfers it
+                 LEFT JOIN users u ON it.transferred_by = u.id
+                 WHERE it.id = ?";
+    
+    $headerStmt = $conn->prepare($headerSql);
+    $headerStmt->bind_param('i', $transferId);
+    $headerStmt->execute();
+    $headerResult = $headerStmt->get_result();
+    
+    if ($headerResult->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Transfer not found']);
+        return;
+    }
+    
+    $headerData = $headerResult->fetch_assoc();
+    
+    // Get motorcycle details for this transfer
+    $detailsSql = "SELECT mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.inventory_cost
+                  FROM motorcycle_inventory mi
+                  INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
+                  WHERE it.id = ? OR it.transfer_invoice_number = ?
+                  ORDER BY mi.brand, mi.model";
+    
+    $detailsStmt = $conn->prepare($detailsSql);
+    $detailsStmt->bind_param('is', $transferId, $headerData['transfer_invoice_number']);
+    $detailsStmt->execute();
+    $detailsResult = $detailsStmt->get_result();
+    
+    $motorcycles = [];
+    $totalCost = 0;
+    
+    while ($row = $detailsResult->fetch_assoc()) {
+        $motorcycles[] = $row;
+        $totalCost += (float)$row['inventory_cost'];
+    }
+    
+    $response = [
+        'success' => true,
+        'data' => [
+            'header' => $headerData,
+            'motorcycles' => $motorcycles,
+            'total_count' => count($motorcycles),
+            'total_cost' => $totalCost
+        ]
+    ];
+    
+    echo json_encode($response);
 }
 ?>

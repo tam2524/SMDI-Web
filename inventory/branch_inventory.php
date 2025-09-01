@@ -727,10 +727,12 @@
                             <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
                                 <i class='bi bi-truck'></i> Transfer
                             </button>
-                            <!-- Replace your current report buttons with this single button -->
-                            <button type="button" class="btn btn-info me-2" id="generateReportsButton">
+                            <button type="button" class="btn btn-primary text-white me-2" id="generateReportsButton">
                                 <i class="bi bi-file-earmark-text"></i> Generate Reports
                             </button>
+<button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
+    <i class="bi bi-receipt"></i> Search Transfer Receipt
+</button>
                         </div>
                         <div class='input-group' style='max-width: 300px;'>
                             <input type='text' id='searchInventory' class='form-control'
@@ -1498,6 +1500,31 @@
             </div>
         </div>
     </div>
+
+<div class="modal fade" id="searchTransferReceiptModal" tabindex="-1" aria-labelledby="searchTransferReceiptModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchTransferReceiptModalLabel">Search Transfer Receipt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="transferInvoiceSearch" class="form-label">Transfer Invoice Number</label>
+                    <input type="text" class="form-control" id="transferInvoiceSearch" placeholder="Enter transfer invoice number">
+                </div>
+                <div id="searchResultsContainer" class="mt-3" style="display: none;">
+                    <h6>Search Results:</h6>
+                    <div id="transferSearchResults" class="search-results"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary text-white" id="searchTransferBtn">Search</button>
+            </div>
+        </div>
+    </div>
+</div>
 
   <div class='modal fade' id='transferReceiptModal' tabindex='-1' aria-labelledby='transferReceiptModalLabel' aria-hidden='true'>
     <div class='modal-dialog modal-xl'>
