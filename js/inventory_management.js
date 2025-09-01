@@ -3075,6 +3075,7 @@ function populateBranchesDropdown() {
   });
 }
 
+// Update the modal title when showing inventory reports
 function generateMonthlyInventoryReport(month, branch) {
     $("#monthlyInventoryOptionsModal").modal("hide");
     $("#monthlyReportContent").html(
@@ -3096,7 +3097,10 @@ function generateMonthlyInventoryReport(month, branch) {
                 currentReportMonth = response.month;
                 currentReportBranch = response.branch;
                 currentReportSummary = response.summary;
-                currentReportType = 'inventory'; // Set report type
+                currentReportType = 'inventory';
+                
+                // ✅ Update modal title to reflect beginning balance functionality
+                $("#monthlyInventoryReportModalLabel").text('Monthly Inventory Balance Report (with Beginning Balance)');
                 
                 renderMonthlyInventoryReport(
                     response.data,
@@ -3116,6 +3120,7 @@ function generateMonthlyInventoryReport(month, branch) {
 }
 
 
+
 function renderMonthlyInventoryReport(data, month, branch, summary) {
   const [year, monthNum] = month.split("-");
   const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
@@ -3126,11 +3131,26 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
   // Sort data by model for cleaner display
   data.sort((a, b) => a.model.localeCompare(b.model));
 
-  // ✅ Use summary values from backend, not recalculated here
-  const totalIn = summary?.in || 0;
-  const totalOut = summary?.out || 0;
-  const endingBalance = summary?.ending || 0;
-  const totalLcpEnding = summary?.inventory_cost?.ending || 0;
+const beginningBalance = currentReportSummary?.beginning_balance || 0;
+    const receivedTransfers = currentReportSummary?.received_transfers || 0;
+    const newDeliveries = currentReportSummary?.new_deliveries || 0;
+    const totalIn = currentReportSummary?.in || 0; // Changed from total_in to in
+    const transfersOut = currentReportSummary?.transfers_out || 0;
+    const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
+    const totalOut = currentReportSummary?.out || 0; // Changed from total_out to out
+    const endingCalculated = currentReportSummary?.ending_calculated || 0;
+    const endingActual = currentReportSummary?.ending_actual || 0;
+    
+    // Inventory cost values
+    const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
+    const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
+    const costNewDeliveries = currentReportSummary?.inventory_cost?.new_deliveries || 0;
+    const costTotalIn = currentReportSummary?.inventory_cost?.in || 0; // Changed from total_in to in
+    const costTransfersOut = currentReportSummary?.inventory_cost?.transfers_out || 0;
+    const costSoldDuringMonth = currentReportSummary?.inventory_cost?.sold_during_month || 0;
+    const costTotalOut = currentReportSummary?.inventory_cost?.out || 0; // Changed from total_out to out
+    const costEndingCalculated = currentReportSummary?.inventory_cost?.ending_calculated || 0;
+    const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
 
   let html = `
     <div class="report-header text-center mb-4">
@@ -3210,48 +3230,140 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
       
       <div class="col-md-4">
         <div class="summary-section" style="position: sticky; top: 20px;">
-          <div class="card border-0 shadow-sm mb-4" style="border-radius: 8px;">
-            <div class="card-header bg-transparent border-0 pt-4 pb-3">
-              <h6 class="card-title text-center mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                INVENTORY SUMMARY
+          <!-- Beginning Balance Card -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
+            <div class="card-header bg-transparent border-0 pt-3 pb-2">
+              <h6 class="card-title text-center mb-0" style="color: #6c757d; font-weight: 600; font-size: 0.9rem;">
+                BEGINNING BALANCE
               </h6>
             </div>
-            <div class="card-body px-4 pb-4 pt-0">
-              <div class="summary-item d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid #f1f3f4;">
+            <div class="card-body px-4 pb-3 pt-0">
+              <div class="text-center">
+                <span class="fs-4 fw-bold" style="color: #6c757d;">${beginningBalance}</span>
+                <div class="small text-muted mt-1">${formatCurrency(costBeginning)}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- IN Section -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
+            <div class="card-header bg-transparent border-0 pt-3 pb-2">
+              <h6 class="card-title text-center mb-0" style="color: #28a745; font-weight: 600; font-size: 0.9rem;">
+                INVENTORY IN
+              </h6>
+            </div>
+            <div class="card-body px-4 pb-3 pt-0">
+              <div class="summary-item d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f1f3f4;">
                 <div>
-                  <div class="fw-semibold" style="color: #495057;">IN</div>
-                  <small class="text-muted" style="font-size: 0.8rem;">Inventory added during period</small>
+                  <div class="fw-semibold small" style="color: #495057;">Received Transfers</div>
                 </div>
-                <span class="fs-5 fw-bold" style="color: #28a745;">${totalIn}</span>
+                <div class="text-end">
+                  <span class="fw-bold" style="color: #28a745;">${receivedTransfers}</span>
+                  <div class="small text-muted">${formatCurrency(costReceived)}</div>
+                </div>
               </div>
               
-              <div class="summary-item d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid #f1f3f4;">
+              <div class="summary-item d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f1f3f4;">
                 <div>
-                  <div class="fw-semibold" style="color: #495057;">OUT</div>
-                  <small class="text-muted" style="font-size: 0.8rem;">Inventory transferred out</small>
+                  <div class="fw-semibold small" style="color: #495057;">New Deliveries</div>
                 </div>
-                <span class="fs-5 fw-bold" style="color: #dc3545;">${totalOut}</span>
+                <div class="text-end">
+                  <span class="fw-bold" style="color: #28a745;">${newDeliveries}</span>
+                  <div class="small text-muted">${formatCurrency(costNewDeliveries)}</div>
+                </div>
               </div>
               
               <div class="summary-item d-flex justify-content-between align-items-center pt-2">
                 <div>
-                  <div class="fw-bold" style="color: #000f71;">ENDING BALANCE</div>
-                  <small class="text-muted" style="font-size: 0.8rem;">Remaining inventory</small>
+                  <div class="fw-bold" style="color: #28a745;">TOTAL IN</div>
                 </div>
-                <span class="fs-4 fw-bold" style="color: #000f71;">${endingBalance}</span>
+                <div class="text-end">
+                  <span class="fs-5 fw-bold" style="color: #28a745;">${totalIn}</span>
+                  <div class="small text-success fw-bold">${formatCurrency(costTotalIn)}</div>
+                </div>
               </div>
             </div>
           </div>
-          
-          <!-- Inventory Cost Value Summary -->
-          <div class="card border-0 shadow-sm" style="border-radius: 8px;">
-            <div class="card-body px-4 pb-4 pt-0">
-              <div class="summary-item d-flex justify-content-between align-items-center">
-                <div class="fw-semibold text-secondary">Ending Inventory Cost Value</div>
-                <span class="fs-6 fw-bold text-info">${formatCurrency(totalLcpEnding)}</span>
+
+          <!-- OUT Section -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
+            <div class="card-header bg-transparent border-0 pt-3 pb-2">
+              <h6 class="card-title text-center mb-0" style="color: #dc3545; font-weight: 600; font-size: 0.9rem;">
+                INVENTORY OUT
+              </h6>
+            </div>
+            <div class="card-body px-4 pb-3 pt-0">
+              <div class="summary-item d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f1f3f4;">
+                <div>
+                  <div class="fw-semibold small" style="color: #495057;">Transfers Out</div>
+                </div>
+                <div class="text-end">
+                  <span class="fw-bold" style="color: #dc3545;">${transfersOut}</span>
+                  <div class="small text-muted">${formatCurrency(costTransfersOut)}</div>
+                </div>
+              </div>
+              
+              <div class="summary-item d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f1f3f4;">
+                <div>
+                  <div class="fw-semibold small" style="color: #495057;">Sold During Month</div>
+                </div>
+                <div class="text-end">
+                  <span class="fw-bold" style="color: #dc3545;">${soldDuringMonth}</span>
+                  <div class="small text-muted">${formatCurrency(costSoldDuringMonth)}</div>
+                </div>
+              </div>
+              
+              <div class="summary-item d-flex justify-content-between align-items-center pt-2">
+                <div>
+                  <div class="fw-bold" style="color: #dc3545;">TOTAL OUT</div>
+                </div>
+                <div class="text-end">
+                  <span class="fs-5 fw-bold" style="color: #dc3545;">${totalOut}</span>
+                  <div class="small text-danger fw-bold">${formatCurrency(costTotalOut)}</div>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Ending Balance Card -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
+            <div class="card-header bg-transparent border-0 pt-3 pb-2">
+              <h6 class="card-title text-center mb-0" style="color: #000f71; font-weight: 600; font-size: 0.9rem;">
+                ENDING BALANCE
+              </h6>
+            </div>
+            <div class="card-body px-4 pb-3 pt-0">
+              <div class="summary-item d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f1f3f4;">
+                <div>
+                  <div class="fw-semibold small" style="color: #495057;">Calculated</div>
+                </div>
+                <div class="text-end">
+                  <span class="fw-bold" style="color: #000f71;">${endingCalculated}</span>
+                  <div class="small text-muted">${formatCurrency(costEndingCalculated)}</div>
+                </div>
+              </div>
+              
+              <div class="summary-item d-flex justify-content-between align-items-center pt-2">
+                <div>
+                  <div class="fw-bold" style="color: #000f71;">Actual</div>
+                </div>
+                <div class="text-end">
+                  <span class="fs-4 fw-bold" style="color: #000f71;">${endingActual}</span>
+                  <div class="small text-primary fw-bold">${formatCurrency(costEndingActual)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discrepancy Alert (if any) -->
+          ${endingCalculated !== endingActual ? `
+          <div class="alert alert-warning alert-sm">
+            <div class="d-flex justify-content-between">
+              <small><strong>Discrepancy:</strong></small>
+              <small><strong>${endingActual - endingCalculated}</strong></small>
+            </div>
+          </div>
+          ` : ''}
         </div>
       </div>
     </div>
@@ -3274,7 +3386,7 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
     .html(`
       #monthlyInventoryReportModal .modal-body {
         max-height: calc(100vh - 200px);
-        overflow-y: auto;
+                overflow-y: auto;
       }
       #monthlyInventoryReportModal .modal-dialog {
         max-width: 95%;
@@ -3458,10 +3570,27 @@ function generateInventoryReportPDF() {
     });
     const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
 
-    const totalIn = currentReportSummary?.in || 0;
-    const totalOut = currentReportSummary?.out || 0;
-    const endingBalance = currentReportSummary?.ending || 0;
-    const endingInventoryCostValue = currentReportSummary?.inventory_cost?.ending || 0;
+    // ✅ Use NEW summary values with beginning balance
+    const beginningBalance = currentReportSummary?.beginning_balance || 0;
+    const receivedTransfers = currentReportSummary?.received_transfers || 0;
+    const newDeliveries = currentReportSummary?.new_deliveries || 0;
+    const totalIn = currentReportSummary?.total_in || 0;
+    const transfersOut = currentReportSummary?.transfers_out || 0;
+    const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
+    const totalOut = currentReportSummary?.total_out || 0;
+    const endingCalculated = currentReportSummary?.ending_calculated || 0;
+    const endingActual = currentReportSummary?.ending_actual || 0;
+    
+    // Inventory cost values
+    const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
+    const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
+    const costNewDeliveries = currentReportSummary?.inventory_cost?.new_deliveries || 0;
+    const costTotalIn = currentReportSummary?.inventory_cost?.total_in || 0;
+    const costTransfersOut = currentReportSummary?.inventory_cost?.transfers_out || 0;
+    const costSoldDuringMonth = currentReportSummary?.inventory_cost?.sold_during_month || 0;
+    const costTotalOut = currentReportSummary?.inventory_cost?.total_out || 0;
+    const costEndingCalculated = currentReportSummary?.inventory_cost?.ending_calculated || 0;
+    const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
 
     const rowsHtml = currentReportData
         .map((item, index) => {
@@ -3521,35 +3650,68 @@ function generateInventoryReportPDF() {
                 </table>
             </div>
             
-            <div style="display: flex; justify-content: space-around; margin-top: 30px;">
-                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">IN</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #28a745;">${totalIn}</div>
-                    <div style="font-size: 11px; color: #6c757d;">Inventory added</div>
+            <!-- Enhanced Summary Section with Beginning Balance -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 30px;">
+                <!-- Beginning Balance -->
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">BEGINNING BALANCE</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #6c757d;">${beginningBalance}</div>
+                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costBeginning)}</div>
                 </div>
                 
-                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 30%;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">OUT</div>
-                    <div style="font-size: 24px; font-weight: bold; color: #dc3545;">${totalOut}</div>
-                    <div style="font-size: 11px; color: #6c757d;">Inventory transferred</div>
+                <!-- Total IN -->
+                <div style="text-align: center; padding: 15px; background: #d4edda; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #155724; margin-bottom: 5px;">TOTAL IN</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #28a745;">${totalIn}</div>
+                    <div style="font-size: 11px; color: #28a745;">${formatCurrency(costTotalIn)}</div>
+                    <div style="font-size: 10px; color: #155724; margin-top: 5px;">
+                        Transfers: ${receivedTransfers} | New: ${newDeliveries}
+                    </div>
                 </div>
                 
-                <div style="text-align: center; padding: 15px; background: #000f71; border-radius: 8px; width: 30%;">
-                    <div style="font-weight: 600; color: white; margin-bottom: 5px;">ENDING BALANCE</div>
-                    <div style="font-size: 24px; font-weight: bold; color: white;">${endingBalance}</div>
-                    <div style="font-size: 11px; color: rgba(255,255,255,0.8);">Remaining inventory</div>
+                <!-- Total OUT -->
+                <div style="text-align: center; padding: 15px; background: #f8d7da; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #721c24; margin-bottom: 5px;">TOTAL OUT</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #dc3545;">${totalOut}</div>
+                    <div style="font-size: 11px; color: #dc3545;">${formatCurrency(costTotalOut)}</div>
+                    <div style="font-size: 10px; color: #721c24; margin-top: 5px;">
+                        Transfers: ${transfersOut} | Sold: ${soldDuringMonth}
+                    </div>
                 </div>
             </div>
             
-            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <tr>
-                        <td style="padding: 8px; font-weight: 600; color: #495057;">Ending Inventory Cost Value</td>
-                        <td style="padding: 8px; text-align: right; font-weight: bold; color: #17a2b8;">
-                            ${formatCurrency(endingInventoryCostValue)}
-                        </td>
-                    </tr>
-                </table>
+            <!-- Ending Balance Section -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div style="text-align: center; padding: 15px; background: #cce5ff; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #004085; margin-bottom: 5px;">ENDING BALANCE (Calculated)</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #0056b3;">${endingCalculated}</div>
+                    <div style="font-size: 11px; color: #0056b3;">${formatCurrency(costEndingCalculated)}</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: #000f71; border-radius: 8px;">
+                    <div style="font-weight: 600; color: white; margin-bottom: 5px;">ENDING BALANCE (Actual)</div>
+                    <div style="font-size: 20px; font-weight: bold; color: white;">${endingActual}</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.8);">${formatCurrency(costEndingActual)}</div>
+                </div>
+            </div>
+            
+            ${endingCalculated !== endingActual ? `
+            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+                <div style="color: #856404; font-weight: 600; text-align: center;">
+                    ⚠️ DISCREPANCY DETECTED: ${endingActual - endingCalculated} units
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- Formula Explanation -->
+            <div style="margin-top: 20px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px; background: #f8f9fa;">
+                <div style="font-weight: 600; color: #495057; margin-bottom: 10px; text-align: center;">INVENTORY CALCULATION FORMULA</div>
+                <div style="text-align: center; font-size: 12px; color: #6c757d;">
+                    Beginning Balance + Received Transfers + New Deliveries - Transfers Out - Sold = Ending Balance
+                </div>
+                <div style="text-align: center; font-size: 11px; color: #495057; margin-top: 5px;">
+                    ${beginningBalance} + ${receivedTransfers} + ${newDeliveries} - ${transfersOut} - ${soldDuringMonth} = ${endingCalculated}
+                </div>
             </div>
         </div>
     `;
