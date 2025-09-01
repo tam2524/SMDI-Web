@@ -9,24 +9,14 @@
     <meta content='width=device-width, initial-scale=1.0' name='viewport'>
     <meta content='' name='keywords'>
     <meta content='' name='description'>
-
     <link rel='icon' href='../assets/img/smdi_logosmall.png' type='image/png'>
-
-    <!-- Icon Font Stylesheet -->
     <link rel='stylesheet' href='https://use.fontawesome.com/releases/v5.15.4/css/all.css' />
     <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css' rel='stylesheet'>
-
-    <!-- Libraries Stylesheet -->
     <link href='../lib/lightbox/css/lightbox.min.css' rel='stylesheet'>
     <link href='../lib/owlcarousel/assets/owl.carousel.min.css' rel='stylesheet'>
-
-    <!-- Bootstrap CSS -->
     <link href='../css/bootstrap.min.css' rel='stylesheet'>
-
-    <!-- Template Stylesheet -->
     <link href='../css/style.css' rel='stylesheet'>
-
-    <!-- PrintJS -->
+    <link href='../css/inventory_style.css' rel='stylesheet'>
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script>
@@ -34,391 +24,12 @@
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
 
-    <style>
-    .model-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 10px 12px;
-        background: white;
-        transition: all 0.3s ease;
-        height: 70px;
-        margin-bottom: 10px;
-    }
-
-    .model-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-color: #000f71;
-    }
-
-    .model-name {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #333;
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .quantity-badge {
-        background-color: #000f71;
-        color: white;
-        border-radius: 20px;
-        padding: 3px 10px;
-        font-size: 0.9rem;
-        font-weight: bold;
-        min-width: 40px;
-        text-align: center;
-    }
-
-    .nav-tabs .nav-link.active {
-        font-weight: 600;
-        border-bottom: 3px solid #000f71;
-    }
-
-    .branch-marker {
-        background-color: #000f71;
-        color: white;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-
-    .modal.fade.show {
-        display: block !important;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-backdrop.fade.show {
-        opacity: 0.5 !important;
-    }
-
-    @media (min-width: 1200px) {
-        .model-card-container {
-            flex: 0 0 10%;
-            max-width: 10%;
-        }
-    }
-
-    /* Pagination Styles */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 20px 0;
-    }
-
-    .pagination .page-item {
-        margin: 0 5px;
-    }
-
-    .pagination .page-link {
-        padding: 10px 15px;
-        border: 1px solid #000f71;
-        border-radius: 5px;
-        color: #000f71;
-        text-decoration: none;
-        transition: background-color 0.3s, color 0.3s;
-    }
-
-    .pagination .page-link:hover {
-        background-color: #000f71;
-        color: white;
-    }
-
-    .pagination .page-item.active .page-link {
-        background-color: #000f71;
-        color: white;
-        border-color: #000f71;
-    }
-
-    .pagination .page-item.disabled .page-link {
-        color: #ccc;
-        pointer-events: none;
-        background-color: white;
-        border-color: #ccc;
-    }
-
-    .pagination .page-item.disabled .page-link:hover {
-        background-color: white;
-        color: #ccc;
-    }
-
-    .no-print {
-        display: block;
-    }
-
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-    }
-
-    .sortable-header {
-        cursor: pointer;
-    }
-
-    .sortable-header:hover {
-        background-color: #f8f9fa;
-    }
-
-    /* Brand-specific colors */
-    .border-primary {
-        border-color: #000f71 !important;
-    }
-
-    .bg-primary-light {
-        background-color: rgba(0, 15, 113, 0.1) !important;
-    }
-
-    .border-danger {
-        border-color: #dc3545 !important;
-    }
-
-    .bg-danger-light {
-        background-color: rgba(220, 53, 69, 0.1) !important;
-    }
-
-    .border-black {
-        border-color: #000000ff !important;
-    }
-
-    .bg-black-light {
-        background-color: rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .border-success {
-        border-color: #28a745 !important;
-    }
-
-    .bg-success-light {
-        background-color: rgba(40, 167, 69, 0.1) !important;
-    }
-
-    /* Update model card hover effect */
-    .model-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        opacity: 0.9;
-    }
-
-    /* Update quantity badge to match brand */
-    .model-card.border-primary .quantity-badge {
-        background-color: #000f71;
-    }
-
-    .model-card.border-danger .quantity-badge {
-        background-color: #dc3545;
-    }
-
-    .model-card.border-black .quantity-badge {
-        background-color: #000000;
-    }
-
-    .model-card.border-success .quantity-badge {
-        background-color: #28a745;
-    }
-
-    .btn-group {
-        margin-right: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-group .btn {
-        border-radius: 0;
-        border-left: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-group .btn:first-child {
-        border-top-left-radius: 4px;
-        border-bottom-left-radius: 4px;
-        border-left: none;
-    }
-
-    .btn-group .btn:last-child {
-        border-top-right-radius: 4px;
-        border-bottom-right-radius: 4px;
-    }
-
-    .btn-group .btn:hover {
-        background-color: #0069d9;
-        color: white;
-    }
-
-    .btn-group .btn i {
-        margin-right: 5px;
-    }
-
-    .card-header .btn-link {
-        text-decoration: none;
-        color: #000f71;
-        font-weight: 600;
-        width: 100%;
-        text-align: left;
-        padding: 0.75rem 1.25rem;
-    }
-
-    .card-header .btn-link:hover {
-        color: #000f71;
-        text-decoration: underline;
-    }
-
-    .card-header .btn-link:after {
-        content: '\f078';
-        font-family: 'Font Awesome 5 Free';
-        font-weight: 900;
-        float: right;
-        transition: transform 0.3s;
-    }
-
-    .card-header .btn-link[ aria-expanded='true']:after {
-        transform: rotate(180deg);
-    }
-
-    .card-body {
-        padding: 1rem 1.25rem;
-    }
-
-    .table-sm th,
-    .table-sm td {
-        padding: 0.5rem;
-    }
-
-    /* Add these styles to your existing CSS */
-    .transfer-search-result {
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 8px;
-        background: white;
-        transition: all 0.2s ease;
-        cursor: pointer;
-    }
-
-    .transfer-search-result:hover {
-        border-color: #0d6efd;
-        background-color: #f8f9fa;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .transfer-search-result.selected {
-        border-color: #198754;
-        background-color: #d1e7dd;
-    }
-
-    .transfer-search-result .engine-number {
-        font-weight: 600;
-        color: #0d6efd;
-        font-size: 0.95rem;
-    }
-
-    .transfer-search-result .model-info {
-        font-size: 0.85rem;
-        color: #6c757d;
-        margin-bottom: 4px;
-    }
-
-    .transfer-search-result .branch-info {
-        font-size: 0.8rem;
-        color: #868e96;
-    }
-
-    .selected-motorcycle-item {
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        padding: 10px;
-        margin-bottom: 8px;
-        background: white;
-        animation: fadeIn 0.3s ease;
-    }
-
-    .selected-motorcycle-item:hover {
-        background-color: #f8f9fa;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .card {
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        border: 1px solid rgba(0, 0, 0, 0.125);
-    }
-
-    .card-header {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-    }
-
-    .form-label {
-        font-weight: 500;
-    }
-
-    #searchResults::-webkit-scrollbar,
-    #selectedMotorcyclesList::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    #searchResults::-webkit-scrollbar-track,
-    #selectedMotorcyclesList::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 3px;
-    }
-
-    #searchResults::-webkit-scrollbar-thumb,
-    #selectedMotorcyclesList::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 3px;
-    }
-
-    #searchResults::-webkit-scrollbar-thumb:hover,
-    #selectedMotorcyclesList::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
-
-    .specific-details-container {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 15px;
-        border: 1px solid #e9ecef;
-    }
-
-    .specific-details-row {
-        background: white;
-        border-radius: 6px;
-        padding: 10px;
-        margin-bottom: 10px;
-    }
-
-    .specific-details-row:last-child {
-        margin-bottom: 0;
-        border-bottom: none;
-    }
-    </style>
+    
+   
 </head>
 
 <body>
-    <!-- Loading Spinner -->
-    <div class='spinner-container' id='loadingSpinner'>
-        <div class='spinner-border text-primary' role='status'>
-            <span class='visually-hidden'>Loading...</span>
-        </div>
-    </div>
-
-    <!-- Navbar -->
+  
     <div class='container-fluid fixed-top bg-white'>
         <div class='container topbar bg-primary d-none d-lg-block'>
             <div class='d-flex justify-content-between'>
@@ -442,17 +53,24 @@
                 </button>
                 <div class='collapse navbar-collapse' id='navbarCollapse'>
                     <div class='navbar-nav'>
-                           <a href='admin_dashboard.php' class='nav-item nav-link active'>Home</a>
-                        <a href='admin_inventory.php' class='nav-item nav-link active'>Inventory</a>
+                        <a href='../inventory/headoffice_inventory.php' class='nav-item nav-link active'>Home</a>
+
                         <a href='../api/logout.php' class='nav-item nav-link active'>Logout</a>
+
+                        <?php if (isset($_SESSION['username'])): ?>
+                        <span class='nav-item nav-link disabled' style='cursor: default; color: red;'>
+                            <i class='fas fa-user-circle me-1'></i>
+                            <?php echo htmlspecialchars($_SESSION['username']); ?>
+                        </span>
+
+                        <?php endif; ?>
                     </div>
                 </div>
             </nav>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <main class='container-fluid py-5' style='margin-top: 20px;'>
+    <main class='container-fluid py-5' style='margin-top: 110px;'>
         <div class='card mb-4'>
             <div class='card-header bg-white'>
                 <h1 class='h5 mb-0'>Motorcycle Inventory Management</h1>
@@ -470,7 +88,6 @@
                 </ul>
 
                 <div class='tab-content' id='inventoryTabContent'>
-                    <!-- Dashboard Tab -->
                     <div class='tab-pane fade show active' id='dashboard' role='tabpanel'>
                         <div class='row mb-4'>
                             <div class='col-md-6'>
@@ -488,7 +105,6 @@
                         </div>
 
                         <div class='row' id='inventoryCards'>
-                            <!-- Inventory cards will be loaded here -->
                             <div class='col-12 text-center py-5'>
                                 <div class='spinner-border text-primary' role='status'>
                                     <span class='visually-hidden'>Loading...</span>
@@ -497,7 +113,6 @@
                         </div>
                     </div>
 
-                    <!-- Management Tab -->
                     <div class='tab-pane fade' id='management' role='tabpanel'>
                         <div class='d-flex justify-content-between mb-4'>
                             <div>
@@ -505,10 +120,20 @@
                                     data-bs-target='#addMotorcycleModal'>
                                     <i class='bi bi-plus-circle'></i> Add Motorcycle
                                 </button>
-<!-- 
-                                <button type='button' class='btn btn-info me-2' id='generateMonthlyInventory'>
-                                    <i class='bi bi-calendar-month'></i> Monthly Inventory Report
-                                </button> -->
+
+                                <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
+                                    <i class='bi bi-truck'></i> Transfer
+                                </button>
+
+
+                                <!-- Replace your current report buttons with this single button -->
+                                <button type="button" class="btn btn-primary text-white me-2" id="generateReportsButton">
+                                    <i class="bi bi-file-earmark-text"></i> Generate Reports
+                                </button>
+                                <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
+    <i class="bi bi-receipt"></i> Search Transfer Receipt
+</button>
+
                             </div>
                             <div class='input-group' style='max-width: 300px;'>
                                 <input type='text' id='searchInventory' class='form-control'
@@ -527,17 +152,17 @@
                                         <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
                                         <th class='sortable-header' data-sort='brand'>Brand</th>
                                         <th class='sortable-header' data-sort='model'>Model</th>
+                                        <th class='sortable-header' data-sort='category'>Category</th>
                                         <th>Engine No.</th>
                                         <th>Frame No.</th>
                                         <th>Color</th>
-                                        <th>LCP</th>
+                                        <th>Inventory Cost</th>
                                         <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
-                                        <!-- <th class = 'sortable-header' data-sort = 'status'>Status</th> -->
                                         <th class='no-print'>Actions</th>
                                     </tr>
                                 </thead>
+
                                 <tbody id='inventoryTableBody'>
-                                    <!-- Inventory data will be loaded here -->
                                     <tr>
                                         <td colspan='11' class='text-center py-5'>
                                             <div class='spinner-border text-primary' role='status'>
@@ -549,7 +174,6 @@
                             </table>
                         </div>
 
-                        <!-- Pagination -->
                         <nav aria-label='Inventory pagination'>
                             <ul id='paginationControls' class='pagination'>
                                 <li id='prevPage' class='page-item disabled'>
@@ -570,44 +194,62 @@
         </div>
     </main>
 
-    <!-- Monthly Inventory Report Options Modal -->
-    <div class='modal fade' id='monthlyInventoryOptionsModal' tabindex='-1'
-        aria-labelledby='monthlyInventoryOptionsModalLabel' aria-hidden='true'>
-        <div class='modal-dialog'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyInventoryOptionsModalLabel'>Monthly Inventory Balance Report</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+    <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1"
+        aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class='modal-body'>
-                    <div class='mb-3'>
-                        <label class='form-label'>Select Month</label>
-                        <input type='month' class='form-control' id='selectedMonth' required>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Month</label>
+                        <input type="month" class="form-control" id="reportMonth" required>
                     </div>
-                    <div class='mb-3'>
-                        <label class='form-label'>Select Branch</label>
-                        <select class='form-select' id='selectedBranch'>
+                    <div class="mb-3">
+                        <label class="form-label">Select Branch</label>
+                        <select class="form-select" id="reportBranch">
+                            <option value='ALL'>ALL BRANCHES</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Report Type</label>
+                        <select class="form-select" id="reportType" required>
+                            <option value="inventory">Monthly Inventory Balance Report</option>
+                            <option value="transferred">Monthly Summary of Transferred Stocks</option>
+                            <option value="motorcycle">Available Motorcycle Units Report</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="brandFilterContainer" style="display: none;">
+                        <label class="form-label">Filter by Brand</label>
+                        <select class="form-select" id="reportBrandFilter">
+                            <option value="all">ALL BRANDS</option>
+                            <option value="Suzuki">SUZUKI</option>
+                            <option value="Honda">HONDA</option>
+                            <option value="Kawasaki">KAWASAKI</option>
+                            <option value="Yamaha">YAMAHA</option>
+                            <option value='Asiastar'>ASIASTAR</option>
                         </select>
                     </div>
                 </div>
-                <div class='modal-footer'>
-                    <button type='button' class='btn btn-primary text-white' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'>Generate
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate
                         Report</button>
                 </div>
             </div>
         </div>
     </div>
-
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
-    <!-- Monthly Inventory Report Modal -->
     <div class='modal fade' id='monthlyInventoryReportModal' tabindex='-1'
         aria-labelledby='monthlyInventoryReportModalLabel' aria-hidden='true'>
         <div class='modal-dialog modal-xl'>
             <div class='modal-content'>
                 <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly Inventory Balance Report</h5>
+                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly Report</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
@@ -616,14 +258,10 @@
                             <button class='btn btn-sm btn-outline-primary' id='exportMonthlyReportToPDF'>
                                 <i class='bi bi-printer'></i> Print Report
                             </button>
-                            <button class='btn btn-sm btn-outline-success ms-2' id='exportMonthlyReport'>
-                                <i class='bi bi-file-earmark-excel'></i> Export to Excel
-                            </button>
                         </div>
                         <div class='text-muted small' id='monthlyReportTimestamp'></div>
                     </div>
                     <div id='monthlyReportContent'>
-                        <!-- Report content will be loaded here -->
                     </div>
                 </div>
                 <div class='modal-footer'>
@@ -633,7 +271,6 @@
         </div>
     </div>
 
-    <!-- Add Motorcycle Modal -->
     <div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -644,7 +281,6 @@
                 </div>
                 <div class='modal-body'>
                     <form id='addMotorcycleForm'>
-                        <!-- Invoice Information -->
                         <div class='row mb-4'>
                             <div class='col-md-6 mb-3'>
                                 <label for='invoiceNumber' class='form-label'>Invoice Number/MT</label>
@@ -655,50 +291,60 @@
                                 <input type='date' class='form-control' id='dateDelivered' required>
                             </div>
                             <div class='col-md-6 mb-3'>
-                            <label for='branch' class='form-label'>Branch</label>
+                                <label for='branch' class='form-label'>Branch</label>
+                                <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
+    ?>
                                 <select class='form-select' id='branch' required>
-                                    <option value='HEADOFFICE'>Head Office</option>
-                                    <option value='RXS-S'>RXS-S</option>
-                                    <option value='RXS-H'>RXS-H</option>
-                                    <option value='ANT-1'>ANT-1</option>
-                                    <option value='ANT-2'>ANT-2</option>
-                                    <option value='SDH'>SDH</option>
-                                    <option value='SDS'>SDS</option>
-                                    <option value='JAR-1'>JAR-1</option>
-                                    <option value='JAR-2'>JAR-2</option>
-                                    <option value='SKM'>SKM</option>
-                                    <option value='SKS'>SKS</option>
-                                    <option value='ALTA'>ALTA</option>
+                                    <option value='HEADOFFICE'>HEADOFFICE</option>
+                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+                                    <option value='MAMBUSAO'>MAMBUSAO</option>
+                                    <option value='SIGMA'>SIGMA</option>
+                                    <option value='PRC'>PRC</option>
+                                    <option value='CUARTERO'>CUARTERO</option>
+                                    <option value='JAMINDAN'>JAMINDAN</option>
+                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
+                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
+                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
+                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
+                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+                                    <option value='JARO-1'>JARO-1</option>
+                                    <option value='JARO-2'>JARO-2</option>
+                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
+                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+                                    <option value='ALTAVAS'>ALTAVAS</option>
                                     <option value='EMAP'>EMAP</option>
-                                    <option value='CUL'>CUL</option>
-                                    <option value='BAC'>BAC</option>
-                                    <option value='PAS-1'>PAS-1</option>
-                                    <option value='PAS-2'>PAS-2</option>
-                                    <option value='BAL'>BAL</option>
-                                    <option value='GUIM'>GUIM</option>
+                                    <option value='CULASI'>CULASI</option>
+                                    <option value='BACOLOD'>BACOLOD</option>
+                                    <option value='PASSI-1'>PASSI-1</option>
+                                    <option value='PASSI-2'>PASSI-2</option>
+                                    <option value='BALASAN'>BALASAN</option>
+                                    <option value='GUIMARAS'>GUIMARAS</option>
                                     <option value='PEMDI'>PEMDI</option>
-                                    <option value='EEM'>EEM</option>
-                                    <option value='AJU'>AJU</option>
-                                    <option value='BAIL'>BAIL</option>
-                                    <option value='3SMB'>MINDORO MB</option>
-                                    <option value='3SMIN'>MINDORO 3S</option>
-                                    <option value='MAN'>MANSALAY</option>
+                                    <option value='EEMSI'>EEMSI</option>
+                                    <option value='AJUY'>AJUY</option>
+                                    <option value='BAILAN'>BAILAN</option>
+                                    <option value='3SMB'>3SMB</option>
+                                    <option value='3SMINDORO'>3SMINDORO</option>
+                                    <option value='MANSALAY'>MANSALAY</option>
                                     <option value='K-RIDERS'>K-RIDERS</option>
                                     <option value='IBAJAY'>IBAJAY</option>
                                     <option value='NUMANCIA'>NUMANCIA</option>
-                                    <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='CEBU'>CEBU</option>
                                 </select>
-                           
-                        </div>
+                                <?php } else {
+        ?>
+                                <input type='text' class='form-control' id='branch'
+                                    value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                                <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
+                                <?php }
+        ?>
+                            </div>
                         </div>
 
                         <hr>
 
-                        <!-- Motorcycle Models -->
                         <h5 class='mb-3'>Motorcycle Models</h5>
                         <div id='modelFormsContainer'>
-                            <!-- Model forms will be added here dynamically -->
                         </div>
 
                         <button type='button' id='addModelBtn' class='btn btn-secondary mt-3'>
@@ -714,57 +360,7 @@
         </div>
     </div>
 
-  <!-- Update the model form template in your HTML -->
-<template id="modelFormTemplate">
-    <div class="model-form card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="model-number">Model #1</span>
-            <button type="button" class="btn btn-sm btn-danger remove-model-btn">
-                <i class="bi bi-trash"></i> Remove
-            </button>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Brand</label>
-                    <select class="form-select model-brand" required>
-                        <option value="">Select Brand</option>
-                        <option value="Suzuki">Suzuki</option>
-                        <option value="Honda">Honda</option>
-                        <option value="Kawasaki">Kawasaki</option>
-                        <option value="Yamaha">Yamaha</option>
-                    </select>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Model Name</label>
-                    <input type="text" class="form-control model-name" required>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label class="form-label">Quantity</label>
-                    <input type="number" class="form-control model-quantity" min="1" value="1" required>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label class="form-label">Color</label>
-                    <input type="text" class="form-control model-color" required>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">LCP</label>
-                    <input type="number" step="0.01" class="form-control model-lcp">
-                </div>
-            </div>
 
-            <!-- Specific Model Details Container -->
-            <div class="specific-details-container mt-3" style="display: none;">
-                <h6 class="fw-semibold mb-3">Specific Model Details</h6>
-                <div class="specific-details-rows">
-                    <!-- Individual rows will be added here dynamically -->
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
-
-    <!-- Edit Motorcycle Modal -->
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -783,22 +379,30 @@
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='editInvoiceNumber' readonly>
+                                <input type='text' class='form-control' id='editInvoiceNumber' required>
                             </div>
                         </div>
                         <div class='row'>
-                            <div class='col-md-6 mb-3'>
+                            <div class='col-md-4 mb-3'>
                                 <label for='editBrand' class='form-label'>Brand</label>
                                 <select class='form-select' id='editBrand' required>
                                     <option value='Suzuki'>Suzuki</option>
                                     <option value='Honda'>Honda</option>
                                     <option value='Kawasaki'>Kawasaki</option>
                                     <option value='Yamaha'>Yamaha</option>
+                                    <option value='Asiastar'>Asiastar</option>
                                 </select>
                             </div>
-                            <div class='col-md-6 mb-3'>
+                            <div class='col-md-4 mb-3'>
                                 <label for='editModel' class='form-label'>Model</label>
                                 <input type='text' class='form-control' id='editModel' required>
+                            </div>
+                            <div class='col-md-4 mb-3'>
+                                <label for='editCategory' class='form-label'>Category</label>
+                                <select class='form-select' id='editCategory' required>
+                                    <option value='brandnew'>Brand New</option>
+                                    <option value='repo'>Repo</option>
+                                </select>
                             </div>
                         </div>
                         <div class='row'>
@@ -817,52 +421,62 @@
                                 <input type='text' class='form-control' id='editColor' required>
                             </div>
                             <div class='col-md-6 mb-3'>
-                                <label for='editLcp' class='form-label'>LCP</label>
-                                <input type='number' step='0.01' class='form-control' id='editLcp'>
+                                <label for='editInventoryCost' class='form-label'>Inventory Cost</label>
+                                <input type='number' step='0.01' class='form-control' id='editInventoryCost'>
                             </div>
                         </div>
                         <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editCurrentBranch' class='form-label'>Branch</label>
-                                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
-                                    <select class='form-select' id='editCurrentBranch' required>
-                                        <option value='HEADOFFICE'>Head Office</option>
-                                        <option value='RXS-S'>RXS-S</option>
-                                        <option value='RXS-H'>RXS-H</option>
-                                        <option value='ANT-1'>ANT-1</option>
-                                        <option value='ANT-2'>ANT-2</option>
-                                        <option value='SDH'>SDH</option>
-                                        <option value='SDS'>SDS</option>
-                                        <option value='JAR-1'>JAR-1</option>
-                                        <option value='JAR-2'>JAR-2</option>
-                                        <option value='SKM'>SKM</option>
-                                        <option value='SKS'>SKS</option>
-                                        <option value='ALTA'>ALTA</option>
-                                        <option value='EMAP'>EMAP</option>
-                                        <option value='CUL'>CUL</option>
-                                        <option value='BAC'>BAC</option>
-                                        <option value='PAS-1'>PAS-1</option>
-                                        <option value='PAS-2'>PAS-2</option>
-                                        <option value='BAL'>BAL</option>
-                                        <option value='GUIM'>GUIM</option>
-                                        <option value='PEMDI'>PEMDI</option>
-                                        <option value='EEM'>EEM</option>
-                                        <option value='AJU'>AJU</option>
-                                        <option value='BAIL'>BAIL</option>
-                                        <option value='3SMB'>MINDORO MB</option>
-                                        <option value='3SMIN'>MINDORO 3S</option>
-                                        <option value='MAN'>MANSALAY</option>
-                                        <option value='K-RIDERS'>K-RIDERS</option>
-                                        <option value='IBAJAY'>IBAJAY</option>
-                                        <option value='NUMANCIA'>NUMANCIA</option>
-                                        <option value='HEADOFFICE'>HEADOFFICE</option>
-                                        <option value='CEBU'>CEBU</option>
-                                    </select>
-                                <?php } else { ?>
-                                    <!-- Regular users can only add to their own branch -->
-                                    <input type='text' class='form-control' id='editCurrentBranch' value="<?php echo $_SESSION['user_branch']; ?>" readonly>
-                                    <input type='hidden' id='editCurrentBranchHidden' value="<?php echo $_SESSION['user_branch']; ?>">
-                                <?php } ?>
+                                <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
+            ?>
+                                <!-- Admin can select any branch -->
+                                <select class='form-select' id='editCurrentBranch' required>
+                                    <option value='HEADOFFICE'>HEADOFFICE</option>
+                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+                                    <option value='MAMBUSAO'>MAMBUSAO</option>
+                                    <option value='SIGMA'>SIGMA</option>
+                                    <option value='PRC'>PRC</option>
+                                    <option value='CUARTERO'>CUARTERO</option>
+                                    <option value='JAMINDAN'>JAMINDAN</option>
+                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
+                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
+                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
+                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
+                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+                                    <option value='JARO-1'>JARO-1</option>
+                                    <option value='JARO-2'>JARO-2</option>
+                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
+                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+                                    <option value='ALTAVAS'>ALTAVAS</option>
+                                    <option value='EMAP'>EMAP</option>
+                                    <option value='CULASI'>CULASI</option>
+                                    <option value='BACOLOD'>BACOLOD</option>
+                                    <option value='PASSI-1'>PASSI-1</option>
+                                    <option value='PASSI-2'>PASSI-2</option>
+                                    <option value='BALASAN'>BALASAN</option>
+                                    <option value='GUIMARAS'>GUIMARAS</option>
+                                    <option value='PEMDI'>PEMDI</option>
+                                    <option value='EEMSI'>EEMSI</option>
+                                    <option value='AJUY'>AJUY</option>
+                                    <option value='BAILAN'>BAILAN</option>
+                                    <option value='3SMB'>3SMB</option>
+                                    <option value='3SMINDORO'>3SMINDORO</option>
+                                    <option value='MANSALAY'>MANSALAY</option>
+                                    <option value='K-RIDERS'>K-RIDERS</option>
+                                    <option value='IBAJAY'>IBAJAY</option>
+                                    <option value='NUMANCIA'>NUMANCIA</option>
+                                    <option value='CEBU'>CEBU</option>
+                                </select>
+                                <?php } else {
+                ?>
+                                <!-- Regular users can only add to their own branch -->
+                                <input type='text' class='form-control' id='editCurrentBranch'
+                                    value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                                <input type='hidden' id='editCurrentBranchHidden'
+                                    value="<?php echo $_SESSION['user_branch']; ?>">
+                                <?php }
+                ?>
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editStatus' class='form-label'>Status</label>
@@ -882,76 +496,78 @@
         </div>
     </div>
 
-    <!-- Transfer Motorcycle Modal -->
-    <div class='modal fade' id='transferMotorcycleModal' tabindex='-1' aria-labelledby='transferMotorcycleModalLabel'
+
+    <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
                 <div class='modal-header'>
-                    <h5 class='modal-title' id='transferMotorcycleModalLabel'>Transfer Motorcycle</h5>
+                    <h5 class='modal-title' id='sellMotorcycleModalLabel'>Mark Motorcycle as Sold</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
-                    <form id='transferMotorcycleForm'>
-                        <input type='hidden' id='transferId'>
+                    <form id='saleForm'>
+                        <input type='hidden' id='sellMotorcycleId'>
+
                         <div class='mb-3'>
-                            <label for='fromBranch' class='form-label'>From Branch</label>
-                            <input type='text' class='form-control' id='fromBranch' readonly>
+                            <label for='saleDate' class='form-label'>Sale Date <span
+                                    class='text-danger'>*</span></label>
+                            <input type='date' class='form-control' id='saleDate' required>
                         </div>
+
                         <div class='mb-3'>
-                            <label for='toBranch' class='form-label'>To Branch</label>
-                            <select class='form-select' id='toBranch' required>
-                                <option value='HEADOFFICE'>Head Office</option>
-                                <option value='RXS-S'>RXS-S</option>
-                                <option value='RXS-H'>RXS-H</option>
-                                <option value='ANT-1'>ANT-1</option>
-                                <option value='ANT-2'>ANT-2</option>
-                                <option value='SDH'>SDH</option>
-                                <option value='SDS'>SDS</option>
-                                <option value='JAR-1'>JAR-1</option>
-                                <option value='JAR-2'>JAR-2</option>
-                                <option value='SKM'>SKM</option>
-                                <option value='SKS'>SKS</option>
-                                <option value='ALTA'>ALTA</option>
-                                <option value='EMAP'>EMAP</option>
-                                <option value='CUL'>CUL</option>
-                                <option value='BAC'>BAC</option>
-                                <option value='PAS-1'>PAS-1</option>
-                                <option value='PAS-2'>PAS-2</option>
-                                <option value='BAL'>BAL</option>
-                                <option value='GUIM'>GUIM</option>
-                                <option value='PEMDI'>PEMDI</option>
-                                <option value='EEM'>EEM</option>
-                                <option value='AJU'>AJU</option>
-                                <option value='BAIL'>BAIL</option>
-                                <option value='3SMB'>MINDORO MB</option>
-                                <option value='3SMIN'>MINDORO 3S</option>
-                                <option value='MAN'>MANSALAY</option>
-                                <option value='K-RIDERS'>K-RIDERS</option>
-                                <option value='IBAJAY'>IBAJAY</option>
-                                <option value='NUMANCIA'>NUMANCIA</option>
-                                <option value='HEADOFFICE'>HEADOFFICE</option>
-                                <option value='CEBU'>CEBU</option>
+                            <label for='customerName' class='form-label'>Customer Name <span
+                                    class='text-danger'>*</span></label>
+                            <input type='text' class='form-control' id='customerName' required>
+                        </div>
+
+                        <div class='mb-3'>
+                            <label for='paymentType' class='form-label'>Payment Type <span
+                                    class='text-danger'>*</span></label>
+                            <select class='form-select' id='paymentType' onchange='handlePaymentTypeChange()' required>
+                                <option value=''>Select Payment Type</option>
+                                <option value='COD'>Cash on Delivery ( COD )</option>
+                                <option value='Installment'>Installment</option>
                             </select>
                         </div>
-                        <div class='mb-3'>
-                            <label for='transferDate' class='form-label'>Transfer Date</label>
-                            <input type='date' class='form-control' id='transferDate' required>
+
+                        <div id='codFields' style='display: none;'>
+                            <div class='mb-3'>
+                                <label for='drNumber' class='form-label'>DR Number <span
+                                        class='text-danger'>*</span></label>
+                                <input type='text' class='form-control' id='drNumber'>
+                            </div>
+
+                            <div class='mb-3'>
+                                <label for='codAmount' class='form-label'>COD Amount <span
+                                        class='text-danger'>*</span></label>
+                                <input type='number' step='0.01' class='form-control' id='codAmount'>
+                            </div>
                         </div>
-                        <div class='mb-3'>
-                            <label for='transferNotes' class='form-label'>Notes</label>
-                            <textarea class='form-control' id='transferNotes' rows='3'></textarea>
-                        </div>
-                        <div class='d-grid'>
-                            <button type='submit' class='btn btn-primary text-white'>Transfer Motorcycle</button>
+
+                        <div id='installmentFields' style='display: none;'>
+                            <div class='mb-3'>
+                                <label for='terms' class='form-label'>Terms ( months ) <span
+                                        class='text-danger'>*</span></label>
+                                <input type='number' class='form-control' id='terms' min='1'>
+                            </div>
+
+                            <div class='mb-3'>
+                                <label for='monthlyAmortization' class='form-label'>Monthly Amortization <span
+                                        class='text-danger'>*</span></label>
+                                <input type='number' step='0.01' class='form-control' id='monthlyAmortization'>
+                            </div>
                         </div>
                     </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as Sold</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- View Details Modal -->
     <div class='modal fade' id='viewDetailsModal' tabindex='-1' aria-labelledby='viewDetailsModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -989,7 +605,7 @@
                                 <hr>
                                 <p><strong>Current Branch:</strong> <span id='detailCurrentBranch'></span></p>
                                 <p><strong>Status:</strong> <span id='detailStatus'></span></p>
-                                <p><strong>LCP:</strong> <span id='detailLcp'></span></p>
+                                <p><strong>Inventory Cost:</strong> <span id='detailInventoryCost'></span></p>
                             </div>
                         </div>
                         <div class='col-md-6'>
@@ -1014,7 +630,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id='transferHistoryBody'>
-                                    <!-- Transfer history will be loaded here -->
                                 </tbody>
                             </table>
                         </div>
@@ -1024,7 +639,6 @@
         </div>
     </div>
 
-    <!-- Multiple Transfer Modal - Improved Layout -->
     <div class='modal fade' id='multipleTransferModal' tabindex='-1' aria-labelledby='multipleTransferModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -1039,13 +653,24 @@
                 <div class='modal-body p-0'>
                     <form id='multipleTransferForm'>
                         <div class='row g-0'>
-                            <!-- Transfer Details ( Left Panel ) -->
                             <div class='col-md-4 border-end bg-light'>
                                 <div class='p-4'>
                                     <fieldset>
                                         <legend class='fs-6 fw-semibold text-black mb-4'>
                                             <i class='bi bi-geo-alt me-2'></i>Transfer Information
                                         </legend>
+
+                                        <!-- Transfer Invoice Number Input -->
+                                        <div class='mb-3'>
+                                            <label for='multipleTransferInvoiceNumber'
+                                                class='form-label small fw-semibold'>
+                                                <i class='bi bi-receipt me-1'></i>Transfer Invoice No. <span
+                                                    class='text-danger'>*</span>
+                                            </label>
+                                            <input type='text' class='form-control form-control-sm'
+                                                id='multipleTransferInvoiceNumber' required
+                                                placeholder="Enter transfer invoice number">
+                                        </div>
 
                                         <div class='mb-3'>
                                             <label for='multipleFromBranch' class='form-label small fw-semibold'>
@@ -1062,6 +687,7 @@
                                             </label>
                                             <select class='form-select form-select-sm' id='multipleToBranch' required>
                                                 <option value=''>Select Destination Branch</option>
+                                                <!-- Options will be populated dynamically -->
                                             </select>
                                         </div>
 
@@ -1082,9 +708,9 @@
                                                 rows='3' placeholder='Optional notes about this transfer...'></textarea>
                                         </div>
                                     </fieldset>
+
                                     <hr>
 
-                                    <!-- Transfer Summary Section -->
                                     <fieldset>
                                         <legend class='fs-6 fw-semibold text-black mb-3'>
                                             <i class='bi bi-calculator me-2'></i>Transfer Summary
@@ -1097,8 +723,9 @@
                                                 <span class='badge bg-primary' id='selectedCount'>0</span>
                                             </div>
                                             <div class='d-flex justify-content-between align-items-center'>
-                                                <span class='small fw-semibold'>Total LCP Value:</span>
-                                                <span class='fw-bold text-success' id='totalLcpValue'>₱0.00</span>
+                                                <span class='small fw-semibold'>Total Inventory Cost Value:</span>
+                                                <span class='fw-bold text-success'
+                                                    id='totalInventoryCostValue'>₱0.00</span>
                                             </div>
                                         </div>
 
@@ -1115,14 +742,11 @@
                                 </div>
                             </div>
 
-                            <!-- Motorcycle Selection ( Right Panel ) -->
                             <div class='col-md-8'>
                                 <div class='p-4'>
                                     <h6 class='fw-semibold text-primary mb-4'>
                                         <i class='bi bi-search me-2'></i>Motorcycle Selection
                                     </h6>
-
-                                    <!-- Search Form -->
                                     <div class='row g-2 mb-3 align-items-end'>
                                         <div class='col-md-8'>
                                             <label class='form-label small fw-semibold'>
@@ -1143,9 +767,7 @@
                                     <div class='form-text small text-muted mb-4'>You can search using full or partial
                                         engine numbers.</div>
 
-                                    <!-- Search & Selected Results Panels -->
                                     <div class='row g-3'>
-                                        <!-- Search Results -->
                                         <div class='col-md-6'>
                                             <div class='card h-100 shadow-sm'>
                                                 <div
@@ -1167,8 +789,6 @@
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <!-- Selected Items -->
                                         <div class='col-md-6'>
                                             <div class='card h-100 shadow-sm'>
                                                 <div
@@ -1194,55 +814,262 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div> 
-                                </div> 
+                                    </div>
+                                </div>
                             </div>
-                        </div> 
+                        </div>
                     </form>
                 </div>
-            </div> 
+            </div>
         </div>
     </div>
+    
 
-    <!-- Incoming Transfers Modal -->
-    <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
+    
+    <template id='modelFormTemplate'>
+        <div class='model-form card mb-3'>
+            <div class='card-header d-flex justify-content-between align-items-center'>
+                <span class='model-number'>Model #1</span>
+                <button type='button' class='btn btn-sm btn-danger remove-model-btn'>
+                    <i class='bi bi-trash'></i> Remove
+                </button>
+            </div>
+            <div class='card-body'>
+                <!-- First Row -->
+                <div class='row'>
+                    <div class='col-md-4 mb-3'>
+                        <label class='form-label'>Brand</label>
+                        <select class='form-select model-brand' required>
+                            <option value=''>Select Brand</option>
+                            <option value='Suzuki'>Suzuki</option>
+                            <option value='Honda'>Honda</option>
+                            <option value='Kawasaki'>Kawasaki</option>
+                            <option value='Yamaha'>Yamaha</option>
+                            <option value='Asiastar'>Asiastar</option>
+                        </select>
+                    </div>
+                    <div class='col-md-4 mb-3'>
+                        <label class='form-label'>Model Name</label>
+                        <input type='text' class='form-control model-name' required>
+                    </div>
+                    <div class='col-md-4 mb-3'>
+                        <label class='form-label'>Category</label>
+                        <select class='form-select model-category' required>
+                            <option value=''>Select Category</option>
+                            <option value='brandnew'>Brand New</option>
+                            <option value='repo'>Repo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Second Row -->
+                <div class='row'>
+                    <div class='col-md-4 mb-3'>
+                        <label class='form-label'>Quantity</label>
+                        <input type='number' class='form-control model-quantity' min='1' value='1' required>
+                    </div>
+                    <div class='col-md-4 mb-3'>
+                        <label class='form-label'>Color</label>
+                        <input type='text' class='form-control model-color' required>
+                    </div>
+                    <div class='col-md-4 mb-3'>
+                        <label class='form-label'>Inventory Cost</label>
+                        <input type='number' step='0.01' class='form-control model-inventoryCost'>
+                    </div>
+                </div>
+
+                <!-- Specific Details Section -->
+                <div class='specific-details-container mt-3' style='display: none;'>
+                    <h6 class='fw-semibold mb-3'>Specific Model Details</h6>
+                    <div class='specific-details-rows'>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+<div class="modal fade" id="searchTransferReceiptModal" tabindex="-1" aria-labelledby="searchTransferReceiptModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchTransferReceiptModalLabel">Search Transfer Receipt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="transferInvoiceSearch" class="form-label">Transfer Invoice Number</label>
+                    <input type="text" class="form-control" id="transferInvoiceSearch" placeholder="Enter transfer invoice number">
+                </div>
+                <div id="searchResultsContainer" class="mt-3" style="display: none;">
+                    <h6>Search Results:</h6>
+                    <div id="transferSearchResults" class="search-results"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary text-white" id="searchTransferBtn">Search</button>
+            </div>
+        </div>
+    </div>
+</div>
+   <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
+    <div class='modal-dialog modal-xl'>
+        <div class='modal-content'>
+            <div class='modal-header bg-primary text-white'>
+                <h5 class='modal-title text-white' id='incomingTransfersModalLabel'>Incoming Units Transferred to Your Branch</h5>
+                <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <div class='row mb-3'>
+                    <div class='col-md-6'>
+                        <div class='d-flex align-items-center'>
+                            <input type='checkbox' id='selectAllTransfers' class='form-check-input me-2'>
+                            <label for='selectAllTransfers' class='form-check-label fw-semibold'>Select All</label>
+                        </div>
+                    </div>
+                    <div class='col-md-6 text-end'>
+                        <span class='badge bg-info' id='selectedTransfersCount'>0 selected</span>
+                    </div>
+                </div>
+                
+                <div class='table-responsive'>
+                    <table class='table table-striped table-hover'>
+                        <thead class='table-dark'>
+                            <tr>
+                                <th width='50'>
+                                    <input type='checkbox' id='selectAllTransfersHeader' class='form-check-input'>
+                                </th>
+                                <th>Model</th>
+                                <th>Engine No.</th>
+                                <th>Frame No.</th>
+                                <th>Color</th>
+                                <th>Transfer Date</th>
+                                <th>From Branch</th>
+                                <th>Transfer Invoice</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id='incomingTransfersBody'>
+                            <tr>
+                                <td colspan='9' class='text-center py-4'>
+                                    <div class='spinner-border text-primary' role='status'>
+                                        <span class='visually-hidden'>Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class='alert alert-info mt-3' id='transferSummary' style='display: none;'>
+                    <h6 class='alert-heading'>Transfer Summary</h6>
+                    <div class='row'>
+                        <div class='col-md-4'>
+                            <strong>Selected Transfers:</strong> <span id='summarySelectedCount'>0</span>
+                        </div>
+                        <div class='col-md-4'>
+                            <strong>Total Units:</strong> <span id='summaryTotalUnits'>0</span>
+                        </div>
+                        <div class='col-md-4'>
+                            <strong>From Branches:</strong> <span id='summaryFromBranches'>-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class='modal-footer'>
+                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                <button type='button' class='btn btn-warning me-2' id='rejectSelectedBtn' disabled>
+                    <i class='bi bi-x-circle me-1'></i>Reject Selected
+                </button>
+                <button type='button' class='btn btn-success' id='acceptSelectedBtn' disabled>
+                    <i class='bi bi-check-circle me-1'></i>Accept Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <div class='modal fade' id='transferReceiptModal' tabindex='-1' aria-labelledby='transferReceiptModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog modal-xl'>
             <div class='modal-content'>
                 <div class='modal-header bg-primary text-white'>
-                    <h5 class='modal-title text-white' id='incomingTransfersModalLabel'>Incoming Units Transferred to
-                        Your Branch</h5>
+                    <h5 class='modal-title text-white' id='transferReceiptModalLabel'>
+                        <i class='bi bi-receipt me-2'></i>Transfer Receipt
+                    </h5>
                     <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
                         aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
+                    <div class='receipt-header mb-4'>
+                        <div class='row'>
+                            <div class='col-md-6'>
+                                <h5 class='mb-1'>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h5>
+                                <p class='mb-0 text-muted'>Merchandise Transfer Receipt</p>
+                            </div>
+                            <div class='col-md-6 text-end'>
+                                <p class='mb-0'><strong>Date:</strong> <span id='receiptDate'></span></p>
+                                <p class='mb-0'><strong>Transfer Invoice No:</strong> <span
+                                        id='receiptInvoiceNo'></span></p>
+                                <!-- <p class='mb-0'><strong>Transfer ID:</strong> <span id='receiptTransferId'></span></p> -->
+                            </div>
+                        </div>
+                        <hr>
+                        <div class='row'>
+                            <div class='col-md-6'>
+                                <p class='mb-1'><strong>From:</strong> <span id='receiptFromBranch'></span></p>
+                            </div>
+                            <div class='col-md-6'>
+                                <p class='mb-1'><strong>To:</strong> <span id='receiptToBranch'></span></p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class='table-responsive'>
-                        <table class='table table-striped'>
-                            <thead>
+                        <table class='table table-bordered table-sm'>
+                            <thead class='table-light'>
                                 <tr>
+                                    <th>#</th>
+                                    <th>Brand</th>
                                     <th>Model</th>
-                                    <th>Engine No.</th>
-                                    <th>Frame No.</th>
                                     <th>Color</th>
-                                    <th>Transfer Date</th>
-                                    <th>From Branch</th>
+                                    <th>Engine Number</th>
+                                    <th>Frame Number</th>
+                                    <th class='text-end'>Inventory Cost</th>
                                 </tr>
                             </thead>
-                            <tbody id='incomingTransfersBody'>
-                                <!-- Content will be loaded dynamically -->
+                            <tbody id='receiptMotorcyclesList'>
                             </tbody>
+                            <tfoot class='table-group-divider'>
+                                <tr>
+                                    <td colspan='6' class='text-end fw-bold'>Total Motorcycles:</td>
+                                    <td class='text-end fw-bold' id='receiptTotalCount'>0</td>
+                                </tr>
+                                <tr>
+                                    <td colspan='6' class='text-end fw-bold'>Total Inventory Cost:</td>
+                                    <td class='text-end fw-bold' id='receiptTotalCost'>₱0.00</td>
+                                </tr>
+                            </tfoot>
                         </table>
+                    </div>
+
+                    <div class='mt-4'>
+                        <h6>Transfer Notes:</h6>
+                        <p id='receiptNotes' class='text-muted fst-italic'>No notes provided.</p>
                     </div>
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                    <button type='button' class='btn btn-success' id='acceptAllTransfersBtn'>Accept All</button>
+                    <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
+                    <i class='bi bi-printer me-2'></i>Print Receipt
+                </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
@@ -1262,7 +1089,6 @@
         </div>
     </div>
 
-    <!-- Success Modal -->
     <div class='modal fade' id='successModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -1280,8 +1106,24 @@
             </div>
         </div>
     </div>
+<!-- Info Modal -->
+<div class="modal fade" id="infoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Information</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill text-info me-3" style="font-size: 2rem;"></i>
+                    <span id="infoMessage"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Error Modal -->
     <div class='modal fade' id='errorModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -1300,7 +1142,6 @@
         </div>
     </div>
 
-    <!-- Warning Modal -->
     <div class='modal fade' id='warningModal' tabindex='-1' role='dialog' aria-labelledby='warningModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog' role='document'>
@@ -1316,11 +1157,16 @@
         </div>
     </div>
 
+
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src='https://unpkg.com/leaflet@1.9.3/dist/leaflet.js'></script>
     <script>
     const currentBranch = '<?php echo $_SESSION['user_branch'] ?? 'RXS-S'; ?>';
+    const currentUserBranch = "<?php echo isset($_SESSION['user_branch']) ? $_SESSION['user_branch'] : ''; ?>";
+    const currentUserPosition = "<?php echo isset($_SESSION['position']) ? $_SESSION['position'] : ''; ?>";
+    const isHeadOffice = currentUserBranch === 'HEADOFFICE';
+    const isAdminUser = ['ADMIN', 'IT STAFF', 'HEAD'].includes(currentUserPosition.toUpperCase());
     </script>
     <script src='../js/admin_inventory.js'></script>
 </body>

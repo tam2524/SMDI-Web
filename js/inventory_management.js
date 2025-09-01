@@ -1417,11 +1417,16 @@ function handlePaymentTypeChange() {
   const paymentType = $("#paymentType").val();
 
   $("#codFields").hide();
-  // Show COD fields for both COD and Installment payment types
-  if (paymentType === "COD" || paymentType === "Installment") {
+  $("#installmentFields").hide();
+
+  if (paymentType === "COD") {
     $("#codFields").show();
+  } else if (paymentType === "Installment") {
+    $("#codFields").show();
+    $("#installmentFields").show();
   }
 }
+
 
 function submitSale() {
   const formData = {
@@ -1432,10 +1437,14 @@ function submitSale() {
     payment_type: $("#paymentType").val(),
   };
 
-  // For both COD and Installment, only collect DR number and amount
   if (formData.payment_type === "COD" || formData.payment_type === "Installment") {
     formData.dr_number = $("#drNumber").val();
     formData.cod_amount = $("#codAmount").val();
+  }
+
+  if (formData.payment_type === "Installment") {
+    formData.terms = $("#terms").val();
+    formData.monthly_amortization = $("#monthlyAmortization").val();
   }
 
   // Basic validation for required fields
@@ -1448,13 +1457,23 @@ function submitSale() {
     return;
   }
 
-  // Validation for DR Number and Amount (applies to both payment types)
   if (
     (formData.payment_type === "COD" || formData.payment_type === "Installment") &&
     (!formData.dr_number || !formData.cod_amount)
   ) {
     showErrorModal("Please fill in DR Number and Amount");
     return;
+  }
+
+  if (formData.payment_type === "Installment") {
+    if (!formData.terms || isNaN(formData.terms) || parseInt(formData.terms) <= 0) {
+      showErrorModal("Please enter a valid number of terms (months)");
+      return;
+    }
+    if (!formData.monthly_amortization || isNaN(formData.monthly_amortization) || parseFloat(formData.monthly_amortization) <= 0) {
+      showErrorModal("Please enter a valid monthly amortization amount");
+      return;
+    }
   }
 
   $.ajax({
@@ -1481,6 +1500,7 @@ function submitSale() {
     },
   });
 }
+
 
 // =======================
 // Transfer Functions
@@ -2820,7 +2840,6 @@ function generateMotorcycleReport(branch, brandFilter) {
     });
 }
 
-// Function to render motorcycle report
 // Function to render motorcycle report
 function renderMotorcycleReport(data, branch, brandFilter) {
     const timestamp = new Date().toLocaleString();
