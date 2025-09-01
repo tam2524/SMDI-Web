@@ -311,29 +311,51 @@ function addMotorcycle() {
         $conn->begin_transaction();
         $successCount = 0;
         $invoiceId = null;
+        $isExistingInvoice = false;
 
         try {
-            $invoiceStmt = $conn->prepare( 'INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)' );
-            if ( !$invoiceStmt ) {
-                throw new Exception( 'Error preparing invoice statement: ' . $conn->error );
+            // Check if invoice already exists
+            $checkInvoiceStmt = $conn->prepare( 'SELECT id FROM invoices WHERE invoice_number = ?' );
+            if ( !$checkInvoiceStmt ) {
+                throw new Exception( 'Error preparing invoice check statement: ' . $conn->error );
             }
 
-            $notes = "Motorcycles delivered to $branch branch";
-            $invoiceStmt->bind_param( 'sss', $invoiceNumber, $dateDelivered, $notes );
+            $checkInvoiceStmt->bind_param( 's', $invoiceNumber );
+            if ( !$checkInvoiceStmt->execute() ) {
+                throw new Exception( 'Error checking existing invoice: ' . $checkInvoiceStmt->error );
+            }
 
-            if ( !$invoiceStmt->execute() ) {
-                if ( $conn->errno == 1062 ) {
-                    throw new Exception( 'DUPLICATE_INVOICE' );
+            $existingInvoiceResult = $checkInvoiceStmt->get_result();
+            
+            if ( $existingInvoiceResult->num_rows > 0 ) {
+                // Use existing invoice ID
+                $existingInvoice = $existingInvoiceResult->fetch_assoc();
+                $invoiceId = $existingInvoice['id'];
+                $isExistingInvoice = true;
+                // Log to console instead of showing error
+                error_log("INFO: Using existing invoice ID $invoiceId for invoice number: $invoiceNumber");
+            } else {
+                // Create new invoice
+                $invoiceStmt = $conn->prepare( 'INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)' );
+                if ( !$invoiceStmt ) {
+                    throw new Exception( 'Error preparing invoice statement: ' . $conn->error );
                 }
-                throw new Exception( 'Error creating invoice: ' . $invoiceStmt->error );
-            }
 
-            $invoiceId = $conn->insert_id;
+                $notes = "Motorcycles delivered to $branch branch";
+                $invoiceStmt->bind_param( 'sss', $invoiceNumber, $dateDelivered, $notes );
+
+                if ( !$invoiceStmt->execute() ) {
+                    throw new Exception( 'Error creating invoice: ' . $invoiceStmt->error );
+                }
+
+                $invoiceId = $conn->insert_id;
+                error_log("INFO: Created new invoice ID $invoiceId for invoice number: $invoiceNumber");
+            }
 
             foreach ( $_POST[ 'models' ] as $modelIndex => $modelData ) {
                 $brand = sanitizeInput( $modelData[ 'brand' ] );
                 $modelName = sanitizeInput( $modelData[ 'model' ] );
-                $category = sanitizeInput( $modelData[ 'category' ] ); // Add category
+                $category = sanitizeInput( $modelData[ 'category' ] );
                 $color = sanitizeInput( $modelData[ 'color' ] );
                 $inventory_cost = !empty( $modelData[ 'inventory_cost' ] ) ? floatval( $modelData[ 'inventory_cost' ] ) : null;
 
@@ -379,7 +401,7 @@ function addMotorcycle() {
                             throw new Exception( "DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists in the system (ID: " . $duplicateRow[ 'id' ] . ")" );
                         }
 
-                        // Updated INSERT statement to include category
+                        // Insert motorcycle with existing or new invoice ID
                         $stmt = $conn->prepare( "INSERT INTO motorcycle_inventory 
                                                (date_delivered, brand, model, category, engine_number, frame_number, invoice_id, color, inventory_cost, current_branch, status) 
                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')" );
@@ -402,22 +424,43 @@ function addMotorcycle() {
             }
 
             $conn->commit();
-            echo json_encode( [ 'success' => true, 'message' => "Successfully added $successCount motorcycle(s) with invoice #$invoiceNumber" ] );
+            
+            // Always return success, but with different messages
+            if ($isExistingInvoice) {
+                echo json_encode( [ 
+                    'success' => true, 
+                    'message' => "Successfully added $successCount motorcycle(s) to existing invoice #$invoiceNumber",
+                    'type' => 'existing_invoice',
+                    'console_message' => "Used existing invoice ID: $invoiceId"
+                ] );
+            } else {
+                echo json_encode( [ 
+                    'success' => true, 
+                    'message' => "Successfully added $successCount motorcycle(s) with new invoice #$invoiceNumber",
+                    'type' => 'new_invoice',
+                    'console_message' => "Created new invoice ID: $invoiceId"
+                ] );
+            }
 
         } catch ( Exception $e ) {
             $conn->rollback();
-
-            if ( $e->getMessage() === 'DUPLICATE_INVOICE' ) {
-                echo json_encode( [ 'success' => false, 'message' => 'DUPLICATE_INVOICE' ] );
+            
+            // Log error to console instead of showing to user for certain errors
+            $errorMessage = $e->getMessage();
+            error_log("ERROR in addMotorcycle(): " . $errorMessage);
+            
+            // Only show user-friendly errors, log technical errors
+            if (strpos($errorMessage, 'DUPLICATE_ENGINE_NUMBER') !== false || 
+                strpos($errorMessage, 'DUPLICATE_FRAME_NUMBER') !== false) {
+                echo json_encode( [ 'success' => false, 'message' => $errorMessage ] );
             } else {
-                echo json_encode( [ 'success' => false, 'message' => 'Error adding motorcycle: ' . $e->getMessage() ] );
+                echo json_encode( [ 'success' => false, 'message' => 'Error adding motorcycle. Please check console for details.' ] );
             }
         }
     } else {
         echo json_encode( [ 'success' => false, 'message' => 'Invalid data format. Expected models array.' ] );
     }
 }
-
 
 function updateMotorcycle() {
     global $conn;

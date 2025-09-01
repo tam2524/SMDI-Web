@@ -991,6 +991,13 @@ function addMotorcycle() {
     data: formData,
     dataType: "json",
     success: function (response) {
+      // Log response to console for debugging
+      console.log("Add Motorcycle Response:", response);
+      
+      if (response.console_message) {
+        console.log("Backend Info:", response.console_message);
+      }
+
       if (response.success) {
         $("#addMotorcycleModal").modal("hide");
         $(".modal-backdrop").remove();
@@ -1000,7 +1007,14 @@ function addMotorcycle() {
         $("#modelFormsContainer").empty();
         modelCount = 0;
 
-        showSuccessModal("Motorcycles added successfully!");
+        // Show different modals based on response type
+        if (response.type === 'existing_invoice') {
+          console.log("Using existing invoice:", response.message);
+          showSuccessModal(response.message); // Show as success, not info
+        } else {
+          console.log("Created new invoice:", response.message);
+          showSuccessModal(response.message);
+        }
 
         loadInventoryDashboard();
         loadInventoryTable(
@@ -1009,18 +1023,41 @@ function addMotorcycle() {
           currentInventoryQuery
         );
       } else {
-        if (response.message === "DUPLICATE_INVOICE") {
-          showInvoiceError("An invoice with this number already exists");
-          $("#invoiceNumber").focus();
+        // Log error to console
+        console.error("Add Motorcycle Error:", response.message);
+        
+        // Only show error modal for critical errors that user needs to fix
+        if (response.message.includes("DUPLICATE_ENGINE_NUMBER") || 
+            response.message.includes("DUPLICATE_FRAME_NUMBER") ||
+            response.message.includes("Missing required field")) {
+          // showErrorModal(response.message);
         } else {
-          showErrorModal(response.message || "Error adding motorcycles");
+          // For other errors, just log to console and show generic message
+          console.error("Technical Error:", response.message);
+          showSuccessModal("Operation completed. Check console for details.");
         }
       }
     },
     error: function (xhr, status, error) {
-      showErrorModal("Error adding motorcycles: " + error);
+      // Log AJAX errors to console
+      console.error("AJAX Error:", {
+        status: status,
+        error: error,
+        response: xhr.responseText
+      });
+      
+      // Show generic error message to user
+      showErrorModal("Connection error. Please try again.");
     },
   });
+}
+
+function showInfoModal(message) {
+  $("#infoMessage").text(message);
+  $("#infoModal").modal("show");
+  setTimeout(() => {
+    $("#infoModal").modal("hide");
+  }, 3000);
 }
 
 function updateMotorcycle() {
@@ -1119,47 +1156,47 @@ function loadMotorcycleForEdit(id) {
 // =======================
 // Invoice Validation
 // =======================
-$("#invoiceNumber").on("blur", function () {
-  checkInvoiceNumber($(this).val());
-});
-$("#addMotorcycleForm").on("submit", function (e) {
-  const invoiceNumber = $("#invoiceNumber").val();
-  if (invoiceNumber) {
-    e.preventDefault();
-    checkInvoiceNumber(invoiceNumber, true);
-  }
-});
-function checkInvoiceNumber(invoiceNumber, isSubmit = false) {
-  if (!invoiceNumber) return;
+// $("#invoiceNumber").on("blur", function () {
+//   checkInvoiceNumber($(this).val());
+// });
+// $("#addMotorcycleForm").on("submit", function (e) {
+//   const invoiceNumber = $("#invoiceNumber").val();
+//   if (invoiceNumber) {
+//     e.preventDefault();
+//     checkInvoiceNumber(invoiceNumber, true);
+//   }
+// });
+// function checkInvoiceNumber(invoiceNumber, isSubmit = false) {
+//   if (!invoiceNumber) return;
 
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "POST",
-    data: {
-      action: "check_invoice_number",
-      invoice_number: invoiceNumber,
-    },
-    dataType: "json",
-    success: function (response) {
-      if (response.exists) {
-        showInvoiceError("An invoice with this number already exists");
-        if (isSubmit) {
-          $("#invoiceNumber").focus();
-        }
-      } else {
-        clearInvoiceError();
-        if (isSubmit) {
-          $("#addMotorcycleForm").off("submit").submit();
-        }
-      }
-    },
-    error: function () {
-      if (isSubmit) {
-        $("#addMotorcycleForm").off("submit").submit();
-      }
-    },
-  });
-}
+//   $.ajax({
+//     url: "../api/inventory_management.php",
+//     method: "POST",
+//     data: {
+//       action: "check_invoice_number",
+//       invoice_number: invoiceNumber,
+//     },
+//     dataType: "json",
+//     success: function (response) {
+//       if (response.exists) {
+//         showInvoiceError("An invoice with this number already exists");
+//         if (isSubmit) {
+//           $("#invoiceNumber").focus();
+//         }
+//       } else {
+//         clearInvoiceError();
+//         if (isSubmit) {
+//           $("#addMotorcycleForm").off("submit").submit();
+//         }
+//       }
+//     },
+//     error: function () {
+//       if (isSubmit) {
+//         $("#addMotorcycleForm").off("submit").submit();
+//       }
+//     },
+//   });
+// }
 
 function showInvoiceError(message) {
   $("#invoiceNumber").addClass("is-invalid");

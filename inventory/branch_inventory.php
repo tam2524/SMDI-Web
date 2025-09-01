@@ -1624,6 +1624,24 @@
             </div>
         </div>
     </div>
+    <!-- Info Modal -->
+<div class="modal fade" id="infoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Information</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill text-info me-3" style="font-size: 2rem;"></i>
+                    <span id="infoMessage"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
     <div class='modal fade' id='warningModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
