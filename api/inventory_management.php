@@ -477,51 +477,135 @@ function updateMotorcycle() {
     $dateDelivered = sanitizeInput( $_POST[ 'date_delivered' ] );
     $brand = sanitizeInput( $_POST[ 'brand' ] );
     $model = sanitizeInput( $_POST[ 'model' ] );
-    $category = sanitizeInput( $_POST[ 'category' ] ); // Add category
+    $category = sanitizeInput( $_POST[ 'category' ] );
     $engineNumber = sanitizeInput( $_POST[ 'engine_number' ] );
     $frameNumber = sanitizeInput( $_POST[ 'frame_number' ] );
+    $invoiceNumber = sanitizeInput( $_POST[ 'invoice_number' ] );
     $color = sanitizeInput( $_POST[ 'color' ] );
     $inventory_cost = !empty( $_POST[ 'inventory_cost' ] ) ? floatval( $_POST[ 'inventory_cost' ] ) : null;
     $currentBranch = sanitizeInput( $_POST[ 'current_branch' ] );
     $status = sanitizeInput( $_POST[ 'status' ] );
 
-    // Enhanced duplicate checking for updates (excluding current record)
-    $engineCheckStmt = $conn->prepare( "SELECT id, engine_number FROM motorcycle_inventory 
-                                      WHERE engine_number = ? AND id != ?" );
-    $engineCheckStmt->bind_param( 'si', $engineNumber, $id );
-    $engineCheckStmt->execute();
-    $engineCheckResult = $engineCheckStmt->get_result();
-    
-    if ( $engineCheckResult->num_rows > 0 ) {
-        $duplicateRow = $engineCheckResult->fetch_assoc();
-        echo json_encode( [ 'success' => false, 'message' => "DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" ] );
-        return;
-    }
+    $conn->begin_transaction();
 
-    $frameCheckStmt = $conn->prepare( "SELECT id, frame_number FROM motorcycle_inventory 
-                                     WHERE frame_number = ? AND id != ?" );
-    $frameCheckStmt->bind_param( 'si', $frameNumber, $id );
-    $frameCheckStmt->execute();
-    $frameCheckResult = $frameCheckStmt->get_result();
-    
-    if ( $frameCheckResult->num_rows > 0 ) {
-        $duplicateRow = $frameCheckResult->fetch_assoc();
-        echo json_encode( [ 'success' => false, 'message' => "DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" ] );
-        return;
-    }
+    try {
+        // Enhanced duplicate checking for updates (excluding current record)
+        $engineCheckStmt = $conn->prepare( "SELECT id, engine_number FROM motorcycle_inventory 
+                                          WHERE engine_number = ? AND id != ?" );
+        $engineCheckStmt->bind_param( 'si', $engineNumber, $id );
+        $engineCheckStmt->execute();
+        $engineCheckResult = $engineCheckStmt->get_result();
+        
+        if ( $engineCheckResult->num_rows > 0 ) {
+            $duplicateRow = $engineCheckResult->fetch_assoc();
+            throw new Exception( "DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" );
+        }
 
-    // Updated UPDATE statement to include category
-    $stmt = $conn->prepare( "UPDATE motorcycle_inventory 
-                           SET date_delivered = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
-                               frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?
-                           WHERE id = ?" );
-    $stmt->bind_param( 'sssssssdssi', $dateDelivered, $brand, $model, $category, $engineNumber,
-    $frameNumber, $color, $inventory_cost, $currentBranch, $status, $id );
+        $frameCheckStmt = $conn->prepare( "SELECT id, frame_number FROM motorcycle_inventory 
+                                         WHERE frame_number = ? AND id != ?" );
+        $frameCheckStmt->bind_param( 'si', $frameNumber, $id );
+        $frameCheckStmt->execute();
+        $frameCheckResult = $frameCheckStmt->get_result();
+        
+        if ( $frameCheckResult->num_rows > 0 ) {
+            $duplicateRow = $frameCheckResult->fetch_assoc();
+            throw new Exception( "DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" );
+        }
 
-    if ( $stmt->execute() ) {
-        echo json_encode( [ 'success' => true, 'message' => 'Motorcycle updated successfully' ] );
-    } else {
-        echo json_encode( [ 'success' => false, 'message' => 'Error updating motorcycle: ' . $conn->error ] );
+        // Handle invoice number update
+        $invoiceId = null;
+        $isExistingInvoice = false;
+        $invoiceMessage = "";
+
+        if (!empty($invoiceNumber)) {
+            // Check if invoice already exists
+            $checkInvoiceStmt = $conn->prepare( 'SELECT id FROM invoices WHERE invoice_number = ?' );
+            $checkInvoiceStmt->bind_param( 's', $invoiceNumber );
+            $checkInvoiceStmt->execute();
+            $existingInvoiceResult = $checkInvoiceStmt->get_result();
+            
+            if ( $existingInvoiceResult->num_rows > 0 ) {
+                // Use existing invoice ID
+                $existingInvoice = $existingInvoiceResult->fetch_assoc();
+                $invoiceId = $existingInvoice['id'];
+                $isExistingInvoice = true;
+                $invoiceMessage = " (linked to existing invoice #$invoiceNumber)";
+                error_log("INFO: Using existing invoice ID $invoiceId for invoice number: $invoiceNumber");
+            } else {
+                // Create new invoice
+                $invoiceStmt = $conn->prepare( 'INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)' );
+                $notes = "Updated motorcycle record";
+                $invoiceStmt->bind_param( 'sss', $invoiceNumber, $dateDelivered, $notes );
+                
+                if ( $invoiceStmt->execute() ) {
+                    $invoiceId = $conn->insert_id;
+                    $invoiceMessage = " (created new invoice #$invoiceNumber)";
+                    error_log("INFO: Created new invoice ID $invoiceId for invoice number: $invoiceNumber");
+                } else {
+                    throw new Exception( 'Error creating new invoice: ' . $invoiceStmt->error );
+                }
+            }
+        }
+
+        // Updated UPDATE statement to include category and invoice_id
+        if ($invoiceId) {
+            $stmt = $conn->prepare( "UPDATE motorcycle_inventory 
+                                   SET date_delivered = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
+                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?, invoice_id = ?
+                                   WHERE id = ?" );
+            $stmt->bind_param( 'sssssssdssii', $dateDelivered, $brand, $model, $category, $engineNumber,
+                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $invoiceId, $id );
+        } else {
+            $stmt = $conn->prepare( "UPDATE motorcycle_inventory 
+                                   SET date_delivered = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
+                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?
+                                   WHERE id = ?" );
+            $stmt->bind_param( 'sssssssdssi', $dateDelivered, $brand, $model, $category, $engineNumber,
+                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $id );
+        }
+
+        if ( $stmt->execute() ) {
+            $conn->commit();
+            
+            // Provide different messages based on invoice handling
+            if ($isExistingInvoice) {
+                echo json_encode( [ 
+                    'success' => true, 
+                    'message' => "Motorcycle updated successfully$invoiceMessage",
+                    'type' => 'existing_invoice',
+                    'console_message' => "Used existing invoice ID: $invoiceId"
+                ] );
+            } else if ($invoiceId) {
+                echo json_encode( [ 
+                    'success' => true, 
+                    'message' => "Motorcycle updated successfully$invoiceMessage",
+                    'type' => 'new_invoice',
+                    'console_message' => "Created new invoice ID: $invoiceId"
+                ] );
+            } else {
+                echo json_encode( [ 
+                    'success' => true, 
+                    'message' => 'Motorcycle updated successfully'
+                ] );
+            }
+        } else {
+            throw new Exception( 'Error updating motorcycle: ' . $stmt->error );
+        }
+
+    } catch ( Exception $e ) {
+        $conn->rollback();
+        
+        // Log error to console instead of showing to user for certain errors
+        $errorMessage = $e->getMessage();
+        error_log("ERROR in updateMotorcycle(): " . $errorMessage);
+        
+        // Only show user-friendly errors, log technical errors
+        if (strpos($errorMessage, 'DUPLICATE_ENGINE_NUMBER') !== false || 
+            strpos($errorMessage, 'DUPLICATE_FRAME_NUMBER') !== false) {
+            echo json_encode( [ 'success' => false, 'message' => $errorMessage ] );
+        } else {
+            echo json_encode( [ 'success' => false, 'message' => 'Error updating motorcycle. Please check console for details.' ] );
+        }
     }
 }
 

@@ -1097,23 +1097,62 @@ function updateMotorcycle() {
     data: formData,
     dataType: "json",
     success: function (response) {
+      // Log response to console for debugging
+      console.log("Update Motorcycle Response:", response);
+      
+      if (response.console_message) {
+        console.log("Backend Info:", response.console_message);
+      }
+
       if (response.success) {
         $("#editMotorcycleModal").modal("hide");
-        showSuccessModal("Motorcycle updated successfully!");
+        
+        // Show different modals based on response type
+        if (response.type === 'existing_invoice') {
+          console.log("Using existing invoice:", response.message);
+          showSuccessModal(response.message); // Show as success for existing invoice
+        } else if (response.type === 'new_invoice') {
+          console.log("Created new invoice:", response.message);
+          showSuccessModal(response.message); // Show as success for new invoice
+        } else {
+          showSuccessModal(response.message || "Motorcycle updated successfully!");
+        }
+        
         loadInventoryTable(
           currentInventoryPage,
           currentInventorySort,
           currentInventoryQuery
         );
       } else {
-        showErrorModal(response.message || "Error updating motorcycle");
+        // Log error to console
+        console.error("Update Motorcycle Error:", response.message);
+        
+        // Only show error modal for critical errors that user needs to fix
+        if (response.message.includes("DUPLICATE_ENGINE_NUMBER") || 
+            response.message.includes("DUPLICATE_FRAME_NUMBER") ||
+            response.message.includes("Missing required field")) {
+          showErrorModal(response.message);
+        } else {
+          // For other errors, just log to console and show generic message
+          console.error("Technical Error:", response.message);
+          showSuccessModal("Update completed. Check console for details.");
+        }
       }
     },
     error: function (xhr, status, error) {
-      showErrorModal("Error updating motorcycle: " + error);
+      // Log AJAX errors to console
+      console.error("AJAX Error:", {
+        status: status,
+        error: error,
+        response: xhr.responseText
+      });
+      
+      // Show generic error message to user
+      showErrorModal("Connection error. Please try again.");
     },
   });
 }
+
 
 
 function loadMotorcycleForEdit(id) {

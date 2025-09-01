@@ -981,7 +981,7 @@
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='editInvoiceNumber' readonly>
+                                <input type='text' class='form-control' id='editInvoiceNumber' required>
                             </div>
                         </div>
                         <div class='row'>
