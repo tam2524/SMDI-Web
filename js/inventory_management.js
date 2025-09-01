@@ -3570,14 +3570,14 @@ function generateInventoryReportPDF() {
     });
     const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
 
-    // ✅ Use NEW summary values with beginning balance
+    // Use same variable names as renderMonthlyInventoryReport
     const beginningBalance = currentReportSummary?.beginning_balance || 0;
     const receivedTransfers = currentReportSummary?.received_transfers || 0;
     const newDeliveries = currentReportSummary?.new_deliveries || 0;
-    const totalIn = currentReportSummary?.total_in || 0;
+    const totalIn = currentReportSummary?.in || 0;
     const transfersOut = currentReportSummary?.transfers_out || 0;
     const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
-    const totalOut = currentReportSummary?.total_out || 0;
+    const totalOut = currentReportSummary?.out || 0;
     const endingCalculated = currentReportSummary?.ending_calculated || 0;
     const endingActual = currentReportSummary?.ending_actual || 0;
     
@@ -3585,132 +3585,240 @@ function generateInventoryReportPDF() {
     const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
     const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
     const costNewDeliveries = currentReportSummary?.inventory_cost?.new_deliveries || 0;
-    const costTotalIn = currentReportSummary?.inventory_cost?.total_in || 0;
+    const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
     const costTransfersOut = currentReportSummary?.inventory_cost?.transfers_out || 0;
     const costSoldDuringMonth = currentReportSummary?.inventory_cost?.sold_during_month || 0;
-    const costTotalOut = currentReportSummary?.inventory_cost?.total_out || 0;
+    const costTotalOut = currentReportSummary?.inventory_cost?.out || 0;
     const costEndingCalculated = currentReportSummary?.inventory_cost?.ending_calculated || 0;
     const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
 
-    const rowsHtml = currentReportData
-        .map((item, index) => {
-            return `
-                <tr>
-                    <td style="text-align:center; border: 1px solid #e9ecef; padding: 8px;">${index + 1}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.model)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.color)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.brand)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.engine_number)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.frame_number)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px; text-align:right;">${formatCurrency(item.inventory_cost)}</td> 
-                </tr>
-            `;
-        })
-        .join("");
+    // Sort data by model for cleaner display (same as render function)
+    currentReportData.sort((a, b) => a.model.localeCompare(b.model));
+
+    const rowsHtml = currentReportData.length === 0 ? `
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">
+                No inventory data found for this period
+            </td>
+        </tr>
+    ` : currentReportData.map((item, index) => {
+        const rowBg = index % 2 === 0 ? "#ffffff" : "#f8f9fa";
+        return `
+            <tr style="background-color: ${rowBg};">
+                <td style="text-align: center; padding: 8px; border-right: 1px solid #e9ecef;">1</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.engine_number)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.frame_number)}</td>
+                <td style="padding: 8px; text-align: right;">${formatCurrency(item.inventory_cost)}</td>
+            </tr>
+        `;
+    }).join("");
 
     const html = `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
+            <!-- Header Section - Same as render function -->
             <div style="text-align: center; margin-bottom: 30px;">
                 <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
                     <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+                        SOLID MOTORCYCLE DISTRIBUTORS, INC.
+                    </h4>
                     <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
                 </div>
                 <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
                 <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-                ${currentReportBranch !== "all" ? `<p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>` : ""}
-                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                })}</p>
+                ${currentReportBranch !== "all" ? `
+                    <p style="margin: 5px 0;">
+                        <span style="color: #6c757d;">Branch:</span> 
+                        <span style="color: #000f71; font-weight: 500;">${branchName}</span>
+                    </p>
+                ` : ""}
+                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">
+                    Generated on ${new Date().toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                    })}
+                </p>
             </div>
             
-            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                            <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">#</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057; text-align:right;">Inventory Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${currentReportData.length === 0 ? `
-                            <tr>
-                                <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">No inventory data found for this period</td>
+            <!-- Main Content Layout - Two Column like render function -->
+            <div style="display: flex; gap: 20px;">
+                <!-- Left Column - Table (70% width) -->
+                <div style="flex: 0 0 70%; border: 1px solid #e9ecef; border-radius: 6px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">QTY</th>
+                                <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
+                                <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
+                                <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
+                                <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
+                                <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                                <th style="padding: 12px; font-weight: 600; color: #495057;">Inventory Cost</th>
                             </tr>
-                        ` : rowsHtml}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Enhanced Summary Section with Beginning Balance -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 30px;">
-                <!-- Beginning Balance -->
-                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">BEGINNING BALANCE</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #6c757d;">${beginningBalance}</div>
-                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costBeginning)}</div>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
                 </div>
                 
-                <!-- Total IN -->
-                <div style="text-align: center; padding: 15px; background: #d4edda; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #155724; margin-bottom: 5px;">TOTAL IN</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #28a745;">${totalIn}</div>
-                    <div style="font-size: 11px; color: #28a745;">${formatCurrency(costTotalIn)}</div>
-                    <div style="font-size: 10px; color: #155724; margin-top: 5px;">
-                        Transfers: ${receivedTransfers} | New: ${newDeliveries}
+                <!-- Right Column - Summary Cards (30% width) -->
+                <div style="flex: 0 0 30%;">
+                    <!-- Beginning Balance Card -->
+                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
+                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
+                            <h6 style="text-align: center; margin: 0; color: #6c757d; font-weight: 600; font-size: 14px;">
+                                BEGINNING BALANCE
+                            </h6>
+                        </div>
+                        <div style="padding: 0 16px 12px;">
+                            <div style="text-align: center;">
+                                <span style="font-size: 24px; font-weight: bold; color: #6c757d;">${beginningBalance}</span>
+                                <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">${formatCurrency(costBeginning)}</div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- Total OUT -->
-                <div style="text-align: center; padding: 15px; background: #f8d7da; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #721c24; margin-bottom: 5px;">TOTAL OUT</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #dc3545;">${totalOut}</div>
-                    <div style="font-size: 11px; color: #dc3545;">${formatCurrency(costTotalOut)}</div>
-                    <div style="font-size: 10px; color: #721c24; margin-top: 5px;">
-                        Transfers: ${transfersOut} | Sold: ${soldDuringMonth}
+
+                    <!-- IN Section Card -->
+                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
+                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
+                            <h6 style="text-align: center; margin: 0; color: #28a745; font-weight: 600; font-size: 14px;">
+                                INVENTORY IN
+                            </h6>
+                        </div>
+                        <div style="padding: 0 16px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Received Transfers</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-weight: bold; color: #28a745;">${receivedTransfers}</span>
+                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costReceived)}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">New Deliveries</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-weight: bold; color: #28a745;">${newDeliveries}</span>
+                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costNewDeliveries)}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
+                                <div>
+                                    <div style="font-weight: bold; color: #28a745;">TOTAL IN</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 18px; font-weight: bold; color: #28a745;">${totalIn}</span>
+                                    <div style="font-size: 11px; color: #28a745; font-weight: bold;">${formatCurrency(costTotalIn)}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- OUT Section Card -->
+                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
+                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
+                            <h6 style="text-align: center; margin: 0; color: #dc3545; font-weight: 600; font-size: 14px;">
+                                INVENTORY OUT
+                            </h6>
+                        </div>
+                        <div style="padding: 0 16px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Transfers Out</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-weight: bold; color: #dc3545;">${transfersOut}</span>
+                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costTransfersOut)}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Sold During Month</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-weight: bold; color: #dc3545;">${soldDuringMonth}</span>
+                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costSoldDuringMonth)}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
+                                <div>
+                                    <div style="font-weight: bold; color: #dc3545;">TOTAL OUT</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 18px; font-weight: bold; color: #dc3545;">${totalOut}</span>
+                                    <div style="font-size: 11px; color: #dc3545; font-weight: bold;">${formatCurrency(costTotalOut)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ending Balance Card -->
+                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
+                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
+                            <h6 style="text-align: center; margin: 0; color: #000f71; font-weight: 600; font-size: 14px;">
+                                ENDING BALANCE
+                            </h6>
+                        </div>
+                        <div style="padding: 0 16px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Calculated</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-weight: bold; color: #000f71;">${endingCalculated}</span>
+                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costEndingCalculated)}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
+                                <div>
+                                    <div style="font-weight: bold; color: #000f71;">Actual</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 24px; font-weight: bold; color: #000f71;">${endingActual}</span>
+                                    <div style="font-size: 11px; color: #000f71; font-weight: bold;">${formatCurrency(costEndingActual)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discrepancy Alert (if any) -->
+                    ${endingCalculated !== endingActual ? `
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 10px; margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                            <span style="font-weight: bold; color: #856404;">Discrepancy:</span>
+                            <span style="font-weight: bold; color: #856404;">${endingActual - endingCalculated}</span>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
             
-            <!-- Ending Balance Section -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
-                <div style="text-align: center; padding: 15px; background: #cce5ff; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #004085; margin-bottom: 5px;">ENDING BALANCE (Calculated)</div>
-                    <div style="font-size: 20px; font-weight: bold; color: #0056b3;">${endingCalculated}</div>
-                    <div style="font-size: 11px; color: #0056b3;">${formatCurrency(costEndingCalculated)}</div>
+            <!-- Formula Explanation Section -->
+            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px; background: #f8f9fa;">
+                <div style="font-weight: 600; color: #495057; margin-bottom: 10px; text-align: center; font-size: 16px;">
+                    INVENTORY CALCULATION FORMULA
                 </div>
-                
-                <div style="text-align: center; padding: 15px; background: #000f71; border-radius: 8px;">
-                    <div style="font-weight: 600; color: white; margin-bottom: 5px;">ENDING BALANCE (Actual)</div>
-                    <div style="font-size: 20px; font-weight: bold; color: white;">${endingActual}</div>
-                    <div style="font-size: 11px; color: rgba(255,255,255,0.8);">${formatCurrency(costEndingActual)}</div>
+                <div style="text-align: center; font-size: 14px; color: #6c757d; margin-bottom: 8px;">
+                    Beginning Balance + Total IN - Total OUT = Ending Balance
                 </div>
-            </div>
-            
-            ${endingCalculated !== endingActual ? `
-            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-                <div style="color: #856404; font-weight: 600; text-align: center;">
-                    ⚠️ DISCREPANCY DETECTED: ${endingActual - endingCalculated} units
+                <div style="text-align: center; font-size: 13px; color: #495057; margin-bottom: 5px;">
+                    ${beginningBalance} + ${totalIn} - ${totalOut} = ${endingCalculated}
                 </div>
-            </div>
-            ` : ''}
-            
-            <!-- Formula Explanation -->
-            <div style="margin-top: 20px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px; background: #f8f9fa;">
-                <div style="font-weight: 600; color: #495057; margin-bottom: 10px; text-align: center;">INVENTORY CALCULATION FORMULA</div>
                 <div style="text-align: center; font-size: 12px; color: #6c757d;">
-                    Beginning Balance + Received Transfers + New Deliveries - Transfers Out - Sold = Ending Balance
-                </div>
-                <div style="text-align: center; font-size: 11px; color: #495057; margin-top: 5px;">
-                    ${beginningBalance} + ${receivedTransfers} + ${newDeliveries} - ${transfersOut} - ${soldDuringMonth} = ${endingCalculated}
+                    Detailed: ${beginningBalance} + (${receivedTransfers} received + ${newDeliveries} new) - (${transfersOut} transferred + ${soldDuringMonth} sold) = ${endingCalculated}
                 </div>
             </div>
         </div>
@@ -3748,116 +3856,174 @@ function generateMotorcycleReportPDF() {
     exportMotorcycleReportToPDF(reportContent, branch, brandFilter);
 }
 
-function generateTransferredReportPDF() {
-    if (!currentReportData || !currentReportMonth || currentReportType !== 'transferred') {
-        showErrorModal("Please generate a transferred summary report first before exporting to PDF");
-        return;
-    }
-
+function generateInventoryReportPDF() {
     const [year, monthNum] = currentReportMonth.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
         month: "long",
     });
-
     const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
 
-    // ✅ Totals
-    const totalTransferred = currentReportSummary?.total_transferred || currentReportData.length;
-    const totalInventoryCost = currentReportSummary?.total_inventory_cost || currentReportData.reduce((sum, item) => {
-        return sum + (parseFloat(item.inventory_cost) || 0);
-    }, 0);
+    // Use same variable names as renderMonthlyInventoryReport
+    const beginningBalance = currentReportSummary?.beginning_balance || 0;
+    const receivedTransfers = currentReportSummary?.received_transfers || 0;
+    const newDeliveries = currentReportSummary?.new_deliveries || 0;
+    const totalIn = currentReportSummary?.in || 0;
+    const transfersOut = currentReportSummary?.transfers_out || 0;
+    const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
+    const totalOut = currentReportSummary?.out || 0;
+    const endingCalculated = currentReportSummary?.ending_calculated || 0;
+    const endingActual = currentReportSummary?.ending_actual || 0;
+    
+    // Inventory cost values
+    const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
+    const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
+    const costNewDeliveries = currentReportSummary?.inventory_cost?.new_deliveries || 0;
+    const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
+    const costTransfersOut = currentReportSummary?.inventory_cost?.transfers_out || 0;
+    const costSoldDuringMonth = currentReportSummary?.inventory_cost?.sold_during_month || 0;
+    const costTotalOut = currentReportSummary?.inventory_cost?.out || 0;
+    const costEndingCalculated = currentReportSummary?.inventory_cost?.ending_calculated || 0;
+    const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
 
-    // ✅ Rows
-    const rowsHtml = currentReportData
-        .map((item, index) => {
-            let brandColor = "#495057";
-            switch (item.brand?.toLowerCase()) {
-                case "honda": brandColor = "#dc3545"; break;
-                case "yamaha": brandColor = "#000000"; break;
-                case "suzuki": brandColor = "#007bff"; break;
-                case "kawasaki": brandColor = "#28a745"; break;
-            }
+    // Sort data by model for cleaner display
+    currentReportData.sort((a, b) => a.model.localeCompare(b.model));
 
-            return `
-                <tr>
-                    <td style="text-align:center; border: 1px solid #e9ecef; padding: 8px;">${index + 1}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.invoice_number || "N/A")}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.model)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px; font-weight:bold; color:${brandColor};">${escapeHtml(item.brand)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${escapeHtml(item.color)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px; font-family: monospace;">${escapeHtml(item.engine_number)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px; font-family: monospace;">${escapeHtml(item.frame_number)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px;">${formatDate(item.transfer_date)}</td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px; text-align:center; color:#17a2b8; font-weight:600;">
-                        ${escapeHtml(item.transferred_to)}
-                    </td>
-                    <td style="border: 1px solid #e9ecef; padding: 8px; text-align:right; font-weight:bold;">
-                        ${formatCurrency(item.inventory_cost)}
-                    </td>
-                </tr>
-            `;
-        })
-        .join("");
+    const rowsHtml = currentReportData.length === 0 ? `
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">
+                No inventory data found for this period
+            </td>
+        </tr>
+    ` : currentReportData.map((item, index) => {
+        const rowBg = index % 2 === 0 ? "#ffffff" : "#f8f9fa";
+        return `
+            <tr style="background-color: ${rowBg};">
+                <td style="text-align: center; padding: 8px; border-right: 1px solid #e9ecef;">1</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.engine_number)}</td>
+                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.frame_number)}</td>
+                <td style="padding: 8px; text-align: right;">${formatCurrency(item.inventory_cost)}</td>
+            </tr>
+        `;
+    }).join("");
 
-    // ✅ Full HTML
     const html = `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-            <!-- Header -->
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
+            <!-- Header Section -->
             <div style="text-align: center; margin-bottom: 30px;">
                 <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
                     <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+                        SOLID MOTORCYCLE DISTRIBUTORS, INC.
+                    </h4>
                     <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
                 </div>
-                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY SUMMARY OF TRANSFERRED STOCKS</h5>
+                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
                 <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-                ${currentReportBranch !== "all" ? `<p style="margin: 5px 0;"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>` : ""}
-                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">Generated on ${new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                })}</p>
+                ${currentReportBranch !== "all" ? `
+                    <p style="margin: 5px 0;">
+                        <span style="color: #6c757d;">Branch:</span> 
+                        <span style="color: #000f71; font-weight: 500;">${branchName}</span>
+                    </p>
+                ` : ""}
+                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">
+                    Generated on ${new Date().toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                    })}
+                </p>
             </div>
-
-            <!-- Table -->
-            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 10.5px;">
+            
+            <!-- Table Section -->
+            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 30px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
                         <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                            <th style="text-align: center; padding: 10px; font-weight: 600; color: #495057; width: 40px;">#</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Invoice Number</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Model</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Brand</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Color</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Engine Number</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Frame Number</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Transfer Date</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057;">Transferred To</th>
-                            <th style="padding: 10px; font-weight: 600; color: #495057; text-align:right;">Inventory Cost</th>
+                            <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">QTY</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                            <th style="padding: 12px; font-weight: 600; color: #495057;">Inventory Cost</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${currentReportData.length === 0 
-                            ? `<tr><td colspan="10" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">No transfers found for this period</td></tr>`
-                            : rowsHtml}
+                        ${rowsHtml}
                     </tbody>
                 </table>
             </div>
-
-            <!-- Summary Boxes -->
-            <div style="display: flex; justify-content: space-around; margin-top: 30px;">
-                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 40%;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">TOTAL TRANSFERRED</div>
-                    <div style="font-size: 22px; font-weight: bold; color: #28a745;">${totalTransferred}</div>
-                    <div style="font-size: 11px; color: #6c757d;">Motorcycles transferred</div>
+            
+            <!-- Summary Section - 4 Cards in a Row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+                <!-- 1. Beginning Balance -->
+                <div style="text-align: center; padding: 20px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #495057; margin-bottom: 8px; font-size: 14px;">
+                        BEGINNING BALANCE
+                    </div>
+                    <div style="font-size: 28px; font-weight: bold; color: #6c757d; margin-bottom: 5px;">
+                        ${beginningBalance}
+                    </div>
+                    <div style="font-size: 12px; color: #6c757d;">
+                        ${formatCurrency(costBeginning)}
+                    </div>
                 </div>
-
-                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; width: 40%;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 5px;">TOTAL INVENTORY COST</div>
-                    <div style="font-size: 22px; font-weight: bold; color: #17a2b8;">${formatCurrency(totalInventoryCost)}</div>
-                    <div style="font-size: 11px; color: #6c757d;">Total value transferred</div>
+                
+                <!-- 2. IN -->
+                <div style="text-align: center; padding: 20px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #155724; margin-bottom: 8px; font-size: 14px;">
+                        IN
+                    </div>
+                    <div style="font-size: 28px; font-weight: bold; color: #28a745; margin-bottom: 5px;">
+                        ${totalIn}
+                    </div>
+                    <div style="font-size: 12px; color: #28a745; margin-bottom: 8px;">
+                        ${formatCurrency(costTotalIn)}
+                    </div>
+                    <div style="font-size: 10px; color: #155724;">
+                        Received: ${receivedTransfers} | New: ${newDeliveries}
+                    </div>
                 </div>
+                
+                <!-- 3. OUT -->
+                <div style="text-align: center; padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #721c24; margin-bottom: 8px; font-size: 14px;">
+                        OUT
+                    </div>
+                    <div style="font-size: 28px; font-weight: bold; color: #dc3545; margin-bottom: 5px;">
+                        ${totalOut}
+                    </div>
+                    <div style="font-size: 12px; color: #dc3545; margin-bottom: 8px;">
+                        ${formatCurrency(costTotalOut)}
+                    </div>
+                    <div style="font-size: 10px; color: #721c24;">
+                        Transferred: ${transfersOut} | Sold: ${soldDuringMonth}
+                    </div>
+                </div>
+                
+                <!-- 4. Ending Balance -->
+                <div style="text-align: center; padding: 20px; background: #cce5ff; border: 1px solid #b3d7ff; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #004085; margin-bottom: 8px; font-size: 14px;">
+                        ENDING BALANCE
+                    </div>
+                    <div style="font-size: 28px; font-weight: bold; color: #0056b3; margin-bottom: 5px;">
+                        ${endingActual}
+                    </div>
+                    <div style="font-size: 12px; color: #0056b3; margin-bottom: 8px;">
+                        ${formatCurrency(costEndingActual)}
+                    </div>
+                    <div style="font-size: 10px; color: #004085;">
+                        Calculated: ${endingCalculated}
+                        ${endingCalculated !== endingActual ? ` | Diff: ${endingActual - endingCalculated}` : ''}
+                    </div>
+                </div>
+            </div>
+            
+            
             </div>
         </div>
     `;
@@ -3867,15 +4033,14 @@ function generateTransferredReportPDF() {
 
     const opt = {
         margin: 0.5,
-        filename: `Monthly_Transferred_Summary_${currentReportMonth}_${currentReportBranch}.pdf`,
+        filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
     };
 
     html2pdf().set(opt).from(container).save();
 }
-
 
 
 function generateTransferredSummary(month, branch) {

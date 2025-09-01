@@ -1591,8 +1591,7 @@ function getMonthlyInventory() {
     // Calculate previous month end date for beginning balance
     $prevMonthEnd = date('Y-m-t', strtotime($month . ' -1 month'));
 
-    // 1. SIMPLIFIED BEGINNING BALANCE CALCULATION
-    // Count motorcycles delivered before current month that are currently at this branch
+    // 1. BEGINNING BALANCE - Motorcycles that were at this branch at end of previous month
     if ($branch === 'all') {
         $sqlBeginning = "
             SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
@@ -1603,39 +1602,29 @@ function getMonthlyInventory() {
         $stmtBeginning = $conn->prepare($sqlBeginning);
         $stmtBeginning->bind_param('s', $prevMonthEnd);
     } else {
-        // For specific branch: Get motorcycles that were delivered before current month
-        // PLUS motorcycles that were transferred out during current month (they were part of beginning)
+        // For specific branch: Count motorcycles delivered before current month that were at this branch
         $sqlBeginning = "
-            SELECT 
-                (SELECT COUNT(*) FROM motorcycle_inventory mi 
-                 WHERE mi.current_branch = ? 
-                 AND mi.status = 'available' 
-                 AND mi.date_delivered <= ?) +
-                (SELECT COUNT(*) FROM motorcycle_inventory mi 
-                 JOIN inventory_transfers it ON mi.id = it.motorcycle_id
-                 WHERE it.from_branch = ? 
-                 AND mi.date_delivered <= ?
-                 AND it.transfer_date BETWEEN ? AND ?
-                 AND it.transfer_status = 'completed') as count_beginning,
-                
-                (SELECT COALESCE(SUM(inventory_cost), 0) FROM motorcycle_inventory mi 
-                 WHERE mi.current_branch = ? 
-                 AND mi.status = 'available' 
-                 AND mi.date_delivered <= ?) +
-                (SELECT COALESCE(SUM(mi.inventory_cost), 0) FROM motorcycle_inventory mi 
-                 JOIN inventory_transfers it ON mi.id = it.motorcycle_id
-                 WHERE it.from_branch = ? 
-                 AND mi.date_delivered <= ?
-                 AND it.transfer_date BETWEEN ? AND ?
-                 AND it.transfer_status = 'completed') as cost_beginning
+            SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
+            FROM motorcycle_inventory mi
+            WHERE mi.date_delivered <= ?
+            AND mi.status != 'deleted'
+            AND (
+                -- Currently at this branch (delivered before current month)
+                (mi.current_branch = ? AND mi.status = 'available')
+                OR
+                -- Was at this branch but transferred out during current month
+                mi.id IN (
+                    SELECT it.motorcycle_id 
+                    FROM inventory_transfers it
+                    WHERE it.from_branch = ?
+                    AND it.transfer_date BETWEEN ? AND ?
+                    AND it.transfer_status = 'completed'
+                    AND mi.date_delivered <= ?
+                )
+            )
         ";
         $stmtBeginning = $conn->prepare($sqlBeginning);
-        $stmtBeginning->bind_param('ssssssssssss', 
-            $branch, $prevMonthEnd, 
-            $branch, $prevMonthEnd, $startDate, $endDate,
-            $branch, $prevMonthEnd,
-            $branch, $prevMonthEnd, $startDate, $endDate
-        );
+        $stmtBeginning->bind_param('ssssss', $prevMonthEnd, $branch, $branch, $startDate, $endDate, $prevMonthEnd);
     }
     
     $stmtBeginning->execute();
@@ -1643,7 +1632,54 @@ function getMonthlyInventory() {
     $countBeginning = (int)$beginningResult['count_beginning'];
     $costBeginning = (float)$beginningResult['cost_beginning'];
 
-    // 2. Get RECEIVED TRANSFERS during the month (transfers TO this branch)
+    // 2. NEW DELIVERIES - Motorcycles delivered directly to this branch during current month
+    if ($branch === 'all') {
+        $sqlNewDeliveries = "
+            SELECT COUNT(*) as count_new, COALESCE(SUM(inventory_cost), 0) as cost_new
+            FROM motorcycle_inventory
+            WHERE date_delivered BETWEEN ? AND ?
+            AND status != 'deleted'
+        ";
+        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
+        $stmtNewDeliveries->bind_param('ss', $startDate, $endDate);
+    } else {
+        $sqlNewDeliveries = "
+            SELECT COUNT(*) as count_new, COALESCE(SUM(inventory_cost), 0) as cost_new
+            FROM motorcycle_inventory mi
+            WHERE mi.date_delivered BETWEEN ? AND ?
+            AND mi.status != 'deleted'
+            AND (
+                -- Currently at this branch
+                mi.current_branch = ?
+                OR
+                -- Was delivered here but transferred out during same month
+                mi.id IN (
+                    SELECT it.motorcycle_id 
+                    FROM inventory_transfers it
+                    WHERE it.from_branch = ?
+                    AND it.transfer_date BETWEEN ? AND ?
+                    AND it.transfer_status = 'completed'
+                )
+            )
+            -- EXCLUDE motorcycles that came via transfer (they're counted in received_transfers)
+            AND mi.id NOT IN (
+                SELECT it.motorcycle_id 
+                FROM inventory_transfers it
+                WHERE it.to_branch = ?
+                AND it.transfer_date BETWEEN ? AND ?
+                AND it.transfer_status = 'completed'
+            )
+        ";
+        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
+        $stmtNewDeliveries->bind_param('sssssssss', $startDate, $endDate, $branch, $branch, $startDate, $endDate, $branch, $startDate, $endDate);
+    }
+    
+    $stmtNewDeliveries->execute();
+    $newDeliveriesResult = $stmtNewDeliveries->get_result()->fetch_assoc();
+    $countNewDeliveries = (int)$newDeliveriesResult['count_new'];
+    $costNewDeliveries = (float)$newDeliveriesResult['cost_new'];
+
+    // 3. RECEIVED TRANSFERS - Motorcycles transferred TO this branch during current month
     if ($branch === 'all') {
         $sqlReceived = "
             SELECT COUNT(*) as count_received, COALESCE(SUM(mi.inventory_cost), 0) as cost_received
@@ -1672,71 +1708,11 @@ function getMonthlyInventory() {
     $countReceived = (int)$receivedResult['count_received'];
     $costReceived = (float)$receivedResult['cost_received'];
 
-    // 3. Get NEW DELIVERIES during the month 
-    // This should include ALL motorcycles delivered to this branch during current month
-    // INCLUDING those that were later transferred out
-        // 3. Get NEW DELIVERIES during the month 
-    // This should include ALL motorcycles delivered to this branch during current month
-    // INCLUDING those that were later transferred out
-    if ($branch === 'all') {
-        $sqlNewDeliveries = "
-            SELECT COUNT(*) as count_new, COALESCE(SUM(inventory_cost), 0) as cost_new
-            FROM motorcycle_inventory
-            WHERE date_delivered BETWEEN ? AND ?
-            AND status != 'deleted'
-        ";
-        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-        $stmtNewDeliveries->bind_param('ss', $startDate, $endDate);
-    } else {
-        // Count motorcycles delivered to this branch during current month
-        // PLUS those that were delivered here but transferred out during same month
-        $sqlNewDeliveries = "
-            SELECT 
-                (SELECT COUNT(*) FROM motorcycle_inventory mi
-                 WHERE mi.current_branch = ?
-                 AND mi.date_delivered BETWEEN ? AND ?
-                 AND mi.status != 'deleted') +
-                (SELECT COUNT(*) FROM motorcycle_inventory mi
-                 JOIN inventory_transfers it ON mi.id = it.motorcycle_id
-                 WHERE it.from_branch = ?
-                 AND mi.date_delivered BETWEEN ? AND ?
-                 AND it.transfer_date BETWEEN ? AND ?
-                 AND it.transfer_status = 'completed'
-                 AND mi.status != 'deleted') as count_new,
-                 
-                (SELECT COALESCE(SUM(inventory_cost), 0) FROM motorcycle_inventory mi
-                 WHERE mi.current_branch = ?
-                 AND mi.date_delivered BETWEEN ? AND ?
-                 AND mi.status != 'deleted') +
-                (SELECT COALESCE(SUM(mi.inventory_cost), 0) FROM motorcycle_inventory mi
-                 JOIN inventory_transfers it ON mi.id = it.motorcycle_id
-                 WHERE it.from_branch = ?
-                 AND mi.date_delivered BETWEEN ? AND ?
-                 AND it.transfer_date BETWEEN ? AND ?
-                 AND it.transfer_status = 'completed'
-                 AND mi.status != 'deleted') as cost_new
-        ";
-        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-       $stmtNewDeliveries->bind_param('ssssssssssssssss', 
-    $branch, $startDate, $endDate,
-    $branch, $startDate, $endDate, $startDate, $endDate,
-    $branch, $startDate, $endDate,
-    $branch, $startDate, $endDate, $startDate, $endDate
-);
+    // 4. Calculate TOTAL IN = New Deliveries + Received Transfers
+    $countIn = $countNewDeliveries + $countReceived;
+    $costIn = $costNewDeliveries + $costReceived;
 
-    }
-
-    
-    $stmtNewDeliveries->execute();
-    $newDeliveriesResult = $stmtNewDeliveries->get_result()->fetch_assoc();
-    $countNewDeliveries = (int)$newDeliveriesResult['count_new'];
-    $costNewDeliveries = (float)$newDeliveriesResult['cost_new'];
-
-    // 4. Calculate IN (only current month additions)
-    $countIn = $countReceived + $countNewDeliveries;
-    $costIn = $costReceived + $costNewDeliveries;
-
-    // 5. Get TRANSFERS OUT from branch during the month
+    // 5. TRANSFERS OUT - Motorcycles transferred FROM this branch during current month
     if ($branch === 'all') {
         $sqlTransfersOut = "
             SELECT COUNT(*) as count_transfers_out, COALESCE(SUM(mi.inventory_cost), 0) as cost_transfers_out
@@ -1765,7 +1741,7 @@ function getMonthlyInventory() {
     $countTransfersOut = (int)$transfersOutResult['count_transfers_out'];
     $costTransfersOut = (float)$transfersOutResult['cost_transfers_out'];
 
-    // 6. Get SOLD motorcycles during the month
+    // 6. SOLD DURING MONTH
     if ($branch === 'all') {
         $sqlSoldDuringMonth = "
             SELECT COUNT(*) as count_sold_month, COALESCE(SUM(mi.inventory_cost), 0) as cost_sold_month
@@ -1794,30 +1770,35 @@ function getMonthlyInventory() {
     $countSoldDuringMonth = (int)$soldDuringMonthResult['count_sold_month'];
     $costSoldDuringMonth = (float)$soldDuringMonthResult['cost_sold_month'];
 
-    // 7. Calculate OUT
+    // 7. Calculate TOTAL OUT = Transfers Out + Sold
     $countOut = $countTransfersOut + $countSoldDuringMonth;
     $costOut = $costTransfersOut + $costSoldDuringMonth;
 
-    // 8. Calculate ENDING BALANCE
+    // 8. Calculate ENDING BALANCE = Beginning + IN - OUT
     $countEndingCalculated = $countBeginning + $countIn - $countOut;
     $costEndingCalculated = $costBeginning + $costIn - $costOut;
 
-    // 9. Get ACTUAL current available inventory
+    // 9. ✅ FIXED: Get ACTUAL inventory that should be at this branch at END of current month
     if ($branch === 'all') {
         $sqlEndingActual = "
             SELECT COUNT(*) as count_ending, COALESCE(SUM(inventory_cost),0) as cost_ending
             FROM motorcycle_inventory
             WHERE status = 'available'
+            AND date_delivered <= ?
         ";
         $stmtEndingActual = $conn->prepare($sqlEndingActual);
+        $stmtEndingActual->bind_param('s', $endDate);
     } else {
+        // ✅ FIXED: Only count motorcycles that should be at this branch at end of current month
         $sqlEndingActual = "
             SELECT COUNT(*) as count_ending, COALESCE(SUM(inventory_cost),0) as cost_ending
-            FROM motorcycle_inventory
-            WHERE current_branch = ? AND status = 'available'
+            FROM motorcycle_inventory mi
+            WHERE mi.current_branch = ? 
+            AND mi.status = 'available'
+            AND mi.date_delivered <= ?
         ";
         $stmtEndingActual = $conn->prepare($sqlEndingActual);
-        $stmtEndingActual->bind_param('s', $branch);
+        $stmtEndingActual->bind_param('ss', $branch, $endDate);
     }
     
     $stmtEndingActual->execute();
@@ -1825,20 +1806,24 @@ function getMonthlyInventory() {
     $countEndingActual = (int)$endingActualResult['count_ending'];
     $costEndingActual = (float)$endingActualResult['cost_ending'];
 
-    // 10. Get detailed data for current available motorcycles
+    // 10. ✅ FIXED: Get detailed data for motorcycles that should be at this branch at end of current month
     if ($branch === 'all') {
         $sqlData = "SELECT mi.*, i.invoice_number FROM motorcycle_inventory mi 
                     LEFT JOIN invoices i ON mi.invoice_id = i.id 
                     WHERE mi.status = 'available'
+                    AND mi.date_delivered <= ?
                     ORDER BY mi.brand, mi.model";
         $stmtData = $conn->prepare($sqlData);
+        $stmtData->bind_param('s', $endDate);
     } else {
         $sqlData = "SELECT mi.*, i.invoice_number FROM motorcycle_inventory mi 
                     LEFT JOIN invoices i ON mi.invoice_id = i.id 
-                    WHERE mi.current_branch = ? AND mi.status = 'available'
+                    WHERE mi.current_branch = ? 
+                    AND mi.status = 'available'
+                    AND mi.date_delivered <= ?
                     ORDER BY mi.brand, mi.model";
         $stmtData = $conn->prepare($sqlData);
-        $stmtData->bind_param('s', $branch);
+        $stmtData->bind_param('ss', $branch, $endDate);
     }
     
     $stmtData->execute();
@@ -1901,36 +1886,27 @@ function getMonthlyInventory() {
         $transferDetails[] = $row;
     }
 
-    // 12. Build comprehensive response
+    // 12. Build response
     $response = [
         'success' => true,
         'data' => $data,
         'month' => $month,
         'branch' => $branch,
         'summary' => [
-            // Beginning balance (separate from IN)
             'beginning_balance' => $countBeginning,
-            
-            // IN components (current month only)
             'received_transfers' => $countReceived,
             'new_deliveries' => $countNewDeliveries,
-            'in' => $countIn, // Only current month additions
-            
-            // OUT components  
+            'in' => $countIn,
             'transfers_out' => $countTransfersOut,
             'sold_during_month' => $countSoldDuringMonth,
             'out' => $countOut,
-            
-            // Ending balance
             'ending_calculated' => $countEndingCalculated,
             'ending_actual' => $countEndingActual,
-            
-            // Inventory cost breakdown
             'inventory_cost' => [
                 'beginning_balance' => $costBeginning,
                 'received_transfers' => $costReceived,
                 'new_deliveries' => $costNewDeliveries,
-                'in' => $costIn, // Only current month additions
+                'in' => $costIn,
                 'transfers_out' => $costTransfersOut,
                 'sold_during_month' => $costSoldDuringMonth,
                 'out' => $costOut,
@@ -1957,9 +1933,9 @@ function getMonthlyInventory() {
         ],
         'calculation_breakdown' => [
             'formula' => 'Beginning Balance + IN - OUT = Ending Balance',
-            'detailed_formula' => 'Beginning Balance + (Received Transfers + New Deliveries) - (Transfers Out + Sold) = Ending Balance',
+            'detailed_formula' => 'Beginning Balance + (New Deliveries + Received Transfers) - (Transfers Out + Sold) = Ending Balance',
             'calculation' => "$countBeginning + $countIn - $countOut = $countEndingCalculated",
-            'detailed_calculation' => "$countBeginning + ($countReceived + $countNewDeliveries) - ($countTransfersOut + $countSoldDuringMonth) = $countEndingCalculated",
+            'detailed_calculation' => "$countBeginning + ($countNewDeliveries + $countReceived) - ($countTransfersOut + $countSoldDuringMonth) = $countEndingCalculated",
             'cost_calculation' => number_format($costBeginning, 2) . " + " . number_format($costIn, 2) . " - " . number_format($costOut, 2) . " = " . number_format($costEndingCalculated, 2)
         ],
         'debug_info' => [
@@ -1968,17 +1944,20 @@ function getMonthlyInventory() {
             'branch_filter' => $branch,
             'raw_counts' => [
                 'beginning_balance' => $countBeginning,
-                'received_transfers' => $countReceived,
                 'new_deliveries' => $countNewDeliveries,
+                'received_transfers' => $countReceived,
+                'total_in' => $countIn,
                 'transfers_out' => $countTransfersOut,
-                'sold_during_month' => $countSoldDuringMonth
+                'sold_during_month' => $countSoldDuringMonth,
+                'total_out' => $countOut,
+                'ending_calculated' => $countEndingCalculated,
+                'ending_actual' => $countEndingActual
             ]
         ]
     ];
 
     echo json_encode($response);
 }
-
 
 function getMonthlyTransferredSummary() {
     global $conn;
