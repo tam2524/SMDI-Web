@@ -16,6 +16,8 @@
     <link href='../lib/owlcarousel/assets/owl.carousel.min.css' rel='stylesheet'>
     <link href='../css/bootstrap.min.css' rel='stylesheet'>
     <link href='../css/style.css' rel='stylesheet'>
+    <link href='../css/spareparts_inventory_style.css' rel='stylesheet'>
+
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script>
@@ -65,1009 +67,739 @@
         </div>
     </div>
 
-    <main class='container-fluid py-5' style='margin-top: 20px;'>
+     <main class='container-fluid py-5' style='margin-top: 120px;'>
         <div class='card mb-4'>
             <div class='card-header bg-white'>
                 <h1 class='h5 mb-0'>Spareparts Inventory Management</h1>
             </div>
             <div class='card-body'>
                 <ul class='nav nav-tabs mb-4' id='inventoryTabs' role='tablist'>
-                    <li class='nav-item' role='presentation'>
-                        <button class='nav-link active' id='dashboard-tab' data-bs-toggle='tab'
-                            data-bs-target='#dashboard' type='button' role='tab'>Dashboard</button>
-                    </li>
-                    <li class='nav-item' role='presentation'>
-                        <button class='nav-link' id='management-tab' data-bs-toggle='tab' data-bs-target='#management'
-                            type='button' role='tab'>Inventory Management</button>
-                    </li>
-                </ul>
+    <li class='nav-item' role='presentation'>
+        <button class='nav-link active' id='dashboard-tab' data-bs-toggle='tab'
+            data-bs-target='#dashboard' type='button' role='tab'>Dashboard</button>
+    </li>
+    <li class='nav-item' role='presentation'>
+        <button class='nav-link' id='spareparts-in-tab' data-bs-toggle='tab' data-bs-target='#spareparts-in'
+            type='button' role='tab'>Spareparts IN</button>
+    </li>
+    <li class='nav-item' role='presentation'>
+        <button class='nav-link' id='sales-tab' data-bs-toggle='tab' data-bs-target='#sales'
+            type='button' role='tab'>Sales</button>
+    </li>
+    <li class='nav-item' role='presentation'>
+        <button class='nav-link' id='payments-tab' data-bs-toggle='tab' data-bs-target='#payments'
+            type='button' role='tab'>Payments</button>
+    </li>
+    <li class='nav-item' role='presentation'>
+        <button class='nav-link' id='transfers-tab' data-bs-toggle='tab' data-bs-target='#transfers'
+            type='button' role='tab'>Transfers</button>
+    </li>
+    <li class='nav-item' role='presentation'>
+        <button class='nav-link' id='reports-tab' data-bs-toggle='tab' data-bs-target='#reports'
+            type='button' role='tab'>Reports</button>
+    </li>
+</ul>
+
 
                 <div class='tab-content' id='inventoryTabContent'>
+                    <!-- Dashboard Tab (unchanged) -->
                     <div class='tab-pane fade show active' id='dashboard' role='tabpanel'>
-                        <div class='row mb-4'>
-                            <div class='col-md-6'>
-                                <h4>Spareparts Inventory Overview</h4>
-                            </div>
-                            <div class='col-md-6 text-end'>
-                                <div class='input-group' style='max-width: 300px; margin-left: auto;'>
-                                    <input type='text' id='searchDashboard' class='form-control'
-                                        placeholder='Search models...'>
-                                    <button class='btn btn-primary text-white' type='button' id='searchDashboardBtn'>
-                                        <i class='bi bi-search'></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class='row' id='inventoryCards'>
-                            <div class='col-12 text-center py-5'>
-                                <div class='spinner-border text-primary' role='status'>
-                                    <span class='visually-hidden'>Loading...</span>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Your existing dashboard content -->
                     </div>
 
-                    <div class='tab-pane fade' id='management' role='tabpanel'>
-                        <div class='d-flex justify-content-between mb-4'>
+                    <!-- Inventory Tab -->
+                    <!-- Spareparts IN Tab -->
+<div class='tab-pane fade' id='spareparts-in' role='tabpanel'>
+    <div class='d-flex justify-content-between mb-4'>   
+        <div>
+            <button class='btn btn-primary text-white me-2' data-bs-toggle='modal'
+                data-bs-target='#addSparepartsModal'>
+                <i class='bi bi-plus-circle'></i> Receive Spareparts
+            </button>
+        </div>
+        <div class='input-group' style='max-width: 300px;'>
+            <input type='text' id='searchSparepartsIn' class='form-control'
+                placeholder='Search spareparts in...'>
+            <button class='btn btn-primary text-white' type='button' id='searchSparepartsInBtn'>
+                <i class='bi bi-search'></i>
+            </button>
+        </div>
+    </div>
+
+    <div class='table-responsive'>
+        <table class='table table-striped' id='sparepartsInTable'>
+            <thead>
+                <tr>
+                    <th>Part No.</th>
+                    <th>Quantity</th>
+                    <th>Cost</th>
+                    <th>Date Received</th>
+                    <th>Invoice/Order #</th>
+                    <th>Branch</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id='sparepartsInTableBody'>
+                <!-- Content will be loaded via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label='Spareparts IN pagination'>
+        <ul id='paginationControls' class='pagination'>
+            <li id='prevPage' class='page-item disabled'>
+                <a class='page-link' href='#' tabindex='-1' aria-disabled='true'>
+                    <i class='fas fa-chevron-left me-1'></i> Previous
+                </a>
+            </li>
+            <li id='nextPage' class='page-item'>
+                <a class='page-link' href='#'>
+                    Next <i class='fas fa-chevron-right ms-1'></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+
+                    <!-- Sales Tab -->
+                    <div class='tab-pane fade' id='sales' role='tabpanel'>
+                        <div class='d-flex justify-content-between mb-4'>   
                             <div>
-                                <button class='btn btn-primary text-white me-2' data-bs-toggle='modal'
-                                    data-bs-target='#addSparepartsModal'>
-                                    <i class='bi bi-plus-circle'></i> Add Part
+                                <button class='btn btn-success text-white me-2' data-bs-toggle='modal'
+                                    data-bs-target='#addSaleModal'>
+                                    <i class='bi bi-cart-plus'></i> Add Sale
                                 </button>
-
-                                <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
-                                    <i class='bi bi-truck'></i> Transfer
-                                </button>
-
-                                <button type="button" class="btn btn-primary text-white me-2"
-                                    id="generateReportsButton">
-                                    <i class="bi bi-file-earmark-text"></i> Generate Reports
-                                </button>
-                                <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
-                                    <i class="bi bi-receipt"></i> Search Transfer Receipt
-                                </button>
-
                             </div>
                             <div class='input-group' style='max-width: 300px;'>
-                                <input type='text' id='searchInventory' class='form-control'
-                                    placeholder='Search inventory...'>
-                                <button class='btn btn-primary text-white' type='button' id='searchInventoryBtn'>
+                                <input type='text' id='searchSales' class='form-control'
+                                    placeholder='Search sales...'>
+                                <button class='btn btn-primary text-white' type='button' id='searchSalesBtn'>
                                     <i class='bi bi-search'></i>
                                 </button>
                             </div>
                         </div>
 
                         <div class='table-responsive'>
-                            <table class='table table-striped' id='inventoryTable'>
+                            <table class='table table-striped' id='salesTable'>
                                 <thead>
-                                    <tr>
-                                        <th>Invoice No./MT</th>
-                                        <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
-                                        <th class='sortable-header' data-sort='brand'>Brand</th>
-                                        <th class='sortable-header' data-sort='model'>Model</th>
-                                        <th class='sortable-header' data-sort='category'>Category</th>
-                                        <th>Engine No.</th>
-                                        <th>Frame No.</th>
-                                        <th>Color</th>
-                                        <th>Inventory Cost</th>
-                                        <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
-                                        <th class='no-print'>Actions</th>
-                                    </tr>
-                                </thead>
+    <tr>
+        <th>Part No.</th>
+        <th>Date</th>
+        <th>Transaction Type</th>
+        <th>Quantity</th>
+        <th>Amount</th>
+        <th>OR Number</th>
+        <th>Customer</th>
+        <th>Balance</th>
+        <th>Actions</th>
+    </tr>
+</thead>
 
-                                <tbody id='inventoryTableBody'>
-                                    <tr>
-                                        <td colspan='11' class='text-center py-5'>
-                                            <div class='spinner-border text-primary' role='status'>
-                                                <span class='visually-hidden'>Loading...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                <tbody id='salesTableBody'>
+                                    <!-- Sales data will be loaded here -->
                                 </tbody>
                             </table>
                         </div>
 
-                        <nav aria-label='Inventory pagination'>
-                            <ul id='paginationControls' class='pagination'>
-                                <li id='prevPage' class='page-item disabled'>
-                                    <a class='page-link' href='#' tabindex='-1' aria-disabled='true'>
-                                        <i class='fas fa-chevron-left me-1'></i> Previous
-                                    </a>
-                                </li>
-                                <li id='nextPage' class='page-item'>
-                                    <a class='page-link' href='#'>
-                                        Next <i class='fas fa-chevron-right ms-1'></i>
-                                    </a>
-                                </li>
+                        <nav aria-label='Sales pagination'>
+                            <ul id='salesPaginationControls' class='pagination'>
+                                <!-- Pagination controls for sales -->
                             </ul>
                         </nav>
                     </div>
+
+                    <!-- Payments Tab -->
+                    <div class='tab-pane fade' id='payments' role='tabpanel'>
+                        <div class='d-flex justify-content-between mb-4'>   
+                            <div>
+                                <button class='btn btn-warning text-white me-2' data-bs-toggle='modal'
+                                    data-bs-target='#addPaymentModal'>
+                                    <i class='bi bi-credit-card'></i> Add Payment
+                                </button>
+                            </div>
+                            <div class='input-group' style='max-width: 300px;'>
+                                <input type='text' id='searchPayments' class='form-control'
+                                    placeholder='Search payments...'>
+                                <button class='btn btn-primary text-white' type='button' id='searchPaymentsBtn'>
+                                    <i class='bi bi-search'></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class='table-responsive'>
+                            <table class='table table-striped' id='paymentsTable'>
+                                <thead>
+    <tr>
+        <th>Date</th>
+        <th>Customer</th>
+        <th>Amount</th>
+        <th>Branch</th>
+        <th>Actions</th>
+    </tr>
+</thead>
+
+                                <tbody id='paymentsTableBody'>
+                                    <!-- Payments data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <nav aria-label='Payments pagination'>
+                            <ul id='paymentsPaginationControls' class='pagination'>
+                                <!-- Pagination controls for payments -->
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <!-- Transfers Tab -->
+                    <div class='tab-pane fade' id='transfers' role='tabpanel'>
+                        <div class='d-flex justify-content-between mb-4'>   
+                            <div>
+                                <button class='btn btn-info text-white me-2' data-bs-toggle='modal'
+                                    data-bs-target='#addTransferModal'>
+                                    <i class='bi bi-arrow-left-right'></i> Add Transfer
+                                </button>
+                                <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
+                                    <i class="bi bi-receipt"></i> Search Transfer Receipt
+                                </button>
+                            </div>
+                            <div class='input-group' style='max-width: 300px;'>
+                                <input type='text' id='searchTransfers' class='form-control'
+                                    placeholder='Search transfers...'>
+                                <button class='btn btn-primary text-white' type='button' id='searchTransfersBtn'>
+                                    <i class='bi bi-search'></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class='table-responsive'>
+                            <table class='table table-striped' id='transfersTable'>
+                                <thead>
+    <tr>
+        <th>Date</th>
+        <th>Part No.</th>
+        <th>Quantity</th>
+        <th>Cost</th>
+        <th>Total Cost</th>
+        <th>Transfer Route</th>
+        <th>Actions</th>
+    </tr>
+</thead>
+
+                                <tbody id='transfersTableBody'>
+                                    <!-- Transfers data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <nav aria-label='Transfers pagination'>
+                            <ul id='transfersPaginationControls' class='pagination'>
+                                <!-- Pagination controls for transfers -->
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <!-- Reports Tab -->
+<div class='tab-pane fade' id='reports' role='tabpanel'>
+    <div class='row'>
+        <div class='col-md-4 mb-4'>
+            <div class='card'>
+                <div class='card-header'>
+                    <h5 class='card-title mb-0'>Monthly Aging Report</h5>
+                </div>
+                <div class='card-body'>
+                    <p class='card-text'>Shows all sales with outstanding balances and aging categories.</p>
+                    <div class='mb-3'>
+                        <label for='agingReportMonth' class='form-label'>Month</label>
+                        <input type='month' class='form-control' id='agingReportMonth'>
+                    </div>
+                    <div class='mb-3'>
+                        <label for='agingReportBranch' class='form-label'>Branch (Optional)</label>
+                        <select class='form-select' id='agingReportBranch'>
+                            <option value=''>All Branches</option>
+                            <option value='MAIN'>MAIN</option>
+                            <option value='HEADOFFICE'>HEADOFFICE</option>
+                            <!-- Add other branches as needed -->
+                        </select>
+                    </div>
+                    <button class='btn btn-primary text-white' id='generateAgingReportBtn'>
+                        <i class='bi bi-file-earmark-text'></i> Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class='col-md-4 mb-4'>
+            <div class='card'>
+                <div class='card-header'>
+                    <h5 class='card-title mb-0'>Sales Report</h5>
+                </div>
+                <div class='card-body'>
+                    <p class='card-text'>Shows all sales (cash/installment) for selected period.</p>
+                    <div class='mb-3'>
+                        <label for='salesReportType' class='form-label'>Report Type</label>
+                        <select class='form-select' id='salesReportType'>
+                            <option value='daily'>Daily</option>
+                            <option value='monthly'>Monthly</option>
+                        </select>
+                    </div>
+                    <div class='mb-3'>
+                        <label for='salesReportPeriod' class='form-label'>Period</label>
+                        <input type='date' class='form-control' id='salesReportPeriod'>
+                    </div>
+                    <div class='mb-3'>
+                        <label for='salesReportBranch' class='form-label'>Branch (Optional)</label>
+                        <select class='form-select' id='salesReportBranch'>
+                            <option value=''>All Branches</option>
+                            <option value='MAIN'>MAIN</option>
+                            <option value='HEADOFFICE'>HEADOFFICE</option>
+                            <!-- Add other branches as needed -->
+                        </select>
+                    </div>
+                    <button class='btn btn-success text-white' id='generateSalesReportBtn'>
+                        <i class='bi bi-graph-up'></i> Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class='col-md-4 mb-4'>
+            <div class='card'>
+                <div class='card-header'>
+                    <h5 class='card-title mb-0'>Payment Summary</h5>
+                </div>
+                <div class='card-body'>
+                    <p class='card-text'>Shows all payments received for selected period.</p>
+                    <div class='mb-3'>
+                        <label for='paymentSummaryType' class='form-label'>Report Type</label>
+                        <select class='form-select' id='paymentSummaryType'>
+                            <option value='daily'>Daily</option>
+                            <option value='monthly'>Monthly</option>
+                        </select>
+                    </div>
+                    <div class='mb-3'>
+                        <label for='paymentSummaryPeriod' class='form-label'>Period</label>
+                        <input type='date' class='form-control' id='paymentSummaryPeriod'>
+                    </div>
+                    <div class='mb-3'>
+                        <label for='paymentSummaryBranch' class='form-label'>Branch (Optional)</label>
+                        <select class='form-select' id='paymentSummaryBranch'>
+                            <option value=''>All Branches</option>
+                            <option value='MAIN'>MAIN</option>
+                            <option value='HEADOFFICE'>HEADOFFICE</option>
+                            <!-- Add other branches as needed -->
+                        </select>
+                    </div>
+                    <button class='btn btn-warning text-white' id='generatePaymentSummaryBtn'>
+                        <i class='bi bi-cash-stack'></i> Generate Summary
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
                 </div>
             </div>
         </div>
     </main>
 
-    <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1"
-        aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Select Month</label>
-                        <input type="month" class="form-control" id="reportMonth" required>
+
+
+<!-- Add Spareparts IN Modal -->
+<div class='modal fade' id='addSparepartsModal' tabindex='-1' aria-labelledby='addSparepartsModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='addSparepartsModalLabel'>Receive Spareparts (IN)</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <form id='addSparepartsInForm'>
+                    <div class='row mb-4'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='partNo' class='form-label'>Part Number</label>
+                            <input type='text' class='form-control' id='partNo' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='quantity' class='form-label'>Quantity</label>
+                            <input type='number' class='form-control' id='quantity' min='1' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='cost' class='form-label'>Cost</label>
+                            <input type='number' step='0.01' class='form-control' id='cost' min='0' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='dateReceived' class='form-label'>Date Received</label>
+                            <input type='date' class='form-control' id='dateReceived' required>
+                        </div>
+                        <div class='col-md-12 mb-3'>
+                            <label for='invoiceNo' class='form-label'>Invoice/Order Sheet #</label>
+                            <input type='text' class='form-control' id='invoiceNo' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='supplier' class='form-label'>Supplier (Optional)</label>
+                            <input type='text' class='form-control' id='supplier'>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='branch' class='form-label'>Branch</label>
+                            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
+                            <select class='form-select' id='branch' required>
+                                <option value='MAIN'>MAIN</option>
+                                <option value='HEADOFFICE'>HEADOFFICE</option>
+                                <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+                                <option value='MAMBUSAO'>MAMBUSAO</option>
+                                <option value='SIGMA'>SIGMA</option>
+                                <option value='PRC'>PRC</option>
+                                <option value='CUARTERO'>CUARTERO</option>
+                                <option value='JAMINDAN'>JAMINDAN</option>
+                                <option value='ROXAS HONDA'>ROXAS HONDA</option>
+                                <option value='ANTIQUE-1'>ANTIQUE-1</option>
+                                <option value='ANTIQUE-2'>ANTIQUE-2</option>
+                                <option value='DELGADO HONDA'>DELGADO HONDA</option>
+                                <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+                                <option value='JARO-1'>JARO-1</option>
+                                <option value='JARO-2'>JARO-2</option>
+                                <option value='KALIBO MABINI'>KALIBO MABINI</option>
+                                <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+                                <option value='ALTAVAS'>ALTAVAS</option>
+                                <option value='EMAP'>EMAP</option>
+                                <option value='CULASI'>CULASI</option>
+                                <option value='BACOLOD'>BACOLOD</option>
+                                <option value='PASSI-1'>PASSI-1</option>
+                                <option value='PASSI-2'>PASSI-2</option>
+                                <option value='BALASAN'>BALASAN</option>
+                                <option value='GUIMARAS'>GUIMARAS</option>
+                                <option value='PEMDI'>PEMDI</option>
+                                <option value='EEMSI'>EEMSI</option>
+                                <option value='AJUY'>AJUY</option>
+                                <option value='BAILAN'>BAILAN</option>
+                                <option value='3SMB'>3SMB</option>
+                                <option value='3SMINDORO'>3SMINDORO</option>
+                                <option value='MANSALAY'>MANSALAY</option>
+                                <option value='K-RIDERS'>K-RIDERS</option>
+                                <option value='IBAJAY'>IBAJAY</option>
+                                <option value='NUMANCIA'>NUMANCIA</option>
+                                <option value='CEBU'>CEBU</option>
+                            </select>
+                            <?php } else { ?>
+                            <input type='text' class='form-control' id='branch'
+                                value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                            <?php } ?>
+                        </div>
+                        <div class='col-md-12 mb-3'>
+                            <label for='notes' class='form-label'>Notes (Optional)</label>
+                            <textarea class='form-control' id='notes' rows='3'></textarea>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Select Branch</label>
-                        <select class="form-select" id="reportBranch">
-                            <option value='ALL'>ALL BRANCHES</option>
-                            <!-- Options will be populated dynamically -->
-                        </select>
+
+                    <div class='d-grid mt-4'>
+                        <button type='submit' class='btn btn-primary text-white'>Receive Spareparts</button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Select Report Type</label>
-                        <select class="form-select" id="reportType" required>
-                            <option value="inventory">Monthly Inventory Balance Report</option>
-                            <option value="transferred">Monthly Summary of Transferred Stocks</option>
-                            <option value="motorcycle">Available Motorcycle Units Report</option>
-                        </select>
-                    </div>
-                    <div class="mb-3" id="brandFilterContainer" style="display: none;">
-                        <label class="form-label">Filter by Brand</label>
-                        <select class="form-select" id="reportBrandFilter">
-                            <option value="all">ALL BRANDS</option>
-                            <option value="Suzuki">SUZUKI</option>
-                            <option value="Honda">HONDA</option>
-                            <option value="Kawasaki">KAWASAKI</option>
-                            <option value="Yamaha">YAMAHA</option>
-                            <option value='Asiastar'>ASIASTAR</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate
-                        Report</button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
-    <div id='monthlyReportPrintContainer' style='display: none;'></div>
+</div>
 
-    <div class='modal fade' id='monthlyInventoryReportModal' tabindex='-1'
-        aria-labelledby='monthlyInventoryReportModalLabel' aria-hidden='true'>
-        <div class='modal-dialog modal-xl'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyInventoryReportModalLabel'>Monthly Report</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <div class='d-flex justify-content-between mb-3'>
-                        <div>
-                            <button class='btn btn-sm btn-outline-primary' id='exportMonthlyReportToPDF'>
-                                <i class='bi bi-printer'></i> Print Report
-                            </button>
+<!-- Edit Spareparts Modal (for editing existing spareparts master data) -->
+<div class='modal fade' id='editSparepartsModal' tabindex='-1' aria-labelledby='editSparepartsModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='editSparepartsModalLabel'>Edit Sparepart Details</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <form id='editSparepartForm'>
+                    <input type='hidden' id='editId'>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editPartNo' class='form-label'>Part Number</label>
+                            <input type='text' class='form-control' id='editPartNo' required>
                         </div>
-                        <div class='text-muted small' id='monthlyReportTimestamp'></div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editDescription' class='form-label'>Description</label>
+                            <input type='text' class='form-control' id='editDescription' required>
+                        </div>
                     </div>
-                    <div id='monthlyReportContent'>
-                    </div>
-                </div>
-                <div class='modal-footer'>
-                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class='modal fade' id='addSparepartsModal' tabindex='-1' aria-labelledby='addSparepartsModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='addSparepartsModalLabel'>Add Motorcycle to Inventory</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <form id='addMotorcycleForm'>
-                        <div class='row mb-4'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='invoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='invoiceNumber' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='dateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='dateDelivered' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='branch' class='form-label'>Branch</label>
-                                <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
-    ?>
-                                <select class='form-select' id='branch' required>
-                                    <option value='HEADOFFICE'>HEADOFFICE</option>
-                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
-                                    <option value='MAMBUSAO'>MAMBUSAO</option>
-                                    <option value='SIGMA'>SIGMA</option>
-                                    <option value='PRC'>PRC</option>
-                                    <option value='CUARTERO'>CUARTERO</option>
-                                    <option value='JAMINDAN'>JAMINDAN</option>
-                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
-                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
-                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
-                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
-                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
-                                    <option value='JARO-1'>JARO-1</option>
-                                    <option value='JARO-2'>JARO-2</option>
-                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
-                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
-                                    <option value='ALTAVAS'>ALTAVAS</option>
-                                    <option value='EMAP'>EMAP</option>
-                                    <option value='CULASI'>CULASI</option>
-                                    <option value='BACOLOD'>BACOLOD</option>
-                                    <option value='PASSI-1'>PASSI-1</option>
-                                    <option value='PASSI-2'>PASSI-2</option>
-                                    <option value='BALASAN'>BALASAN</option>
-                                    <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI'>PEMDI</option>
-                                    <option value='EEMSI'>EEMSI</option>
-                                    <option value='AJUY'>AJUY</option>
-                                    <option value='BAILAN'>BAILAN</option>
-                                    <option value='3SMB'>3SMB</option>
-                                    <option value='3SMINDORO'>3SMINDORO</option>
-                                    <option value='MANSALAY'>MANSALAY</option>
-                                    <option value='K-RIDERS'>K-RIDERS</option>
-                                    <option value='IBAJAY'>IBAJAY</option>
-                                    <option value='NUMANCIA'>NUMANCIA</option>
-                                    <option value='CEBU'>CEBU</option>
-                                </select>
-                                <?php } else {
-        ?>
-                                <input type='text' class='form-control' id='branch'
-                                    value="<?php echo $_SESSION['user_branch']; ?>" readonly>
-                                <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
-                                <?php }
-        ?>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <h5 class='mb-3'>Motorcycle Models</h5>
-                        <div id='modelFormsContainer'>
-                        </div>
-
-                        <button type='button' id='addModelBtn' class='btn btn-secondary mt-3'>
-                            <i class='bi bi-plus-circle'></i> Add Another Model
-                        </button>
-
-                        <div class='d-grid mt-4'>
-                            <button type='submit' class='btn btn-primary text-white'>Add Motorcycles</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='editMotorcycleModalLabel'>Edit Motorcycle Details</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <form id='editMotorcycleForm'>
-                        <input type='hidden' id='editId'>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editDateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='editDateDelivered' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='editInvoiceNumber' required>
-                            </div>
-                        </div>
-                        <div class='row'>
-                            <div class='col-md-4 mb-3'>
-                                <label for='editBrand' class='form-label'>Brand</label>
-                                <select class='form-select' id='editBrand' required>
-                                    <option value='Suzuki'>Suzuki</option>
-                                    <option value='Honda'>Honda</option>
-                                    <option value='Kawasaki'>Kawasaki</option>
-                                    <option value='Yamaha'>Yamaha</option>
-                                    <option value='Asiastar'>Asiastar</option>
-                                </select>
-                            </div>
-                            <div class='col-md-4 mb-3'>
-                                <label for='editModel' class='form-label'>Model</label>
-                                <input type='text' class='form-control' id='editModel' required>
-                            </div>
-                            <div class='col-md-4 mb-3'>
-                                <label for='editCategory' class='form-label'>Category</label>
-                                <select class='form-select' id='editCategory' required>
-                                    <option value='brandnew'>Brand New</option>
-                                    <option value='repo'>Repo</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editEngineNumber' class='form-label'>Engine Number</label>
-                                <input type='text' class='form-control' id='editEngineNumber' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editFrameNumber' class='form-label'>Frame Number</label>
-                                <input type='text' class='form-control' id='editFrameNumber' required>
-                            </div>
-                        </div>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editColor' class='form-label'>Color</label>
-                                <input type='text' class='form-control' id='editColor' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editInventoryCost' class='form-label'>Inventory Cost</label>
-                                <input type='number' step='0.01' class='form-control' id='editInventoryCost'>
-                            </div>
-                        </div>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editCurrentBranch' class='form-label'>Branch</label>
-                                <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
-            ?>
-                                <!-- Admin can select any branch -->
-                                <select class='form-select' id='editCurrentBranch' required>
-                                    <option value='HEADOFFICE'>HEADOFFICE</option>
-                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
-                                    <option value='MAMBUSAO'>MAMBUSAO</option>
-                                    <option value='SIGMA'>SIGMA</option>
-                                    <option value='PRC'>PRC</option>
-                                    <option value='CUARTERO'>CUARTERO</option>
-                                    <option value='JAMINDAN'>JAMINDAN</option>
-                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
-                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
-                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
-                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
-                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
-                                    <option value='JARO-1'>JARO-1</option>
-                                    <option value='JARO-2'>JARO-2</option>
-                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
-                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
-                                    <option value='ALTAVAS'>ALTAVAS</option>
-                                    <option value='EMAP'>EMAP</option>
-                                    <option value='CULASI'>CULASI</option>
-                                    <option value='BACOLOD'>BACOLOD</option>
-                                    <option value='PASSI-1'>PASSI-1</option>
-                                    <option value='PASSI-2'>PASSI-2</option>
-                                    <option value='BALASAN'>BALASAN</option>
-                                    <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI'>PEMDI</option>
-                                    <option value='EEMSI'>EEMSI</option>
-                                    <option value='AJUY'>AJUY</option>
-                                    <option value='BAILAN'>BAILAN</option>
-                                    <option value='3SMB'>3SMB</option>
-                                    <option value='3SMINDORO'>3SMINDORO</option>
-                                    <option value='MANSALAY'>MANSALAY</option>
-                                    <option value='K-RIDERS'>K-RIDERS</option>
-                                    <option value='IBAJAY'>IBAJAY</option>
-                                    <option value='NUMANCIA'>NUMANCIA</option>
-                                    <option value='CEBU'>CEBU</option>
-                                </select>
-                                <?php } else {
-                ?>
-                                <!-- Regular users can only add to their own branch -->
-                                <input type='text' class='form-control' id='editCurrentBranch'
-                                    value="<?php echo $_SESSION['user_branch']; ?>" readonly>
-                                <input type='hidden' id='editCurrentBranchHidden'
-                                    value="<?php echo $_SESSION['user_branch']; ?>">
-                                <?php }
-                ?>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editStatus' class='form-label'>Status</label>
-                                <select class='form-select' id='editStatus' required>
-                                    <option value='available'>Available</option>
-                                    <option value='sold'>Sold</option>
-                                    <option value='transferred'>Transferred</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class='d-grid'>
-                            <button type='submit' class='btn btn-primary text-white'>Save Changes</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='sellMotorcycleModalLabel'>Mark Motorcycle as Sold</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <form id='saleForm'>
-                        <input type='hidden' id='sellMotorcycleId'>
-
-                        <div class='mb-3'>
-                            <label for='saleDate' class='form-label'>Sale Date <span
-                                    class='text-danger'>*</span></label>
-                            <input type='date' class='form-control' id='saleDate' required>
-                        </div>
-
-                        <div class='mb-3'>
-                            <label for='customerName' class='form-label'>Customer Name <span
-                                    class='text-danger'>*</span></label>
-                            <input type='text' class='form-control' id='customerName' required>
-                        </div>
-
-                        <div class='mb-3'>
-                            <label for='paymentType' class='form-label'>Payment Type <span
-                                    class='text-danger'>*</span></label>
-                            <select class='form-select' id='paymentType' onchange='handlePaymentTypeChange()' required>
-                                <option value=''>Select Payment Type</option>
-                                <option value='COD'>Cash on Delivery ( COD )</option>
-                                <option value='Installment'>Installment</option>
+                    <div class='row'>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editBrand' class='form-label'>Brand</label>
+                            <select class='form-select' id='editBrand'>
+                                <option value=''>Select Brand</option>
+                                <option value='Suzuki'>Suzuki</option>
+                                <option value='Honda'>Honda</option>
+                                <option value='Kawasaki'>Kawasaki</option>
+                                <option value='Yamaha'>Yamaha</option>
+                                <option value='Asiastar'>Asiastar</option>
+                                <option value='Generic'>Generic</option>
                             </select>
                         </div>
-
-                        <div id='codFields' style='display: none;'>
-                            <div class='mb-3'>
-                                <label for='drNumber' class='form-label'>DR Number <span
-                                        class='text-danger'>*</span></label>
-                                <input type='text' class='form-control' id='drNumber'>
-                            </div>
-
-                            <div class='mb-3'>
-                                <label for='codAmount' class='form-label'>COD Amount <span
-                                        class='text-danger'>*</span></label>
-                                <input type='number' step='0.01' class='form-control' id='codAmount'>
-                            </div>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editModelCompatibility' class='form-label'>Model Compatibility</label>
+                            <input type='text' class='form-control' id='editModelCompatibility'>
                         </div>
-
-                        <div id='installmentFields' style='display: none;'>
-                            <div class='mb-3'>
-                                <label for='terms' class='form-label'>Terms ( months ) <span
-                                        class='text-danger'>*</span></label>
-                                <input type='number' class='form-control' id='terms' min='1'>
-                            </div>
-
-                            <div class='mb-3'>
-                                <label for='monthlyAmortization' class='form-label'>Monthly Amortization <span
-                                        class='text-danger'>*</span></label>
-                                <input type='number' step='0.01' class='form-control' id='monthlyAmortization'>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class='modal-footer'>
-                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as
-                        Sold</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class='modal fade' id='viewDetailsModal' tabindex='-1' aria-labelledby='viewDetailsModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='viewDetailsModalLabel'>Motorcycle Details</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <div class='row'>
-                        <div class='col-md-6'>
-                            <div class='mb-3'>
-                                <h6>Basic Information</h6>
-                                <hr>
-                                <p><strong>Invoice Number/MT:</strong> <span id='detailInvoiceNumber'></span></p>
-                                <p><strong>Brand:</strong> <span id='detailBrand'></span></p>
-                                <p><strong>Model:</strong> <span id='detailModel'></span></p>
-                                <p><strong>Color:</strong> <span id='detailColor'></span></p>
-                                <p><strong>Date Delivered:</strong> <span id='detailDateDelivered'></span></p>
-                            </div>
-                        </div>
-                        <div class='col-md-6'>
-                            <div class='mb-3'>
-                                <h6>Identification Numbers</h6>
-                                <hr>
-                                <p><strong>Engine Number:</strong> <span id='detailEngineNumber'></span></p>
-                                <p><strong>Frame Number:</strong> <span id='detailFrameNumber'></span></p>
-                            </div>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editCategory' class='form-label'>Category</label>
+                            <select class='form-select' id='editCategory'>
+                                <option value=''>Select Category</option>
+                                <option value='Engine Parts'>Engine Parts</option>
+                                <option value='Body Parts'>Body Parts</option>
+                                <option value='Electrical'>Electrical</option>
+                                <option value='Brake System'>Brake System</option>
+                                <option value='Suspension'>Suspension</option>
+                                <option value='Transmission'>Transmission</option>
+                                <option value='Accessories'>Accessories</option>
+                                <option value='Consumables'>Consumables</option>
+                            </select>
                         </div>
                     </div>
                     <div class='row'>
-                        <div class='col-md-6'>
-                            <div class='mb-3'>
-                                <h6>Inventory Details</h6>
-                                <hr>
-                                <p><strong>Current Branch:</strong> <span id='detailCurrentBranch'></span></p>
-                                <p><strong>Status:</strong> <span id='detailStatus'></span></p>
-                                <p><strong>Inventory Cost:</strong> <span id='detailInventoryCost'></span></p>
-                            </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editUnitOfMeasure' class='form-label'>Unit of Measure</label>
+                            <select class='form-select' id='editUnitOfMeasure'>
+                                <option value='pcs'>Pieces (pcs)</option>
+                                <option value='set'>Set</option>
+                                <option value='pair'>Pair</option>
+                                <option value='liter'>Liter</option>
+                                <option value='bottle'>Bottle</option>
+                                <option value='pack'>Pack</option>
+                            </select>
                         </div>
-                        <div class='col-md-6'>
-                            <div class='mb-3'>
-                                <h6>Location Map</h6>
-                                <hr>
-                                <div id='detailMap' style='height: 200px;'></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class='mb-3'>
-                        <h6>Transfer History</h6>
-                        <hr>
-                        <div class='table-responsive'>
-                            <table class='table table-sm' id='transferHistoryTable'>
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>From</th>
-                                        <th>To</th>
-                                        <th>Notes</th>
-                                    </tr>
-                                </thead>
-                                <tbody id='transferHistoryBody'>
-                                </tbody>
-                            </table>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editMinStockLevel' class='form-label'>Minimum Stock Level</label>
+                            <input type='number' class='form-control' id='editMinStockLevel' min='1'>
                         </div>
                     </div>
-                </div>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editCurrentCost' class='form-label'>Current Cost</label>
+                            <input type='number' step='0.01' class='form-control' id='editCurrentCost' min='0'>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editSellingPrice' class='form-label'>Selling Price</label>
+                            <input type='number' step='0.01' class='form-control' id='editSellingPrice' min='0'>
+                        </div>
+                    </div>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editStatus' class='form-label'>Status</label>
+                            <select class='form-select' id='editStatus'>
+                                <option value='active'>Active</option>
+                                <option value='inactive'>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class='d-grid'>
+                        <button type='submit' class='btn btn-primary text-white'>Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-
-    <div class='modal fade' id='multipleTransferModal' tabindex='-1' aria-labelledby='multipleTransferModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header bg-primary text-white'>
-                    <h5 class='modal-title text-white' id='multipleTransferModalLabel'>
-                        <i class='bi bi-truck me-2 text-white'></i>Transfer Multiple Motorcycles
-                    </h5>
-                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
-                        aria-label='Close'></button>
-                </div>
-                <div class='modal-body p-0'>
-                    <form id='multipleTransferForm'>
-                        <div class='row g-0'>
-                            <div class='col-md-4 border-end bg-light'>
-                                <div class='p-4'>
-                                    <fieldset>
-                                        <legend class='fs-6 fw-semibold text-black mb-4'>
-                                            <i class='bi bi-geo-alt me-2'></i>Transfer Information
-                                        </legend>
-
-                                        <!-- Transfer Invoice Number Input -->
-                                        <div class='mb-3'>
-                                            <label for='multipleTransferInvoiceNumber'
-                                                class='form-label small fw-semibold'>
-                                                <i class='bi bi-receipt me-1'></i>Transfer Invoice No. <span
-                                                    class='text-danger'>*</span>
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm'
-                                                id='multipleTransferInvoiceNumber' required
-                                                placeholder="Enter transfer invoice number">
-                                        </div>
-
-                                        <div class='mb-3'>
-                                            <label for='multipleFromBranch' class='form-label small fw-semibold'>
-                                                <i class='bi bi-geo-alt me-1'></i>From Branch
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm'
-                                                id='multipleFromBranch' readonly>
-                                        </div>
-
-                                        <div class='mb-3'>
-                                            <label for='multipleToBranch' class='form-label small fw-semibold'>
-                                                <i class='bi bi-geo-alt-fill me-1'></i>To Branch <span
-                                                    class='text-danger'>*</span>
-                                            </label>
-                                            <select class='form-select form-select-sm' id='multipleToBranch' required>
-                                                <option value=''>Select Destination Branch</option>
-                                                <!-- Options will be populated dynamically -->
-                                            </select>
-                                        </div>
-
-                                        <div class='mb-3'>
-                                            <label for='multipleTransferDate' class='form-label small fw-semibold'>
-                                                <i class='bi bi-calendar me-1'></i>Transfer Date <span
-                                                    class='text-danger'>*</span>
-                                            </label>
-                                            <input type='date' class='form-control form-control-sm'
-                                                id='multipleTransferDate' required>
-                                        </div>
-
-                                        <div class='mb-4'>
-                                            <label for='multipleTransferNotes' class='form-label small fw-semibold'>
-                                                <i class='bi bi-chat-text me-1'></i>Transfer Notes
-                                            </label>
-                                            <textarea class='form-control form-control-sm' id='multipleTransferNotes'
-                                                rows='3' placeholder='Optional notes about this transfer...'></textarea>
-                                        </div>
-                                    </fieldset>
-
-                                    <hr>
-
-                                    <fieldset>
-                                        <legend class='fs-6 fw-semibold text-black mb-3'>
-                                            <i class='bi bi-calculator me-2'></i>Transfer Summary
-                                        </legend>
-
-                                        <div class='summary-card p-3 mb-3'
-                                            style='background: white; border-radius: 8px; border: 1px solid #e9ecef;'>
-                                            <div class='d-flex justify-content-between align-items-center mb-2'>
-                                                <span class='small fw-semibold'>Total Units:</span>
-                                                <span class='badge bg-primary' id='selectedCount'>0</span>
-                                            </div>
-                                            <div class='d-flex justify-content-between align-items-center'>
-                                                <span class='small fw-semibold'>Total Inventory Cost Value:</span>
-                                                <span class='fw-bold text-success'
-                                                    id='totalInventoryCostValue'>₱0.00</span>
-                                            </div>
-                                        </div>
-
-                                        <div class='progress mb-4' style='height: 6px;'>
-                                            <div class='progress-bar' id='selectionProgress' style='width: 0%'></div>
-                                        </div>
-
-                                        <div class='d-grid'>
-                                            <button type='submit' class='btn btn-success btn-sm'>
-                                                <i class='bi bi-truck me-2'></i>Transfer Selected Motorcycles
-                                            </button>
-                                        </div>
-                                    </fieldset>
+</div>
+<!-- Add Sale Modal -->
+<div class='modal fade' id='addSaleModal' tabindex='-1' aria-labelledby='addSaleModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='addSaleModalLabel'>Add Sale (OUT)</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <form id='addSaleForm'>
+                    <div class='row mb-4'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='salePartNo' class='form-label'>Part Number</label>
+                            <input type='text' class='form-control' id='salePartNo' required>
+                            <div class='form-text'>Enter part number or search from inventory</div>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='saleDate' class='form-label'>Sale Date</label>
+                            <input type='date' class='form-control' id='saleDate' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='transactionType' class='form-label'>Transaction Type</label>
+                            <select class='form-select' id='transactionType' required>
+                                <option value=''>Select Transaction Type</option>
+                                <option value='cash'>Cash</option>
+                                <option value='installment'>Installment</option>
+                            </select>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='saleQuantity' class='form-label'>Quantity</label>
+                            <input type='number' class='form-control' id='saleQuantity' min='1' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='saleAmount' class='form-label'>Total Amount</label>
+                            <input type='number' step='0.01' class='form-control' id='saleAmount' min='0' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='orNumber' class='form-label'>OR Number</label>
+                            <input type='text' class='form-control' id='orNumber' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='customerName' class='form-label'>Customer Name</label>
+                            <input type='text' class='form-control' id='customerName' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='saleBranch' class='form-label'>Branch</label>
+                            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') { ?>
+                            <select class='form-select' id='saleBranch' required>
+                                <option value='MAIN'>MAIN</option>
+                                <option value='HEADOFFICE'>HEADOFFICE</option>
+                                <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+                                <option value='MAMBUSAO'>MAMBUSAO</option>
+                                <option value='SIGMA'>SIGMA</option>
+                                <option value='PRC'>PRC</option>
+                                <option value='CUARTERO'>CUARTERO</option>
+                                <option value='JAMINDAN'>JAMINDAN</option>
+                                <option value='ROXAS HONDA'>ROXAS HONDA</option>
+                                <option value='ANTIQUE-1'>ANTIQUE-1</option>
+                                <option value='ANTIQUE-2'>ANTIQUE-2</option>
+                                <option value='DELGADO HONDA'>DELGADO HONDA</option>
+                                <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+                                <option value='JARO-1'>JARO-1</option>
+                                <option value='JARO-2'>JARO-2</option>
+                                <option value='KALIBO MABINI'>KALIBO MABINI</option>
+                                <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+                                <option value='ALTAVAS'>ALTAVAS</option>
+                                <option value='EMAP'>EMAP</option>
+                                <option value='CULASI'>CULASI</option>
+                                <option value='BACOLOD'>BACOLOD</option>
+                                <option value='PASSI-1'>PASSI-1</option>
+                                <option value='PASSI-2'>PASSI-2</option>
+                                <option value='BALASAN'>BALASAN</option>
+                                <option value='GUIMARAS'>GUIMARAS</option>
+                                <option value='PEMDI'>PEMDI</option>
+                                <option value='EEMSI'>EEMSI</option>
+                                <option value='AJUY'>AJUY</option>
+                                <option value='BAILAN'>BAILAN</option>
+                                <option value='3SMB'>3SMB</option>
+                                <option value='3SMINDORO'>3SMINDORO</option>
+                                <option value='MANSALAY'>MANSALAY</option>
+                                <option value='K-RIDERS'>K-RIDERS</option>
+                                <option value='IBAJAY'>IBAJAY</option>
+                                <option value='NUMANCIA'>NUMANCIA</option>
+                                <option value='CEBU'>CEBU</option>
+                            </select>
+                            <?php } else { ?>
+                            <input type='text' class='form-control' id='saleBranch'
+                                value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                            <?php } ?>
+                        </div>
+                        
+                        <!-- Installment specific fields (hidden by default) -->
+                        <div id='installmentFields' class='col-12' style='display: none;'>
+                            <hr>
+                            <h6 class='mb-3'>Installment Details</h6>
+                            <div class='row'>
+                                <div class='col-md-6 mb-3'>
+                                    <label for='downPayment' class='form-label'>Down Payment</label>
+                                    <input type='number' step='0.01' class='form-control' id='downPayment' min='0'>
                                 </div>
-                            </div>
-
-                            <div class='col-md-8'>
-                                <div class='p-4'>
-                                    <h6 class='fw-semibold text-primary mb-4'>
-                                        <i class='bi bi-search me-2'></i>Motorcycle Selection
-                                    </h6>
-                                    <div class='row g-2 mb-3 align-items-end'>
-                                        <div class='col-md-8'>
-                                            <label class='form-label small fw-semibold'>
-                                                <i class='bi bi-upc-scan me-1'></i>Search by Engine Number
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm' id='engineSearch'
-                                                placeholder='Enter engine number...'>
-                                        </div>
-                                        <div class='col-md-4'>
-                                            <div class='d-flex gap-2'>
-                                                <button class='btn btn-primary btn-sm w-100 text-white' type='button'
-                                                    id='searchEngineBtn'>
-                                                    <i class='bi bi-search me-1'></i>Search
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class='form-text small text-muted mb-4'>You can search using full or partial
-                                        engine numbers.</div>
-
-                                    <div class='row g-3'>
-                                        <div class='col-md-6'>
-                                            <div class='card h-100 shadow-sm'>
-                                                <div
-                                                    class='card-header py-2 bg-light d-flex justify-content-between align-items-center'>
-                                                    <span class='fw-semibold small'>
-                                                        <i class='bi bi-list-check me-1'></i>Search Results
-                                                    </span>
-                                                    <span class='badge bg-secondary' id='searchResultsCount'>0</span>
-                                                </div>
-                                                <div class='card-body p-0'>
-                                                    <div class='search-results-container'
-                                                        style='max-height: 300px; overflow-y: auto;' id='searchResults'>
-                                                        <div class='text-center text-muted py-5'>
-                                                            <i class='bi bi-search display-6 mb-2'></i>
-                                                            <p class='small'>Search for motorcycles to display results
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class='col-md-6'>
-                                            <div class='card h-100 shadow-sm'>
-                                                <div
-                                                    class='card-header py-2 bg-light d-flex justify-content-between align-items-center'>
-                                                    <span class='fw-semibold small'>
-                                                        <i class='bi bi-check-circle me-1'></i>Selected Items
-                                                    </span>
-                                                    <button type='button'
-                                                        class='btn btn-outline-danger btn-sm py-0 px-2'
-                                                        id='clearSelectionBtn' title='Clear All'>
-                                                        <i class='bi bi-trash'></i>
-                                                    </button>
-                                                </div>
-                                                <div class='card-body p-0'>
-                                                    <div class='selected-items-container'
-                                                        style='max-height: 300px; overflow-y: auto;'
-                                                        id='selectedMotorcyclesList'>
-                                                        <div class='text-center text-muted py-5'>
-                                                            <i class='bi bi-inbox display-6 mb-2'></i>
-                                                            <p class='small'>No motorcycles selected</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class='col-md-6 mb-3'>
+                                    <label for='balance' class='form-label'>Balance</label>
+                                    <input type='number' step='0.01' class='form-control' id='balance' min='0' readonly>
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
+                        
+                        <div class='col-md-12 mb-3'>
+                            <label for='saleNotes' class='form-label'>Notes (Optional)</label>
+                            <textarea class='form-control' id='saleNotes' rows='3'></textarea>
+                        </div>
+                    </div>
+
+                    <div class='d-grid mt-4'>
+                        <button type='submit' class='btn btn-success text-white'>Record Sale</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
-
-
-    <template id='modelFormTemplate'>
-        <div class='model-form card mb-3'>
-            <div class='card-header d-flex justify-content-between align-items-center'>
-                <span class='model-number'>Model #1</span>
-                <button type='button' class='btn btn-sm btn-danger remove-model-btn'>
-                    <i class='bi bi-trash'></i> Remove
-                </button>
+<!-- Add Payment Modal -->
+<div class='modal fade' id='addPaymentModal' tabindex='-1' aria-labelledby='addPaymentModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-md'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='addPaymentModalLabel'>Add Payment</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
             </div>
-            <div class='card-body'>
-                <!-- First Row -->
-                <div class='row'>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Brand</label>
-                        <select class='form-select model-brand' required>
-                            <option value=''>Select Brand</option>
-                            <option value='Suzuki'>Suzuki</option>
-                            <option value='Honda'>Honda</option>
-                            <option value='Kawasaki'>Kawasaki</option>
-                            <option value='Yamaha'>Yamaha</option>
-                            <option value='Asiastar'>Asiastar</option>
-                        </select>
+            <div class='modal-body'>
+                <form id='addPaymentForm'>
+                    <div class='row mb-4'>
+                        <div class='col-md-12 mb-3'>
+                            <label for='paymentDate' class='form-label'>Payment Date</label>
+                            <input type='date' class='form-control' id='paymentDate' required>
+                        </div>
+                        <div class='col-md-12 mb-3'>
+                            <label for='paymentCustomerName' class='form-label'>Customer Name</label>
+                            <input type='text' class='form-control' id='paymentCustomerName' required>
+                        </div>
+                        <div class='col-md-12 mb-3'>
+                            <label for='paymentAmount' class='form-label'>Payment Amount</label>
+                            <input type='number' step='0.01' class='form-control' id='paymentAmount' min='0' required>
+                        </div>
                     </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Model Name</label>
-                        <input type='text' class='form-control model-name' required>
-                    </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Category</label>
-                        <select class='form-select model-category' required>
-                            <option value=''>Select Category</option>
-                            <option value='brandnew'>Brand New</option>
-                            <option value='repo'>Repo</option>
-                        </select>
-                    </div>
-                </div>
 
-                <!-- Second Row -->
-                <div class='row'>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Quantity</label>
-                        <input type='number' class='form-control model-quantity' min='1' value='1' required>
+                    <div class='d-grid mt-4'>
+                        <button type='submit' class='btn btn-warning text-white'>Record Payment</button>
                     </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Color</label>
-                        <input type='text' class='form-control model-color' required>
-                    </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Inventory Cost</label>
-                        <input type='number' step='0.01' class='form-control model-inventoryCost'>
-                    </div>
-                </div>
-
-                <!-- Specific Details Section -->
-                <div class='specific-details-container mt-3' style='display: none;'>
-                    <h6 class='fw-semibold mb-3'>Specific Model Details</h6>
-                    <div class='specific-details-rows'>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    <div class="modal fade" id="searchTransferReceiptModal" tabindex="-1"
-        aria-labelledby="searchTransferReceiptModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="searchTransferReceiptModalLabel">Search Transfer Receipt</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="transferInvoiceSearch" class="form-label">Transfer Invoice Number</label>
-                        <input type="text" class="form-control" id="transferInvoiceSearch"
-                            placeholder="Enter transfer invoice number">
-                    </div>
-                    <div id="searchResultsContainer" class="mt-3" style="display: none;">
-                        <h6>Search Results:</h6>
-                        <div id="transferSearchResults" class="search-results"></div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary text-white" id="searchTransferBtn">Search</button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
-    <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-xl'>
-            <div class='modal-content'>
-                <div class='modal-header bg-primary text-white'>
-                    <h5 class='modal-title text-white' id='incomingTransfersModalLabel'>Incoming Units Transferred to
-                        Your Branch</h5>
-                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
-                        aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <div class='row mb-3'>
-                        <div class='col-md-6'>
-                            <div class='d-flex align-items-center'>
-                                <input type='checkbox' id='selectAllTransfers' class='form-check-input me-2'>
-                                <label for='selectAllTransfers' class='form-check-label fw-semibold'>Select All</label>
-                            </div>
+</div>
+
+<!-- Add Transfer Modal -->
+<div class='modal fade' id='addTransferModal' tabindex='-1' aria-labelledby='addTransferModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-md'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='addTransferModalLabel'>Add Transfer</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <form id='addTransferForm'>
+                    <div class='row mb-4'>
+                        <div class='col-md-12 mb-3'>
+                            <label for='transferDate' class='form-label'>Transfer Date</label>
+                            <input type='date' class='form-control' id='transferDate' required>
                         </div>
-                        <div class='col-md-6 text-end'>
-                            <span class='badge bg-info' id='selectedTransfersCount'>0 selected</span>
+                        <div class='col-md-12 mb-3'>
+                            <label for='transferPartNo' class='form-label'>Part Number</label>
+                            <input type='text' class='form-control' id='transferPartNo' required>
+                        </div>
+                        <div class='col-md-12 mb-3'>
+                            <label for='transferQuantity' class='form-label'>Quantity</label>
+                            <input type='number' class='form-control' id='transferQuantity' min='1' required>
+                        </div>
+                        <div class='col-md-12 mb-3'>
+                            <label for='transferCost' class='form-label'>Cost</label>
+                            <input type='number' step='0.01' class='form-control' id='transferCost' min='0' required>
                         </div>
                     </div>
 
-                    <div class='table-responsive'>
-                        <table class='table table-striped table-hover'>
-                            <thead class='table-dark'>
-                                <tr>
-                                    <th width='50'>
-                                        <input type='checkbox' id='selectAllTransfersHeader' class='form-check-input'>
-                                    </th>
-                                    <th>Model</th>
-                                    <th>Engine No.</th>
-                                    <th>Frame No.</th>
-                                    <th>Color</th>
-                                    <th>Transfer Date</th>
-                                    <th>From Branch</th>
-                                    <th>Transfer Invoice</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id='incomingTransfersBody'>
-                                <tr>
-                                    <td colspan='9' class='text-center py-4'>
-                                        <div class='spinner-border text-primary' role='status'>
-                                            <span class='visually-hidden'>Loading...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class='d-grid mt-4'>
+                        <button type='submit' class='btn btn-info text-white'>Record Transfer</button>
                     </div>
-
-                    <div class='alert alert-info mt-3' id='transferSummary' style='display: none;'>
-                        <h6 class='alert-heading'>Transfer Summary</h6>
-                        <div class='row'>
-                            <div class='col-md-4'>
-                                <strong>Selected Transfers:</strong> <span id='summarySelectedCount'>0</span>
-                            </div>
-                            <div class='col-md-4'>
-                                <strong>Total Units:</strong> <span id='summaryTotalUnits'>0</span>
-                            </div>
-                            <div class='col-md-4'>
-                                <strong>From Branches:</strong> <span id='summaryFromBranches'>-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class='modal-footer'>
-                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                    <button type='button' class='btn btn-warning me-2' id='rejectSelectedBtn' disabled>
-                        <i class='bi bi-x-circle me-1'></i>Reject Selected
-                    </button>
-                    <button type='button' class='btn btn-success' id='acceptSelectedBtn' disabled>
-                        <i class='bi bi-check-circle me-1'></i>Accept Selected
-                    </button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
 
-    <div class='modal fade' id='transferReceiptModal' tabindex='-1' aria-labelledby='transferReceiptModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-xl'>
-            <div class='modal-content'>
-                <div class='modal-header bg-primary text-white'>
-                    <h5 class='modal-title text-white' id='transferReceiptModalLabel'>
-                        <i class='bi bi-receipt me-2'></i>Transfer Receipt
-                    </h5>
-                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
-                        aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <div class='receipt-header mb-4'>
-                        <div class='row'>
-                            <div class='col-md-6'>
-                                <h5 class='mb-1'>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h5>
-                                <p class='mb-0 text-muted'>Merchandise Transfer Receipt</p>
-                            </div>
-                            <div class='col-md-6 text-end'>
-                                <p class='mb-0'><strong>Date:</strong> <span id='receiptDate'></span></p>
-                                <p class='mb-0'><strong>Transfer Invoice No:</strong> <span
-                                        id='receiptInvoiceNo'></span></p>
-                                <!-- <p class='mb-0'><strong>Transfer ID:</strong> <span id='receiptTransferId'></span></p> -->
-                            </div>
-                        </div>
-                        <hr>
-                        <div class='row'>
-                            <div class='col-md-6'>
-                                <p class='mb-1'><strong>From:</strong> <span id='receiptFromBranch'></span></p>
-                            </div>
-                            <div class='col-md-6'>
-                                <p class='mb-1'><strong>To:</strong> <span id='receiptToBranch'></span></p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class='table-responsive'>
-                        <table class='table table-bordered table-sm'>
-                            <thead class='table-light'>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Brand</th>
-                                    <th>Model</th>
-                                    <th>Color</th>
-                                    <th>Engine Number</th>
-                                    <th>Frame Number</th>
-                                    <th class='text-end'>Inventory Cost</th>
-                                </tr>
-                            </thead>
-                            <tbody id='receiptMotorcyclesList'>
-                            </tbody>
-                            <tfoot class='table-group-divider'>
-                                <tr>
-                                    <td colspan='6' class='text-end fw-bold'>Total Motorcycles:</td>
-                                    <td class='text-end fw-bold' id='receiptTotalCount'>0</td>
-                                </tr>
-                                <tr>
-                                    <td colspan='6' class='text-end fw-bold'>Total Inventory Cost:</td>
-                                    <td class='text-end fw-bold' id='receiptTotalCost'>₱0.00</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <div class='mt-4'>
-                        <h6>Transfer Notes:</h6>
-                        <p id='receiptNotes' class='text-muted fst-italic'>No notes provided.</p>
-                    </div>
-                </div>
-                <div class='modal-footer'>
-                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                    <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
-                        <i class='bi bi-printer me-2'></i>Print Receipt
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>
@@ -1150,7 +882,7 @@
     const isHeadOffice = currentUserBranch === 'HEADOFFICE';
     const isAdminUser = ['ADMIN', 'IT STAFF', 'HEAD'].includes(currentUserPosition.toUpperCase());
     </script>
-    <script src='../js/inventory_management.js'></script>
+    <script src='../js/spareparts_inventory.js'></script>
 </body>
 
 </html>
