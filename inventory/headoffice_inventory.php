@@ -1523,7 +1523,7 @@
                         <div class='row'>
                             <div class='col-md-6'>
                                 <h5 class='mb-1'>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h5>
-                                <p class='mb-0 text-muted'>Motorcycle Transfer Receipt</p>
+                                <p class='mb-0 text-muted'>Merchandise Transfer Receipt</p>
                             </div>
                             <div class='col-md-6 text-end'>
                                 <p class='mb-0'><strong>Date:</strong> <span id='receiptDate'></span></p>

@@ -1614,142 +1614,117 @@ function printReceipt() {
         <head>
             <title>${title}</title>
             <style>
-                body { 
-                    font-family: Arial, sans-serif; 
-                    margin: 20px; 
-                    color: #333;
-                    line-height: 1.4;
-                }
-                
-                .report-header { 
-                    text-align: center; 
-                    margin-bottom: 20px; 
-                    border-bottom: 2px solid #000f71;
-                    padding-bottom: 15px;
-                }
-                
-                .report-header h4 { 
-                    color: #000f71; 
-                    font-weight: 600; 
-                    margin: 0 0 5px 0;
-                    font-size: 24px;
-                }
-                
-                .report-header h5 { 
-                    color: #495057; 
-                    font-weight: 500; 
-                    margin: 0;
-                    font-size: 16px;
-                }
-                
-                .company-address {
-                    text-align: center;
-                    color: #666;
-                    font-size: 14px;
-                    margin-bottom: 20px;
-                }
-                
-                table { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    margin-bottom: 20px; 
-                }
-                
-                th, td { 
-                    border: 1px solid #ddd; 
-                    padding: 8px; 
-                    text-align: left; 
-                    font-size: 13px;
-                }
-                
-                th { 
-                    background-color: #f8f9fa; 
-                    font-weight: 600; 
-                    color: #495057;
-                }
-                
-                .summary { 
-                    margin-top: 20px; 
-                    padding: 15px; 
-                    background-color: #e9ecef; 
-                    border-radius: 5px; 
-                }
-                
-                .card { 
-                    margin-bottom: 20px; 
-                    border: 1px solid #e9ecef; 
-                    border-radius: 6px; 
-                }
-                
-                .card-header { 
-                    background-color: #f8f9fa; 
-                    padding: 10px; 
-                    border-bottom: 1px solid #e9ecef; 
-                    font-weight: 600;
-                    color: #495057;
-                }
-                
-                .card-body {
-                    padding: 15px;
-                }
-                
-                .info-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 20px;
-                    margin-bottom: 20px;
-                }
-                
-                .info-row {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 8px;
-                    padding: 5px 0;
-                    border-bottom: 1px dotted #ddd;
-                }
-                
-                .info-label {
-                    font-weight: 600;
-                    color: #495057;
-                }
-                
-                .info-value {
-                    color: #333;
-                }
-                
-                .total-row {
-                    background-color: #f8f9fa;
-                    font-weight: 600;
-                }
-                
-                .notes-section {
-                    margin-top: 20px;
-                }
-                
-                .footer-info {
-                    margin-top: 30px;
-                    padding-top: 15px;
-                    border-top: 1px solid #ddd;
-                    text-align: center;
-                    font-size: 12px;
-                    color: #666;
-                }
-                
-                @media print {
-                    body {
-                        margin: 0;
-                        padding: 15px;
-                    }
-                    .no-print {
-                        display: none !important;
-                    }
-                }
-            </style>
+    body { 
+        font-family: Arial, sans-serif; 
+        margin: 5px; 
+        color: #333;
+        line-height: 1.2;
+        font-size: 11px;
+    }
+
+    .report-header { 
+        text-align: center; 
+        margin-bottom: 10px; 
+        border-bottom: 1px solid #000f71;
+        padding-bottom: 5px;
+    }
+    
+    .report-header h4 { 
+        color: #000f71; 
+        font-weight: 600; 
+        margin: 0;
+        font-size: 14px;
+    }
+    
+    .report-header h5 { 
+        color: #495057; 
+        font-weight: 500; 
+        margin: 0;
+        font-size: 11px;
+    }
+    
+    .company-address {
+        text-align: center;
+        color: #666;
+        font-size: 10px;
+        margin-bottom: 8px;
+    }
+    
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin-bottom: 8px; 
+        font-size: 10px;
+    }
+    
+    th, td { 
+        border: 1px solid #ddd; 
+        padding: 3px; 
+        text-align: left; 
+    }
+    
+    th { 
+        background-color: #f1f1f1; 
+        font-weight: 600; 
+        color: #333;
+    }
+    
+    .card { 
+        margin-bottom: 8px; 
+        border: 1px solid #e9ecef; 
+        border-radius: 3px; 
+    }
+    
+    .card-header { 
+        background-color: #f8f9fa; 
+        padding: 4px; 
+        border-bottom: 1px solid #e9ecef; 
+        font-weight: 600;
+        font-size: 11px;
+    }
+    
+    .card-body {
+        padding: 5px;
+        font-size: 10px;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3px;
+        font-size: 10px;
+    }
+    
+    .total-row {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    
+    .footer-info {
+        margin-top: 10px;
+        padding-top: 5px;
+        border-top: 1px solid #ddd;
+        text-align: center;
+        font-size: 9px;
+        color: #666;
+    }
+
+    @page {
+        size: 80mm auto; /* Or 8.5in 5.5in for short coupon */
+        margin: 5mm;
+    }
+
+    @media print {
+        body { margin: 0; }
+        .no-print { display: none !important; }
+    }
+</style>
+
         </head>
         <body>
             <div class="report-header">
                 <h4>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
-                <h5>Motorcycle Transfer Receipt</h5>
+                <h5>Merchandise Transfer Receipt</h5>
             </div>
             
             <div class="company-address">
