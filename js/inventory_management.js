@@ -1409,6 +1409,7 @@ function sellMotorcycle(id) {
 
   $("#saleForm")[0].reset();
   $("#codFields").hide();
+  $("#installmentFields").hide();
 
   $("#sellMotorcycleModal").modal("show");
 }
@@ -1422,11 +1423,9 @@ function handlePaymentTypeChange() {
   if (paymentType === "COD") {
     $("#codFields").show();
   } else if (paymentType === "Installment") {
-    $("#codFields").show();
     $("#installmentFields").show();
   }
 }
-
 
 function submitSale() {
   const formData = {
@@ -1437,17 +1436,14 @@ function submitSale() {
     payment_type: $("#paymentType").val(),
   };
 
-  if (formData.payment_type === "COD" || formData.payment_type === "Installment") {
+  if (formData.payment_type === "COD") {
     formData.dr_number = $("#drNumber").val();
     formData.cod_amount = $("#codAmount").val();
-  }
-
-  if (formData.payment_type === "Installment") {
+  } else if (formData.payment_type === "Installment") {
     formData.terms = $("#terms").val();
     formData.monthly_amortization = $("#monthlyAmortization").val();
   }
 
-  // Basic validation for required fields
   if (
     !formData.sale_date ||
     !formData.customer_name ||
@@ -1458,22 +1454,21 @@ function submitSale() {
   }
 
   if (
-    (formData.payment_type === "COD" || formData.payment_type === "Installment") &&
+    formData.payment_type === "COD" &&
     (!formData.dr_number || !formData.cod_amount)
   ) {
-    showErrorModal("Please fill in DR Number and Amount");
+    showErrorModal("Please fill in DR Number and COD Amount for COD payment");
     return;
   }
 
-  if (formData.payment_type === "Installment") {
-    if (!formData.terms || isNaN(formData.terms) || parseInt(formData.terms) <= 0) {
-      showErrorModal("Please enter a valid number of terms (months)");
-      return;
-    }
-    if (!formData.monthly_amortization || isNaN(formData.monthly_amortization) || parseFloat(formData.monthly_amortization) <= 0) {
-      showErrorModal("Please enter a valid monthly amortization amount");
-      return;
-    }
+  if (
+    formData.payment_type === "Installment" &&
+    (!formData.terms || !formData.monthly_amortization)
+  ) {
+    showErrorModal(
+      "Please fill in Terms and Monthly Amortization for Installment payment"
+    );
+    return;
   }
 
   $.ajax({
@@ -1500,8 +1495,6 @@ function submitSale() {
     },
   });
 }
-
-
 // =======================
 // Transfer Functions
 // =======================
