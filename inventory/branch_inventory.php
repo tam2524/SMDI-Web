@@ -919,6 +919,7 @@
             <option value='Honda'>Honda</option>
             <option value='Kawasaki'>Kawasaki</option>
             <option value='Yamaha'>Yamaha</option>
+            <option value='Asiastar'>Asiastar</option>
           </select>
         </div>
         <div class='col-md-4 mb-3'>
@@ -991,6 +992,7 @@
                                     <option value='Honda'>Honda</option>
                                     <option value='Kawasaki'>Kawasaki</option>
                                     <option value='Yamaha'>Yamaha</option>
+                                    <option value='Asiastar'>Asiastar</option>
                                 </select>
                             </div>
                             <div class='col-md-4 mb-3'>
