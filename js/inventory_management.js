@@ -384,7 +384,7 @@ function displayTransferSearchResults(data) {
                             <p class="mb-1 small">From: ${transfer.from_branch} → To: ${transfer.to_branch}</p>
                             <p class="mb-0 small text-muted">Date: ${transferDate}</p>
                         </div>
-                        <button class="btn btn-sm btn-primary view-receipt-btn" 
+                        <button class="btn btn-sm btn-primary text-white view-receipt-btn" 
                                 data-transfer-id="${transfer.id}"
                                 data-invoice-number="${transfer.transfer_invoice_number}">
                             <i class="bi bi-eye"></i> View Receipt
@@ -1517,19 +1517,47 @@ function performMultipleTransfers() {
   });
 }
 
+// Update your showTransferReceipt function to handle both data structures
 function showTransferReceipt(receiptData) {
     if (!receiptData) return;
     
+    // Handle different data structures
+    let headerData, motorcycles, totalCount, totalCost, notes, transferInvoiceNumber;
+    
+    if (receiptData.header) {
+        // This is from the search/get_transfer_receipt API
+        headerData = receiptData.header;
+        motorcycles = receiptData.motorcycles;
+        totalCount = receiptData.total_count;
+        totalCost = receiptData.total_cost;
+        notes = headerData.notes;
+        transferInvoiceNumber = headerData.transfer_invoice_number;
+    } else {
+        // This is from the transfer_multiple_motorcycles API (original format)
+        headerData = {
+            transfer_date: new Date().toISOString().split('T')[0],
+            from_branch: receiptData.from_branch,
+            to_branch: receiptData.to_branch,
+            notes: receiptData.notes,
+            transfer_invoice_number: receiptData.transfer_invoice_number
+        };
+        motorcycles = receiptData.motorcycles;
+        totalCount = receiptData.total_count;
+        totalCost = receiptData.total_cost;
+        notes = receiptData.notes;
+        transferInvoiceNumber = receiptData.transfer_invoice_number;
+    }
+    
     // Set header information
-    $("#receiptDate").text(new Date().toLocaleDateString());
-    $("#receiptTransferId").text(receiptData.transfer_ids.join(', '));
-    $("#receiptInvoiceNo").text(receiptData.transfer_invoice_number || 'N/A');
-    $("#receiptFromBranch").text(receiptData.from_branch);
-    $("#receiptToBranch").text(receiptData.to_branch);
+    $("#receiptDate").text(formatDate(headerData.transfer_date));
+    $("#receiptTransferId").text(headerData.id || 'N/A');
+    $("#receiptInvoiceNo").text(transferInvoiceNumber || 'N/A');
+    $("#receiptFromBranch").text(headerData.from_branch);
+    $("#receiptToBranch").text(headerData.to_branch);
     
     // Set notes or show default message
-    if (receiptData.notes && receiptData.notes.trim() !== '') {
-        $("#receiptNotes").text(receiptData.notes);
+    if (notes && notes.trim() !== '') {
+        $("#receiptNotes").text(notes);
     } else {
         $("#receiptNotes").text('No notes provided.');
     }
@@ -1538,11 +1566,11 @@ function showTransferReceipt(receiptData) {
     const $receiptList = $("#receiptMotorcyclesList");
     $receiptList.empty();
     
-    let totalCost = 0;
+    let calculatedTotalCost = 0;
     
-    receiptData.motorcycles.forEach((motorcycle, index) => {
+    motorcycles.forEach((motorcycle, index) => {
         const cost = parseFloat(motorcycle.inventory_cost) || 0;
-        totalCost += cost;
+        calculatedTotalCost += cost;
         
         $receiptList.append(`
             <tr>
@@ -1557,9 +1585,13 @@ function showTransferReceipt(receiptData) {
         `);
     });
     
+    // Use calculated total if provided total is not available
+    const finalTotalCost = totalCost || calculatedTotalCost;
+    const finalTotalCount = totalCount || motorcycles.length;
+    
     // Set totals
-    $("#receiptTotalCount").text(receiptData.total_count);
-    $("#receiptTotalCost").text(formatCurrency(totalCost));
+    $("#receiptTotalCount").text(finalTotalCount);
+    $("#receiptTotalCost").text(formatCurrency(finalTotalCost));
     
     // Show the modal
     $("#transferReceiptModal").modal("show");
