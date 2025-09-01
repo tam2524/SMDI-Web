@@ -1726,11 +1726,6 @@ function printReceipt() {
                 <h4>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
                 <h5>Merchandise Transfer Receipt</h5>
             </div>
-            
-            <div class="company-address">
-                1031, Victoria Building, Roxas Avenue, Roxas City, 5800
-            </div>
-            
             <div class="info-grid">
                 <div class="card">
                     <div class="card-header">Transfer Information</div>
