@@ -294,7 +294,7 @@
                                     <option value='BALASAN'>BALASAN</option>
                                     <option value='GUIMARAS'>GUIMARAS</option>
                                     <option value='PEMDI'>PEMDI</option>
-                                    <option value='EEMSI'>EEMSI</option>
+                                    <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
                                     <option value='3S MINDORO'>3S MINDORO</option>
@@ -494,7 +494,7 @@
                                     <option value='BALASAN'>BALASAN</option>
                                     <option value='GUIMARAS'>GUIMARAS</option>
                                     <option value='PEMDI'>PEMDI</option>
-                                    <option value='EEMSI'>EEMSI</option>
+                                    <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
                                     <option value='3S MINDORO'>3S MINDORO</option>
