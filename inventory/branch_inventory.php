@@ -538,20 +538,20 @@
                                     <div class="col-md-6 mb-2">
                                         <label for="editSaleDate" class="form-label"><strong>Sale Date:</strong></label>
                                         <input type="date" class="form-control" id="editSaleDate" name="sale_date"
-                                            required>
+                                            >
                                     </div>
                                     <div class="col-md-6 mb-2">
                                         <label for="editCustomerName" class="form-label"><strong>Customer
                                                 Name:</strong></label>
                                         <input type="text" class="form-control" id="editCustomerName"
-                                            name="customer_name" required>
+                                            name="customer_name" >
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-2">
                                         <label for="editPaymentType" class="form-label"><strong>Payment
                                                 Type:</strong></label>
-                                        <select class="form-select" id="editPaymentType" name="payment_type" required>
+                                        <select class="form-select" id="editPaymentType" name="payment_type" >
                                             <option value="">Select Payment Type</option>
                                             <option value="COD">COD</option>
                                             <option value="Installment">Installment</option>
