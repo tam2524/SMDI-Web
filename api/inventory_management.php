@@ -1683,7 +1683,6 @@ function getMonthlyInventory() {
 
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
-    // Default category to 'all' if not provided
     $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
 
     if (empty($month)) {
@@ -1695,13 +1694,12 @@ function getMonthlyInventory() {
     $endDate   = date('Y-m-t', strtotime($month));
     $prevMonthEnd = date('Y-m-t', strtotime($month . ' -1 month'));
 
-    // Only add category filter if category is not 'all'
     $categoryCondition = '';
     if ($category !== 'all') {
         $categoryCondition = " AND LOWER(mi.category) = '$category' ";
     }
 
-    // Use branch as is (case-sensitive)
+    // BEGINNING BALANCE
     if (strtoupper($branch) === 'ALL') {
         $sqlBeginning = "
             SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
@@ -1740,7 +1738,7 @@ function getMonthlyInventory() {
     $countBeginning = (int)$beginningResult['count_beginning'];
     $costBeginning = (float)$beginningResult['cost_beginning'];
 
-    // 2. NEW DELIVERIES
+    // NEW DELIVERIES
     if ($branch === 'all') {
         $sqlNewDeliveries = "
             SELECT COUNT(*) as count_new, COALESCE(SUM(inventory_cost), 0) as cost_new
@@ -1785,7 +1783,7 @@ function getMonthlyInventory() {
     $countNewDeliveries = (int)$newDeliveriesResult['count_new'];
     $costNewDeliveries = (float)$newDeliveriesResult['cost_new'];
 
-    // 3. RECEIVED TRANSFERS
+    // RECEIVED TRANSFERS
     if ($branch === 'all') {
         $sqlReceived = "
             SELECT COUNT(*) as count_received, COALESCE(SUM(mi.inventory_cost), 0) as cost_received
@@ -1815,11 +1813,11 @@ function getMonthlyInventory() {
     $countReceived = (int)$receivedResult['count_received'];
     $costReceived = (float)$receivedResult['cost_received'];
 
-    // 4. TOTAL IN
+    // TOTAL IN
     $countIn = $countNewDeliveries + $countReceived;
     $costIn = $costNewDeliveries + $costReceived;
 
-    // 5. TRANSFERS OUT
+    // TRANSFERS OUT
     if ($branch === 'all') {
         $sqlTransfersOut = "
             SELECT COUNT(*) as count_transfers_out, COALESCE(SUM(mi.inventory_cost), 0) as cost_transfers_out
@@ -1849,7 +1847,7 @@ function getMonthlyInventory() {
     $countTransfersOut = (int)$transfersOutResult['count_transfers_out'];
     $costTransfersOut = (float)$transfersOutResult['cost_transfers_out'];
 
-    // 6. SOLD DURING MONTH
+    // SOLD DURING MONTH
     if ($branch === 'all') {
         $sqlSoldDuringMonth = "
             SELECT COUNT(*) as count_sold_month, COALESCE(SUM(mi.inventory_cost), 0) as cost_sold_month
@@ -1879,15 +1877,15 @@ function getMonthlyInventory() {
     $countSoldDuringMonth = (int)$soldDuringMonthResult['count_sold_month'];
     $costSoldDuringMonth = (float)$soldDuringMonthResult['cost_sold_month'];
 
-    // 7. TOTAL OUT
+    // TOTAL OUT
     $countOut = $countTransfersOut + $countSoldDuringMonth;
     $costOut = $costTransfersOut + $costSoldDuringMonth;
 
-    // 8. ENDING BALANCE CALCULATION
+    // ENDING BALANCE CALCULATION
     $countEndingCalculated = $countBeginning + $countIn - $countOut;
     $costEndingCalculated = $costBeginning + $costIn - $costOut;
 
-    // 9. ACTUAL ENDING BALANCE
+    // ACTUAL ENDING BALANCE
     if ($branch === 'all') {
         $sqlEndingActual = "
             SELECT COUNT(*) as count_ending, COALESCE(SUM(inventory_cost),0) as cost_ending
@@ -1915,7 +1913,7 @@ function getMonthlyInventory() {
     $countEndingActual = (int)$endingActualResult['count_ending'];
     $costEndingActual = (float)$endingActualResult['cost_ending'];
 
-    // 10. DETAILED DATA
+    // DETAILED DATA
     if ($branch === 'all') {
         $sqlData = "SELECT mi.*, i.invoice_number FROM motorcycle_inventory mi 
                     LEFT JOIN invoices i ON mi.invoice_id = i.id 
@@ -1957,7 +1955,7 @@ function getMonthlyInventory() {
         ];
     }
 
-    // 11. TRANSFER DETAILS
+    // TRANSFER DETAILS
     if ($branch === 'all') {
         $sqlTransferDetails = "
             SELECT it.*, mi.brand, mi.model, mi.engine_number, mi.frame_number, mi.inventory_cost,
@@ -1998,7 +1996,72 @@ function getMonthlyInventory() {
         $transferDetails[] = $row;
     }
 
-    // 12. Build response
+    // === Calculate discrepancies per model and branch ===
+
+    // Aggregate actual inventory by model and branch
+    $actualByModelBranch = [];
+    foreach ($data as $item) {
+        $key = $item['model'] . '||' . $item['current_branch'];
+        if (!isset($actualByModelBranch[$key])) {
+            $actualByModelBranch[$key] = ['count' => 0, 'cost' => 0];
+        }
+        $actualByModelBranch[$key]['count'] += 1;
+        $actualByModelBranch[$key]['cost'] += $item['inventory_cost'];
+    }
+
+    // Initialize calculated inventory by model and branch
+    $calculatedByModelBranch = [];
+
+    // Add beginning balance per model and branch as zero (or you can extend to calculate if you have data)
+
+    // Add IN (new deliveries + received transfers) per model and branch
+    foreach ($transferDetails as $transfer) {
+        $toBranch = $transfer['to_branch'] ?? '';
+        $model = $transfer['model'] ?? '';
+        $key = $model . '||' . $toBranch;
+        if (!isset($calculatedByModelBranch[$key])) {
+            $calculatedByModelBranch[$key] = ['count' => 0, 'cost' => 0];
+        }
+        if (in_array($transfer['transfer_type'], ['IN', 'TRANSFER'])) {
+            $calculatedByModelBranch[$key]['count'] += 1;
+            $calculatedByModelBranch[$key]['cost'] += (float)$transfer['inventory_cost'];
+        }
+    }
+
+    // Subtract OUT (transfers out) per model and branch
+    foreach ($transferDetails as $transfer) {
+        $fromBranch = $transfer['from_branch'] ?? '';
+        $model = $transfer['model'] ?? '';
+        $key = $model . '||' . $fromBranch;
+        if (!isset($calculatedByModelBranch[$key])) {
+            $calculatedByModelBranch[$key] = ['count' => 0, 'cost' => 0];
+        }
+        if (in_array($transfer['transfer_type'], ['OUT', 'TRANSFER'])) {
+            $calculatedByModelBranch[$key]['count'] -= 1;
+            $calculatedByModelBranch[$key]['cost'] -= (float)$transfer['inventory_cost'];
+        }
+    }
+
+    // Note: Sold motorcycles are not included here; you can extend similarly if you have sales data by model and branch
+
+    // Calculate discrepancies per model and branch
+    $discrepancies = [];
+    foreach ($actualByModelBranch as $key => $actual) {
+        $calculated = $calculatedByModelBranch[$key] ?? ['count' => 0, 'cost' => 0];
+        list($model, $branchName) = explode('||', $key);
+        $discrepancies[] = [
+            'model' => $model,
+            'branch' => $branchName,
+            'actual_count' => $actual['count'],
+            'actual_cost' => $actual['cost'],
+            'calculated_count' => $calculated['count'],
+            'calculated_cost' => $calculated['cost'],
+            'count_discrepancy' => $actual['count'] - $calculated['count'],
+            'cost_discrepancy' => $actual['cost'] - $calculated['cost'],
+        ];
+    }
+
+    // === Build response ===
     $response = [
         'success' => true,
         'data' => $data,
@@ -2017,7 +2080,7 @@ function getMonthlyInventory() {
             'inventory_cost' => [
                 'beginning_balance' => $costBeginning,
                 'received_transfers' => $costReceived,
-                'new_deliveries' => $costNewDeliveries,
+                                'new_deliveries' => $costNewDeliveries,
                 'in' => $costIn,
                 'transfers_out' => $costTransfersOut,
                 'sold_during_month' => $costSoldDuringMonth,
@@ -2043,6 +2106,7 @@ function getMonthlyInventory() {
             'cost' => $costEndingActual - $costEndingCalculated,
             'cost_formatted' => number_format($costEndingActual - $costEndingCalculated, 2)
         ],
+        'discrepancies_by_model_branch' => $discrepancies,
         'calculation_breakdown' => [
             'formula' => 'Beginning Balance + IN - OUT = Ending Balance',
             'detailed_formula' => 'Beginning Balance + (New Deliveries + Received Transfers) - (Transfers Out + Sold) = Ending Balance',
