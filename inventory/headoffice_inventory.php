@@ -131,14 +131,13 @@
                                     id='generateReportsButton'>
                                     <i class='bi bi-file-earmark-text'></i> Generate Reports
                                 </button>
-                                <button class='btn btn-primary text-white me-2' id='searchTransferReceiptBtn'>
-                                    <i class='bi bi-receipt'></i> Search Transfer Receipt
-                                </button>
-                                <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
-    <i class='bi bi-receipt'></i> Search Invoice Number
+                                 <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
+                            <i class="bi bi-receipt"></i> Print by MT
+                        </button>
+                        <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
+    <i class='bi bi-receipt'></i> Print by Invoice
 </button>
-
-                            </div>
+                    </div>
                             <div class='input-group' style='max-width: 300px;'>
                                 <input type='text' id='searchInventory' class='form-control'
                                     placeholder='Search inventory...'>
