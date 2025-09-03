@@ -19,7 +19,8 @@
     <link href='../css/inventory_style.css' rel='stylesheet'>
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
@@ -331,7 +332,7 @@
                                     <option value='PASSI-2'>PASSI-2</option>
                                     <option value='BALASAN'>BALASAN</option>
                                     <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI'>PEMDI</option>
+                                    <option value='PEMDI BACOLOD'>PEMDI BACOLOD</option>
                                     <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
@@ -471,7 +472,7 @@
                                     <option value='PASSI-2'>PASSI-2</option>
                                     <option value='BALASAN'>BALASAN</option>
                                     <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI'>PEMDI</option>
+                                    <option value='PEMDI BACOLOD'>PEMDI BACOLOD</option>
                                     <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>

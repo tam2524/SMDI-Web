@@ -22,6 +22,39 @@ let currentReportSummary = null;
 let modelCount = 0;
 let currentUserRole = "USER";
 
+// Add this to your CSS or as a style element
+const pdfStyles = `
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #monthlyReportPrintContainer, #monthlyReportPrintContainer * {
+            visibility: visible;
+        }
+        #monthlyReportPrintContainer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .table-container {
+            overflow: visible !important;
+        }
+        table {
+            page-break-inside: auto !important;
+        }
+        tr {
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+        }
+    }
+`;
+
+// Inject the styles
+const styleSheet = document.createElement("style");
+styleSheet.textContent = pdfStyles;
+document.head.appendChild(styleSheet);
+
 // =======================
 // Document Ready & Event Listeners
 // =======================
@@ -3423,65 +3456,83 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 function exportMonthlyReportToPDF() {
-  // Show a loading indicator
-  showSuccessModal("Preparing PDF export... This may take a moment for large datasets.");
-  
-  // Use a timeout to ensure the DOM is ready
-  setTimeout(function() {
-    const reportEl = document.getElementById("monthlyReportPrintContainer");
+    // Show loading indicator
+    const loadingModal = showPdfLoadingModal();
     
-    if (!reportEl || !reportEl.innerHTML.trim()) {
-      alert("No report content available to export.");
-      return;
-    }
-    
-    // Show the container
-    reportEl.style.display = "block";
-    
-    // PDF configuration options
-    const opt = {
-      margin: 0.5,
-      filename: `Monthly_Inventory_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { 
-        scale: 1, 
-        useCORS: true,
-        logging: false, // Disable logging for better performance
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: reportEl.scrollWidth,
-        windowHeight: reportEl.scrollHeight
-      },
-      jsPDF: { 
-        unit: "in", 
-        format: "letter", 
-        orientation: "portrait",
-        compress: true // Enable compression for smaller file size
-      },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Better page break handling
-    };
-    
-    // Generate PDF with error handling
-    try {
-      html2pdf()
-        .set(opt)
-        .from(reportEl)
-        .save()
-        .then(() => {
-          reportEl.style.display = "none";
-          showSuccessModal("PDF exported successfully!");
-        })
-        .catch((error) => {
-          console.error("PDF generation error:", error);
-          showErrorModal("Error generating PDF: " + error.message);
-          reportEl.style.display = "none";
-        });
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      showErrorModal("Error generating PDF: " + error.message);
-      reportEl.style.display = "none";
-    }
-  }, 500); // Short delay to ensure DOM is ready
+    // Use setTimeout to allow the UI to update before PDF generation
+    setTimeout(function() {
+        try {
+            // Clone the report content to avoid modifying the original
+            const reportContent = document.getElementById('monthlyReportContent');
+            const printContainer = document.getElementById('monthlyReportPrintContainer');
+            
+            if (!reportContent || !printContainer) {
+                hidePdfLoadingModal(loadingModal);
+                showErrorModal("Report content not found");
+                return;
+            }
+            
+            // Clone the content
+            const contentClone = reportContent.cloneNode(true);
+            printContainer.innerHTML = '';
+            printContainer.appendChild(contentClone);
+            printContainer.style.display = 'block';
+            
+            // Simplify content for PDF export
+            simplifyForPdf(printContainer);
+            
+            // PDF configuration
+            const opt = {
+                margin: 0.5,
+                filename: `Monthly_Inventory_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 1, 
+                    useCORS: true,
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: -window.scrollY,
+                    width: printContainer.scrollWidth,
+                    height: printContainer.scrollHeight,
+                    onclone: function(clonedDoc) {
+                        // Ensure all content is visible in the clone
+                        const tables = clonedDoc.querySelectorAll('table');
+                        tables.forEach(table => {
+                            table.style.display = 'table';
+                            table.style.width = '100%';
+                        });
+                    }
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'letter', 
+                    orientation: 'portrait' 
+                }
+            };
+            
+            // Generate PDF
+            html2pdf()
+                .set(opt)
+                .from(printContainer)
+                .save()
+                .then(() => {
+                    printContainer.style.display = 'none';
+                    hidePdfLoadingModal(loadingModal);
+                    showSuccessModal("PDF exported successfully!");
+                })
+                .catch((error) => {
+                    console.error("PDF generation error:", error);
+                    hidePdfLoadingModal(loadingModal);
+                    showErrorModal("Error generating PDF: " + error.message);
+                    printContainer.style.display = 'none';
+                });
+                
+        } catch (error) {
+            console.error("PDF generation error:", error);
+            hidePdfLoadingModal(loadingModal);
+            showErrorModal("Error generating PDF: " + error.message);
+        }
+    }, 500);
 }
 function exportMonthlyReport() {
   let csvContent = "data:text/csv;charset=utf-8,";
@@ -3639,319 +3690,6 @@ function generateReportPDF() {
         generateMotorcycleReportPDF();
     }
 }
-function generateInventoryReportPDF() {
-    const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
-        month: "long",
-    });
-    const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
-
-    // Use same variable names as renderMonthlyInventoryReport
-    const beginningBalance = currentReportSummary?.beginning_balance || 0;
-    const receivedTransfers = currentReportSummary?.received_transfers || 0;
-    const newDeliveries = currentReportSummary?.new_deliveries || 0;
-    const totalIn = currentReportSummary?.in || 0;
-    const transfersOut = currentReportSummary?.transfers_out || 0;
-    const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
-    const totalOut = currentReportSummary?.out || 0;
-    const endingCalculated = currentReportSummary?.ending_calculated || 0;
-    const endingActual = currentReportSummary?.ending_actual || 0;
-    
-    // Inventory cost values
-    const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
-    const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
-    const costNewDeliveries = currentReportSummary?.inventory_cost?.new_deliveries || 0;
-    const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
-    const costTransfersOut = currentReportSummary?.inventory_cost?.transfers_out || 0;
-    const costSoldDuringMonth = currentReportSummary?.inventory_cost?.sold_during_month || 0;
-    const costTotalOut = currentReportSummary?.inventory_cost?.out || 0;
-    const costEndingCalculated = currentReportSummary?.inventory_cost?.ending_calculated || 0;
-    const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
-
-    // Sort data by model for cleaner display (same as render function)
-    currentReportData.sort((a, b) => a.model.localeCompare(b.model));
-
-    const rowsHtml = currentReportData.length === 0 ? `
-        <tr>
-            <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">
-                No inventory data found for this period
-            </td>
-        </tr>
-    ` : currentReportData.map((item, index) => {
-        const rowBg = index % 2 === 0 ? "#ffffff" : "#f8f9fa";
-        return `
-            <tr style="background-color: ${rowBg};">
-                <td style="text-align: center; padding: 8px; border-right: 1px solid #e9ecef;">1</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.engine_number)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.frame_number)}</td>
-                <td style="padding: 8px; text-align: right;">${formatCurrency(item.inventory_cost)}</td>
-            </tr>
-        `;
-    }).join("");
-
-    const html = `
-    <style>
-        /* Avoid breaking table rows across pages */
-        table {
-            page-break-inside: auto;
-            border-collapse: collapse;
-        }
-        tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-        }
-        thead {
-            display: table-header-group; /* repeat table header on each page */
-        }
-        tbody {
-            display: table-row-group;
-        }
-        /* Avoid breaking summary cards */
-        .summary-card {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 0;
-        }
-        /* Container for left and right columns */
-        .main-content {
-            display: flex;
-            gap: 20px;
-            page-break-inside: avoid;
-        }
-        /* Force page break before formula section if needed */
-        .formula-section {
-            page-break-before: always;
-        }
-    </style>
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
-            <!-- Header Section - Same as render function -->
-            <div style="text-align: center; margin-bottom: 30px;">
-                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                    <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                        SOLID MOTORCYCLE DISTRIBUTORS, INC.
-                    </h4>
-                    <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-                </div>
-                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
-                <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-                ${currentReportBranch !== "all" ? `
-                    <p style="margin: 5px 0;">
-                        <span style="color: #6c757d;">Branch:</span> 
-                        <span style="color: #000f71; font-weight: 500;">${branchName}</span>
-                    </p>
-                ` : ""}
-                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">
-                    Generated on ${new Date().toLocaleDateString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                    })}
-                </p>
-            </div>
-            
-            <!-- Main Content Layout - Two Column like render function -->
-            <div style="display: flex; gap: 20px;">
-                <!-- Left Column - Table (70% width) -->
-                <div style="flex: 0 0 70%; border: 1px solid #e9ecef; border-radius: 6px;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                        <thead>
-                            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">QTY</th>
-                                <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
-                                <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
-                                <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
-                                <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                                <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                                <th style="padding: 12px; font-weight: 600; color: #495057;">Inventory Cost</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rowsHtml}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Right Column - Summary Cards (30% width) -->
-                <div style="flex: 0 0 30%;">
-                    <!-- Beginning Balance Card -->
-                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
-                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
-                            <h6 style="text-align: center; margin: 0; color: #6c757d; font-weight: 600; font-size: 14px;">
-                                BEGINNING BALANCE
-                            </h6>
-                        </div>
-                        <div style="padding: 0 16px 12px;">
-                            <div style="text-align: center;">
-                                <span style="font-size: 24px; font-weight: bold; color: #6c757d;">${beginningBalance}</span>
-                                <div style="font-size: 12px; color: #6c757d; margin-top: 4px;">${formatCurrency(costBeginning)}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- IN Section Card -->
-                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
-                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
-                            <h6 style="text-align: center; margin: 0; color: #28a745; font-weight: 600; font-size: 14px;">
-                                INVENTORY IN
-                            </h6>
-                        </div>
-                        <div style="padding: 0 16px 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Received Transfers</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-weight: bold; color: #28a745;">${receivedTransfers}</span>
-                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costReceived)}</div>
-                                </div>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">New Deliveries</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-weight: bold; color: #28a745;">${newDeliveries}</span>
-                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costNewDeliveries)}</div>
-                                </div>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
-                                <div>
-                                    <div style="font-weight: bold; color: #28a745;">TOTAL IN</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-size: 18px; font-weight: bold; color: #28a745;">${totalIn}</span>
-                                    <div style="font-size: 11px; color: #28a745; font-weight: bold;">${formatCurrency(costTotalIn)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- OUT Section Card -->
-                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
-                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
-                            <h6 style="text-align: center; margin: 0; color: #dc3545; font-weight: 600; font-size: 14px;">
-                                INVENTORY OUT
-                            </h6>
-                        </div>
-                        <div style="padding: 0 16px 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Transfers Out</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-weight: bold; color: #dc3545;">${transfersOut}</span>
-                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costTransfersOut)}</div>
-                                </div>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Sold During Month</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-weight: bold; color: #dc3545;">${soldDuringMonth}</span>
-                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costSoldDuringMonth)}</div>
-                                </div>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
-                                <div>
-                                    <div style="font-weight: bold; color: #dc3545;">TOTAL OUT</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-size: 18px; font-weight: bold; color: #dc3545;">${totalOut}</span>
-                                    <div style="font-size: 11px; color: #dc3545; font-weight: bold;">${formatCurrency(costTotalOut)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Ending Balance Card -->
-                    <div style="border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);">
-                        <div style="background: transparent; border-bottom: 1px solid #e9ecef; padding: 12px 16px 8px;">
-                            <h6 style="text-align: center; margin: 0; color: #000f71; font-weight: 600; font-size: 14px;">
-                                ENDING BALANCE
-                            </h6>
-                        </div>
-                        <div style="padding: 0 16px 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f4;">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 12px; color: #495057;">Calculated</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-weight: bold; color: #000f71;">${endingCalculated}</span>
-                                    <div style="font-size: 11px; color: #6c757d;">${formatCurrency(costEndingCalculated)}</div>
-                                </div>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
-                                <div>
-                                    <div style="font-weight: bold; color: #000f71;">Actual</div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-size: 24px; font-weight: bold; color: #000f71;">${endingActual}</span>
-                                    <div style="font-size: 11px; color: #000f71; font-weight: bold;">${formatCurrency(costEndingActual)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Discrepancy Alert (if any) -->
-                    ${endingCalculated !== endingActual ? `
-                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 10px; margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                            <span style="font-weight: bold; color: #856404;">Discrepancy:</span>
-                            <span style="font-weight: bold; color: #856404;">${endingActual - endingCalculated}</span>
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <!-- Formula Explanation Section -->
-            <div style="margin-top: 30px; padding: 15px; border: 1px solid #e9ecef; border-radius: 8px; background: #f8f9fa;">
-                <div style="font-weight: 600; color: #495057; margin-bottom: 10px; text-align: center; font-size: 16px;">
-                    INVENTORY CALCULATION FORMULA
-                </div>
-                <div style="text-align: center; font-size: 14px; color: #6c757d; margin-bottom: 8px;">
-                    Beginning Balance + Total IN - Total OUT = Ending Balance
-                </div>
-                <div style="text-align: center; font-size: 13px; color: #495057; margin-bottom: 5px;">
-                    ${beginningBalance} + ${totalIn} - ${totalOut} = ${endingCalculated}
-                </div>
-                <div style="text-align: center; font-size: 12px; color: #6c757d;">
-                    Detailed: ${beginningBalance} + (${receivedTransfers} received + ${newDeliveries} new) - (${transfersOut} transferred + ${soldDuringMonth} sold) = ${endingCalculated}
-                </div>
-            </div>
-        </div>
-    `;
-
-    const container = document.createElement("div");
-    container.innerHTML = html;
-
-    const opt = {
-        margin: 0.5,
-        filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-    };
-
-    html2pdf().set(opt).from(container).save();
-}
-
-
 // Add this function for motorcycle report PDF export
 function generateMotorcycleReportPDF() {
     const reportContent = $('#monthlyReportContent').html();
@@ -3970,13 +3708,16 @@ function generateMotorcycleReportPDF() {
 }
 
 function generateInventoryReportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
     const [year, monthNum] = currentReportMonth.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
         month: "long",
     });
     const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
 
-    // Use same variable names as renderMonthlyInventoryReport
+    // Summary values
     const beginningBalance = currentReportSummary?.beginning_balance || 0;
     const receivedTransfers = currentReportSummary?.received_transfers || 0;
     const newDeliveries = currentReportSummary?.new_deliveries || 0;
@@ -3986,7 +3727,7 @@ function generateInventoryReportPDF() {
     const totalOut = currentReportSummary?.out || 0;
     const endingCalculated = currentReportSummary?.ending_calculated || 0;
     const endingActual = currentReportSummary?.ending_actual || 0;
-    
+
     // Inventory cost values
     const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
     const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
@@ -3998,161 +3739,214 @@ function generateInventoryReportPDF() {
     const costEndingCalculated = currentReportSummary?.inventory_cost?.ending_calculated || 0;
     const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
 
-    // Sort data by model for cleaner display
+    // Sort data by model
     currentReportData.sort((a, b) => a.model.localeCompare(b.model));
 
-    const rowsHtml = currentReportData.length === 0 ? `
-        <tr>
-            <td colspan="7" style="text-align: center; padding: 30px; color: #6c757d; font-style: italic;">
-                No inventory data found for this period
-            </td>
-        </tr>
-    ` : currentReportData.map((item, index) => {
-        const rowBg = index % 2 === 0 ? "#ffffff" : "#f8f9fa";
-        return `
-            <tr style="background-color: ${rowBg};">
-                <td style="text-align: center; padding: 8px; border-right: 1px solid #e9ecef;">1</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.engine_number)}</td>
-                <td style="padding: 8px; border-right: 1px solid #e9ecef;">${escapeHtml(item.frame_number)}</td>
-                <td style="padding: 8px; text-align: right;">${formatCurrency(item.inventory_cost)}</td>
-            </tr>
-        `;
-    }).join("");
+    // --- Page 1: Header and Table ---
 
-    const html = `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
-            <!-- Header Section -->
-            <div style="text-align: center; margin-bottom: 30px;">
-                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                    <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                    <h4 style="margin: 0; color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                        SOLID MOTORCYCLE DISTRIBUTORS, INC.
-                    </h4>
-                    <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-                </div>
-                <h5 style="margin: 10px 0; color: #495057; font-weight: 500;">MONTHLY INVENTORY BALANCE REPORT</h5>
-                <h6 style="margin: 5px 0; color: #6c757d; font-weight: 400;">${monthName} ${year}</h6>
-                ${currentReportBranch !== "all" ? `
-                    <p style="margin: 5px 0;">
-                        <span style="color: #6c757d;">Branch:</span> 
-                        <span style="color: #000f71; font-weight: 500;">${branchName}</span>
-                    </p>
-                ` : ""}
-                <p style="color: #6c757d; font-size: 12px; margin: 5px 0;">
-                    Generated on ${new Date().toLocaleDateString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                    })}
-                </p>
-            </div>
-            
-            <!-- Table Section -->
-            <div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 30px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                            <th style="text-align: center; padding: 12px; font-weight: 600; color: #495057; width: 60px;">QTY</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">MODEL</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">COLOR</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">BRAND</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                            <th style="padding: 12px; font-weight: 600; color: #495057;">Inventory Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHtml}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Summary Section - 4 Cards in a Row -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-                <!-- 1. Beginning Balance -->
-                <div style="text-align: center; padding: 20px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #495057; margin-bottom: 8px; font-size: 14px;">
-                        BEGINNING BALANCE
-                    </div>
-                    <div style="font-size: 28px; font-weight: bold; color: #6c757d; margin-bottom: 5px;">
-                        ${beginningBalance}
-                    </div>
-                    <div style="font-size: 12px; color: #6c757d;">
-                        ${formatCurrency(costBeginning)}
-                    </div>
-                </div>
-                
-                <!-- 2. IN -->
-                <div style="text-align: center; padding: 20px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #155724; margin-bottom: 8px; font-size: 14px;">
-                        IN
-                    </div>
-                    <div style="font-size: 28px; font-weight: bold; color: #28a745; margin-bottom: 5px;">
-                        ${totalIn}
-                    </div>
-                    <div style="font-size: 12px; color: #28a745; margin-bottom: 8px;">
-                        ${formatCurrency(costTotalIn)}
-                    </div>
-                    <div style="font-size: 10px; color: #155724;">
-                        Received: ${receivedTransfers} | New: ${newDeliveries}
-                    </div>
-                </div>
-                
-                <!-- 3. OUT -->
-                <div style="text-align: center; padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #721c24; margin-bottom: 8px; font-size: 14px;">
-                        OUT
-                    </div>
-                    <div style="font-size: 28px; font-weight: bold; color: #dc3545; margin-bottom: 5px;">
-                        ${totalOut}
-                    </div>
-                    <div style="font-size: 12px; color: #dc3545; margin-bottom: 8px;">
-                        ${formatCurrency(costTotalOut)}
-                    </div>
-                    <div style="font-size: 10px; color: #721c24;">
-                        Transferred: ${transfersOut} | Sold: ${soldDuringMonth}
-                    </div>
-                </div>
-                
-                <!-- 4. Ending Balance -->
-                <div style="text-align: center; padding: 20px; background: #cce5ff; border: 1px solid #b3d7ff; border-radius: 8px;">
-                    <div style="font-weight: 600; color: #004085; margin-bottom: 8px; font-size: 14px;">
-                        ENDING BALANCE
-                    </div>
-                    <div style="font-size: 28px; font-weight: bold; color: #0056b3; margin-bottom: 5px;">
-                        ${endingActual}
-                    </div>
-                    <div style="font-size: 12px; color: #0056b3; margin-bottom: 8px;">
-                        ${formatCurrency(costEndingActual)}
-                    </div>
-                    <div style="font-size: 10px; color: #004085;">
-                        Calculated: ${endingCalculated}
-                        ${endingCalculated !== endingActual ? ` | Diff: ${endingActual - endingCalculated}` : ''}
-                    </div>
-                </div>
-            </div>
-            
-            
-            </div>
-        </div>
-    `;
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(0, 15, 113);
+    doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", 105, 15, null, null, "center");
 
-    const container = document.createElement("div");
-    container.innerHTML = html;
+    doc.setFontSize(12);
+    doc.setTextColor(73, 80, 87);
+    doc.text("MONTHLY INVENTORY BALANCE REPORT", 105, 25, null, null, "center");
 
-    const opt = {
-        margin: 0.5,
-        filename: `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-    };
+    doc.setFontSize(10);
+    doc.setTextColor(108, 117, 125);
+    doc.text(`${monthName} ${year}`, 105, 32, null, null, "center");
 
-    html2pdf().set(opt).from(container).save();
+    if (currentReportBranch !== "all") {
+        doc.text(`Branch: ${branchName}`, 105, 38, null, null, "center");
+    }
+
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 44, null, null, "center");
+
+    // Prepare table columns and rows
+    const columns = [
+        { header: "QTY", dataKey: "qty", width: 10 }, // Fixed width for QTY
+        { header: "MODEL", dataKey: "model", width: 30 },
+        { header: "COLOR", dataKey: "color", width: 25 },
+        { header: "BRAND", dataKey: "brand", width: 25 },
+        { header: "ENGINE NUMBER", dataKey: "engine_number", width: 35 },
+        { header: "FRAME NUMBER", dataKey: "frame_number", width: 35 },
+        { header: "Inventory Cost", dataKey: "inventory_cost", width: 25, align: 'right' }, // Adjusted width and alignment
+    ];
+
+    const rows = currentReportData.length === 0 ? [{
+        qty: "",
+        model: "No inventory data found for this period",
+        color: "",
+        brand: "",
+        engine_number: "",
+        frame_number: "",
+        inventory_cost: ""
+    }] : currentReportData.map(item => ({
+        qty: "1",
+        model: item.model,
+        color: item.color,
+        brand: item.brand,
+        engine_number: item.engine_number,
+        frame_number: item.frame_number,
+        inventory_cost: formatCurrency(item.inventory_cost),
+    }));
+
+    // Add table with autoTable plugin
+    doc.autoTable({
+        startY: 50,
+        headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 2 },
+        columnStyles: {
+            'qty': { halign: 'center' },
+            'inventory_cost': { halign: 'right' } // Ensure right alignment for cost
+        },
+        columns,
+        body: rows,
+        margin: { left: 10, right: 10 }, // Adjusted margins for table
+        didDrawPage: (data) => {
+            // Add page number at bottom center
+            const pageCount = doc.internal.getNumberOfPages();
+            doc.setFontSize(8);
+            doc.setTextColor(108, 117, 125);
+            doc.text(`Page ${data.pageNumber} of ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, null, null, "center");
+        }
+    });
+
+    // --- Page 2: Summary Cards and Formula ---
+    doc.addPage(); // Add a new page for the summary
+
+    // Reset page number for the new page
+    doc.setFontSize(8);
+    doc.setTextColor(108, 117, 125);
+    doc.text(`Page ${doc.internal.getNumberOfPages()} of ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, null, null, "center");
+
+
+    let currentY = 20; // Starting Y position for summary on the new page
+
+    // Add summary cards
+    const cardMargin = 8; // Margin between cards
+    const totalPageWidth = doc.internal.pageSize.getWidth();
+    const availableWidth = totalPageWidth - (2 * 10); // 10mm left/right margin
+    const cardWidth = (availableWidth - (3 * cardMargin)) / 4; // 4 cards, 3 margins between them
+    const cardHeight = 40;
+
+    // Helper to draw a card
+    function drawCard(x, y, title, mainValue, subValue, mainColor, subColor, extraText) {
+        doc.setDrawColor(233, 236, 239);
+        doc.setFillColor(248, 249, 250);
+        doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+
+        doc.setFontSize(9);
+        doc.setTextColor(73, 80, 87);
+        doc.setFont("helvetica", "bold");
+        doc.text(title, x + cardWidth / 2, y + 8, null, null, "center");
+
+        doc.setFontSize(16);
+        doc.setTextColor(...mainColor);
+        doc.setFont("helvetica", "bold");
+        doc.text(String(mainValue), x + cardWidth / 2, y + 25, null, null, "center");
+
+        doc.setFontSize(10);
+        doc.setTextColor(...subColor);
+        doc.setFont("helvetica", "normal");
+        doc.text(String(subValue), x + cardWidth / 2, y + 35, null, null, "center");
+
+        if (extraText) {
+            doc.setFontSize(7);
+            doc.setTextColor(73, 80, 87);
+            doc.text(extraText, x + cardWidth / 2, y + 42, null, null, "center");
+        }
+    }
+
+    drawCard(
+        10, // Left margin
+        currentY,
+        "BEGINNING BALANCE",
+        beginningBalance,
+        formatCurrency(costBeginning),
+        [108, 117, 125],
+        [108, 117, 125],
+        null
+    );
+
+    drawCard(
+        10 + cardWidth + cardMargin,
+        currentY,
+        "IN",
+        totalIn,
+        formatCurrency(costTotalIn),
+        [40, 167, 69],
+        [40, 167, 69],
+        `Received: ${receivedTransfers} | New: ${newDeliveries}`
+    );
+
+    drawCard(
+        10 + 2 * (cardWidth + cardMargin),
+        currentY,
+        "OUT",
+        totalOut,
+        formatCurrency(costTotalOut),
+        [220, 53, 69],
+        [220, 53, 69],
+        `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`
+    );
+
+    drawCard(
+        10 + 3 * (cardWidth + cardMargin),
+        currentY,
+        "ENDING BALANCE",
+        endingActual,
+        formatCurrency(costEndingActual),
+        [0, 64, 133],
+        [0, 86, 179],
+        `Calculated: ${endingCalculated}${endingCalculated !== endingActual ? ` | Diff: ${endingActual - endingCalculated}` : ''}`
+    );
+
+    currentY += cardHeight + 20; // Move Y position down after cards
+
+    // Add Discrepancy Alert (if any)
+    if (endingCalculated !== endingActual) {
+        doc.setFillColor(255, 243, 205); // Light yellow background
+        doc.setDrawColor(255, 238, 173); // Yellow border
+        doc.roundedRect(10, currentY, availableWidth, 15, 3, 3, 'F'); // Draw rectangle for alert
+
+        doc.setFontSize(9);
+        doc.setTextColor(133, 100, 4); // Dark yellow text
+        doc.setFont("helvetica", "bold");
+        doc.text("Discrepancy:", 15, currentY + 9);
+        doc.text(String(endingActual - endingCalculated), 10 + availableWidth - 15, currentY + 9, null, null, "right");
+
+        currentY += 25; // Move Y position down after alert
+    }
+
+    // Add Formula Explanation Section
+    doc.setFillColor(248, 249, 250); // Light gray background
+    doc.setDrawColor(233, 236, 239); // Light gray border
+    doc.roundedRect(10, currentY, availableWidth, 45, 3, 3, 'F'); // Draw rectangle for formula
+
+    doc.setFontSize(11);
+    doc.setTextColor(73, 80, 87);
+    doc.setFont("helvetica", "bold");
+    doc.text("INVENTORY CALCULATION FORMULA", 10 + availableWidth / 2, currentY + 8, null, null, "center");
+
+    doc.setFontSize(10);
+    doc.setTextColor(108, 117, 125);
+    doc.setFont("helvetica", "normal");
+    doc.text("Beginning Balance + Total IN - Total OUT = Ending Balance", 10 + availableWidth / 2, currentY + 20, null, null, "center");
+
+    doc.setFontSize(9);
+    doc.setTextColor(73, 80, 87);
+    doc.text(`${beginningBalance} + ${totalIn} - ${totalOut} = ${endingCalculated}`, 10 + availableWidth / 2, currentY + 30, null, null, "center");
+
+    doc.setFontSize(8);
+    doc.setTextColor(108, 117, 125);
+    doc.text(`Detailed: ${beginningBalance} + (${receivedTransfers} received + ${newDeliveries} new) - (${transfersOut} transferred + ${soldDuringMonth} sold) = ${endingCalculated}`, 10 + availableWidth / 2, currentY + 40, null, null, "center");
+
+
+    // Save PDF
+    doc.save(`Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`);
 }
 
 function generateTransferredSummary(month, branch, category = 'all') {
@@ -4340,19 +4134,27 @@ function formatDate(dateString) {
     day: "numeric",
   });
 }
-
 function formatCurrency(amount) {
-  if (amount === null || amount === undefined) return "N/A";
-  if (isNaN(amount)) return "N/A";
+  if (amount === null || amount === undefined) return "₱0.00";
+
+  // Convert to string and remove any non-digit, non-dot, non-minus characters
+  let cleaned = String(amount).replace(/[^0-9.-]+/g, '');
+
+  let num = Number(cleaned);
+
+  if (isNaN(num)) return "₱0.00";
+
+  // Use absolute value to avoid ± sign
+  num = Math.abs(num);
+
   return (
     "₱" +
-    parseFloat(amount).toLocaleString("en-PH", {
+    num.toLocaleString("en-PH", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
   );
 }
-
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -4389,4 +4191,72 @@ function getStatusClass(status) {
     default:
       return "bg-secondary";
   }
+}
+
+// Show PDF loading modal
+function showPdfLoadingModal() {
+    const modalId = 'pdfLoadingModal';
+    let modal = document.getElementById(modalId);
+    
+    if (!modal) {
+        const modalHtml = `
+            <div class="modal fade" id="${modalId}" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-body text-center">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <p>Generating PDF... Please wait</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        modal = document.getElementById(modalId);
+    }
+    
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    return {modal, bsModal};
+}
+
+// Hide PDF loading modal
+function hidePdfLoadingModal(loadingModal) {
+    if (loadingModal && loadingModal.bsModal) {
+        loadingModal.bsModal.hide();
+    }
+}
+
+// Simplify content for PDF export
+function simplifyForPdf(container) {
+    // Remove interactive elements
+    const buttons = container.querySelectorAll('button');
+    buttons.forEach(button => button.remove());
+    
+    // Remove form elements
+    const inputs = container.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => input.remove());
+    
+    // Ensure all tables are visible and properly formatted
+    const tables = container.querySelectorAll('table');
+    tables.forEach(table => {
+        table.style.display = 'table';
+        table.style.width = '100%';
+        table.classList.add('table-sm');
+    });
+    
+    // Remove any overflow: hidden styles
+    const elements = container.querySelectorAll('*');
+    elements.forEach(el => {
+        if (el.style.overflow === 'hidden') {
+            el.style.overflow = 'visible';
+        }
+    });
+    
+    // Force show all elements
+    container.querySelectorAll('.d-none').forEach(el => {
+        el.classList.remove('d-none');
+        el.style.display = 'block';
+    });
 }
