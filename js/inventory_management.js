@@ -151,6 +151,22 @@ function setupEventListeners() {
     }
   });
 
+  // Search Invoice Number Button Click
+$("#searchInvoiceNumberBtn").click(function() {
+    $("#searchInvoiceNumberModal").modal("show");
+});
+
+// Search Invoice Button Click
+$("#searchInvoiceBtn").click(searchInvoiceNumber);
+
+// Enter key support in search field
+$("#invoiceNumberSearch").keypress(function(e) {
+    if (e.which === 13) {
+        searchInvoiceNumber();
+        e.preventDefault();
+    }
+});
+
   $("#searchTransferReceiptBtn").click(function() {
     $("#searchTransferReceiptModal").modal("show");
 });
@@ -482,6 +498,433 @@ function displayTransferSearchResults(data) {
     });
 }
 
+// =======================
+// Search Invoice Number Functions
+// =======================
+function searchInvoiceNumber() {
+    const invoiceNumber = $("#invoiceNumberSearch").val().trim();
+    
+    if (!invoiceNumber) {
+        showErrorModal("Please enter an invoice number to search");
+        return;
+    }
+    
+    // Show loading state
+    $("#invoiceSearchResults").html(`
+        <div class="text-center py-4">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 small text-muted">Searching for invoice...</p>
+        </div>
+    `);
+    $("#invoiceSearchResultsContainer").show();
+    
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "search_invoice_number",
+            invoice_number: invoiceNumber
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                displayInvoiceSearchResults(response.data);
+            } else {
+                showErrorModal(response.message || "Error searching invoice");
+                $("#invoiceSearchResultsContainer").hide();
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal("Error searching invoice: " + error);
+            $("#invoiceSearchResultsContainer").hide();
+        }
+    });
+}
+
+function displayInvoiceSearchResults(data) {
+    const $resultsContainer = $("#invoiceSearchResults");
+    
+    if (data.length === 0) {
+        $resultsContainer.html(`
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No invoices found with that number.
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    
+    data.forEach(invoice => {
+        const dateDelivered = formatDate(invoice.date_delivered);
+        const modelsList = invoice.models && invoice.models.length > 0 
+            ? invoice.models.slice(0, 3).join(', ') + (invoice.models.length > 3 ? '...' : '')
+            : 'No models';
+        
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1 text-primary">${escapeHtml(invoice.invoice_number)}</h6>
+                        <p class="mb-1 small">
+                            <strong>Date Delivered:</strong> ${dateDelivered}<br>
+                            <strong>Branch:</strong> ${escapeHtml(invoice.branch)}<br>
+                            <strong>Models:</strong> ${escapeHtml(modelsList)}<br>
+                            <strong>Motorcycles:</strong> ${invoice.motorcycle_count || 0}
+                        </p>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary view-invoice-details ms-2"
+                            data-invoice-id="${invoice.id}"
+                            data-invoice-number="${escapeHtml(invoice.invoice_number)}">
+                        <i class="bi bi-eye"></i> Details
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    $resultsContainer.html(html);
+    
+    // Add event listeners to view details buttons
+    $(".view-invoice-details").off("click").on("click", function() {
+        const invoiceId = $(this).data("invoice-id");
+        const invoiceNumber = $(this).data("invoice-number");
+        viewInvoiceDetails(invoiceId, invoiceNumber);
+    });
+}
+
+function viewInvoiceDetails(invoiceId, invoiceNumber) {
+    // Show loading state
+    $("#invoiceSearchResults").html(`
+        <div class="text-center py-4">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 small text-muted">Loading invoice details...</p>
+        </div>
+    `);
+    
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_invoice_details",
+            invoice_id: invoiceId
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                displayInvoiceDetails(response.data, invoiceNumber);
+            } else {
+                showErrorModal(response.message || "Error loading invoice details");
+                // Go back to search results
+                searchInvoiceNumber();
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal("Error loading invoice details: " + error);
+            // Go back to search results
+            searchInvoiceNumber();
+        }
+    });
+}
+
+
+
+function displayInvoiceDetails(invoice, invoiceNumber) {
+    const dateDelivered = formatDate(invoice.date_delivered);
+    const notes = invoice.notes || 'No notes provided';
+    
+    let html = `
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Invoice Details: ${escapeHtml(invoiceNumber)}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Invoice Number:</strong> ${escapeHtml(invoice.invoice_number)}</p>
+                        <p><strong>Date Delivered:</strong> ${dateDelivered}</p>
+                        <p><strong>Notes:</strong> ${escapeHtml(notes)}</p>
+                    </div>
+                </div>
+                
+                <h6 class="border-bottom pb-2">Motorcycles in this Invoice</h6>
+    `;
+    
+    if (invoice.motorcycles && invoice.motorcycles.length > 0) {
+        html += `
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Brand</th>
+                            <th>Model</th>
+                            <th>Color</th>
+                            <th>Engine Number</th>
+                            <th>Frame Number</th>
+                            <th>Status</th>
+                            <th>Current Branch</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        invoice.motorcycles.forEach(motorcycle => {
+            const statusClass = getStatusBadgeClass(motorcycle.status);
+            html += `
+                <tr>
+                    <td>${escapeHtml(motorcycle.brand)}</td>
+                    <td>${escapeHtml(motorcycle.model)}</td>
+                    <td>${escapeHtml(motorcycle.color)}</td>
+                    <td><code>${escapeHtml(motorcycle.engine_number)}</code></td>
+                    <td><code>${escapeHtml(motorcycle.frame_number)}</code></td>
+                    <td><span class="badge ${statusClass}">${motorcycle.status}</span></td>
+                    <td>${escapeHtml(motorcycle.current_branch)}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No motorcycles found in this invoice.
+            </div>
+        `;
+    }
+    
+    html += `
+             <div class="mt-3 d-flex justify-content-between">
+        <button class="btn btn-primary text-white btn-sm" id="printInvoiceBtn">
+            <i class="bi bi-printer me-1"></i> Print Invoice
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="searchInvoiceNumber()">
+            <i class="bi bi-arrow-left me-1"></i> Back to Search Results
+        </button>
+    </div>
+    `;
+    
+    $("#invoiceSearchResults").html(html);
+    // Attach print button click handler
+$("#printInvoiceBtn").off("click").on("click", function() {
+    printInvoice(invoice, invoiceNumber);
+});
+
+}
+
+function printInvoice(invoice, invoiceNumber) {
+    const dateDelivered = formatDate(invoice.date_delivered);
+    const notes = invoice.notes || 'No notes provided';
+
+    const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Invoice - ${escapeHtml(invoiceNumber)}</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 10px 15px;
+                color: #333;
+                font-size: 12px;
+                line-height: 1.3;
+            }
+            .header {
+                text-align: center;
+                border-bottom: 2px solid #000f71;
+                padding-bottom: 8px;
+                margin-bottom: 15px;
+            }
+            .header h4 {
+                margin: 0;
+                color: #000f71;
+                font-weight: 700;
+                letter-spacing: 1px;
+                font-size: 16px;
+            }
+            .header h5 {
+                margin: 4px 0 0 0;
+                color: #495057;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            .info-section {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
+            }
+            .info-card {
+                border: 1px solid #e9ecef;
+                border-radius: 6px;
+                padding: 10px 15px;
+                width: 48%;
+                box-sizing: border-box;
+                margin-bottom: 10px;
+            }
+            .info-card h6 {
+                margin: 0 0 8px 0;
+                font-weight: 600;
+                color: #000f71;
+                font-size: 13px;
+                border-bottom: 1px solid #dee2e6;
+                padding-bottom: 4px;
+            }
+            .info-card p {
+                margin: 2px 0;
+                font-size: 12px;
+                color: #495057;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 15px;
+                font-size: 11px;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 6px 8px;
+                text-align: left;
+                vertical-align: middle;
+            }
+            th {
+                background-color: #f1f1f1;
+                font-weight: 600;
+                color: #333;
+            }
+            code {
+                font-family: monospace;
+                font-size: 11px;
+            }
+            .badge {
+                display: inline-block;
+                padding: 0.25em 0.5em;
+                font-size: 75%;
+                font-weight: 700;
+                color: #fff;
+                border-radius: 0.25rem;
+                white-space: nowrap;
+            }
+            .bg-success { background-color: #198754; }
+            .bg-danger { background-color: #dc3545; }
+            .bg-warning { background-color: #ffc107; color: #212529; }
+            .bg-secondary { background-color: #6c757d; }
+            .footer {
+                text-align: center;
+                font-size: 10px;
+                color: #666;
+                border-top: 1px solid #ddd;
+                padding-top: 8px;
+                margin-top: 10px;
+            }
+            @media print {
+                body {
+                    margin: 0.5in;
+                    font-size: 11px;
+                }
+                .info-section {
+                    flex-wrap: nowrap;
+                }
+                .info-card {
+                    width: 48%;
+                    margin-bottom: 0;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h4>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+            <h5>Invoice Details</h5>
+        </div>
+
+        <div class="info-section">
+            <div class="info-card">
+                <h6>Invoice Information</h6>
+                <p><strong>Invoice Number:</strong> ${escapeHtml(invoice.invoice_number)}</p>
+                <p><strong>Date Delivered:</strong> ${dateDelivered}</p>
+                <p><strong>Notes:</strong> ${escapeHtml(notes)}</p>
+            </div>
+            <div class="info-card">
+                <h6>Summary</h6>
+                <p><strong>Motorcycles Count:</strong> ${invoice.motorcycles ? invoice.motorcycles.length : 0}</p>
+                <p><strong>Generated On:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+        </div>
+
+        <h6>Motorcycles in this Invoice</h6>
+        <table>
+            <thead>
+                <tr>
+                    <th>Brand</th>
+                    <th>Model</th>
+                    <th>Color</th>
+                    <th>Engine Number</th>
+                    <th>Frame Number</th>
+                    <th>Status</th>
+                    <th>Current Branch</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${
+                    invoice.motorcycles && invoice.motorcycles.length > 0
+                    ? invoice.motorcycles.map(moto => {
+                        const statusClass = getStatusBadgeClass(moto.status);
+                        return `
+                            <tr>
+                                <td>${escapeHtml(moto.brand)}</td>
+                                <td>${escapeHtml(moto.model)}</td>
+                                <td>${escapeHtml(moto.color)}</td>
+                                <td><code>${escapeHtml(moto.engine_number)}</code></td>
+                                <td><code>${escapeHtml(moto.frame_number)}</code></td>
+                                <td><span class="badge ${statusClass}">${moto.status}</span></td>
+                                <td>${escapeHtml(moto.current_branch)}</td>
+                            </tr>
+                        `;
+                    }).join('')
+                    : `<tr><td colspan="7" style="text-align:center;">No motorcycles found in this invoice.</td></tr>`
+                }
+            </tbody>
+        </table>
+
+        <div class="footer">
+            Document Reference: ${escapeHtml(invoiceNumber)}<br />
+            Generated on: ${new Date().toLocaleString()}
+        </div>
+    </body>
+    </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+        printWindow.print();
+        // printWindow.close(); // Uncomment to auto-close after printing
+    }, 300);
+}
+
+
+
+// Clean up modal when closed
+$("#searchInvoiceNumberModal").on("hidden.bs.modal", function() {
+    $("#invoiceNumberSearch").val("");
+    $("#invoiceSearchResults").empty();
+    $("#invoiceSearchResultsContainer").hide();
+});
 // =======================
 // Search MT
 // =======================
@@ -1768,11 +2211,10 @@ function performMultipleTransfers() {
 function showTransferReceipt(receiptData) {
     if (!receiptData) return;
     
-    // Handle different data structures
     let headerData, motorcycles, totalCount, totalCost, notes, transferInvoiceNumber;
     
     if (receiptData.header) {
-        // This is from the search/get_transfer_receipt API
+        // From get_transfer_receipt API
         headerData = receiptData.header;
         motorcycles = receiptData.motorcycles;
         totalCount = receiptData.total_count;
@@ -1780,9 +2222,9 @@ function showTransferReceipt(receiptData) {
         notes = headerData.notes;
         transferInvoiceNumber = headerData.transfer_invoice_number;
     } else {
-        // This is from the transfer_multiple_motorcycles API (original format)
+        // From transfer_multiple_motorcycles API
         headerData = {
-            transfer_date: new Date().toISOString().split('T')[0],
+            transfer_date: receiptData.transfer_date || new Date().toISOString().split('T')[0],
             from_branch: receiptData.from_branch,
             to_branch: receiptData.to_branch,
             notes: receiptData.notes,

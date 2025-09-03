@@ -91,6 +91,13 @@ case 'get_transfer_receipt':
     getTransferReceipt();
     break;
 
+    case 'search_invoice_number':
+    searchInvoiceNumber();
+    break;
+case 'get_invoice_details':
+    getInvoiceDetails();
+    break;
+
 
     default:
     echo json_encode( [ 'success' => false, 'message' => 'Invalid action' ] );
@@ -1298,13 +1305,13 @@ function acceptTransfers() {
     // Sanitize transfer IDs to integers
     $transferIds = array_map('intval', $transferIds);
     $placeholders = implode(',', array_fill(0, count($transferIds), '?'));
-    $currentDate = date('Y-m-d H:i:s');
+    $currentDate = date('Y-m-d H:i:s'); // Acceptance datetime
 
     $conn->begin_transaction();
 
     try {
-        // Get transfer details before updating
-        $getTransfersStmt = $conn->prepare("SELECT motorcycle_id, to_branch, from_branch FROM inventory_transfers 
+        // Get transfer details before updating, including transfer_invoice_number and transfer_date
+        $getTransfersStmt = $conn->prepare("SELECT id, motorcycle_id, to_branch, from_branch, transfer_invoice_number, transfer_date FROM inventory_transfers 
                                            WHERE id IN ($placeholders) AND transfer_status = 'pending'");
         $getTransfersStmt->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
         $getTransfersStmt->execute();
@@ -1326,7 +1333,7 @@ function acceptTransfers() {
             }
         }
 
-        // Update transfer status to completed with date_received
+        // Update transfer status to completed with date_received = acceptance datetime
         $updateTransfers = $conn->prepare("UPDATE inventory_transfers 
                                          SET transfer_status = 'completed', date_received = ?
                                          WHERE id IN ($placeholders)");
@@ -1335,7 +1342,7 @@ function acceptTransfers() {
         $types = 's' . str_repeat('i', count($transferIds));
 
         $updateTransfers->bind_param($types, ...$params);
-        
+
         if (!$updateTransfers->execute()) {
             throw new Exception('Failed to update transfer status: ' . $updateTransfers->error);
         }
@@ -1345,22 +1352,47 @@ function acceptTransfers() {
         $columnResult = $conn->query($checkColumnQuery);
         $hasDateReceivedColumn = $columnResult->num_rows > 0;
 
-        // Update motorcycles - Change current_branch and status back to 'available'
+        // Prepare statement to find or create invoice by transfer_invoice_number
+        $selectInvoiceStmt = $conn->prepare("SELECT id FROM invoices WHERE invoice_number = ?");
+        $insertInvoiceStmt = $conn->prepare("INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)");
+
+        // Update motorcycles - Change current_branch, status, date_received, invoice_id, and date_delivered
         foreach ($motorcycleUpdates as $update) {
-            if ($hasDateReceivedColumn) {
-                // Update with date_received if column exists
-                $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
-                                                  SET current_branch = ?, status = 'available', date_received = ?
-                                                  WHERE id = ?");
-                $updateMotorcycle->bind_param('ssi', $update['to_branch'], $currentDate, $update['motorcycle_id']);
+            $transferInvoiceNumber = $update['transfer_invoice_number'];
+            $transferDate = $update['transfer_date'];  // Use original transfer date here
+
+            // Find or create invoice for transfer_invoice_number
+            $invoiceId = null;
+            $selectInvoiceStmt->bind_param('s', $transferInvoiceNumber);
+            $selectInvoiceStmt->execute();
+            $invoiceResult = $selectInvoiceStmt->get_result();
+
+            if ($invoiceResult->num_rows > 0) {
+                $invoiceRow = $invoiceResult->fetch_assoc();
+                $invoiceId = $invoiceRow['id'];
             } else {
-                // Update without date_received if column doesn't exist
-                $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
-                                                  SET current_branch = ?, status = 'available'
-                                                  WHERE id = ?");
-                $updateMotorcycle->bind_param('si', $update['to_branch'], $update['motorcycle_id']);
+                $notes = "Invoice created for transfer invoice number $transferInvoiceNumber";
+                $insertInvoiceStmt->bind_param('sss', $transferInvoiceNumber, $transferDate, $notes);
+                if (!$insertInvoiceStmt->execute()) {
+                    throw new Exception('Failed to create invoice for transfer invoice number: ' . $insertInvoiceStmt->error);
+                }
+                $invoiceId = $conn->insert_id;
             }
-            
+
+            if ($hasDateReceivedColumn) {
+                // Update with date_received if column exists, also update invoice_id and date_delivered
+                $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
+                                                  SET current_branch = ?, status = 'available', date_received = ?, invoice_id = ?, date_delivered = ?
+                                                  WHERE id = ?");
+                $updateMotorcycle->bind_param('ssisi', $update['to_branch'], $transferDate, $invoiceId, $transferDate, $update['motorcycle_id']);
+            } else {
+                // Update without date_received if column doesn't exist, also update invoice_id and date_delivered
+                $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
+                                                  SET current_branch = ?, status = 'available', invoice_id = ?, date_delivered = ?
+                                                  WHERE id = ?");
+                $updateMotorcycle->bind_param('sisi', $update['to_branch'], $invoiceId, $transferDate, $update['motorcycle_id']);
+            }
+
             if (!$updateMotorcycle->execute()) {
                 throw new Exception('Failed to update motorcycle status: ' . $updateMotorcycle->error);
             }
@@ -1383,7 +1415,7 @@ function acceptTransfers() {
         }
 
         $conn->commit();
-        
+
         $response = [
             'success' => true,
             'message' => 'Successfully accepted ' . count($transferIds) . ' transfer(s). Motorcycles are now available at your branch.',
@@ -2247,5 +2279,81 @@ function getTransferReceipt() {
     ];
     
     echo json_encode($response);
+}
+
+function searchInvoiceNumber() {
+    global $conn;
+
+    $invoiceNumber = isset($_GET['invoice_number']) ? sanitizeInput($_GET['invoice_number']) : '';
+    
+    if (empty($invoiceNumber)) {
+        echo json_encode(['success' => false, 'message' => 'Invoice number is required']);
+        return;
+    }
+    
+    $sql = "SELECT i.id, i.invoice_number, i.date_delivered, 
+                   GROUP_CONCAT(DISTINCT CONCAT(mi.brand, ' ', mi.model) SEPARATOR ', ') as models,
+                   COUNT(mi.id) as motorcycle_count,
+                   mi.current_branch as branch
+            FROM invoices i
+            LEFT JOIN motorcycle_inventory mi ON i.id = mi.invoice_id
+            WHERE i.invoice_number LIKE ?
+            GROUP BY i.id
+            ORDER BY i.date_delivered DESC
+            LIMIT 10";
+    
+    $stmt = $conn->prepare($sql);
+    $searchTerm = "%$invoiceNumber%";
+    $stmt->bind_param('s', $searchTerm);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $row['models'] = !empty($row['models']) ? explode(', ', $row['models']) : [];
+        $data[] = $row;
+    }
+    
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+function getInvoiceDetails() {
+    global $conn;
+
+    $invoiceId = isset($_GET['invoice_id']) ? intval($_GET['invoice_id']) : 0;
+    
+    if ($invoiceId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid invoice ID']);
+        return;
+    }
+    
+    // Get invoice header information
+    $headerSql = "SELECT * FROM invoices WHERE id = ?";
+    $headerStmt = $conn->prepare($headerSql);
+    $headerStmt->bind_param('i', $invoiceId);
+    $headerStmt->execute();
+    $headerResult = $headerStmt->get_result();
+    
+    if ($headerResult->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Invoice not found']);
+        return;
+    }
+    
+    $invoice = $headerResult->fetch_assoc();
+    
+    // Get motorcycles associated with this invoice
+    $motorcyclesSql = "SELECT * FROM motorcycle_inventory WHERE invoice_id = ?";
+    $motorcyclesStmt = $conn->prepare($motorcyclesSql);
+    $motorcyclesStmt->bind_param('i', $invoiceId);
+    $motorcyclesStmt->execute();
+    $motorcyclesResult = $motorcyclesStmt->get_result();
+    
+    $motorcycles = [];
+    while ($row = $motorcyclesResult->fetch_assoc()) {
+        $motorcycles[] = $row;
+    }
+    
+    $invoice['motorcycles'] = $motorcycles;
+    
+    echo json_encode(['success' => true, 'data' => $invoice]);
 }
 ?>

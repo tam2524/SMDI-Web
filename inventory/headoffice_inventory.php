@@ -134,6 +134,9 @@
                                 <button class='btn btn-primary text-white me-2' id='searchTransferReceiptBtn'>
                                     <i class='bi bi-receipt'></i> Search Transfer Receipt
                                 </button>
+                                <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
+    <i class='bi bi-receipt'></i> Search Invoice Number
+</button>
 
                             </div>
                             <div class='input-group' style='max-width: 300px;'>
@@ -993,6 +996,32 @@
             </div>
         </div>
     </div>
+    <div class='modal fade' id='searchInvoiceNumberModal' tabindex='-1'
+    aria-labelledby='searchInvoiceNumberModalLabel' aria-hidden='true'>
+   <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='searchInvoiceNumberModalLabel'>Search Invoice Number</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <div class='mb-3'>
+                    <label for='invoiceNumberSearch' class='form-label'>Invoice Number</label>
+                    <input type='text' class='form-control' id='invoiceNumberSearch'
+                        placeholder='Enter invoice number'>
+                </div>
+                <div id='invoiceSearchResultsContainer' class='mt-3' style='display: none;'>
+                    <h6>Search Results:</h6>
+                    <div id='invoiceSearchResults' class='search-results'></div>
+                </div>
+            </div>
+            <div class='modal-footer'>
+                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                <button type='button' class='btn btn-primary text-white' id='searchInvoiceBtn'>Search</button>
+            </div>
+        </div>
+    </div>
+</div>
     <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-xl'>
