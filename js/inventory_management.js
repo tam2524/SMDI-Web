@@ -1555,7 +1555,8 @@ function transferSelectedMotorcycles() {
     "MINDORO MANSALAY",
     "K-RIDERS ROXAS",
     "IBAJAY",
-    "NUMANCIA"
+    "NUMANCIA",
+    "CFCIPRC"
   ];
 
   branches.forEach((branch) => {
@@ -3079,7 +3080,8 @@ function populateBranchesDropdown() {
     "MINDORO MANSALAY",
     "K-RIDERS ROXAS",
     "IBAJAY",
-    "NUMANCIA"
+    "NUMANCIA",
+    "CFCIPRC"
   ];
 
   const $dropdown = $("#reportBranch");
@@ -3552,7 +3554,8 @@ function populateBranchesDropdown() {
     "MINDORO MANSALAY",
     "K-RIDERS ROXAS",
     "IBAJAY",
-    "NUMANCIA"
+    "NUMANCIA",
+    "CFCIPRC"
     ];
 
     const $dropdown = $('#reportBranch');

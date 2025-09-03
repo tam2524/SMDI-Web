@@ -302,6 +302,8 @@
                                     <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
                                     <option value='IBAJAY'>IBAJAY</option>
                                     <option value='NUMANCIA'>NUMANCIA</option>
+                                    <option value='CFCIPRC'>CFCIPRC</option>
+
                                 </select>
                                 <?php } else {
         ?>
@@ -502,6 +504,8 @@
                                     <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
                                     <option value='IBAJAY'>IBAJAY</option>
                                     <option value='NUMANCIA'>NUMANCIA</option>
+                                    <option value='CFCIPRC'>CFCIPRC</option>
+
                                 </select>
                                 <?php } else {
                 ?>
