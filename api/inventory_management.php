@@ -2372,13 +2372,14 @@ function getAllTransferHistories() {
     $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
     $model = isset($_GET['model']) ? sanitizeInput($_GET['model']) : '';
+    $status = isset($_GET['status']) ? sanitizeInput($_GET['status']) : ''; // New status filter
 
     $whereClauses = [];
     $params = [];
     $types = '';
 
-    // Join inventory_transfers with motorcycle_inventory and invoices for details
-    $sql = "SELECT it.id as transfer_id, it.transfer_date, it.from_branch, it.to_branch, it.notes, it.transfer_status, it.transfer_invoice_number,
+    $sql = "SELECT it.id as transfer_id, it.transfer_date, it.from_branch, it.to_branch, it.notes, 
+                   it.transfer_status AS status, it.transfer_invoice_number,
                    mi.id as motorcycle_id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.current_branch,
                    i.invoice_number,
                    u.username as transferred_by_name
@@ -2407,6 +2408,12 @@ function getAllTransferHistories() {
         $types .= 's';
     }
 
+    if (!empty($status)) {
+        $whereClauses[] = "it.transfer_status = ?";
+        $params[] = $status;
+        $types .= 's';
+    }
+
     if (count($whereClauses) > 0) {
         $sql .= " WHERE " . implode(" AND ", $whereClauses);
     }
@@ -2423,7 +2430,11 @@ function getAllTransferHistories() {
         return;
     }
 
-    $stmt->bind_param($types, ...$params);
+    if (!$stmt->bind_param($types, ...$params)) {
+        echo json_encode(['success' => false, 'message' => 'Parameter binding error: ' . $stmt->error]);
+        return;
+    }
+
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -2432,7 +2443,7 @@ function getAllTransferHistories() {
         $data[] = $row;
     }
 
-    // Get total count for pagination
+    // Count query
     $countSql = "SELECT COUNT(*) as total FROM inventory_transfers it
                  JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id";
 
@@ -2447,10 +2458,12 @@ function getAllTransferHistories() {
     }
 
     if (count($params) > 2) {
-        // Exclude LIMIT and OFFSET params for count query
         $countParams = array_slice($params, 0, -2);
         $countTypes = substr($types, 0, -2);
-        $countStmt->bind_param($countTypes, ...$countParams);
+        if (!$countStmt->bind_param($countTypes, ...$countParams)) {
+            echo json_encode(['success' => false, 'message' => 'Count query parameter binding error: ' . $countStmt->error]);
+            return;
+        }
     }
 
     $countStmt->execute();
@@ -2469,5 +2482,6 @@ function getAllTransferHistories() {
         ]
     ]);
 }
+
 
 ?>

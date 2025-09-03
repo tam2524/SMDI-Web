@@ -119,33 +119,102 @@
                         </div>
                     </div>
 
-                    <div class='tab-pane fade' id='globalTransferHistory' role='tabpanel' aria-labelledby='global-transfer-tab'>
-    <div class="table-responsive table-scrollable" style="max-height: 500px; overflow-y: auto;">
-        <table class="table table-sm table-bordered" id="globalTransferHistoryTable">
-            <thead class="table-light sticky-top">
-                <tr>
-                    <th>Date</th>
-                    <th>From Branch</th>
-                    <th>To Branch</th>
-                    <th>Brand</th>
-                    <th>Model</th>
-                    <th>Engine Number</th>
-                    <th>Frame Number</th>
-                    <th>Invoice Number</th>
-                    <th>Transfer Invoice</th>
-                    <th>Notes</th>
-                </tr>
-            </thead>
-            <tbody id="globalTransferHistoryBody">
-                <!-- Data will be dynamically loaded here -->
-            </tbody>
-        </table>
+                   <div class='tab-pane fade' id='globalTransferHistory' role='tabpanel' aria-labelledby='global-transfer-tab'>
+
+  <!-- Pending Transfers Section -->
+  <section class="mb-5">
+    <h5>Pending Transfers</h5>
+    <input type="text" id="searchPending" class="form-control mb-2" placeholder="Search pending transfers...">
+    <div class="table-responsive table-scrollable" style="max-height: 300px; overflow-y: auto;">
+      <table class="table table-sm table-bordered" id="pendingTransfersTable">
+        <thead class="table-light sticky-top">
+          <tr>
+            <th>Date</th>
+            <th>Status</th> 
+            <th>From Branch</th>
+            <th>To Branch</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Engine Number</th>
+            <th>Frame Number</th>
+            <th>Invoice Number</th>
+            <th>Transfer Invoice</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="pendingTransfersBody">
+          <!-- Pending data loaded dynamically -->
+        </tbody>
+      </table>
     </div>
     <nav>
-        <ul class="pagination justify-content-center" id="transferHistoryPagination"></ul>
+      <ul class="pagination justify-content-center" id="pendingTransfersPagination"></ul>
     </nav>
-</div>
+  </section>
 
+  <!-- Completed Transfers Section -->
+  <section class="mb-5">
+    <h5>Completed Transfers</h5>
+    <input type="text" id="searchCompleted" class="form-control mb-2" placeholder="Search completed transfers...">
+    <div class="table-responsive table-scrollable" style="max-height: 300px; overflow-y: auto;">
+      <table class="table table-sm table-bordered" id="completedTransfersTable">
+        <thead class="table-light sticky-top">
+          <tr>
+            <th>Date</th>
+            <th>Status</th> 
+            <th>From Branch</th>
+            <th>To Branch</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Engine Number</th>
+            <th>Frame Number</th>
+            <th>Invoice Number</th>
+            <th>Transfer Invoice</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="completedTransfersBody">
+          <!-- Completed data loaded dynamically -->
+        </tbody>
+      </table>
+    </div>
+    <nav>
+      <ul class="pagination justify-content-center" id="completedTransfersPagination"></ul>
+    </nav>
+  </section>
+
+  <!-- Rejected Transfers Section -->
+  <section>
+    <h5>Rejected Transfers</h5>
+    <input type="text" id="searchRejected" class="form-control mb-2" placeholder="Search rejected transfers...">
+    <div class="table-responsive table-scrollable" style="max-height: 300px; overflow-y: auto;">
+      <table class="table table-sm table-bordered" id="rejectedTransfersTable">
+        <thead class="table-light sticky-top">
+          <tr>
+            <th>Date</th>
+            <th>Status</th> 
+            <th>From Branch</th>
+            <th>To Branch</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Engine Number</th>
+            <th>Frame Number</th>
+            <th>Invoice Number</th>
+            <th>Transfer Invoice</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="rejectedTransfersBody">
+          <!-- Rejected data loaded dynamically -->
+        </tbody>
+      </table>
+    </div>
+    <nav>
+      <ul class="pagination justify-content-center" id="rejectedTransfersPagination"></ul>
+    </nav>
+  </section>
+
+</div>
 
                     <div class='tab-pane fade' id='management' role='tabpanel'>
                         <div class='d-flex justify-content-between mb-4'>

@@ -22,7 +22,7 @@ let currentReportSummary = null;
 let modelCount = 0;
 let currentUserRole = "USER";
 let currentTransferPage = 1;
-const perPage = 20;
+const perPage = 25;
 
 // Add this to your CSS or as a style element
 const pdfStyles = `
@@ -2945,17 +2945,18 @@ function showIncomingTransfersModal(transfers) {
 }
 
 function getTransferStatusBadge(status) {
-    switch(status) {
-        case 'pending':
-            return '<span class="badge bg-warning text-dark status-badge">Pending</span>';
-        case 'completed':
-            return '<span class="badge bg-success status-badge">Completed</span>';
-        case 'rejected':
-            return '<span class="badge bg-danger status-badge">Rejected</span>';
-        default:
-            return '<span class="badge bg-secondary status-badge">Unknown</span>';
-    }
+  switch (status) {
+    case 'pending':
+      return '<span class="badge bg-warning text-dark">Pending</span>';
+    case 'completed':
+      return '<span class="badge bg-success">Completed</span>';
+    case 'rejected':
+      return '<span class="badge bg-danger">Rejected</span>';
+    default:
+      return '<span class="badge bg-secondary">Unknown</span>';
+  }
 }
+
 
 // Function to update transfer selection UI
 function updateTransferSelection() {
@@ -5117,121 +5118,140 @@ function renderMotorcycleReport(data, branch, brandFilter) {
 // Global Transfer Functions
 // =======================
 document.addEventListener('DOMContentLoaded', function () {
-    const globalTransferTab = document.getElementById('global-transfer-tab');
-    globalTransferTab.addEventListener('shown.bs.tab', function (event) {
-        loadGlobalTransferHistory(1); // Load first page or your default page
+  const globalTransferTab = document.getElementById('global-transfer-tab');
+  if (globalTransferTab) {
+    globalTransferTab.addEventListener('shown.bs.tab', function () {
+      loadGlobalTransferHistory(1);
     });
+  }
 });
 
-// Example AJAX function to load data (adjust URL and parameters as needed)
-function loadGlobalTransferHistory(page = 1) {
-    $.ajax({
-        url: '../api/inventory_management.php',
-        method: 'GET',
-        data: {
-            action: 'get_all_transfer_histories',
-            page: page,
-            per_page: 20
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                const data = response.data;
-                const $tbody = $('#globalTransferHistoryBody');
-                $tbody.empty();
+function loadTransfers(status, page = 1, search = '') {
+  const tbodyId = `#${status}TransfersBody`;
+  const paginationId = `#${status}TransfersPagination`;
+  const $tbody = $(tbodyId);
+  const $pagination = $(paginationId);
 
-                if (data.length === 0) {
-                    $tbody.append('<tr><td colspan="10" class="text-center text-muted">No transfer records found</td></tr>');
-                } else {
-                    data.forEach(t => {
-                        $tbody.append(`
-                            <tr>
-                                <td>${formatDate(t.transfer_date)}</td>
-                                <td>${escapeHtml(t.from_branch)}</td>
-                                <td>${escapeHtml(t.to_branch)}</td>
-                                <td>${escapeHtml(t.brand)}</td>
-                                <td>${escapeHtml(t.model)}</td>
-                                <td>${escapeHtml(t.engine_number)}</td>
-                                <td>${escapeHtml(t.frame_number)}</td>
-                                <td>${escapeHtml(t.invoice_number || '')}</td>
-                                <td>${escapeHtml(t.transfer_invoice_number)}</td>
-                                <td>${escapeHtml(t.notes || '')}</td>
-                            </tr>
-                        `);
-                    });
-                }
+  $tbody.html(`
+    <tr><td colspan="11" class="text-center py-3">
+      <div class="spinner-border text-primary" role="status"></div>
+    </td></tr>
+  `);
 
-                renderPagination(response.pagination.total_pages, response.pagination.current_page);
-            } else {
-                alert(response.message || 'Failed to load transfer history');
-            }
-        },
-        error: function(xhr, status, error) {
-            alert('Error loading transfer history: ' + error);
+  $.ajax({
+    url: '../api/inventory_management.php',
+    method: 'GET',
+    data: {
+      action: 'get_all_transfer_histories',
+      status: status,
+      page: page,
+      per_page: perPage,
+      search: search
+    },
+    dataType: 'json',
+    success: function(response) {
+      if (response.success) {
+        const data = response.data;
+        $tbody.empty();
+
+        if (!data || data.length === 0) {
+          $tbody.append(`<tr><td colspan="11" class="text-center text-muted">No ${status} transfers found</td></tr>`);
+        } else {
+          data.forEach(t => {
+            $tbody.append(`
+              <tr>
+                <td>${formatDate(t.transfer_date)}</td>
+                
+                <td>${getTransferStatusBadge(t.status)}</td>
+                <td>${escapeHtml(t.from_branch)}</td>
+                <td>${escapeHtml(t.to_branch)}</td>
+                <td>${escapeHtml(t.brand)}</td>
+                <td>${escapeHtml(t.model)}</td>
+                <td><code>${escapeHtml(t.engine_number)}</code></td>
+                <td><code>${escapeHtml(t.frame_number)}</code></td>
+                <td>${escapeHtml(t.invoice_number || '')}</td>
+                <td>${escapeHtml(t.transfer_invoice_number)}</td>
+                <td>${escapeHtml(t.notes || '')}</td>
+              </tr>
+            `);
+          });
         }
-    });
+
+        renderPagination(paginationId, response.pagination.total_pages, response.pagination.current_page, status);
+      } else {
+        $tbody.html(`<tr><td colspan="11" class="text-center text-danger">Failed to load ${status} transfers</td></tr>`);
+      }
+    },
+    error: function() {
+      $tbody.html(`<tr><td colspan="11" class="text-center text-danger">Error loading ${status} transfers</td></tr>`);
+    }
+  });
 }
 
-function renderPagination(totalPages, currentPage) {
-    const $pagination = $('#transferHistoryPagination');
-    $pagination.empty();
 
-    if (totalPages <= 1) return;
+function renderPagination(containerId, totalPages, currentPage, status) {
+  const $pagination = $(containerId);
+  $pagination.empty();
 
-    const prevDisabled = currentPage === 1 ? 'disabled' : '';
+  if (totalPages <= 1) return;
+
+  const prevDisabled = currentPage === 1 ? 'disabled' : '';
+  $pagination.append(`
+    <li class="page-item ${prevDisabled}">
+      <a class="page-link" href="#" data-page="${currentPage - 1}" data-status="${status}">&laquo;</a>
+    </li>
+  `);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const active = i === currentPage ? 'active' : '';
     $pagination.append(`
-        <li class="page-item ${prevDisabled}">
-            <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">&laquo;</a>
-        </li>
+      <li class="page-item ${active}">
+        <a class="page-link" href="#" data-page="${i}" data-status="${status}">${i}</a>
+      </li>
     `);
+  }
 
-    let startPage = Math.max(1, currentPage - 3);
-    let endPage = Math.min(totalPages, currentPage + 3);
-
-    for (let i = startPage; i <= endPage; i++) {
-        const activeClass = i === currentPage ? 'active' : '';
-        $pagination.append(`
-            <li class="page-item ${activeClass}">
-                <a class="page-link" href="#" data-page="${i}">${i}</a>
-            </li>
-        `);
-    }
-
-    const nextDisabled = currentPage === totalPages ? 'disabled' : '';
-    $pagination.append(`
-        <li class="page-item ${nextDisabled}">
-            <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">&raquo;</a>
-        </li>
-    `);
+  const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+  $pagination.append(`
+    <li class="page-item ${nextDisabled}">
+      <a class="page-link" href="#" data-page="${currentPage + 1}" data-status="${status}">&raquo;</a>
+    </li>
+  `);
 }
 
-$(document).on('click', '#transferHistoryPagination a.page-link', function(e) {
-    e.preventDefault();
-    const page = parseInt($(this).data('page'));
-    if (!isNaN(page) && page > 0) {
-        loadGlobalTransferHistory(page);
-    }
+// Pagination click handler
+$(document).on('click', '.pagination a.page-link', function(e) {
+  e.preventDefault();
+  const page = parseInt($(this).data('page'));
+  const status = $(this).data('status');
+  if (!isNaN(page) && page > 0 && status) {
+    const searchInputId = `#search${capitalizeFirstLetter(status)}`;
+    const searchTerm = $(searchInputId).val() || '';
+    loadTransfers(status, page, searchTerm);
+  }
 });
 
-// Utility functions (implement or reuse from your code)
-function formatDate(dateString) {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-PH", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-    });
+// Search input handler (debounced)
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
 }
-function escapeHtml(text) {
-    if (text === null || text === undefined) return "";
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+
+['pending', 'completed', 'rejected'].forEach(status => {
+  $(`#search${capitalizeFirstLetter(status)}`).on('input', debounce(function() {
+    loadTransfers(status, 1, $(this).val());
+  }, 300));
+});
+
+// Initial load
+$(document).ready(function() {
+  ['pending', 'completed', 'rejected'].forEach(status => {
+    loadTransfers(status);
+  });
+});
 
 // =======================
 // Helper Functions
