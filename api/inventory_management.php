@@ -342,7 +342,6 @@ function getMotorcycle() {
         echo json_encode(['success' => false, 'message' => 'Motorcycle not found']);
     }
 }
-
 function addMotorcycle() {
     global $conn;
 
