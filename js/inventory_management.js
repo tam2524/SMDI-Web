@@ -3423,34 +3423,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 function exportMonthlyReportToPDF() {
-  const reportEl = document.getElementById("monthlyReportPrintContainer");
-
-  if (!reportEl || !reportEl.innerHTML.trim()) {
-    alert("No report content available to export.");
-    return;
-  }
-
-  reportEl.style.display = "block";
-
-  const opt = {
-    margin: 0.5,
-    filename: `Monthly_Inventory_Report_${new Date()
-      .toISOString()
-      .slice(0, 10)}.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 1, useCORS: true },
-    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-  };
-
-  html2pdf()
-    .set(opt)
-    .from(reportEl)
-    .save()
-    .then(() => {
+  // Show a loading indicator
+  showSuccessModal("Preparing PDF export... This may take a moment for large datasets.");
+  
+  // Use a timeout to ensure the DOM is ready
+  setTimeout(function() {
+    const reportEl = document.getElementById("monthlyReportPrintContainer");
+    
+    if (!reportEl || !reportEl.innerHTML.trim()) {
+      alert("No report content available to export.");
+      return;
+    }
+    
+    // Show the container
+    reportEl.style.display = "block";
+    
+    // PDF configuration options
+    const opt = {
+      margin: 0.5,
+      filename: `Monthly_Inventory_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { 
+        scale: 1, 
+        useCORS: true,
+        logging: false, // Disable logging for better performance
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: reportEl.scrollWidth,
+        windowHeight: reportEl.scrollHeight
+      },
+      jsPDF: { 
+        unit: "in", 
+        format: "letter", 
+        orientation: "portrait",
+        compress: true // Enable compression for smaller file size
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Better page break handling
+    };
+    
+    // Generate PDF with error handling
+    try {
+      html2pdf()
+        .set(opt)
+        .from(reportEl)
+        .save()
+        .then(() => {
+          reportEl.style.display = "none";
+          showSuccessModal("PDF exported successfully!");
+        })
+        .catch((error) => {
+          console.error("PDF generation error:", error);
+          showErrorModal("Error generating PDF: " + error.message);
+          reportEl.style.display = "none";
+        });
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      showErrorModal("Error generating PDF: " + error.message);
       reportEl.style.display = "none";
-    });
+    }
+  }, 500); // Short delay to ensure DOM is ready
 }
-
 function exportMonthlyReport() {
   let csvContent = "data:text/csv;charset=utf-8,";
 
