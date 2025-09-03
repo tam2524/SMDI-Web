@@ -691,3 +691,8 @@ body.modal-open {
     overflow-x: hidden;
     overflow-y: auto;
 }
+
+.table-scrollable {
+  max-height: 500px;
+  overflow-y: auto;
+}

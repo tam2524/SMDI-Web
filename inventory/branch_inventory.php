@@ -555,7 +555,6 @@
                                             <option value="">Select Payment Type</option>
                                             <option value="COD">COD</option>
                                             <option value="Installment">Installment</option>
-                                            <option value="Full Payment">Full Payment</option>
                                         </select>
                                     </div>
                                 </div>

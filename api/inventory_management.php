@@ -97,6 +97,10 @@ case 'get_transfer_receipt':
 case 'get_invoice_details':
     getInvoiceDetails();
     break;
+    case 'get_all_transfer_histories':
+    getAllTransferHistories();
+    break;
+
 
 
     default:
@@ -2356,4 +2360,114 @@ function getInvoiceDetails() {
     
     echo json_encode(['success' => true, 'data' => $invoice]);
 }
+function getAllTransferHistories() {
+    global $conn;
+
+    // Pagination parameters
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $perPage = isset($_GET['per_page']) ? min(100, max(1, intval($_GET['per_page']))) : 20;
+    $offset = ($page - 1) * $perPage;
+
+    // Optional filters
+    $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
+    $model = isset($_GET['model']) ? sanitizeInput($_GET['model']) : '';
+
+    $whereClauses = [];
+    $params = [];
+    $types = '';
+
+    // Join inventory_transfers with motorcycle_inventory and invoices for details
+    $sql = "SELECT it.id as transfer_id, it.transfer_date, it.from_branch, it.to_branch, it.notes, it.transfer_status, it.transfer_invoice_number,
+                   mi.id as motorcycle_id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.current_branch,
+                   i.invoice_number,
+                   u.username as transferred_by_name
+            FROM inventory_transfers it
+            JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            LEFT JOIN users u ON it.transferred_by = u.id";
+
+    if (!empty($search)) {
+        $whereClauses[] = "(mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? OR mi.frame_number LIKE ? OR i.invoice_number LIKE ? OR it.transfer_invoice_number LIKE ?)";
+        $searchTerm = "%$search%";
+        $params = array_merge($params, array_fill(0, 6, $searchTerm));
+        $types .= str_repeat('s', 6);
+    }
+
+    if (!empty($branch)) {
+        $whereClauses[] = "(it.from_branch = ? OR it.to_branch = ?)";
+        $params[] = $branch;
+        $params[] = $branch;
+        $types .= 'ss';
+    }
+
+    if (!empty($model)) {
+        $whereClauses[] = "mi.model = ?";
+        $params[] = $model;
+        $types .= 's';
+    }
+
+    if (count($whereClauses) > 0) {
+        $sql .= " WHERE " . implode(" AND ", $whereClauses);
+    }
+
+    $sql .= " ORDER BY it.transfer_date DESC LIMIT ? OFFSET ?";
+
+    $params[] = $perPage;
+    $params[] = $offset;
+    $types .= 'ii';
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+        return;
+    }
+
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    // Get total count for pagination
+    $countSql = "SELECT COUNT(*) as total FROM inventory_transfers it
+                 JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id";
+
+    if (count($whereClauses) > 0) {
+        $countSql .= " WHERE " . implode(" AND ", $whereClauses);
+    }
+
+    $countStmt = $conn->prepare($countSql);
+    if (!$countStmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+        return;
+    }
+
+    if (count($params) > 2) {
+        // Exclude LIMIT and OFFSET params for count query
+        $countParams = array_slice($params, 0, -2);
+        $countTypes = substr($types, 0, -2);
+        $countStmt->bind_param($countTypes, ...$countParams);
+    }
+
+    $countStmt->execute();
+    $countResult = $countStmt->get_result();
+    $totalRecords = $countResult->fetch_assoc()['total'];
+    $totalPages = ceil($totalRecords / $perPage);
+
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'pagination' => [
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total_records' => $totalRecords,
+            'total_pages' => $totalPages
+        ]
+    ]);
+}
+
 ?>

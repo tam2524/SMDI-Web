@@ -158,7 +158,8 @@
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <div class="navbar-nav">
                        <a href='admin_dashboard.php' class='nav-item nav-link active'>Home</a>
-                        <a href='admin_inventory.php' class='nav-item nav-link active'>Inventory</a>
+                        <a href='admin_dashboard.php' class='nav-item nav-link active'>Dashboard</a>
+                       <a href='admin_inventory.php' class='nav-item nav-link active'>Inventory</a>
                         <a href='../api/logout.php' class='nav-item nav-link active'>Logout</a> 
                     </div>
                 </div>
