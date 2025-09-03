@@ -870,7 +870,7 @@
         </div>
     </div>
 
-       <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'
+      <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -918,7 +918,19 @@
                             </div>
                         </div>
 
-                        
+                        <div id='installmentFields' style='display: none;'>
+                            <div class='mb-3'>
+                                <label for='terms' class='form-label'>Terms ( months ) <span
+                                        class='text-danger'>*</span></label>
+                                <input type='number' class='form-control' id='terms' min='1'>
+                            </div>
+
+                            <div class='mb-3'>
+                                <label for='monthlyAmortization' class='form-label'>Monthly Amortization <span
+                                        class='text-danger'>*</span></label>
+                                <input type='number' step='0.01' class='form-control' id='monthlyAmortization'>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class='modal-footer'>

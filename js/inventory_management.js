@@ -822,9 +822,9 @@ function renderInventoryTable(data) {
       // Add category badge styling
       let categoryBadge = '';
       if (item.category === 'brandnew') {
-        categoryBadge = '<span class="badge bg-success">Brand New</span>';
+        categoryBadge = '<span class="badge bg-success">BRANDNEW</span>';
       } else if (item.category === 'repo') {
-        categoryBadge = '<span class="badge bg-warning text-dark">Repo</span>';
+        categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
       }
 
       html += `
@@ -2838,218 +2838,7 @@ $(document).ready(function() {
     }
 });
 
-// Function to generate motorcycle report
-function generateMotorcycleReport(branch, brandFilter) {
-    $('#monthlyReportOptionsModal').modal('hide');
-    $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
 
-    $.ajax({
-        url: '../api/inventory_management.php',
-        method: 'GET',
-        data: {
-            action: 'get_available_motorcycles_report',
-            branch: branch,
-            brand: brandFilter
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                currentReportData = response.data;
-                currentReportType = 'motorcycle'; // Set report type
-                renderMotorcycleReport(response.data, branch, brandFilter);
-                $('#monthlyInventoryReportModal').modal('show');
-            } else {
-                showErrorModal(response.message || 'Error generating report');
-            }
-        },
-        error: function(xhr, status, error) {
-            showErrorModal('Error generating report: ' + error);
-        }
-    });
-}
-
-// Function to render motorcycle report
-function renderMotorcycleReport(data, branch, brandFilter) {
-    const timestamp = new Date().toLocaleString();
-    $('#monthlyReportTimestamp').text('Generated on: ' + timestamp);
-    $('#monthlyInventoryReportModalLabel').text('Available Motorcycle Units Report');
-    
-    let html = `
-        <div class="report-header text-center mb-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
-                </h4>
-                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-            </div>
-            <h5 class="mb-2" style="color: #495057; font-weight: 500;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
-            <p class="text-muted">
-                ${brandFilter === 'all' ? 'ALL BRANDS' : brandFilter.toUpperCase()} | 
-                ${branch ? branch : 'ALL BRANCHES'}
-            </p>
-            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
-                Generated on ${new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                })}
-            </p>
-        </div>
-    `;
-    
-    if (data.length === 0) {
-        html += `
-            <div class="alert alert-info text-center">
-                No available motorcycles found for the selected criteria.
-            </div>
-        `;
-    } else {
-        // Group by branch
-        const branches = {};
-        data.forEach(item => {
-            if (!branches[item.current_branch]) {
-                branches[item.current_branch] = [];
-            }
-            branches[item.current_branch].push(item);
-        });
-        
-        // Create report sections for each branch
-        Object.keys(branches).forEach(branch => {
-            const branchData = branches[branch];
-            
-            html += `
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">${branch} - ${branchData.length} units</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
-                            <table class="table table-sm mb-0">
-                                <thead>
-                                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
-                                        <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 60px;">QTY</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">MODEL</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">COLOR</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">BRAND</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">Inventory Cost</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-            `;
-            
-            branchData.forEach(item => {
-                html += `
-                    <tr>
-                        <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">1</td>
-                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
-                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
-                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
-                        <td class="py-2">${escapeHtml(item.engine_number)}</td>
-                        <td class="py-2">${escapeHtml(item.frame_number)}</td>
-                        <td class="py-2 text-end">${formatCurrency(item.inventory_cost)}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        // Add summary
-        const totalUnits = data.length;
-        const totalValue = data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
-        
-        html += `
-            <div class="alert alert-primary mt-3">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Total Units:</strong> ${totalUnits}
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <strong>Total Inventory Value:</strong> ${formatCurrency(totalValue)}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    $('#monthlyReportContent').html(html);
-    
-    // Add styling for the modal
-    $("<style>")
-        .prop("type", "text/css")
-        .html(`
-            #monthlyInventoryReportModal .modal-body {
-                max-height: calc(100vh - 200px);
-                overflow-y: auto;
-            }
-            #monthlyInventoryReportModal .modal-dialog {
-                max-width: 95%;
-                height: calc(100vh - 100px);
-            }
-            #monthlyInventoryReportModal .modal-content {
-                height: 100%;
-            }
-            .table-container { overflow: hidden; }
-            .table th { font-weight: 600; font-size: 0.9rem; }
-            .table td { font-size: 0.9rem; color: #495057; }
-            .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-            .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
-            .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
-        `)
-        .appendTo("head");
-    
-    // Update export button for motorcycle report
-    $('#exportMonthlyReportToPDF').off('click').on('click', function() {
-        exportMotorcycleReportToPDF(html, branch, brandFilter);
-    });
-}
-
-function exportMotorcycleReportToPDF(html, branch, brandFilter) {
-    const printWindow = window.open('', '_blank');
-    const title = `Motorcycle_Inventory_Report_${brandFilter}_${branch || 'all'}_${new Date().toISOString().slice(0, 10)}`;
-    
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>${title}</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .report-header { text-align: center; margin-bottom: 20px; }
-                .report-header h4 { color: #000f71; font-weight: 600; }
-                .report-header h5 { color: #495057; font-weight: 500; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f8f9fa; font-weight: 600; }
-                .summary { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 5px; }
-                .card { margin-bottom: 20px; border: 1px solid #e9ecef; border-radius: 6px; }
-                .card-header { background-color: #f8f9fa; padding: 10px; border-bottom: 1px solid #e9ecef; }
-            </style>
-        </head>
-        <body>
-            ${html}
-        </body>
-        </html>
-    `);
-    
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(function() {
-        printWindow.print();
-        // printWindow.close(); // Uncomment if you want to automatically close after printing
-    }, 250);
-}
 // =======================
 // Monthly Inventory Report
 // =======================
@@ -3690,26 +3479,188 @@ function generateReportPDF() {
         generateMotorcycleReportPDF();
     }
 }
-// Add this function for motorcycle report PDF export
 function generateMotorcycleReportPDF() {
-    const reportContent = $('#monthlyReportContent').html();
-    const brandFilter = $('#reportBrandFilter').val();
-    const branch = $('#reportBranch').val() || currentUserBranch;
-    
-    exportMotorcycleReportToPDF(reportContent, branch, brandFilter);
-}
-// Add this function for motorcycle report PDF export
-function generateMotorcycleReportPDF() {
-    const reportContent = $('#monthlyReportContent').html();
-    const brandFilter = $('#reportBrandFilter').val();
-    const branch = $('#reportBranch').val() || currentUserBranch;
-    
-    exportMotorcycleReportToPDF(reportContent, branch, brandFilter);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    if (!currentReportData || !currentReportData.length) {
+        showErrorModal("No motorcycle data available to export.");
+        return;
+    }
+
+    const branch = $('#reportBranch').val() || currentUserBranch || 'All Branches';
+    const brandFilter = $('#reportBrandFilter').val() || 'All Brands';
+    const categoryFilter = $('#reportCategoryFilter').val() || 'All Categories'; // Added category filter
+
+    // Get current date for header
+    const now = new Date();
+    const generatedOn = now.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+
+    // Sort data by branch then model
+    currentReportData.sort((a, b) => {
+        if (a.current_branch < b.current_branch) return -1;
+        if (a.current_branch > b.current_branch) return 1;
+        return a.model.localeCompare(b.model);
+    });
+
+    // --- Header ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(0, 15, 113);
+    doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", 105, 15, null, null, "center");
+
+    doc.setFontSize(12);
+    doc.setTextColor(73, 80, 87);
+    doc.text("AVAILABLE MOTORCYCLE UNITS REPORT", 105, 25, null, null, "center");
+
+    doc.setFontSize(10);
+    doc.setTextColor(108, 117, 125);
+    // Include brand, branch, and category in one line separated by " | "
+    doc.text(
+        `${brandFilter.toUpperCase()} | ${branch} | ${categoryFilter.toUpperCase()}`,
+        105,
+        32,
+        null,
+        null,
+        "center"
+    );
+
+    doc.text(`Generated on: ${generatedOn}`, 105, 38, null, null, "center");
+
+    // --- Table Columns ---
+    const columns = [
+        { header: "QTY", dataKey: "qty" },
+        { header: "MODEL", dataKey: "model" },
+        { header: "COLOR", dataKey: "color" },
+        { header: "BRAND", dataKey: "brand" },
+        { header: "ENGINE NUMBER", dataKey: "engine_number" },
+        { header: "FRAME NUMBER", dataKey: "frame_number" },
+        { header: "INVENTORY COST", dataKey: "inventory_cost" },
+    ];
+
+    // Group data by branch for sectioning
+    const groupedData = {};
+    currentReportData.forEach(item => {
+        const branchName = item.current_branch || 'Unknown Branch';
+        if (!groupedData[branchName]) groupedData[branchName] = [];
+        groupedData[branchName].push(item);
+    });
+
+    let startY = 45;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginLR = 10;
+    const marginBottom = 20;
+
+    // Helper to add a branch section table
+    function addBranchSection(branchName, items) {
+        doc.setFontSize(11);
+        doc.setTextColor(0, 64, 133);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${branchName} - ${items.length} units`, marginLR, startY);
+        startY += 6;
+
+        const rows = items.map(item => ({
+            qty: "1",
+            model: item.model,
+            color: item.color,
+            brand: item.brand,
+            engine_number: item.engine_number,
+            frame_number: item.frame_number,
+            inventory_cost: formatCurrency(item.inventory_cost),
+        }));
+
+        doc.autoTable({
+            startY: startY,
+            head: [columns.map(c => c.header)],
+            body: rows.map(r => columns.map(c => r[c.dataKey])),
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: 'bold' },
+            margin: { left: marginLR, right: marginLR },
+            theme: 'striped',
+            didDrawPage: (data) => {
+                // Update startY for next section after table
+                startY = data.cursor.y + 10;
+            },
+        });
+    }
+
+    // Add each branch section
+    for (const branchName in groupedData) {
+        addBranchSection(branchName, groupedData[branchName]);
+
+        // Check if next section fits, else add page
+        if (startY + 50 > pageHeight - marginBottom) {
+            doc.addPage();
+            startY = 20;
+        }
+    }
+
+    // --- Summary Cards ---
+    const totalUnits = currentReportData.length;
+    const totalValue = currentReportData.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+
+    const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+    const cardHeight = 45;
+    let cardY = startY;
+
+    if (cardY + cardHeight + marginBottom > pageHeight) {
+        doc.addPage();
+        cardY = 20;
+    }
+
+    function drawCard(x, y, width, height, title, mainValue, subValue) {
+        doc.setDrawColor(233, 236, 239);
+        doc.setFillColor(248, 249, 250);
+        doc.rect(x, y, width, height, 'F');
+
+        doc.setFontSize(9)
+           .setTextColor(73, 80, 87)
+           .setFont("helvetica", "bold")
+           .text(title, x + width / 2, y + 8, { align: "center" });
+
+        doc.setFontSize(18)
+           .setTextColor(0, 64, 133)
+           .setFont("helvetica", "bold")
+           .text(String(mainValue), x + width / 2, y + 25, { align: "center" });
+
+        doc.setFontSize(10)
+           .setTextColor(108, 117, 125)
+           .setFont("helvetica", "normal")
+           .text(subValue, x + width / 2, y + 35, { align: "center" });
+    }
+
+    drawCard(marginLR, cardY, cardWidth, cardHeight, "TOTAL UNITS", totalUnits, "Motorcycles available");
+    drawCard(marginLR + cardWidth + 10, cardY, cardWidth, cardHeight, "TOTAL INVENTORY VALUE", formatCurrency(totalValue), "Total value available");
+
+    // --- Page Numbering ---
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(108, 117, 125);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, null, null, "center");
+    }
+
+    // --- Save PDF ---
+    const safeBranch = branch.replace(/\s+/g, '_');
+    const safeBrand = brandFilter.replace(/\s+/g, '_');
+    const safeCategory = categoryFilter.replace(/\s+/g, '_');
+    const dateStr = now.toISOString().slice(0, 10);
+    doc.save(`Motorcycle_Inventory_Report_${safeBrand}_${safeCategory}_${safeBranch}_${dateStr}.pdf`);
 }
 
 function generateInventoryReportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+
+    // Retrieve category filter (added)
+    const categoryFilter = $('#reportCategoryFilter').val() || 'All Categories';
 
     const [year, monthNum] = currentReportMonth.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
@@ -3742,9 +3693,7 @@ function generateInventoryReportPDF() {
     // Sort data by model
     currentReportData.sort((a, b) => a.model.localeCompare(b.model));
 
-    // --- Page 1: Header and Table ---
-
-    // Header
+    // --- Header ---
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.setTextColor(0, 15, 113);
@@ -3756,23 +3705,39 @@ function generateInventoryReportPDF() {
 
     doc.setFontSize(10);
     doc.setTextColor(108, 117, 125);
-    doc.text(`${monthName} ${year}`, 105, 32, null, null, "center");
-
+    // Include branch and category filter on one line
     if (currentReportBranch !== "all") {
-        doc.text(`Branch: ${branchName}`, 105, 38, null, null, "center");
+        doc.text(
+            `Branch: ${branchName} | Category: ${categoryFilter}`,
+            105,
+            32,
+            null,
+            null,
+            "center"
+        );
+    } else {
+        // If all branches, just show category
+        doc.text(
+            `Category: ${categoryFilter}`,
+            105,
+            32,
+            null,
+            null,
+            "center"
+        );
     }
 
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 44, null, null, "center");
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 38, null, null, "center");
 
     // Prepare table columns and rows
     const columns = [
-        { header: "QTY", dataKey: "qty", width: 10 }, // Fixed width for QTY
+        { header: "QTY", dataKey: "qty", width: 10 },
         { header: "MODEL", dataKey: "model", width: 30 },
         { header: "COLOR", dataKey: "color", width: 25 },
         { header: "BRAND", dataKey: "brand", width: 25 },
         { header: "ENGINE NUMBER", dataKey: "engine_number", width: 35 },
         { header: "FRAME NUMBER", dataKey: "frame_number", width: 35 },
-        { header: "Inventory Cost", dataKey: "inventory_cost", width: 25, align: 'right' }, // Adjusted width and alignment
+        { header: "Inventory Cost", dataKey: "inventory_cost", width: 25, align: 'right' },
     ];
 
     const rows = currentReportData.length === 0 ? [{
@@ -3794,160 +3759,358 @@ function generateInventoryReportPDF() {
     }));
 
     // Add table with autoTable plugin
-    doc.autoTable({
-        startY: 50,
+    const tableOptions = {
+        startY: 45, // Adjusted startY to accommodate extra header line
         headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: 'bold' },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: {
             'qty': { halign: 'center' },
-            'inventory_cost': { halign: 'right' } // Ensure right alignment for cost
+            'inventory_cost': { halign: 'right' }
         },
         columns,
         body: rows,
-        margin: { left: 10, right: 10 }, // Adjusted margins for table
-        didDrawPage: (data) => {
-            // Add page number at bottom center
-            const pageCount = doc.internal.getNumberOfPages();
-            doc.setFontSize(8);
-            doc.setTextColor(108, 117, 125);
-            doc.text(`Page ${data.pageNumber} of ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, null, null, "center");
-        }
-    });
+        margin: { left: 10, right: 10 },
+    };
 
-    // --- Page 2: Summary Cards and Formula ---
-    doc.addPage(); // Add a new page for the summary
+    doc.autoTable(tableOptions);
 
-    // Reset page number for the new page
-    doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125);
-    doc.text(`Page ${doc.internal.getNumberOfPages()} of ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, null, null, "center");
+    // Get the final Y position after the table
+    let finalTableY = doc.autoTable.previous.finalY;
 
+    // Fallback if finalTableY is invalid (e.g., no data, or unexpected autoTable behavior)
+    if (!finalTableY || isNaN(finalTableY)) {
+        finalTableY = 50; // A safe default starting Y if table didn't draw or was empty
+    }
 
-    let currentY = 20; // Starting Y position for summary on the new page
+    // --- Summary Cards ---
 
-    // Add summary cards
-    const cardMargin = 8; // Margin between cards
-    const totalPageWidth = doc.internal.pageSize.getWidth();
-    const availableWidth = totalPageWidth - (2 * 10); // 10mm left/right margin
-    const cardWidth = (availableWidth - (3 * cardMargin)) / 4; // 4 cards, 3 margins between them
-    const cardHeight = 40;
+    // Define card dimensions and margins
+    const cardMargin = 8;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const leftRightMargin = 10;
+    const topMargin = 20; // Standard top margin for new pages
+    const bottomMargin = 20; // Standard bottom margin for new pages
+    const cardWidth = (pageWidth - (2 * leftRightMargin) - (3 * cardMargin)) / 4;
+    const cardHeight = 45; // Height of each summary card
+    const spaceAfterTable = 10; // Space between table and summary cards
 
-    // Helper to draw a card
-    function drawCard(x, y, title, mainValue, subValue, mainColor, subColor, extraText) {
+    // Calculate the required height for the summary cards section
+    const summarySectionHeight = cardHeight + 10; // Card height + some padding below cards
+
+    // Determine the starting Y position for the summary cards
+    let currentY = finalTableY + spaceAfterTable;
+
+    // Check if the summary section fits on the current page
+    // If not, add a new page and reset currentY to the top margin of the new page
+    if (currentY + summarySectionHeight + bottomMargin > pageHeight) {
+        doc.addPage();
+        currentY = topMargin; // Start drawing cards from the top margin of the new page
+    }
+
+    // Function to draw a summary card
+    function drawCard(x, y, cardWidth, cardHeight, title, mainValue, subValue, mainColor, subColor, extraText) {
         doc.setDrawColor(233, 236, 239);
         doc.setFillColor(248, 249, 250);
-        doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+        doc.rect(x, y, cardWidth, cardHeight, 'F');
 
-        doc.setFontSize(9);
-        doc.setTextColor(73, 80, 87);
-        doc.setFont("helvetica", "bold");
-        doc.text(title, x + cardWidth / 2, y + 8, null, null, "center");
+        doc.setFontSize(9)
+           .setTextColor(73, 80, 87)
+           .setFont("helvetica", "bold")
+           .text(title, x + cardWidth / 2, y + 8, { align: "center" });
 
-        doc.setFontSize(16);
-        doc.setTextColor(...mainColor);
-        doc.setFont("helvetica", "bold");
-        doc.text(String(mainValue), x + cardWidth / 2, y + 25, null, null, "center");
+        doc.setFontSize(16)
+           .setTextColor(...mainColor)
+           .setFont("helvetica", "bold")
+           .text(String(mainValue), x + cardWidth / 2, y + 25, { align: "center" });
 
-        doc.setFontSize(10);
-        doc.setTextColor(...subColor);
-        doc.setFont("helvetica", "normal");
-        doc.text(String(subValue), x + cardWidth / 2, y + 35, null, null, "center");
+        doc.setFontSize(10)
+           .setTextColor(...subColor)
+           .setFont("helvetica", "normal");
+
+        const subValueLines = doc.splitTextToSize(String(subValue), cardWidth - 10);
+        doc.text(subValueLines, x + cardWidth / 2, y + 33, { align: "center" });
 
         if (extraText) {
-            doc.setFontSize(7);
-            doc.setTextColor(73, 80, 87);
-            doc.text(extraText, x + cardWidth / 2, y + 42, null, null, "center");
+            doc.setFontSize(7)
+               .setTextColor(73, 80, 87);
+
+            const extraTextLines = doc.splitTextToSize(extraText, cardWidth - 10);
+            doc.text(extraTextLines, x + cardWidth / 2, y + 40, { align: "center" });
         }
     }
 
+    // Draw summary cards
     drawCard(
-        10, // Left margin
-        currentY,
+        leftRightMargin, currentY, cardWidth, cardHeight,
         "BEGINNING BALANCE",
         beginningBalance,
         formatCurrency(costBeginning),
-        [108, 117, 125],
-        [108, 117, 125],
+        [108, 117, 125], [108, 117, 125],
         null
     );
 
     drawCard(
-        10 + cardWidth + cardMargin,
-        currentY,
+        leftRightMargin + cardWidth + cardMargin, currentY, cardWidth, cardHeight,
         "IN",
         totalIn,
         formatCurrency(costTotalIn),
-        [40, 167, 69],
-        [40, 167, 69],
+        [40, 167, 69], [40, 167, 69],
         `Received: ${receivedTransfers} | New: ${newDeliveries}`
     );
 
     drawCard(
-        10 + 2 * (cardWidth + cardMargin),
-        currentY,
+        leftRightMargin + 2 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight,
         "OUT",
         totalOut,
         formatCurrency(costTotalOut),
-        [220, 53, 69],
-        [220, 53, 69],
+        [220, 53, 69], [220, 53, 69],
         `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`
     );
 
     drawCard(
-        10 + 3 * (cardWidth + cardMargin),
-        currentY,
+        leftRightMargin + 3 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight,
         "ENDING BALANCE",
         endingActual,
         formatCurrency(costEndingActual),
-        [0, 64, 133],
-        [0, 86, 179],
-        `Calculated: ${endingCalculated}${endingCalculated !== endingActual ? ` | Diff: ${endingActual - endingCalculated}` : ''}`
+        [0, 64, 133], [0, 86, 179],
+        null
     );
 
-    currentY += cardHeight + 20; // Move Y position down after cards
-
-    // Add Discrepancy Alert (if any)
-    if (endingCalculated !== endingActual) {
-        doc.setFillColor(255, 243, 205); // Light yellow background
-        doc.setDrawColor(255, 238, 173); // Yellow border
-        doc.roundedRect(10, currentY, availableWidth, 15, 3, 3, 'F'); // Draw rectangle for alert
-
-        doc.setFontSize(9);
-        doc.setTextColor(133, 100, 4); // Dark yellow text
-        doc.setFont("helvetica", "bold");
-        doc.text("Discrepancy:", 15, currentY + 9);
-        doc.text(String(endingActual - endingCalculated), 10 + availableWidth - 15, currentY + 9, null, null, "right");
-
-        currentY += 25; // Move Y position down after alert
+    // --- Global Page Numbering ---
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(108, 117, 125);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, null, null, "center");
     }
-
-    // Add Formula Explanation Section
-    doc.setFillColor(248, 249, 250); // Light gray background
-    doc.setDrawColor(233, 236, 239); // Light gray border
-    doc.roundedRect(10, currentY, availableWidth, 45, 3, 3, 'F'); // Draw rectangle for formula
-
-    doc.setFontSize(11);
-    doc.setTextColor(73, 80, 87);
-    doc.setFont("helvetica", "bold");
-    doc.text("INVENTORY CALCULATION FORMULA", 10 + availableWidth / 2, currentY + 8, null, null, "center");
-
-    doc.setFontSize(10);
-    doc.setTextColor(108, 117, 125);
-    doc.setFont("helvetica", "normal");
-    doc.text("Beginning Balance + Total IN - Total OUT = Ending Balance", 10 + availableWidth / 2, currentY + 20, null, null, "center");
-
-    doc.setFontSize(9);
-    doc.setTextColor(73, 80, 87);
-    doc.text(`${beginningBalance} + ${totalIn} - ${totalOut} = ${endingCalculated}`, 10 + availableWidth / 2, currentY + 30, null, null, "center");
-
-    doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125);
-    doc.text(`Detailed: ${beginningBalance} + (${receivedTransfers} received + ${newDeliveries} new) - (${transfersOut} transferred + ${soldDuringMonth} sold) = ${endingCalculated}`, 10 + availableWidth / 2, currentY + 40, null, null, "center");
-
 
     // Save PDF
     doc.save(`Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`);
 }
+
+function generateTransferredReportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4');
+
+    // Retrieve category filter (added)
+    const categoryFilter = $('#reportCategoryFilter').val() || 'All Categories';
+
+    // --- 1. Data Validation and Preparation ---
+    if (!currentReportData || !currentReportMonth || currentReportType !== 'transferred') {
+        showErrorModal("Please generate a transferred summary report first before exporting to PDF");
+        return;
+    }
+
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long",
+    });
+    const branchName = currentReportBranch;
+
+    const totalTransferred = currentReportSummary?.total_transferred || currentReportData.length;
+    const totalInventoryCost = currentReportSummary?.total_inventory_cost || currentReportData.reduce((sum, item) => {
+        return sum + (parseFloat(item.inventory_cost) || 0);
+    }, 0);
+
+    // --- 2. Page Dimensions and Margins ---
+    const pageWidth = doc.internal.pageSize.getWidth();  // 297 mm for A4 landscape
+    const pageHeight = doc.internal.pageSize.getHeight(); // 210 mm for A4 landscape
+    const leftRightMargin = 15; // Increased margin for cleaner look
+    const topMargin = 15; // mm
+    const bottomMargin = 15; // mm
+    let currentY = topMargin; // Tracks the current Y position for drawing
+
+    // --- Color Palette (Only for backgrounds/borders, all text will be black) ---
+    const cardBgColor = [248, 249, 250]; // Very Light Gray (for card backgrounds and table header/striped rows)
+    const cardBorderColor = [233, 236, 239]; // Light Gray (for card borders)
+
+    // --- 3. Header Section ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0); // Black
+    doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
+    currentY += 10;
+
+    doc.setFontSize(13);
+    doc.text("MONTHLY SUMMARY OF TRANSFERRED STOCKS", pageWidth / 2, currentY, { align: "center" });
+    currentY += 8;
+
+    doc.setFontSize(10);
+    doc.text(`${monthName} ${year}`, pageWidth / 2, currentY, { align: "center" });
+    currentY += 6;
+
+    // Include branch and category filter on one line
+    doc.text(`Branch: ${branchName} | Category: ${categoryFilter}`, pageWidth / 2, currentY, { align: "center" });
+    currentY += 6;
+
+    doc.setFontSize(8);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, currentY, { align: "center" });
+    currentY += 15; // Space after header, before table
+
+    // --- 4. Main Transferred Items Table ---
+    const tableColumns = [
+        { header: "#", dataKey: "index" },
+        { header: "Invoice Number", dataKey: "invoice_number" },
+        { header: "Model", dataKey: "model" },
+        { header: "Brand", dataKey: "brand" },
+        { header: "Color", dataKey: "color" },
+        { header: "Engine Number", dataKey: "engine_number" },
+        { header: "Frame Number", dataKey: "frame_number" },
+        { header: "Transfer Date", dataKey: "transfer_date" },
+        { header: "Transferred To", dataKey: "transferred_to" },
+        { header: "Inventory Cost", dataKey: "inventory_cost" },
+    ];
+
+    const tableRows = currentReportData.length === 0 ? [{
+        index: "",
+        invoice_number: "No transfers found for this period",
+        model: "", brand: "", color: "", engine_number: "",
+        frame_number: "", transfer_date: "", transferred_to: "", inventory_cost: ""
+    }] : currentReportData.map((item, index) => ({
+        index: index + 1,
+        invoice_number: item.invoice_number || 'N/A',
+        model: item.model,
+        brand: item.brand,
+        color: item.color,
+        engine_number: item.engine_number,
+        frame_number: item.frame_number,
+        transfer_date: formatDate(item.transfer_date),
+        transferred_to: item.transferred_to,
+        inventory_cost: formatCurrency(item.inventory_cost),
+    }));
+
+    // --- Table Column Widths for "Across the Page" ---
+    const tableColumnStyles = {
+        'index': { halign: 'center', cellWidth: 7 },
+        'invoice_number': { cellWidth: 'auto' },
+        'model': { cellWidth: 'auto' },
+        'brand': { cellWidth: 18 },
+        'color': { cellWidth: 'auto' },
+        'engine_number': { cellWidth: 'auto' },
+        'frame_number': { cellWidth: 'auto' },
+        'transfer_date': { cellWidth: 19 },
+        'transferred_to': { cellWidth: 24, halign: 'center' }, // Keep halign center for this column
+        'inventory_cost': { halign: 'right', cellWidth: 23 },
+    };
+
+    doc.autoTable({
+        startY: currentY,
+        headStyles: { fillColor: cardBgColor, textColor: 0, fontStyle: 'bold', fontSize: 8 }, // Header text black
+        styles: { fontSize: 8, cellPadding: 2, textColor: 0 }, // Body text black
+        columnStyles: tableColumnStyles,
+        columns: tableColumns,
+        body: tableRows,
+        margin: { left: leftRightMargin, right: leftRightMargin },
+        tableWidth: 'auto',
+        didParseCell: function(data) {
+            // Apply specific styling for brand column (text will be black now)
+            if (data.column.dataKey === 'brand' && data.cell.section === 'body') {
+                data.cell.styles.textColor = [0, 0, 0]; // Explicitly black
+                data.cell.styles.fontStyle = 'bold';
+            }
+            // Removed specific styling for 'transferred_to' badge. It will now inherit default table styles.
+            // Apply alternating row background color (striped effect)
+            if (data.cell.section === 'body' && data.row.index % 2 !== 0) {
+                data.cell.styles.fillColor = cardBgColor;
+            }
+        },
+    });
+
+    // Get the final Y position after the table
+    let finalTableY = doc.autoTable.previous.finalY;
+
+    // Fallback if finalTableY is invalid
+    if (!finalTableY || isNaN(finalTableY)) {
+        finalTableY = currentY + 10;
+    }
+
+    // --- 5. Summary Cards Section (positioned after the table) ---
+    const cardPadding = 5;
+    const cardHeight = 45;
+    const cardSpacing = 10;
+
+    // Calculate card width for 2 cards, centered on the page
+    const cardWidth = (pageWidth - (2 * leftRightMargin) - cardSpacing) / 2;
+    const twoCardTotalWidth = (2 * cardWidth) + cardSpacing;
+    const twoCardStartX = (pageWidth / 2) - (twoCardTotalWidth / 2);
+
+    // Function to draw a summary card (re-used for consistency)
+    // All text within the card will be black
+    function drawCard(x, y, width, height, title, mainValue, subValue, extraText) {
+        doc.setDrawColor(...cardBorderColor);
+        doc.setFillColor(...cardBgColor);
+        doc.roundedRect(x, y, width, height, 3, 3, 'F');
+
+        doc.setFontSize(9)
+           .setTextColor(0, 0, 0) // Black text
+           .setFont("helvetica", "bold")
+           .text(title, x + width / 2, y + 8, { align: "center" });
+
+        doc.setFontSize(18)
+           .setTextColor(0, 0, 0) // Black text
+           .setFont("helvetica", "bold")
+           .text(String(mainValue), x + width / 2, y + 25, { align: "center" });
+
+        doc.setFontSize(8)
+           .setTextColor(0, 0, 0) // Black text
+           .setFont("helvetica", "normal");
+
+        const subValueLines = doc.splitTextToSize(String(subValue), width - 10);
+        doc.text(subValueLines, x + width / 2, y + 33, { align: "center" });
+
+        if (extraText) {
+            doc.setFontSize(7)
+               .setTextColor(0, 0, 0); // Black text
+
+            const extraTextLines = doc.splitTextToSize(extraText, width - 10);
+            doc.text(extraTextLines, x + width / 2, y + 40, { align: "center" });
+        }
+    }
+
+    // Determine the starting Y position for the summary cards
+    const spaceAfterTable = 15;
+    let summaryCardsY = finalTableY + spaceAfterTable;
+
+    // Check if the summary section fits on the current page
+    const summarySectionHeight = cardHeight + 10;
+    if (summaryCardsY + summarySectionHeight + bottomMargin > pageHeight) {
+        doc.addPage();
+        summaryCardsY = topMargin;
+    }
+
+    // Draw summary cards (only two, centered)
+    drawCard(
+        twoCardStartX, summaryCardsY, cardWidth, cardHeight,
+        "TOTAL TRANSFERRED",
+        totalTransferred,
+        "Motorcycles transferred",
+        null // extraText
+    );
+
+    drawCard(
+        twoCardStartX + cardWidth + cardSpacing, summaryCardsY, cardWidth, cardHeight,
+        "TOTAL INVENTORY COST",
+        formatCurrency(totalInventoryCost),
+        "Total value transferred",
+        null // extraText
+    );
+
+    // --- 6. Global Page Numbering ---
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0); // Black text
+        const currentPageWidth = doc.internal.pageSize.getWidth();
+        doc.text(`Page ${i} of ${totalPages}`, currentPageWidth / 2, pageHeight - 10, { align: "center" });
+    }
+
+    // --- 7. Save PDF ---
+    doc.save(`Monthly_Transferred_Summary_${monthName}_${year}_${branchName}.pdf`);
+}
+
 
 function generateTransferredSummary(month, branch, category = 'all') {
     $("#monthlyReportContent").html(
@@ -3966,10 +4129,11 @@ function generateTransferredSummary(month, branch, category = 'all') {
         dataType: "json",
         success: function (response) {
             if (response.success) {
-                currentReportData = response.data;
+                currentReportData = response.data; // This is the detailed list of transfers
                 currentReportMonth = response.month;
                 currentReportBranch = response.branch;
                 currentReportType = 'transferred';
+                currentReportSummary = response.summary; // This is the summary object with total_transferred, total_inventory_cost
 
                 renderTransferredSummaryReport(response.data, response.month, response.branch, response.summary);
                 $("#monthlyInventoryReportModal").modal("show");
@@ -3983,7 +4147,7 @@ function generateTransferredSummary(month, branch, category = 'all') {
     });
 }
 
-
+// Your existing renderTransferredSummaryReport function (no changes needed for PDF export)
 function renderTransferredSummaryReport(data, month, branch, summary) {
     const [year, monthNum] = month.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
@@ -4005,7 +4169,7 @@ function renderTransferredSummaryReport(data, month, branch, summary) {
             </div>
             <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY SUMMARY OF TRANSFERRED STOCKS</h5>
             <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
-            <p class="mb-1"><span style="color: #6c757d;">Branch:</span> 
+            <p class="mb-1"><span style="color: #6c757d;">Branch:</span>
              <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
             <p class="text-muted small mb-0" style="font-size: 0.85rem;">
                 Generated on ${new Date().toLocaleDateString("en-US", {
@@ -4016,7 +4180,7 @@ function renderTransferredSummaryReport(data, month, branch, summary) {
                 })}
             </p>
         </div>
-        
+
         <!-- Summary Cards -->
         <div class="row mb-4">
             <div class="col-md-6">
@@ -4122,6 +4286,220 @@ function renderTransferredSummaryReport(data, month, branch, summary) {
 
     $("#monthlyReportContent").html(html);
 }
+
+// Function to generate motorcycle report
+function generateMotorcycleReport(branch, brandFilter) {
+    $('#monthlyReportOptionsModal').modal('hide');
+    $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
+
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: {
+            action: 'get_available_motorcycles_report',
+            branch: branch,
+            brand: brandFilter
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                currentReportData = response.data;
+                currentReportType = 'motorcycle'; // Set report type
+                renderMotorcycleReport(response.data, branch, brandFilter);
+                $('#monthlyInventoryReportModal').modal('show');
+            } else {
+                showErrorModal(response.message || 'Error generating report');
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('Error generating report: ' + error);
+        }
+    });
+}
+
+
+// function exportMotorcycleReportToPDF(html, branch, brandFilter) {
+//     const printWindow = window.open('', '_blank');
+//     const title = `Motorcycle_Inventory_Report_${brandFilter}_${branch || 'all'}_${new Date().toISOString().slice(0, 10)}`;
+    
+//     printWindow.document.write(`
+//         <!DOCTYPE html>
+//         <html>
+//         <head>
+//             <title>${title}</title>
+//             <style>
+//                 body { font-family: Arial, sans-serif; margin: 20px; }
+//                 .report-header { text-align: center; margin-bottom: 20px; }
+//                 .report-header h4 { color: #000f71; font-weight: 600; }
+//                 .report-header h5 { color: #495057; font-weight: 500; }
+//                 table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+//                 th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+//                 th { background-color: #f8f9fa; font-weight: 600; }
+//                 .summary { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 5px; }
+//                 .card { margin-bottom: 20px; border: 1px solid #e9ecef; border-radius: 6px; }
+//                 .card-header { background-color: #f8f9fa; padding: 10px; border-bottom: 1px solid #e9ecef; }
+//             </style>
+//         </head>
+//         <body>
+//             ${html}
+//         </body>
+//         </html>
+//     `);
+    
+//     printWindow.document.close();
+//     printWindow.focus();
+//     setTimeout(function() {
+//         printWindow.print();
+//         // printWindow.close(); // Uncomment if you want to automatically close after printing
+//     }, 250);
+// }
+// Function to render motorcycle report
+function renderMotorcycleReport(data, branch, brandFilter) {
+    const timestamp = new Date().toLocaleString();
+    $('#monthlyReportTimestamp').text('Generated on: ' + timestamp);
+    $('#monthlyInventoryReportModalLabel').text('Available Motorcycle Units Report');
+    
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
+                </h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057; font-weight: 500;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
+            <p class="text-muted">
+                ${brandFilter === 'all' ? 'ALL BRANDS' : brandFilter.toUpperCase()} | 
+                ${branch ? branch : 'ALL BRANCHES'}
+            </p>
+            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
+                Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                })}
+            </p>
+        </div>
+    `;
+    
+    if (data.length === 0) {
+        html += `
+            <div class="alert alert-info text-center">
+                No available motorcycles found for the selected criteria.
+            </div>
+        `;
+    } else {
+        // Group by branch
+        const branches = {};
+        data.forEach(item => {
+            if (!branches[item.current_branch]) {
+                branches[item.current_branch] = [];
+            }
+            branches[item.current_branch].push(item);
+        });
+        
+        // Create report sections for each branch
+        Object.keys(branches).forEach(branch => {
+            const branchData = branches[branch];
+            
+            html += `
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">${branch} - ${branchData.length} units</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
+                                        <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 60px;">QTY</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">MODEL</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">COLOR</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">BRAND</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">ENGINE NUMBER</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">FRAME NUMBER</th>
+                                        <th class="py-3" style="font-weight: 600; color: #495057;">Inventory Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            branchData.forEach(item => {
+                html += `
+                    <tr>
+                        <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">1</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.color)}</td>
+                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.brand)}</td>
+                        <td class="py-2">${escapeHtml(item.engine_number)}</td>
+                        <td class="py-2">${escapeHtml(item.frame_number)}</td>
+                        <td class="py-2 text-end">${formatCurrency(item.inventory_cost)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Add summary
+        const totalUnits = data.length;
+        const totalValue = data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+        
+        html += `
+            <div class="alert alert-primary mt-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Total Units:</strong> ${totalUnits}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <strong>Total Inventory Value:</strong> ${formatCurrency(totalValue)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    $('#monthlyReportContent').html(html);
+    
+    // Add styling for the modal
+    $("<style>")
+        .prop("type", "text/css")
+        .html(`
+            #monthlyInventoryReportModal .modal-body {
+                max-height: calc(100vh - 200px);
+                overflow-y: auto;
+            }
+            #monthlyInventoryReportModal .modal-dialog {
+                max-width: 95%;
+                height: calc(100vh - 100px);
+            }
+            #monthlyInventoryReportModal .modal-content {
+                height: 100%;
+            }
+            .table-container { overflow: hidden; }
+            .table th { font-weight: 600; font-size: 0.9rem; }
+            .table td { font-size: 0.9rem; color: #495057; }
+            .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+            .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
+            .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
+        `)
+        .appendTo("head");
+    
+    // Update export button for motorcycle report
+    $('#exportMonthlyReportToPDF').off('click').on('click', function() {
+        exportMotorcycleReportToPDF(html, branch, brandFilter);
+    });
+}
+
 // =======================
 // Helper Functions
 // =======================
@@ -4135,25 +4513,34 @@ function formatDate(dateString) {
   });
 }
 function formatCurrency(amount) {
-  if (amount === null || amount === undefined) return "₱0.00";
+    if (amount === null || amount === undefined) return "0.00";
 
-  // Convert to string and remove any non-digit, non-dot, non-minus characters
-  let cleaned = String(amount).replace(/[^0-9.-]+/g, '');
+    // Convert to string to ensure string methods can be used
+    let amountStr = String(amount);
 
-  let num = Number(cleaned);
+    // Remove the specific '±' character, commas, and any non-numeric characters except '.'
+    let cleaned = amountStr.replace(/[±,]/g, '').replace(/[^0-9.-]/g, '');
 
-  if (isNaN(num)) return "₱0.00";
+    // Handle cases where there might be multiple decimal points
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+        cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
 
-  // Use absolute value to avoid ± sign
-  num = Math.abs(num);
+    let num = Number(cleaned);
 
-  return (
-    "₱" +
-    num.toLocaleString("en-PH", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  );
+    if (isNaN(num)) {
+        return "0.00";
+    }
+
+    // Use absolute value to ensure no negative sign or ± sign appears
+    num = Math.abs(num);
+
+    // Return just the numeric value without currency symbol
+    return num.toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 function capitalizeFirstLetter(string) {
