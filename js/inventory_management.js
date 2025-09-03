@@ -1521,10 +1521,13 @@ function transferSelectedMotorcycles() {
 
   const branches = [
     "HEADOFFICE",
+    "KINGDOM",
+    "TANQUE",
     "ROXAS SUZUKI",
     "MAMBUSAO",
     "SIGMA",
     "PRC",
+    "BAILAN",
     "CUARTERO",
     "JAMINDAN",
     "ROXAS HONDA",
@@ -1547,14 +1550,12 @@ function transferSelectedMotorcycles() {
     "PEMDI",
     "EEMSI",
     "AJUY",
-    "BAILAN",
-    "3SMB",
-    "3SMINDORO",
-    "MANSALAY",
-    "K-RIDERS",
+    "MINDORO ROXAS",
+    "3S MINDORO",
+    "MINDORO MANSALAY",
+    "K-RIDERS ROXAS",
     "IBAJAY",
-    "NUMANCIA",
-    "CEBU",
+    "NUMANCIA"
   ];
 
   branches.forEach((branch) => {
@@ -3044,6 +3045,8 @@ function toggleReportOptions() {
 function populateBranchesDropdown() {
   const branches = [
     "HEADOFFICE",
+    "KINGDOM",
+    "TANQUE",
     "ROXAS SUZUKI",
     "MAMBUSAO",
     "SIGMA",
@@ -3071,14 +3074,12 @@ function populateBranchesDropdown() {
     "PEMDI",
     "EEMSI",
     "AJUY",
-    "BAILAN",
-    "3SMB",
-    "3SMINDORO",
-    "MANSALAY",
-    "K-RIDERS",
+    "MINDORO ROXAS",
+    "3S MINDORO",
+    "MINDORO MANSALAY",
+    "K-RIDERS ROXAS",
     "IBAJAY",
-    "NUMANCIA",
-    "CEBU",
+    "NUMANCIA"
   ];
 
   const $dropdown = $("#reportBranch");
@@ -3516,11 +3517,42 @@ function showMonthlyReportOptions() {
 
 function populateBranchesDropdown() {
     const branches = [
-        'ALL','HEADOFFICE', 'ROXAS SUZUKI',   "BAILAN",'MAMBUSAO', 'SIGMA', 'PRC', 'CUARTERO', 'JAMINDAN',
-        'ROXAS HONDA', 'ANTIQUE-1', 'ANTIQUE-2', 'DELGADO HONDA', 'DELGADO SUZUKI',
-        'JARO-1', 'JARO-2', 'KALIBO MABINI', 'KALIBO SUZUKI', 'ALTAVAS', 'EMAP', 'CULASI',
-        'BACOLOD', 'PASSI-1', 'PASSI-2', 'BALASAN', 'GUIMARAS', 'PEMDI', 'EEMSI', 'AJUY',
-        'BAILAN', '3SMB', '3SMINDORO', 'MANSALAY', 'K-RIDERS', 'IBAJAY', 'NUMANCIA', 'CEBU'
+        'ALL',"HEADOFFICE",
+    "KINGDOM",
+    "TANQUE",
+    "ROXAS SUZUKI",
+    "MAMBUSAO",
+    "SIGMA",
+    "PRC",
+    "BAILAN",
+    "CUARTERO",
+    "JAMINDAN",
+    "ROXAS HONDA",
+    "ANTIQUE-1",
+    "ANTIQUE-2",
+    "DELGADO HONDA",
+    "DELGADO SUZUKI",
+    "JARO-1",
+    "JARO-2",
+    "KALIBO MABINI",
+    "KALIBO SUZUKI",
+    "ALTAVAS",
+    "EMAP",
+    "CULASI",
+    "BACOLOD",
+    "PASSI-1",
+    "PASSI-2",
+    "BALASAN",
+    "GUIMARAS",
+    "PEMDI",
+    "EEMSI",
+    "AJUY",
+    "MINDORO ROXAS",
+    "3S MINDORO",
+    "MINDORO MANSALAY",
+    "K-RIDERS ROXAS",
+    "IBAJAY",
+    "NUMANCIA"
     ];
 
     const $dropdown = $('#reportBranch');

@@ -296,10 +296,13 @@
     ?>
                                 <select class='form-select' id='branch' required>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
+                                    <option value='KINGDOM'>KINGDOM</option>
+                                    <option value='TANQUE'>TANQUE</option>
                                     <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
                                     <option value='MAMBUSAO'>MAMBUSAO</option>
                                     <option value='SIGMA'>SIGMA</option>
                                     <option value='PRC'>PRC</option>
+                                    <option value='BAILAN'>BAILAN</option>
                                     <option value='CUARTERO'>CUARTERO</option>
                                     <option value='JAMINDAN'>JAMINDAN</option>
                                     <option value='ROXAS HONDA'>ROXAS HONDA</option>
@@ -322,14 +325,12 @@
                                     <option value='PEMDI'>PEMDI</option>
                                     <option value='EEMSI'>EEMSI</option>
                                     <option value='AJUY'>AJUY</option>
-                                    <option value='BAILAN'>BAILAN</option>
-                                    <option value='3SMB'>3SMB</option>
-                                    <option value='3SMINDORO'>3SMINDORO</option>
-                                    <option value='MANSALAY'>MANSALAY</option>
-                                    <option value='K-RIDERS'>K-RIDERS</option>
+                                    <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
+                                    <option value='3S MINDORO'>3S MINDORO</option>
+                                    <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
+                                    <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
                                     <option value='IBAJAY'>IBAJAY</option>
                                     <option value='NUMANCIA'>NUMANCIA</option>
-                                    <option value='CEBU'>CEBU</option>
                                 </select>
                                 <?php } else {
         ?>
@@ -432,11 +433,14 @@
             ?>
                                 <!-- Admin can select any branch -->
                                 <select class='form-select' id='editCurrentBranch' required>
-                                    <option value='HEADOFFICE'>HEADOFFICE</option>
+                                   <option value='HEADOFFICE'>HEADOFFICE</option>
+                                    <option value='KINGDOM'>KINGDOM</option>
+                                    <option value='TANQUE'>TANQUE</option>
                                     <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
                                     <option value='MAMBUSAO'>MAMBUSAO</option>
                                     <option value='SIGMA'>SIGMA</option>
                                     <option value='PRC'>PRC</option>
+                                    <option value='BAILAN'>BAILAN</option>
                                     <option value='CUARTERO'>CUARTERO</option>
                                     <option value='JAMINDAN'>JAMINDAN</option>
                                     <option value='ROXAS HONDA'>ROXAS HONDA</option>
@@ -459,14 +463,12 @@
                                     <option value='PEMDI'>PEMDI</option>
                                     <option value='EEMSI'>EEMSI</option>
                                     <option value='AJUY'>AJUY</option>
-                                    <option value='BAILAN'>BAILAN</option>
-                                    <option value='3SMB'>3SMB</option>
-                                    <option value='3SMINDORO'>3SMINDORO</option>
-                                    <option value='MANSALAY'>MANSALAY</option>
-                                    <option value='K-RIDERS'>K-RIDERS</option>
+                                    <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
+                                    <option value='3S MINDORO'>3S MINDORO</option>
+                                    <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
+                                    <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
                                     <option value='IBAJAY'>IBAJAY</option>
                                     <option value='NUMANCIA'>NUMANCIA</option>
-                                    <option value='CEBU'>CEBU</option>
                                 </select>
                                 <?php } else {
                 ?>

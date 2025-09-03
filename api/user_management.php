@@ -59,8 +59,8 @@ function getUsers($conn) {
     // Add search conditions if provided
     if (!empty($search)) {
         $searchTerm = "%$search%";
-        $sql .= " AND (username LIKE ? OR fullName LIKE ? OR email LIKE ?)";
-        $countSql .= " AND (username LIKE ? OR fullName LIKE ? OR email LIKE ?)";
+        $sql .= " AND (username LIKE ? OR fullName LIKE ?)";
+        $countSql .= " AND (username LIKE ? OR fullName LIKE ?)";
     }
     
     // Add pagination
