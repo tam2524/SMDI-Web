@@ -19,18 +19,16 @@
     <link href='../css/inventory_style.css' rel='stylesheet'>
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js'></script>
 
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
 
-    
-   
 </head>
 
 <body>
-  
+
     <div class='container-fluid fixed-top bg-white'>
         <div class='container topbar bg-primary d-none d-lg-block'>
             <div class='d-flex justify-content-between'>
@@ -58,13 +56,15 @@
 
                         <a href='../api/logout.php' class='nav-item nav-link active'>Logout</a>
 
-                        <?php if (isset($_SESSION['username'])): ?>
+                        <?php if ( isset( $_SESSION[ 'username' ] ) ): ?>
                         <span class='nav-item nav-link disabled' style='cursor: default; color: red;'>
                             <i class='fas fa-user-circle me-1'></i>
-                            <?php echo htmlspecialchars($_SESSION['username']); ?>
+                            <?php echo htmlspecialchars( $_SESSION[ 'username' ] );
+?>
                         </span>
 
-                        <?php endif; ?>
+                        <?php endif;
+?>
                     </div>
                 </div>
             </nav>
@@ -126,14 +126,14 @@
                                     <i class='bi bi-truck'></i> Transfer
                                 </button>
 
-
                                 <!-- Replace your current report buttons with this single button -->
-                                <button type="button" class="btn btn-primary text-white me-2" id="generateReportsButton">
-                                    <i class="bi bi-file-earmark-text"></i> Generate Reports
+                                <button type='button' class='btn btn-primary text-white me-2'
+                                    id='generateReportsButton'>
+                                    <i class='bi bi-file-earmark-text'></i> Generate Reports
                                 </button>
-                                <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
-    <i class="bi bi-receipt"></i> Search Transfer Receipt
-</button>
+                                <button class='btn btn-primary text-white me-2' id='searchTransferReceiptBtn'>
+                                    <i class='bi bi-receipt'></i> Search Transfer Receipt
+                                </button>
 
                             </div>
                             <div class='input-group' style='max-width: 300px;'>
@@ -195,58 +195,58 @@
         </div>
     </main>
 
-    <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1"
-        aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class='modal fade' id='monthlyReportOptionsModal' tabindex='-1'
+        aria-labelledby='monthlyReportOptionsModalLabel' aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='monthlyReportOptionsModalLabel'>Generate Reports</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Select Month</label>
-                        <input type="month" class="form-control" id="reportMonth" required>
+                <div class='modal-body'>
+                    <div class='mb-3'>
+                        <label class='form-label'>Select Month</label>
+                        <input type='month' class='form-control' id='reportMonth' required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Select Branch</label>
-                        <select class="form-select" id="reportBranch">
+                    <div class='mb-3'>
+                        <label class='form-label'>Select Branch</label>
+                        <select class='form-select' id='reportBranch'>
                             <option value='ALL'>ALL BRANCHES</option>
                             <!-- Options will be populated dynamically -->
                         </select>
                     </div>
-                    <div class="mb-3">
-    <label class="form-label">Category</label>
-    <select class="form-select" id="reportCategoryFilter">
-        <option value="all">All</option>
-        <option value="brandnew">Brand New</option>
-        <option value="repo">Repo</option>
-    </select>
-</div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Select Report Type</label>
-                        <select class="form-select" id="reportType" required>
-                            <option value="inventory">Monthly Inventory Balance Report</option>
-                            <option value="transferred">Monthly Summary of Transferred Stocks</option>
-                            <option value="motorcycle">Available Motorcycle Units Report</option>
+                    <div class='mb-3'>
+                        <label class='form-label'>Category</label>
+                        <select class='form-select' id='reportCategoryFilter'>
+                            <option value='all'>All</option>
+                            <option value='brandnew'>Brand New</option>
+                            <option value='repo'>Repo</option>
                         </select>
                     </div>
-                    <div class="mb-3" id="brandFilterContainer" style="display: none;">
-                        <label class="form-label">Filter by Brand</label>
-                        <select class="form-select" id="reportBrandFilter">
-                            <option value="all">ALL BRANDS</option>
-                            <option value="Suzuki">SUZUKI</option>
-                            <option value="Honda">HONDA</option>
-                            <option value="Kawasaki">KAWASAKI</option>
-                            <option value="Yamaha">YAMAHA</option>
+
+                    <div class='mb-3'>
+                        <label class='form-label'>Select Report Type</label>
+                        <select class='form-select' id='reportType' required>
+                            <option value='inventory'>Monthly Inventory Balance Report</option>
+                            <option value='transferred'>Monthly Summary of Transferred Stocks</option>
+                            <option value='motorcycle'>Available Motorcycle Units Report</option>
+                        </select>
+                    </div>
+                    <div class='mb-3' id='brandFilterContainer' style='display: none;'>
+                        <label class='form-label'>Filter by Brand</label>
+                        <select class='form-select' id='reportBrandFilter'>
+                            <option value='all'>ALL BRANDS</option>
+                            <option value='Suzuki'>SUZUKI</option>
+                            <option value='Honda'>HONDA</option>
+                            <option value='Kawasaki'>KAWASAKI</option>
+                            <option value='Yamaha'>YAMAHA</option>
                             <option value='Asiastar'>ASIASTAR</option>
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'>Generate
                         Report</button>
                 </div>
             </div>
@@ -373,7 +373,6 @@
         </div>
     </div>
 
-
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -445,7 +444,7 @@
             ?>
                                 <!-- Admin can select any branch -->
                                 <select class='form-select' id='editCurrentBranch' required>
-                                   <option value='HEADOFFICE'>HEADOFFICE</option>
+                                    <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
                                     <option value='TANQUE'>TANQUE</option>
                                     <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
@@ -502,6 +501,72 @@
                                     <option value='transferred'>Transferred</option>
                                 </select>
                             </div>
+                            <!-- Sold Details Section -->
+                            <div id='soldDetailsContainer' style='display: none;'>
+                                <hr>
+                                <h6 class='text-primary'>Sale Information</h6>
+                                <div class='row'>
+                                    <div class='col-md-6 mb-2'>
+                                        <label for='editSaleDate' class='form-label'><strong>Sale Date:</strong></label>
+                                        <input type='date' class='form-control' id='editSaleDate' name='sale_date'
+                                            required>
+                                    </div>
+                                    <div class='col-md-6 mb-2'>
+                                        <label for='editCustomerName' class='form-label'><strong>Customer
+                                                Name:</strong></label>
+                                        <input type='text' class='form-control' id='editCustomerName'
+                                            name='customer_name' required>
+                                    </div>
+                                </div>
+                                <div class='row'>
+                                    <div class='col-md-6 mb-2'>
+                                        <label for='editPaymentType' class='form-label'><strong>Payment
+                                                Type:</strong></label>
+                                        <select class='form-select' id='editPaymentType' name='payment_type' required>
+                                            <option value=''>Select Payment Type</option>
+                                            <option value='COD'>COD</option>
+                                            <option value='Installment'>Installment</option>
+                                            <option value='Full Payment'>Full Payment</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- COD Details -->
+                                <div id='codDetails' style='display: none;'>
+                                    <div class='row'>
+                                        <div class='col-md-6 mb-2'>
+                                            <label for='editDrNumber' class='form-label'><strong>DR
+                                                    Number:</strong></label>
+                                            <input type='text' class='form-control' id='editDrNumber' name='dr_number'>
+                                        </div>
+                                        <div class='col-md-6 mb-2'>
+                                            <label for='editCodAmount' class='form-label'><strong>COD
+                                                    Amount:</strong></label>
+                                            <input type='number' step='0.01' class='form-control' id='editCodAmount'
+                                                name='cod_amount' min='0'>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Installment Details -->
+                                <div id='installmentDetails' style='display: none;'>
+                                    <div class='row'>
+                                        <div class='col-md-6 mb-2'>
+                                            <label for='editTerms' class='form-label'><strong>Terms ( months
+                                                    ):</strong></label>
+                                            <input type='number' class='form-control' id='editTerms' name='terms'
+                                                min='1'>
+                                        </div>
+                                        <div class='col-md-6 mb-2'>
+                                            <label for='editMonthlyAmortization' class='form-label'><strong>Monthly
+                                                    Amortization:</strong></label>
+                                            <input type='number' step='0.01' class='form-control'
+                                                id='editMonthlyAmortization' name='monthly_amortization' min='0'>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                         <div class='d-grid'>
                             <button type='submit' class='btn btn-primary text-white'>Save Changes</button>
@@ -511,7 +576,6 @@
             </div>
         </div>
     </div>
-
 
     <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'
         aria-hidden='true'>
@@ -578,7 +642,8 @@
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as Sold</button>
+                    <button type='button' class='btn btn-primary text-white' onclick='submitSale()'>Mark as
+                        Sold</button>
                 </div>
             </div>
         </div>
@@ -685,7 +750,7 @@
                                             </label>
                                             <input type='text' class='form-control form-control-sm'
                                                 id='multipleTransferInvoiceNumber' required
-                                                placeholder="Enter transfer invoice number">
+                                                placeholder='Enter transfer invoice number'>
                                         </div>
 
                                         <div class='mb-3'>
@@ -839,9 +904,7 @@
             </div>
         </div>
     </div>
-    
 
-    
     <template id='modelFormTemplate'>
         <div class='model-form card mb-3'>
             <div class='card-header d-flex justify-content-between align-items-center'>
@@ -904,108 +967,111 @@
         </div>
     </template>
 
-<div class="modal fade" id="searchTransferReceiptModal" tabindex="-1" aria-labelledby="searchTransferReceiptModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="searchTransferReceiptModalLabel">Search Transfer Receipt</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="transferInvoiceSearch" class="form-label">Transfer Invoice Number</label>
-                    <input type="text" class="form-control" id="transferInvoiceSearch" placeholder="Enter transfer invoice number">
+    <div class='modal fade' id='searchTransferReceiptModal' tabindex='-1'
+        aria-labelledby='searchTransferReceiptModalLabel' aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='searchTransferReceiptModalLabel'>Search Transfer Receipt</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
-                <div id="searchResultsContainer" class="mt-3" style="display: none;">
-                    <h6>Search Results:</h6>
-                    <div id="transferSearchResults" class="search-results"></div>
+                <div class='modal-body'>
+                    <div class='mb-3'>
+                        <label for='transferInvoiceSearch' class='form-label'>Transfer Invoice Number</label>
+                        <input type='text' class='form-control' id='transferInvoiceSearch'
+                            placeholder='Enter transfer invoice number'>
+                    </div>
+                    <div id='searchResultsContainer' class='mt-3' style='display: none;'>
+                        <h6>Search Results:</h6>
+                        <div id='transferSearchResults' class='search-results'></div>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary text-white" id="searchTransferBtn">Search</button>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-primary text-white' id='searchTransferBtn'>Search</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-   <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
+    <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
-    <div class='modal-dialog modal-xl'>
-        <div class='modal-content'>
-            <div class='modal-header bg-primary text-white'>
-                <h5 class='modal-title text-white' id='incomingTransfersModalLabel'>Incoming Units Transferred to Your Branch</h5>
-                <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal' aria-label='Close'></button>
-            </div>
-            <div class='modal-body'>
-                <div class='row mb-3'>
-                    <div class='col-md-6'>
-                        <div class='d-flex align-items-center'>
-                            <input type='checkbox' id='selectAllTransfers' class='form-check-input me-2'>
-                            <label for='selectAllTransfers' class='form-check-label fw-semibold'>Select All</label>
+        <div class='modal-dialog modal-xl'>
+            <div class='modal-content'>
+                <div class='modal-header bg-primary text-white'>
+                    <h5 class='modal-title text-white' id='incomingTransfersModalLabel'>Incoming Units Transferred to
+                        Your Branch</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
+                        aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <div class='row mb-3'>
+                        <div class='col-md-6'>
+                            <div class='d-flex align-items-center'>
+                                <input type='checkbox' id='selectAllTransfers' class='form-check-input me-2'>
+                                <label for='selectAllTransfers' class='form-check-label fw-semibold'>Select All</label>
+                            </div>
+                        </div>
+                        <div class='col-md-6 text-end'>
+                            <span class='badge bg-info' id='selectedTransfersCount'>0 selected</span>
                         </div>
                     </div>
-                    <div class='col-md-6 text-end'>
-                        <span class='badge bg-info' id='selectedTransfersCount'>0 selected</span>
+
+                    <div class='table-responsive'>
+                        <table class='table table-striped table-hover'>
+                            <thead class='table-dark'>
+                                <tr>
+                                    <th width='50'>
+                                        <input type='checkbox' id='selectAllTransfersHeader' class='form-check-input'>
+                                    </th>
+                                    <th>Model</th>
+                                    <th>Engine No.</th>
+                                    <th>Frame No.</th>
+                                    <th>Color</th>
+                                    <th>Transfer Date</th>
+                                    <th>From Branch</th>
+                                    <th>Transfer Invoice</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id='incomingTransfersBody'>
+                                <tr>
+                                    <td colspan='9' class='text-center py-4'>
+                                        <div class='spinner-border text-primary' role='status'>
+                                            <span class='visually-hidden'>Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                
-                <div class='table-responsive'>
-                    <table class='table table-striped table-hover'>
-                        <thead class='table-dark'>
-                            <tr>
-                                <th width='50'>
-                                    <input type='checkbox' id='selectAllTransfersHeader' class='form-check-input'>
-                                </th>
-                                <th>Model</th>
-                                <th>Engine No.</th>
-                                <th>Frame No.</th>
-                                <th>Color</th>
-                                <th>Transfer Date</th>
-                                <th>From Branch</th>
-                                <th>Transfer Invoice</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id='incomingTransfersBody'>
-                            <tr>
-                                <td colspan='9' class='text-center py-4'>
-                                    <div class='spinner-border text-primary' role='status'>
-                                        <span class='visually-hidden'>Loading...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class='alert alert-info mt-3' id='transferSummary' style='display: none;'>
-                    <h6 class='alert-heading'>Transfer Summary</h6>
-                    <div class='row'>
-                        <div class='col-md-4'>
-                            <strong>Selected Transfers:</strong> <span id='summarySelectedCount'>0</span>
-                        </div>
-                        <div class='col-md-4'>
-                            <strong>Total Units:</strong> <span id='summaryTotalUnits'>0</span>
-                        </div>
-                        <div class='col-md-4'>
-                            <strong>From Branches:</strong> <span id='summaryFromBranches'>-</span>
+
+                    <div class='alert alert-info mt-3' id='transferSummary' style='display: none;'>
+                        <h6 class='alert-heading'>Transfer Summary</h6>
+                        <div class='row'>
+                            <div class='col-md-4'>
+                                <strong>Selected Transfers:</strong> <span id='summarySelectedCount'>0</span>
+                            </div>
+                            <div class='col-md-4'>
+                                <strong>Total Units:</strong> <span id='summaryTotalUnits'>0</span>
+                            </div>
+                            <div class='col-md-4'>
+                                <strong>From Branches:</strong> <span id='summaryFromBranches'>-</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class='modal-footer'>
-                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                <button type='button' class='btn btn-warning me-2' id='rejectSelectedBtn' disabled>
-                    <i class='bi bi-x-circle me-1'></i>Reject Selected
-                </button>
-                <button type='button' class='btn btn-success' id='acceptSelectedBtn' disabled>
-                    <i class='bi bi-check-circle me-1'></i>Accept Selected
-                </button>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-warning me-2' id='rejectSelectedBtn' disabled>
+                        <i class='bi bi-x-circle me-1'></i>Reject Selected
+                    </button>
+                    <button type='button' class='btn btn-success' id='acceptSelectedBtn' disabled>
+                        <i class='bi bi-check-circle me-1'></i>Accept Selected
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
 
     <div class='modal fade' id='transferReceiptModal' tabindex='-1' aria-labelledby='transferReceiptModalLabel'
         aria-hidden='true'>
@@ -1029,7 +1095,7 @@
                                 <p class='mb-0'><strong>Date:</strong> <span id='receiptDate'></span></p>
                                 <p class='mb-0'><strong>Transfer Invoice No:</strong> <span
                                         id='receiptInvoiceNo'></span></p>
-                                <!-- <p class='mb-0'><strong>Transfer ID:</strong> <span id='receiptTransferId'></span></p> -->
+                                <!-- <p class = 'mb-0'><strong>Transfer ID:</strong> <span id = 'receiptTransferId'></span></p> -->
                             </div>
                         </div>
                         <hr>
@@ -1079,8 +1145,8 @@
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
                     <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
-                    <i class='bi bi-printer me-2'></i>Print Receipt
-                </button>
+                        <i class='bi bi-printer me-2'></i>Print Receipt
+                    </button>
                 </div>
             </div>
         </div>
@@ -1122,23 +1188,23 @@
             </div>
         </div>
     </div>
-<!-- Info Modal -->
-<div class="modal fade" id="infoModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">Information</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-info-circle-fill text-info me-3" style="font-size: 2rem;"></i>
-                    <span id="infoMessage"></span>
+    <!-- Info Modal -->
+    <div class='modal fade' id='infoModal' tabindex='-1'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header bg-info text-white'>
+                    <h5 class='modal-title'>Information</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+                <div class='modal-body'>
+                    <div class='d-flex align-items-center'>
+                        <i class='bi bi-info-circle-fill text-info me-3' style='font-size: 2rem;'></i>
+                        <span id='infoMessage'></span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
     <div class='modal fade' id='errorModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
@@ -1172,7 +1238,6 @@
             </div>
         </div>
     </div>
-
 
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>

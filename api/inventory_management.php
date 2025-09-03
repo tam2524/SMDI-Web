@@ -257,38 +257,78 @@ function getInventoryTable() {
 function getMotorcycle() {
     global $conn;
 
-    $id = isset( $_GET[ 'id' ] ) ? intval( $_GET[ 'id' ] ) : 0;
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid motorcycle ID']);
+        return;
+    }
 
-    $stmt = $conn->prepare( "SELECT mi.*, i.invoice_number 
+    $includeSaleDetails = isset($_GET['include_sale_details']) && $_GET['include_sale_details'] ? true : false;
+
+    $stmt = $conn->prepare("SELECT mi.*, i.invoice_number 
                            FROM motorcycle_inventory mi 
                            LEFT JOIN invoices i ON mi.invoice_id = i.id 
-                           WHERE mi.id = ?" );
-    $stmt->bind_param( 'i', $id );
+                           WHERE mi.id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+        return;
+    }
+    $stmt->bind_param('i', $id);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    if ( $result->num_rows > 0 ) {
+    if ($result && $result->num_rows > 0) {
         $data = $result->fetch_assoc();
+        $stmt->close();
 
-        if ( $data[ 'status' ] === 'transferred' ) {
-            $transferStmt = $conn->prepare( "SELECT * FROM inventory_transfers 
-                                          WHERE motorcycle_id = ? 
-                                          ORDER BY transfer_date DESC" );
-            $transferStmt->bind_param( 'i', $id );
-            $transferStmt->execute();
-            $transferResult = $transferStmt->get_result();
+        // Include sale details if requested and motorcycle is sold
+        if ($includeSaleDetails && isset($data['status']) && $data['status'] === 'sold') {
+            $saleStmt = $conn->prepare("SELECT * FROM motorcycle_sales 
+                                      WHERE motorcycle_id = ? 
+                                      ORDER BY sale_date DESC LIMIT 1");
+            if ($saleStmt) {
+                $saleStmt->bind_param('i', $id);
+                $saleStmt->execute();
+                $saleResult = $saleStmt->get_result();
 
-            $transfers = [];
-            while ( $row = $transferResult->fetch_assoc() ) {
-                $transfers[] = $row;
+                if ($saleResult && $saleResult->num_rows > 0) {
+                    $data['sale_details'] = $saleResult->fetch_assoc();
+                } else {
+                    $data['sale_details'] = null;
+                }
+                $saleStmt->close();
+            } else {
+                $data['sale_details'] = null;
             }
-
-            $data[ 'transfer_history' ] = $transfers;
         }
 
-        echo json_encode( [ 'success' => true, 'data' => $data ] );
+        // Include transfer history if motorcycle is transferred
+        if (isset($data['status']) && $data['status'] === 'transferred') {
+            $transferStmt = $conn->prepare("SELECT * FROM inventory_transfers 
+                                          WHERE motorcycle_id = ? 
+                                          ORDER BY transfer_date DESC");
+            if ($transferStmt) {
+                $transferStmt->bind_param('i', $id);
+                $transferStmt->execute();
+                $transferResult = $transferStmt->get_result();
+
+                $transfers = [];
+                if ($transferResult) {
+                    while ($row = $transferResult->fetch_assoc()) {
+                        $transfers[] = $row;
+                    }
+                }
+                $data['transfer_history'] = $transfers;
+                $transferStmt->close();
+            } else {
+                $data['transfer_history'] = [];
+            }
+        }
+
+        echo json_encode(['success' => true, 'data' => $data]);
     } else {
-        echo json_encode( [ 'success' => false, 'message' => 'Motorcycle not found' ] );
+        if ($stmt) $stmt->close();
+        echo json_encode(['success' => false, 'message' => 'Motorcycle not found']);
     }
 }
 
@@ -480,33 +520,38 @@ function updateMotorcycle() {
     $category = sanitizeInput( $_POST[ 'category' ] );
     $engineNumber = sanitizeInput( $_POST[ 'engine_number' ] );
     $frameNumber = sanitizeInput( $_POST[ 'frame_number' ] );
-    $invoiceNumber = sanitizeInput( $_POST[ 'invoice_number' ] );
+    $invoiceNumber = isset($_POST['invoice_number']) ? sanitizeInput( $_POST[ 'invoice_number' ] ) : '';
     $color = sanitizeInput( $_POST[ 'color' ] );
     $inventory_cost = !empty( $_POST[ 'inventory_cost' ] ) ? floatval( $_POST[ 'inventory_cost' ] ) : null;
     $currentBranch = sanitizeInput( $_POST[ 'current_branch' ] );
     $status = sanitizeInput( $_POST[ 'status' ] );
 
+    // Sold details (optional)
+    $sale_date = isset($_POST['sale_date']) ? sanitizeInput($_POST['sale_date']) : null;
+    $customer_name = isset($_POST['customer_name']) ? sanitizeInput($_POST['customer_name']) : null;
+    $payment_type = isset($_POST['payment_type']) ? sanitizeInput($_POST['payment_type']) : null;
+    $dr_number = isset($_POST['dr_number']) ? sanitizeInput($_POST['dr_number']) : null;
+    $cod_amount = isset($_POST['cod_amount']) ? floatval($_POST['cod_amount']) : null;
+    $terms = isset($_POST['terms']) ? intval($_POST['terms']) : null;
+    $monthly_amortization = isset($_POST['monthly_amortization']) ? floatval($_POST['monthly_amortization']) : null;
+
     $conn->begin_transaction();
 
     try {
-        // Enhanced duplicate checking for updates (excluding current record)
-        $engineCheckStmt = $conn->prepare( "SELECT id, engine_number FROM motorcycle_inventory 
-                                          WHERE engine_number = ? AND id != ?" );
+        // Duplicate checks
+        $engineCheckStmt = $conn->prepare( "SELECT id FROM motorcycle_inventory WHERE engine_number = ? AND id != ?" );
         $engineCheckStmt->bind_param( 'si', $engineNumber, $id );
         $engineCheckStmt->execute();
         $engineCheckResult = $engineCheckStmt->get_result();
-        
         if ( $engineCheckResult->num_rows > 0 ) {
             $duplicateRow = $engineCheckResult->fetch_assoc();
             throw new Exception( "DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" );
         }
 
-        $frameCheckStmt = $conn->prepare( "SELECT id, frame_number FROM motorcycle_inventory 
-                                         WHERE frame_number = ? AND id != ?" );
+        $frameCheckStmt = $conn->prepare( "SELECT id FROM motorcycle_inventory WHERE frame_number = ? AND id != ?" );
         $frameCheckStmt->bind_param( 'si', $frameNumber, $id );
         $frameCheckStmt->execute();
         $frameCheckResult = $frameCheckStmt->get_result();
-        
         if ( $frameCheckResult->num_rows > 0 ) {
             $duplicateRow = $frameCheckResult->fetch_assoc();
             throw new Exception( "DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists in another motorcycle (ID: " . $duplicateRow[ 'id' ] . ")" );
@@ -518,36 +563,31 @@ function updateMotorcycle() {
         $invoiceMessage = "";
 
         if (!empty($invoiceNumber)) {
-            // Check if invoice already exists
             $checkInvoiceStmt = $conn->prepare( 'SELECT id FROM invoices WHERE invoice_number = ?' );
             $checkInvoiceStmt->bind_param( 's', $invoiceNumber );
             $checkInvoiceStmt->execute();
             $existingInvoiceResult = $checkInvoiceStmt->get_result();
-            
+
             if ( $existingInvoiceResult->num_rows > 0 ) {
-                // Use existing invoice ID
                 $existingInvoice = $existingInvoiceResult->fetch_assoc();
                 $invoiceId = $existingInvoice['id'];
                 $isExistingInvoice = true;
                 $invoiceMessage = " (linked to existing invoice #$invoiceNumber)";
                 error_log("INFO: Using existing invoice ID $invoiceId for invoice number: $invoiceNumber");
             } else {
-                // Create new invoice
                 $invoiceStmt = $conn->prepare( 'INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)' );
                 $notes = "Updated motorcycle record";
                 $invoiceStmt->bind_param( 'sss', $invoiceNumber, $dateDelivered, $notes );
-                
-                if ( $invoiceStmt->execute() ) {
-                    $invoiceId = $conn->insert_id;
-                    $invoiceMessage = " (created new invoice #$invoiceNumber)";
-                    error_log("INFO: Created new invoice ID $invoiceId for invoice number: $invoiceNumber");
-                } else {
+                if ( !$invoiceStmt->execute() ) {
                     throw new Exception( 'Error creating new invoice: ' . $invoiceStmt->error );
                 }
+                $invoiceId = $conn->insert_id;
+                $invoiceMessage = " (created new invoice #$invoiceNumber)";
+                error_log("INFO: Created new invoice ID $invoiceId for invoice number: $invoiceNumber");
             }
         }
 
-        // Updated UPDATE statement to include category and invoice_id
+        // Update motorcycle_inventory
         if ($invoiceId) {
             $stmt = $conn->prepare( "UPDATE motorcycle_inventory 
                                    SET date_delivered = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
@@ -564,42 +604,70 @@ function updateMotorcycle() {
                               $frameNumber, $color, $inventory_cost, $currentBranch, $status, $id );
         }
 
-        if ( $stmt->execute() ) {
-            $conn->commit();
-            
-            // Provide different messages based on invoice handling
-            if ($isExistingInvoice) {
-                echo json_encode( [ 
-                    'success' => true, 
-                    'message' => "Motorcycle updated successfully$invoiceMessage",
-                    'type' => 'existing_invoice',
-                    'console_message' => "Used existing invoice ID: $invoiceId"
-                ] );
-            } else if ($invoiceId) {
-                echo json_encode( [ 
-                    'success' => true, 
-                    'message' => "Motorcycle updated successfully$invoiceMessage",
-                    'type' => 'new_invoice',
-                    'console_message' => "Created new invoice ID: $invoiceId"
-                ] );
+        if ( !$stmt->execute() ) {
+            throw new Exception( 'Error updating motorcycle: ' . $stmt->error );
+        }
+
+        // Handle sale details if status is 'sold'
+        if ($status === 'sold') {
+            // Check if sale record exists
+            $checkSaleStmt = $conn->prepare("SELECT id FROM motorcycle_sales WHERE motorcycle_id = ?");
+            $checkSaleStmt->bind_param('i', $id);
+            $checkSaleStmt->execute();
+            $saleResult = $checkSaleStmt->get_result();
+
+            if ($saleResult->num_rows > 0) {
+                // Update existing sale record
+                $saleRow = $saleResult->fetch_assoc();
+                $updateSaleStmt = $conn->prepare("UPDATE motorcycle_sales SET sale_date = ?, customer_name = ?, payment_type = ?, dr_number = ?, cod_amount = ?, terms = ?, monthly_amortization = ? WHERE id = ?");
+                $updateSaleStmt->bind_param('ssssdidi', $sale_date, $customer_name, $payment_type, $dr_number, $cod_amount, $terms, $monthly_amortization, $saleRow['id']);
+                if (!$updateSaleStmt->execute()) {
+                    throw new Exception('Error updating sale details: ' . $updateSaleStmt->error);
+                }
             } else {
-                echo json_encode( [ 
-                    'success' => true, 
-                    'message' => 'Motorcycle updated successfully'
-                ] );
+                // Insert new sale record
+                $insertSaleStmt = $conn->prepare("INSERT INTO motorcycle_sales (motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $insertSaleStmt->bind_param('issssdid', $id, $sale_date, $customer_name, $payment_type, $dr_number, $cod_amount, $terms, $monthly_amortization);
+                if (!$insertSaleStmt->execute()) {
+                    throw new Exception('Error inserting sale details: ' . $insertSaleStmt->error);
+                }
             }
         } else {
-            throw new Exception( 'Error updating motorcycle: ' . $stmt->error );
+            // If status is not sold, delete any existing sale record
+            $deleteSaleStmt = $conn->prepare("DELETE FROM motorcycle_sales WHERE motorcycle_id = ?");
+            $deleteSaleStmt->bind_param('i', $id);
+            $deleteSaleStmt->execute();
+        }
+
+        $conn->commit();
+
+        if ($isExistingInvoice) {
+            echo json_encode( [ 
+                'success' => true, 
+                'message' => "Motorcycle updated successfully$invoiceMessage",
+                'type' => 'existing_invoice',
+                'console_message' => "Used existing invoice ID: $invoiceId"
+            ] );
+        } else if ($invoiceId) {
+            echo json_encode( [ 
+                'success' => true, 
+                'message' => "Motorcycle updated successfully$invoiceMessage",
+                'type' => 'new_invoice',
+                'console_message' => "Created new invoice ID: $invoiceId"
+            ] );
+        } else {
+            echo json_encode( [ 
+                'success' => true, 
+                'message' => 'Motorcycle updated successfully'
+            ] );
         }
 
     } catch ( Exception $e ) {
         $conn->rollback();
-        
-        // Log error to console instead of showing to user for certain errors
+
         $errorMessage = $e->getMessage();
         error_log("ERROR in updateMotorcycle(): " . $errorMessage);
-        
-        // Only show user-friendly errors, log technical errors
+
         if (strpos($errorMessage, 'DUPLICATE_ENGINE_NUMBER') !== false || 
             strpos($errorMessage, 'DUPLICATE_FRAME_NUMBER') !== false) {
             echo json_encode( [ 'success' => false, 'message' => $errorMessage ] );

@@ -1138,6 +1138,7 @@ function showInfoModal(message) {
 }
 
 function updateMotorcycle() {
+ const status = $("#editStatus").val();
   const formData = {
     action: "update_motorcycle",
     id: $("#editId").val(),
@@ -1151,8 +1152,17 @@ function updateMotorcycle() {
     color: $("#editColor").val(),
     inventory_cost: $("#editInventoryCost").val(),
     current_branch: $("#editCurrentBranch").val(),
-    status: $("#editStatus").val(),
+    status: status,
   };
+  if (status === "sold") {
+    formData.sale_date = $("#editSaleDate").val();
+    formData.customer_name = $("#editCustomerName").val();
+    formData.payment_type = $("#editPaymentType").val();
+    formData.dr_number = $("#editDrNumber").val();
+    formData.cod_amount = $("#editCodAmount").val();
+    formData.terms = $("#editTerms").val();
+    formData.monthly_amortization = $("#editMonthlyAmortization").val();
+  }
 
   if (
     !formData.id ||
@@ -1232,6 +1242,7 @@ function updateMotorcycle() {
 
 
 
+// First, update the loadMotorcycleForEdit function to fetch and display sold details
 function loadMotorcycleForEdit(id) {
   $.ajax({
     url: "../api/inventory_management.php",
@@ -1239,6 +1250,7 @@ function loadMotorcycleForEdit(id) {
     data: {
       action: "get_motorcycle",
       id: id,
+      include_sale_details: true // Add this parameter to request sale details
     },
     dataType: "json",
     success: function (response) {
@@ -1257,6 +1269,9 @@ function loadMotorcycleForEdit(id) {
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
 
+        // Show/hide sold details based on status
+        toggleSoldDetails(data.status, data.sale_details);
+
         $("#editMotorcycleModal").modal("show");
       } else {
         showErrorModal(response.message || "Error loading motorcycle data");
@@ -1264,10 +1279,71 @@ function loadMotorcycleForEdit(id) {
     },
     error: function (xhr, status, error) {
       showErrorModal("Error loading motorcycle: " + error);
-    },
+    }
   });
 }
 
+function toggleSoldDetails(status, saleDetails) {
+  const soldDetailsContainer = $("#soldDetailsContainer");
+  
+  if (status === "sold") {
+    soldDetailsContainer.show();
+
+    if (saleDetails) {
+      // Normalize empty or default values
+      const saleDate = (saleDetails.sale_date && saleDetails.sale_date !== "0000-00-00") ? saleDetails.sale_date : "";
+      const customerName = saleDetails.customer_name || "";
+      const paymentType = saleDetails.payment_type || "";
+      const drNumber = saleDetails.dr_number || "";
+      const codAmount = saleDetails.cod_amount != null ? saleDetails.cod_amount : "";
+      const terms = saleDetails.terms != null ? saleDetails.terms : "";
+      const monthlyAmortization = saleDetails.monthly_amortization != null ? saleDetails.monthly_amortization : "";
+
+      $("#editSaleDate").val(saleDate);
+      $("#editCustomerName").val(customerName);
+      $("#editPaymentType").val(paymentType);
+      $("#editDrNumber").val(drNumber);
+      $("#editCodAmount").val(codAmount);
+      $("#editTerms").val(terms);
+      $("#editMonthlyAmortization").val(monthlyAmortization);
+    } else {
+      // Clear fields if no sale details
+      $("#editSaleDate, #editCustomerName, #editPaymentType, #editDrNumber, #editCodAmount, #editTerms, #editMonthlyAmortization").val("");
+    }
+
+    // Show/hide COD or Installment details based on payment type
+    togglePaymentTypeDetails($("#editPaymentType").val());
+
+  } else {
+    soldDetailsContainer.hide();
+  }
+}
+
+
+function togglePaymentTypeDetails(paymentType) {
+  if (paymentType === "COD") {
+    $("#codDetails").show();
+    $("#installmentDetails").hide();
+  } else if (paymentType === "Installment") {
+    $("#codDetails").hide();
+    $("#installmentDetails").show();
+  } else {
+    $("#codDetails").hide();
+    $("#installmentDetails").hide();
+  }
+}
+
+// Bind change event to payment type select to toggle details dynamically
+$(document).on("change", "#editPaymentType", function() {
+  togglePaymentTypeDetails($(this).val());
+});
+
+
+// Update the status change event to toggle sold details
+$("#editStatus").change(function() {
+  const status = $(this).val();
+  toggleSoldDetails(status, null);
+});
 
 // =======================
 // Invoice Validation
