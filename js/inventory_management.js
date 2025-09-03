@@ -3364,7 +3364,7 @@ const beginningBalance = currentReportSummary?.beginning_balance || 0;
                 </div>
                 <div class="text-end">
                   <span class="fs-4 fw-bold" style="color: #000f71;">${endingActual}</span>
-                  <div class="small text-primary fw-bold">${formatCurrency(costEndingActual)}</div>
+                  <div class="small text-black fw-bold">${formatCurrency(costEndingActual)}</div>
                 </div>
               </div>
             </div>
