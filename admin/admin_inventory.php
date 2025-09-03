@@ -215,6 +215,15 @@
                         </select>
                     </div>
                     <div class="mb-3">
+    <label class="form-label">Category</label>
+    <select class="form-select" id="reportCategoryFilter">
+        <option value="all">All</option>
+        <option value="brandnew">Brand New</option>
+        <option value="repo">Repo</option>
+    </select>
+</div>
+
+                    <div class="mb-3">
                         <label class="form-label">Select Report Type</label>
                         <select class="form-select" id="reportType" required>
                             <option value="inventory">Monthly Inventory Balance Report</option>
@@ -319,7 +328,7 @@
                                     <option value='PASSI-2'>PASSI-2</option>
                                     <option value='BALASAN'>BALASAN</option>
                                     <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI'>PEMDI</option>
+                                    <option value='PEMDI BACOLOD'>PEMDI BACOLOD</option>
                                     <option value='EEMSI'>EEMSI</option>
                                     <option value='AJUY'>AJUY</option>
                                     <option value='BAILAN'>BAILAN</option>
@@ -456,7 +465,7 @@
                                     <option value='PASSI-2'>PASSI-2</option>
                                     <option value='BALASAN'>BALASAN</option>
                                     <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI'>PEMDI</option>
+                                    <option value='PEMDI BACOLOD'>PEMDI BACOLOD</option>
                                     <option value='EEMSI'>EEMSI</option>
                                     <option value='AJUY'>AJUY</option>
                                     <option value='BAILAN'>BAILAN</option>

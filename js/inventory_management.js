@@ -1547,7 +1547,7 @@ function transferSelectedMotorcycles() {
     "PASSI-2",
     "BALASAN",
     "GUIMARAS",
-    "PEMDI",
+    "PEMDI BACOLOD",
     "EEMSI-GUIMARAS",
     "AJUY",
     "MINDORO ROXAS",
@@ -3072,7 +3072,7 @@ function populateBranchesDropdown() {
     "PASSI-2",
     "BALASAN",
     "GUIMARAS",
-    "PEMDI",
+    "PEMDI BACOLOD",
     "EEMSI-GUIMARAS",
     "AJUY",
     "MINDORO ROXAS",
@@ -3090,8 +3090,7 @@ function populateBranchesDropdown() {
   });
 }
 
-// Update the modal title when showing inventory reports
-function generateMonthlyInventoryReport(month, branch) {
+function generateMonthlyInventoryReport(month, branch, category = 'all') {
     $("#monthlyInventoryOptionsModal").modal("hide");
     $("#monthlyReportContent").html(
         '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
@@ -3104,6 +3103,7 @@ function generateMonthlyInventoryReport(month, branch) {
             action: "get_monthly_inventory",
             month: month,
             branch: branch || "all",
+            category: category
         },
         dataType: "json",
         success: function (response) {
@@ -3113,10 +3113,9 @@ function generateMonthlyInventoryReport(month, branch) {
                 currentReportBranch = response.branch;
                 currentReportSummary = response.summary;
                 currentReportType = 'inventory';
-                
-                // ✅ Update modal title to reflect beginning balance functionality
+
                 $("#monthlyInventoryReportModalLabel").text('Monthly Inventory Balance Report (with Beginning Balance)');
-                
+
                 renderMonthlyInventoryReport(
                     response.data,
                     response.month,
@@ -3133,7 +3132,6 @@ function generateMonthlyInventoryReport(month, branch) {
         }
     });
 }
-
 
 
 function renderMonthlyInventoryReport(data, month, branch, summary) {
@@ -3546,7 +3544,7 @@ function populateBranchesDropdown() {
     "PASSI-2",
     "BALASAN",
     "GUIMARAS",
-    "PEMDI",
+    "PEMDI BACOLOD",
     "EEMSI-GUIMARAS",
     "AJUY",
     "MINDORO ROXAS",
@@ -3569,33 +3567,32 @@ function generateReport() {
     const month = $('#reportMonth').val();
     const branch = $('#reportBranch').val();
     const reportType = $('#reportType').val();
+    const brandFilter = $('#reportBrandFilter').val();
+    const categoryFilter = $('#reportCategoryFilter').val() || 'all';
 
-    // For non-admin users, use their branch
-    const reportBranch = branch === 'ALL' ? 'all' : (branch || currentUserBranch);
+    // For non-admin users, use their branch if branch is ALL or empty
+    const reportBranch = (branch === 'ALL' || !branch) ? 'all' : branch;
 
     $('#monthlyReportOptionsModal').modal('hide');
     $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
 
     if (reportType === 'inventory') {
-        // Validate month selection for inventory reports
         if (!month) {
             showErrorModal("Please select a month.");
             return;
         }
-        generateMonthlyInventoryReport(month, reportBranch);
+        generateMonthlyInventoryReport(month, reportBranch, categoryFilter);
     } else if (reportType === 'transferred') {
-        // Validate month selection for transferred reports
         if (!month) {
             showErrorModal("Please select a month.");
             return;
         }
-        generateTransferredSummary(month, reportBranch);
+        generateTransferredSummary(month, reportBranch, categoryFilter);
     } else if (reportType === 'motorcycle') {
-        // No month validation needed for motorcycle report
-        const brandFilter = $('#reportBrandFilter').val();
-        generateMotorcycleReport(reportBranch, brandFilter);
+        generateMotorcycleReport(reportBranch, brandFilter, categoryFilter);
     }
 }
+
 function generateReportPDF() {
     if (!currentReportData || !currentReportType) {
         showErrorModal("Please generate a report first before exporting to PDF");
@@ -3664,6 +3661,43 @@ function generateInventoryReportPDF() {
     }).join("");
 
     const html = `
+    <style>
+        /* Avoid breaking table rows across pages */
+        table {
+            page-break-inside: auto;
+            border-collapse: collapse;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        thead {
+            display: table-header-group; /* repeat table header on each page */
+        }
+        tbody {
+            display: table-row-group;
+        }
+        /* Avoid breaking summary cards */
+        .summary-card {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0;
+        }
+        /* Container for left and right columns */
+        .main-content {
+            display: flex;
+            gap: 20px;
+            page-break-inside: avoid;
+        }
+        /* Force page break before formula section if needed */
+        .formula-section {
+            page-break-before: always;
+        }
+    </style>
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
             <!-- Header Section - Same as render function -->
             <div style="text-align: center; margin-bottom: 30px;">
@@ -4089,8 +4123,7 @@ function generateInventoryReportPDF() {
     html2pdf().set(opt).from(container).save();
 }
 
-
-function generateTransferredSummary(month, branch) {
+function generateTransferredSummary(month, branch, category = 'all') {
     $("#monthlyReportContent").html(
         '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
     );
@@ -4102,6 +4135,7 @@ function generateTransferredSummary(month, branch) {
             action: "get_monthly_transferred_summary",
             month: month,
             branch: branch,
+            category: category
         },
         dataType: "json",
         success: function (response) {
@@ -4109,8 +4143,8 @@ function generateTransferredSummary(month, branch) {
                 currentReportData = response.data;
                 currentReportMonth = response.month;
                 currentReportBranch = response.branch;
-                currentReportType = 'transferred'; // Set report type
-                
+                currentReportType = 'transferred';
+
                 renderTransferredSummaryReport(response.data, response.month, response.branch, response.summary);
                 $("#monthlyInventoryReportModal").modal("show");
             } else {

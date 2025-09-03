@@ -215,6 +215,15 @@
                         </select>
                     </div>
                     <div class="mb-3">
+    <label class="form-label">Category</label>
+    <select class="form-select" id="reportCategoryFilter">
+        <option value="all">All</option>
+        <option value="brandnew">Brand New</option>
+        <option value="repo">Repo</option>
+    </select>
+</div>
+
+                    <div class="mb-3">
                         <label class="form-label">Select Report Type</label>
                         <select class="form-select" id="reportType" required>
                             <option value="inventory">Monthly Inventory Balance Report</option>
