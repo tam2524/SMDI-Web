@@ -1701,14 +1701,16 @@ function getMonthlyInventory() {
     // BEGINNING BALANCE
     if (strtoupper($branch) === 'ALL') {
         $sqlBeginning = "
-            SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
-            FROM motorcycle_inventory mi
-            WHERE mi.status = 'available'
-            AND mi.date_delivered <= ?
-            $categoryCondition
-        ";
-        $stmtBeginning = $conn->prepare($sqlBeginning);
-        $stmtBeginning->bind_param('s', $prevMonthEnd);
+    SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
+    FROM motorcycle_inventory mi
+    WHERE mi.date_delivered <= ?
+    AND mi.status = 'available'
+    AND mi.current_branch = ?
+    $categoryCondition
+";
+$stmtBeginning = $conn->prepare($sqlBeginning);
+$stmtBeginning->bind_param('ss', $prevMonthEnd, $branch);
+
     } else {
         $sqlBeginning = "
             SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
