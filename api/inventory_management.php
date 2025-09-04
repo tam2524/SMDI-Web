@@ -1200,7 +1200,7 @@ function transferMultipleMotorcycles() {
         $transferIds = [];
         $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers 
                                       (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
-                                      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)" );
+                                      VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)" );
 
         foreach ( $motorcycleIds as $id ) {
             $transferStmt->bind_param( 'isssiss', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $transferInvoiceNumber );
@@ -1272,7 +1272,7 @@ function getIncomingTransfers() {
             JOIN motorcycle_inventory m ON t.motorcycle_id = m.id
             LEFT JOIN users u ON t.transferred_by = u.id
             WHERE t.to_branch = ?
-            AND t.transfer_status = 'pending'
+            AND t.transfer_status = 'in-transit'
             ORDER BY t.transfer_date ASC";
 
     $stmt = $conn->prepare($sql);
@@ -1315,7 +1315,7 @@ function acceptTransfers() {
     try {
         // Get transfer details before updating, including transfer_invoice_number and transfer_date
         $getTransfersStmt = $conn->prepare("SELECT id, motorcycle_id, to_branch, from_branch, transfer_invoice_number, transfer_date FROM inventory_transfers 
-                                           WHERE id IN ($placeholders) AND transfer_status = 'pending'");
+                                           WHERE id IN ($placeholders) AND transfer_status = 'in-transit'");
         $getTransfersStmt->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
         $getTransfersStmt->execute();
         $transfersResult = $getTransfersStmt->get_result();
@@ -1326,7 +1326,7 @@ function acceptTransfers() {
         }
 
         if (empty($motorcycleUpdates)) {
-            throw new Exception('No pending transfers found with the provided IDs');
+            throw new Exception('No in-transit transfers found with the provided IDs');
         }
 
         // Verify that the transfers are actually for the current branch
@@ -1472,7 +1472,7 @@ function rejectTransfers() {
     try {
         // Get transfer details before updating
         $getTransfersStmt = $conn->prepare("SELECT motorcycle_id, from_branch, to_branch FROM inventory_transfers 
-                                           WHERE id IN ($placeholders) AND transfer_status = 'pending'");
+                                           WHERE id IN ($placeholders) AND transfer_status = 'in-transit'");
         $getTransfersStmt->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
         $getTransfersStmt->execute();
         $transfersResult = $getTransfersStmt->get_result();
@@ -1483,7 +1483,7 @@ function rejectTransfers() {
         }
 
         if (empty($motorcycleUpdates)) {
-            throw new Exception('No pending transfers found with the provided IDs');
+            throw new Exception('No in-transit transfers found with the provided IDs');
         }
 
         // Update transfer status to rejected (without date_rejected)

@@ -2849,8 +2849,8 @@ function showIncomingTransfersModal(transfers) {
 
 function getTransferStatusBadge(status) {
     switch(status) {
-        case 'pending':
-            return '<span class="badge bg-warning text-dark status-badge">Pending</span>';
+        case 'in-transit':
+            return '<span class="badge bg-warning text-dark status-badge">In-transit</span>';
         case 'completed':
             return '<span class="badge bg-success status-badge">Completed</span>';
         case 'rejected':
@@ -3023,7 +3023,7 @@ function rejectSelectedTransfers() {
             if ($("#incomingTransfersBody tr:visible").length === 0) {
               $("#incomingTransfersBody").html(`
                 <tr>
-                  <td colspan="9" class="text-center py-4 text-muted">No pending transfers remaining</td>
+                  <td colspan="9" class="text-center py-4 text-muted">No in-transit transfers remaining</td>
                 </tr>
               `);
               $("#transferSummary").hide();
