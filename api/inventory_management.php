@@ -226,12 +226,13 @@ function getInventoryTable() {
     $totalPages = ceil( $totalRecords / $perPage );
 
     // Updated SELECT to include category
-    $sql = "SELECT mi.*, i.invoice_number 
-            FROM motorcycle_inventory mi 
-            LEFT JOIN invoices i ON mi.invoice_id = i.id 
-            $where 
-            ORDER BY $sortField $sortOrder 
-            LIMIT ? OFFSET ?";
+   $sql = "SELECT mi.*, mi.date_received, i.invoice_number 
+        FROM motorcycle_inventory mi 
+        LEFT JOIN invoices i ON mi.invoice_id = i.id 
+        $where 
+        ORDER BY $sortField $sortOrder 
+        LIMIT ? OFFSET ?";
+;
 
     $stmt = $conn->prepare( $sql );
 
@@ -1306,7 +1307,6 @@ function acceptTransfers() {
         return;
     }
 
-    // Sanitize transfer IDs to integers
     $transferIds = array_map('intval', $transferIds);
     $placeholders = implode(',', array_fill(0, count($transferIds), '?'));
     $currentDate = date('Y-m-d H:i:s'); // Acceptance datetime
@@ -1314,7 +1314,7 @@ function acceptTransfers() {
     $conn->begin_transaction();
 
     try {
-        // Get transfer details before updating, including transfer_invoice_number and transfer_date
+        // Get transfer details before updating
         $getTransfersStmt = $conn->prepare("SELECT id, motorcycle_id, to_branch, from_branch, transfer_invoice_number, transfer_date FROM inventory_transfers 
                                            WHERE id IN ($placeholders) AND transfer_status = 'in-transit'");
         $getTransfersStmt->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
@@ -1330,7 +1330,7 @@ function acceptTransfers() {
             throw new Exception('No in-transit transfers found with the provided IDs');
         }
 
-        // Verify that the transfers are actually for the current branch
+        // Verify transfers are for current branch
         foreach ($motorcycleUpdates as $update) {
             if ($update['to_branch'] !== $currentBranch) {
                 throw new Exception('Transfer destination does not match current branch');
@@ -1356,14 +1356,15 @@ function acceptTransfers() {
         $columnResult = $conn->query($checkColumnQuery);
         $hasDateReceivedColumn = $columnResult->num_rows > 0;
 
-        // Prepare statement to find or create invoice by transfer_invoice_number
+        // Prepare statements for invoice lookup/creation
         $selectInvoiceStmt = $conn->prepare("SELECT id FROM invoices WHERE invoice_number = ?");
         $insertInvoiceStmt = $conn->prepare("INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)");
 
-        // Update motorcycles - Change current_branch, status, date_received, invoice_id, and date_delivered
+        // Update motorcycles - Change current_branch, status, date_received, invoice_id
+        // **DO NOT update date_delivered here**
         foreach ($motorcycleUpdates as $update) {
             $transferInvoiceNumber = $update['transfer_invoice_number'];
-            $transferDate = $update['transfer_date'];  // Use original transfer date here
+            $transferDate = $update['transfer_date'];  // original transfer date
 
             // Find or create invoice for transfer_invoice_number
             $invoiceId = null;
@@ -1384,17 +1385,17 @@ function acceptTransfers() {
             }
 
             if ($hasDateReceivedColumn) {
-                // Update with date_received if column exists, also update invoice_id and date_delivered
+                // Update with date_received, invoice_id, but NOT date_delivered
                 $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
-                                                  SET current_branch = ?, status = 'available', date_received = ?, invoice_id = ?, date_delivered = ?
+                                                  SET current_branch = ?, status = 'available', date_received = ?, invoice_id = ?
                                                   WHERE id = ?");
-                $updateMotorcycle->bind_param('ssisi', $update['to_branch'], $transferDate, $invoiceId, $transferDate, $update['motorcycle_id']);
+                $updateMotorcycle->bind_param('ssii', $update['to_branch'], $currentDate, $invoiceId, $update['motorcycle_id']);
             } else {
-                // Update without date_received if column doesn't exist, also update invoice_id and date_delivered
+                // Update without date_received, but NOT date_delivered
                 $updateMotorcycle = $conn->prepare("UPDATE motorcycle_inventory 
-                                                  SET current_branch = ?, status = 'available', invoice_id = ?, date_delivered = ?
+                                                  SET current_branch = ?, status = 'available', invoice_id = ?
                                                   WHERE id = ?");
-                $updateMotorcycle->bind_param('sisi', $update['to_branch'], $invoiceId, $transferDate, $update['motorcycle_id']);
+                $updateMotorcycle->bind_param('sii', $update['to_branch'], $invoiceId, $update['motorcycle_id']);
             }
 
             if (!$updateMotorcycle->execute()) {
@@ -1446,6 +1447,7 @@ function acceptTransfers() {
         ]);
     }
 }
+
 
 
 function rejectTransfers() {

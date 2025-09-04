@@ -1273,7 +1273,7 @@ function renderInventoryTable(data) {
       html += `
                 <tr data-id="${item.id}">
                 <td>${item.invoice_number || "N/A"}</td>
-                    <td>${formatDate(item.date_delivered)}</td>
+                    <td>${item.date_received ? formatDate(item.date_received) : formatDate(item.date_delivered)}</td>
                     <td>${item.brand}</td>
                     <td>${item.model}</td>
                     <td>${categoryBadge}</td>
@@ -1301,6 +1301,7 @@ function renderInventoryTable(data) {
   $("#inventoryTableBody").html(html);
   setupTableActionButtons();
 }
+
 
 
 function setupTableActionButtons() {
