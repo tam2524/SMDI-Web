@@ -2946,8 +2946,8 @@ function showIncomingTransfersModal(transfers) {
 
 function getTransferStatusBadge(status) {
   switch (status) {
-    case 'pending':
-      return '<span class="badge bg-warning text-dark">Pending</span>';
+    case 'in-transit':
+      return '<span class="badge bg-warning text-dark">In-transit</span>';
     case 'completed':
       return '<span class="badge bg-success">Completed</span>';
     case 'rejected':
@@ -3121,7 +3121,7 @@ function rejectSelectedTransfers() {
             if ($("#incomingTransfersBody tr:visible").length === 0) {
               $("#incomingTransfersBody").html(`
                 <tr>
-                  <td colspan="9" class="text-center py-4 text-muted">No pending transfers remaining</td>
+                  <td colspan="9" class="text-center py-4 text-muted">No in-transit transfers remaining</td>
                 </tr>
               `);
               $("#transferSummary").hide();
@@ -5240,7 +5240,7 @@ function debounce(func, wait) {
   };
 }
 
-['pending', 'completed', 'rejected'].forEach(status => {
+['in-transit', 'completed', 'rejected'].forEach(status => {
   $(`#search${capitalizeFirstLetter(status)}`).on('input', debounce(function() {
     loadTransfers(status, 1, $(this).val());
   }, 300));
@@ -5248,7 +5248,7 @@ function debounce(func, wait) {
 
 // Initial load
 $(document).ready(function() {
-  ['pending', 'completed', 'rejected'].forEach(status => {
+  ['in-transit', 'completed', 'rejected'].forEach(status => {
     loadTransfers(status);
   });
 });

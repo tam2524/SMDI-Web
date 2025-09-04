@@ -123,7 +123,7 @@
 
   <!-- Pending Transfers Section -->
   <section class="mb-5">
-    <h5>Pending Transfers</h5>
+    <h5>In-transit Transfers</h5>
     <input type="text" id="searchPending" class="form-control mb-2" placeholder="Search pending transfers...">
     <div class="table-responsive table-scrollable" style="max-height: 300px; overflow-y: auto;">
       <table class="table table-sm table-bordered" id="pendingTransfersTable">
