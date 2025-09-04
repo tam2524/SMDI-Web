@@ -121,12 +121,12 @@
 
                    <div class='tab-pane fade' id='globalTransferHistory' role='tabpanel' aria-labelledby='global-transfer-tab'>
 
-  <!-- Pending Transfers Section -->
+  <!-- In-transit Transfers Section -->
   <section class="mb-5">
     <h5>In-transit Transfers</h5>
-    <input type="text" id="searchPending" class="form-control mb-2" placeholder="Search pending transfers...">
+    <input type="text" id="searchIn-transit" class="form-control mb-2" placeholder="Search in-transit transfers...">
     <div class="table-responsive table-scrollable" style="max-height: 300px; overflow-y: auto;">
-      <table class="table table-sm table-bordered" id="pendingTransfersTable">
+      <table class="table table-sm table-bordered" id="in-transitTransfersTable">
         <thead class="table-light sticky-top">
           <tr>
             <th>Date</th>
@@ -142,13 +142,13 @@
             <th>Notes</th>
           </tr>
         </thead>
-        <tbody id="pendingTransfersBody">
-          <!-- Pending data loaded dynamically -->
+        <tbody id="in-transitTransfersBody">
+          <!-- In-transit data loaded dynamically -->
         </tbody>
       </table>
     </div>
     <nav>
-      <ul class="pagination justify-content-center" id="pendingTransfersPagination"></ul>
+      <ul class="pagination justify-content-center" id="in-transitTransfersPagination"></ul>
     </nav>
   </section>
 

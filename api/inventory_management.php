@@ -342,6 +342,7 @@ function getMotorcycle() {
         echo json_encode(['success' => false, 'message' => 'Motorcycle not found']);
     }
 }
+
 function addMotorcycle() {
     global $conn;
 
@@ -1198,9 +1199,9 @@ function transferMultipleMotorcycles() {
 
         // Insert transfer records with the same transfer invoice number
         $transferIds = [];
-        $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers 
-                                      (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
-                                      VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)" );
+      $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers 
+                              (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
+                              VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)" );
 
         foreach ( $motorcycleIds as $id ) {
             $transferStmt->bind_param( 'isssiss', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $transferInvoiceNumber );
@@ -1254,26 +1255,26 @@ function getIncomingTransfers() {
     }
 
     $sql = "SELECT 
-                t.id as transfer_id,
-                m.id as motorcycle_id,
-                m.brand, 
-                m.model, 
-                m.engine_number, 
-                m.frame_number, 
-                m.color,
-                t.transfer_date,
-                t.from_branch,
-                t.to_branch,
-                t.notes,
-                t.transfer_status as transfer_status,
-                t.transfer_invoice_number,
-                u.username as transferred_by
-            FROM inventory_transfers t
-            JOIN motorcycle_inventory m ON t.motorcycle_id = m.id
-            LEFT JOIN users u ON t.transferred_by = u.id
-            WHERE t.to_branch = ?
-            AND t.transfer_status = 'in-transit'
-            ORDER BY t.transfer_date ASC";
+            t.id as transfer_id,
+            m.id as motorcycle_id,
+            m.brand, 
+            m.model, 
+            m.engine_number, 
+            m.frame_number, 
+            m.color,
+            t.transfer_date,
+            t.from_branch,
+            t.to_branch,
+            t.notes,
+            t.transfer_status as transfer_status,
+            t.transfer_invoice_number,
+            u.username as transferred_by
+        FROM inventory_transfers t
+        JOIN motorcycle_inventory m ON t.motorcycle_id = m.id
+        LEFT JOIN users u ON t.transferred_by = u.id
+        WHERE t.to_branch = ?
+        AND t.transfer_status = 'in-transit'
+        ORDER BY t.transfer_date ASC";
 
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('s', $currentBranch);
@@ -1315,7 +1316,7 @@ function acceptTransfers() {
     try {
         // Get transfer details before updating, including transfer_invoice_number and transfer_date
         $getTransfersStmt = $conn->prepare("SELECT id, motorcycle_id, to_branch, from_branch, transfer_invoice_number, transfer_date FROM inventory_transfers 
-                                           WHERE id IN ($placeholders) AND transfer_status = 'in-transit'");
+                                           WHERE id IN ($placeholders) AND transfer_status = 'in'");
         $getTransfersStmt->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
         $getTransfersStmt->execute();
         $transfersResult = $getTransfersStmt->get_result();
@@ -1711,16 +1712,26 @@ function getMonthlyInventory() {
         $stmtBeginning->bind_param('s', $prevMonthEnd);
     } else {
         $sqlBeginning = "
-    SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
-    FROM motorcycle_inventory mi
-    WHERE mi.date_delivered <= ?
-    AND mi.status = 'available'
-    AND mi.current_branch = ?
-    $categoryCondition
-";
-$stmtBeginning = $conn->prepare($sqlBeginning);
-$stmtBeginning->bind_param('ss', $prevMonthEnd, $branch);
-
+            SELECT COUNT(*) as count_beginning, COALESCE(SUM(inventory_cost), 0) as cost_beginning
+            FROM motorcycle_inventory mi
+            WHERE mi.date_delivered <= ?
+            AND mi.status != 'deleted'
+            AND (
+                (mi.current_branch = ? AND mi.status = 'available')
+                OR
+                mi.id IN (
+                    SELECT it.motorcycle_id 
+                    FROM inventory_transfers it
+                    WHERE it.from_branch = ?
+                    AND it.transfer_date BETWEEN ? AND ?
+                    AND it.transfer_status = 'completed'
+                    AND mi.date_delivered <= ?
+                )
+            )
+            $categoryCondition
+        ";
+        $stmtBeginning = $conn->prepare($sqlBeginning);
+        $stmtBeginning->bind_param('ssssss', $prevMonthEnd, $branch, $branch, $startDate, $endDate, $prevMonthEnd);
     }
     $stmtBeginning->execute();
     $beginningResult = $stmtBeginning->get_result()->fetch_assoc();
