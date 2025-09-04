@@ -1316,7 +1316,7 @@ function acceptTransfers() {
     try {
         // Get transfer details before updating, including transfer_invoice_number and transfer_date
         $getTransfersStmt = $conn->prepare("SELECT id, motorcycle_id, to_branch, from_branch, transfer_invoice_number, transfer_date FROM inventory_transfers 
-                                           WHERE id IN ($placeholders) AND transfer_status = 'in'");
+                                           WHERE id IN ($placeholders) AND transfer_status = 'in-transit'");
         $getTransfersStmt->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
         $getTransfersStmt->execute();
         $transfersResult = $getTransfersStmt->get_result();
