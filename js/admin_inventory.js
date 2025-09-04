@@ -5126,6 +5126,55 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+function loadGlobalTransferHistory(page = 1) {
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: {
+            action: 'get_all_transfer_histories',
+            page: page,
+            per_page: 20
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                const data = response.data;
+                const $tbody = $('#globalTransferHistoryBody');
+                $tbody.empty();
+
+                if (data.length === 0) {
+                    $tbody.append('<tr><td colspan="10" class="text-center text-muted">No transfer records found</td></tr>');
+                } else {
+                    data.forEach(t => {
+                        $tbody.append(`
+                            <tr>
+                                <td>${formatDate(t.transfer_date)}</td>
+                                <td>${escapeHtml(t.from_branch)}</td>
+                                <td>${escapeHtml(t.to_branch)}</td>
+                                <td>${escapeHtml(t.brand)}</td>
+                                <td>${escapeHtml(t.model)}</td>
+                                <td>${escapeHtml(t.engine_number)}</td>
+                                <td>${escapeHtml(t.frame_number)}</td>
+                                <td>${escapeHtml(t.invoice_number || '')}</td>
+                                <td>${escapeHtml(t.transfer_invoice_number)}</td>
+                                <td>${escapeHtml(t.notes || '')}</td>
+                            </tr>
+                        `);
+                    });
+                }
+
+                renderPagination(response.pagination.total_pages, response.pagination.current_page);
+            } else {
+                alert(response.message || 'Failed to load transfer history');
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Error loading transfer history: ' + error);
+        }
+    });
+}
+
+
 function loadTransfers(status, page = 1, search = '') {
   const tbodyId = `#${status}TransfersBody`;
   const paginationId = `#${status}TransfersPagination`;
