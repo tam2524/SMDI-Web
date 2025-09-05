@@ -1695,6 +1695,20 @@ function getMonthlyInventory() {
     $startDate    = date('Y-m-01', strtotime($month));
     $endDate      = date('Y-m-t', strtotime($month));
     $prevMonthEnd = date('Y-m-d', strtotime('last day of previous month', strtotime($month)));
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+
+$userBranch = isset($_SESSION['user_branch']) ? strtoupper($_SESSION['user_branch']) : '';
+// Only apply brand filter if user is HEADOFFICE
+$applyBrandFilter = ($userBranch === 'HEADOFFICE' && $brand !== 'all');
+
+if ($applyBrandFilter) {
+    $brandCondition = " AND LOWER(mi.brand) = '$brand' ";
+} else {
+    $brandCondition = "";
+}
+
+// Then add $brandCondition to all your SQL WHERE clauses that query motorcycle_inventory (mi)
+
 
     // Category filter uses the mi alias everywhere
     $categoryCondition = '';
@@ -1722,6 +1736,7 @@ function getMonthlyInventory() {
             WHERE mi.deleted_at IS NULL
               AND mi.date_delivered <= ?
               $categoryCondition
+               $brandCondition
         ";
         $stmtBeginning = $conn->prepare($sqlBeginning);
         $types = 's' . $paramTypes;
@@ -1750,6 +1765,7 @@ function getMonthlyInventory() {
                  OR (lt.transfer_date >  ? AND lt.from_branch = ?)
               )
               $categoryCondition
+               $brandCondition
         ";
         $stmtBeginning = $conn->prepare($sqlBeginning);
         $types = 'sssssss' . $paramTypes;
@@ -1777,6 +1793,7 @@ function getMonthlyInventory() {
             WHERE mi.date_delivered BETWEEN ? AND ?
               AND mi.deleted_at IS NULL
               $categoryCondition
+               $brandCondition
         ";
         $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
         $types = 'ss' . $paramTypes;
@@ -1835,6 +1852,7 @@ function getMonthlyInventory() {
             WHERE it.date_received BETWEEN ? AND ?
               AND it.transfer_status = 'completed'
               $categoryCondition
+               $brandCondition
         ";
         $stmtReceived = $conn->prepare($sqlReceived);
         $types = 'ss' . $paramTypes;
@@ -1849,6 +1867,7 @@ function getMonthlyInventory() {
               AND it.date_received BETWEEN ? AND ?
               AND it.transfer_status = 'completed'
               $categoryCondition
+               $brandCondition
         ";
         $stmtReceived = $conn->prepare($sqlReceived);
         $types = 'sss' . $paramTypes;
@@ -1873,6 +1892,8 @@ function getMonthlyInventory() {
             WHERE it.transfer_date BETWEEN ? AND ?
               AND it.transfer_status = 'completed'
               $categoryCondition
+               $brandCondition
+
         ";
         $stmtTransfersOut = $conn->prepare($sqlTransfersOut);
         $types = 'ss' . $paramTypes;
@@ -1887,6 +1908,7 @@ function getMonthlyInventory() {
               AND it.transfer_date BETWEEN ? AND ?
               AND it.transfer_status = 'completed'
               $categoryCondition
+               $brandCondition
         ";
         $stmtTransfersOut = $conn->prepare($sqlTransfersOut);
         $types = 'sss' . $paramTypes;
@@ -1907,6 +1929,7 @@ function getMonthlyInventory() {
             WHERE ms.sale_date BETWEEN ? AND ?
               AND mi.status = 'sold'
               $categoryCondition
+               $brandCondition
         ";
         $stmtSoldDuringMonth = $conn->prepare($sqlSoldDuringMonth);
         $types = 'ss' . $paramTypes;
@@ -1921,6 +1944,7 @@ function getMonthlyInventory() {
               AND ms.sale_date BETWEEN ? AND ?
               AND mi.status = 'sold'
               $categoryCondition
+               $brandCondition
         ";
         $stmtSoldDuringMonth = $conn->prepare($sqlSoldDuringMonth);
         $types = 'sss' . $paramTypes;
@@ -1958,6 +1982,7 @@ function getMonthlyInventory() {
                     AND s.sale_date <= ?
               )
               $categoryCondition
+               $brandCondition
             ORDER BY mi.brand, mi.model
         ";
 
@@ -2018,6 +2043,7 @@ function getMonthlyInventory() {
                 OR (lt.motorcycle_id IS NULL AND nxt.motorcycle_id IS NULL AND mi.current_branch = ?)
               )
               $categoryCondition
+               $brandCondition
             ORDER BY mi.brand, mi.model
         ";
 
@@ -2083,6 +2109,7 @@ function getMonthlyInventory() {
             WHERE it.transfer_date BETWEEN ? AND ?
               AND it.transfer_status = 'completed'
               $categoryCondition
+               $brandCondition
             ORDER BY it.transfer_date DESC
         ";
         $stmtTransferDetails = $conn->prepare($sqlTransferDetails);
@@ -2256,6 +2283,13 @@ function getMonthlyTransferredSummary() {
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
     $branch = isset($_GET['branch']) ? strtolower(sanitizeInput($_GET['branch'])) : 'all';
     $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+
+$userBranch = isset($_SESSION['user_branch']) ? strtoupper($_SESSION['user_branch']) : '';
+$applyBrandFilter = ($userBranch === 'HEADOFFICE' && $brand !== 'all');
+
+$brandCondition = $applyBrandFilter ? " AND LOWER(mi.brand) = '$brand' " : "";
+
 
     if (empty($month)) {
         echo json_encode(['success' => false, 'message' => 'Month parameter is required']);
@@ -2290,6 +2324,7 @@ function getMonthlyTransferredSummary() {
             AND it.transfer_date BETWEEN ? AND ?
             AND it.transfer_status = 'completed'
             $categoryCondition
+            $brandCondition
             ORDER BY it.transfer_date DESC, mi.model";
 
     $stmt = $conn->prepare($sql);
@@ -2331,7 +2366,7 @@ function getAvailableMotorcyclesReport() {
     $branch = isset($_GET['branch']) ? strtolower(sanitizeInput($_GET['branch'])) : 'all';
     $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
 
-    $userBranch = isset($_SESSION['user_branch']) ? strtolower($_SESSION['user_branch']) : '';
+   $userBranch = isset($_SESSION['user_branch']) ? strtoupper($_SESSION['user_branch']) : '';
     $userPosition = isset($_SESSION['position']) ? strtoupper($_SESSION['position']) : '';
 
     $sql = "SELECT mi.*, i.invoice_number 
@@ -2339,10 +2374,9 @@ function getAvailableMotorcyclesReport() {
             LEFT JOIN invoices i ON mi.invoice_id = i.id
             WHERE mi.status = 'available'";
 
-    if ($brand !== 'all') {
+     if ($userBranch === 'HEADOFFICE' && $brand !== 'all') {
         $sql .= " AND mi.brand = '$brand'";
     }
-
     if ($category !== 'all') {
         $sql .= " AND LOWER(mi.category) = '$category'";
     }

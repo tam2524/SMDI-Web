@@ -3431,7 +3431,7 @@ function populateBranchesDropdown() {
   });
 }
 
-function generateMonthlyInventoryReport(month, branch, category = 'all') {
+function generateMonthlyInventoryReport(month, branch, category = 'all', brand = 'all') {
     $("#monthlyInventoryOptionsModal").modal("hide");
     $("#monthlyReportContent").html(
         '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
@@ -3444,7 +3444,8 @@ function generateMonthlyInventoryReport(month, branch, category = 'all') {
             action: "get_monthly_inventory",
             month: month,
             branch: branch || "all",
-            category: category
+            category: category,
+            brand: brand
         },
         dataType: "json",
         success: function (response) {
@@ -3473,6 +3474,7 @@ function generateMonthlyInventoryReport(month, branch, category = 'all') {
         }
     });
 }
+
 
 
 function renderMonthlyInventoryReport(data, month, branch, summary) {
@@ -3845,30 +3847,29 @@ function exportMonthlyReport() {
 // Report Generation Functions
 // =======================
 function showMonthlyReportOptions() {
-    // Get the current user's branch and position
-    const userBranch = currentUserBranch;
-    const userPosition = currentUserPosition;
-    const isAdminOrHeadOffice = isAdminUser || isHeadOffice;
-
-    // Set the current month as default
+    // Set current month as default
     const now = new Date();
     const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     $('#reportMonth').val(currentMonth);
 
-    // Handle branch selection based on user role
-    if (isAdminOrHeadOffice) {
-        // Admin/HeadOffice can select any branch including ALL BRANCHES
+    // Branch selection logic
+    if (currentUserBranch === 'HEADOFFICE' || ['ADMIN', 'IT STAFF', 'HEAD'].includes(currentUserPosition)) {
         populateBranchesDropdown();
         $('#reportBranch').prop('disabled', false);
+        // Show and enable brand filter for Head Office users
+        $('#brandFilterContainer').show();
+        $('#reportBrandFilter').prop('disabled', false);
     } else {
-        // Regular users - auto-populate with their branch and disable selection
-        $('#reportBranch').empty().append(`<option value="${userBranch}">${userBranch}</option>`);
-        $('#reportBranch').val(userBranch).prop('disabled', true);
+        // For other users, fix branch and hide brand filter
+        $('#reportBranch').empty().append(`<option value="${currentUserBranch}">${currentUserBranch}</option>`);
+        $('#reportBranch').val(currentUserBranch).prop('disabled', true);
+        $('#brandFilterContainer').hide();
+        $('#reportBrandFilter').prop('disabled', true);
     }
 
-    // Show the modal
     $('#monthlyReportOptionsModal').modal('show');
 }
+
 
 
 
@@ -3924,7 +3925,7 @@ function generateReport() {
     const month = $('#reportMonth').val();
     const branch = $('#reportBranch').val();
     const reportType = $('#reportType').val();
-    const brandFilter = $('#reportBrandFilter').val();
+    const brandFilter = $('#reportBrandFilter').val() || 'all';
     const categoryFilter = $('#reportCategoryFilter').val() || 'all';
 
     // For non-admin users, use their branch if branch is ALL or empty
@@ -3938,13 +3939,13 @@ function generateReport() {
             showErrorModal("Please select a month.");
             return;
         }
-        generateMonthlyInventoryReport(month, reportBranch, categoryFilter);
+        generateMonthlyInventoryReport(month, reportBranch, categoryFilter, brandFilter);
     } else if (reportType === 'transferred') {
         if (!month) {
             showErrorModal("Please select a month.");
             return;
         }
-        generateTransferredSummary(month, reportBranch, categoryFilter);
+        generateTransferredSummary(month, reportBranch, categoryFilter, brandFilter);
     } else if (reportType === 'motorcycle') {
         generateMotorcycleReport(reportBranch, brandFilter, categoryFilter);
     }
@@ -4587,7 +4588,7 @@ function generateTransferredReportPDF() {
 }
 
 
-function generateTransferredSummary(month, branch, category = 'all') {
+function generateTransferredSummary(month, branch, category = 'all', brand = 'all') {
     $("#monthlyReportContent").html(
         '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
     );
@@ -4599,16 +4600,17 @@ function generateTransferredSummary(month, branch, category = 'all') {
             action: "get_monthly_transferred_summary",
             month: month,
             branch: branch,
-            category: category
+            category: category,
+            brand: brand
         },
         dataType: "json",
         success: function (response) {
             if (response.success) {
-                currentReportData = response.data; // This is the detailed list of transfers
+                currentReportData = response.data;
                 currentReportMonth = response.month;
                 currentReportBranch = response.branch;
                 currentReportType = 'transferred';
-                currentReportSummary = response.summary; // This is the summary object with total_transferred, total_inventory_cost
+                currentReportSummary = response.summary;
 
                 renderTransferredSummaryReport(response.data, response.month, response.branch, response.summary);
                 $("#monthlyInventoryReportModal").modal("show");
