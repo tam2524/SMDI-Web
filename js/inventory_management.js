@@ -4291,8 +4291,8 @@ function generateReportPDF() {
     }
 }
 function generateSoldUnitsReportPDF() {
- const { jsPDF } = window.jspdf;
-  // Create PDF in landscape mode
+  const { jsPDF } = window.jspdf;
+  // Create PDF in landscape mode for more horizontal space
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -4320,10 +4320,30 @@ function generateSoldUnitsReportPDF() {
     day: "numeric",
   });
 
-  // Helper to insert zero-width spaces every 15 chars to allow wrapping of long strings without spaces
+  // Helper: clean control chars like vertical tabs, newlines, carriage returns
+  function cleanString(str) {
+    if (!str) return '';
+    return String(str).replace(/[\u000B\r\n]+/g, ' ').trim();
+  }
+
+  // Helper: insert zero-width spaces every 15 chars to allow wrapping long words
   function insertZeroWidthSpaces(str) {
     if (!str) return '';
     return str.replace(/(.{15})/g, '$1\u200B');
+  }
+
+  // Helper: format date (adjust as needed)
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Helper: format currency (adjust as needed)
+  function formatCurrency(amount) {
+    if (amount == null || amount === '') return 'N/A';
+    return Number(amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   }
 
   // Group data by branch
@@ -4338,20 +4358,20 @@ function generateSoldUnitsReportPDF() {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(0, 15, 113);
-  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", 105, 15, null, null, "center");
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", 148, 15, null, null, "center");
 
   doc.setFontSize(12);
   doc.setTextColor(73, 80, 87);
-  doc.text("SOLD UNITS REPORT", 105, 25, null, null, "center");
+  doc.text("SOLD UNITS REPORT", 148, 25, null, null, "center");
 
   doc.setFontSize(10);
   doc.setTextColor(108, 117, 125);
-  doc.text(`${branch} | ${saleType}`, 105, 32, null, null, "center");
-  doc.text(`Generated on: ${generatedOn}`, 105, 38, null, null, "center");
+  doc.text(`${branch} | ${saleType}`, 148, 32, null, null, "center");
+  doc.text(`Generated on: ${generatedOn}`, 148, 38, null, null, "center");
 
   doc.setDrawColor(0, 15, 113);
   doc.setLineWidth(0.8);
-  doc.line(10, 42, 200, 42);
+  doc.line(10, 42, 286, 42); // wider line for landscape
 
   // --- Table Columns ---
   const columns = [
@@ -4364,22 +4384,23 @@ function generateSoldUnitsReportPDF() {
     { header: "Details", dataKey: "details" },
   ];
 
-  // Helper to format rows with details text and insert zero-width spaces for wrapping
+  // Format rows with cleaning and zero-width spaces
   function formatRows(items) {
     return items.map(item => {
       let details = "";
       if (item.payment_type === "COD") {
-        details = `DR#: ${item.dr_number || "N/A"}, COD Amount: ${formatCurrency(item.cod_amount)}`;
+        details = `DR#: ${cleanString(item.dr_number) || "N/A"}, COD Amount: ${formatCurrency(item.cod_amount)}`;
       } else if (item.payment_type === "Installment") {
-        details = `Terms: ${item.terms || "N/A"}, Monthly Amortization: ${formatCurrency(item.monthly_amortization)}`;
+        details = `Terms: ${cleanString(item.terms) || "N/A"}, Monthly Amortization: ${formatCurrency(item.monthly_amortization)}`;
       }
+
       return {
-        sale_date: insertZeroWidthSpaces(formatDate(item.sale_date)),
-        customer_name: insertZeroWidthSpaces(item.customer_name || ""),
-        model: insertZeroWidthSpaces(item.model || ""),
-        engine_number: insertZeroWidthSpaces(item.engine_number || ""),
-        frame_number: insertZeroWidthSpaces(item.frame_number || ""),
-        payment_type: insertZeroWidthSpaces(item.payment_type || ""),
+        sale_date: insertZeroWidthSpaces(cleanString(formatDate(item.sale_date))),
+        customer_name: insertZeroWidthSpaces(cleanString(item.customer_name)),
+        model: insertZeroWidthSpaces(cleanString(item.model)),
+        engine_number: insertZeroWidthSpaces(cleanString(item.engine_number)),
+        frame_number: insertZeroWidthSpaces(cleanString(item.frame_number)),
+        payment_type: insertZeroWidthSpaces(cleanString(item.payment_type)),
         details: insertZeroWidthSpaces(details),
       };
     });
@@ -4391,26 +4412,23 @@ function generateSoldUnitsReportPDF() {
   const marginLR = 10;
   const marginBottom = 20;
 
-  // Column widths (Details column wider)
+  // Column widths (adjusted for landscape A4 width ~297mm minus margins)
   const columnWidths = {
-    sale_date: 20,
-    customer_name: 30,
-    model: 25,
-    engine_number: 25,
-    frame_number: 25,
-    payment_type: 25,
-    details: pageWidth - marginLR * 2 - (20 + 30 + 25 + 25 + 25 + 25),
+    sale_date: 25,
+    customer_name: 50,
+    model: 40,
+    engine_number: 40,
+    frame_number: 40,
+    payment_type: 30,
+    details: pageWidth - marginLR * 2 - (25 + 50 + 40 + 40 + 40 + 30),
   };
 
-  // For summary totals
   let totalCod = 0;
   let totalInstallment = 0;
 
-  // Add each branch section with separate tables for COD and Installment
   for (const branchName in groupedData) {
     const items = groupedData[branchName];
 
-    // Separate COD and Installment sales
     const codItems = items.filter(i => i.payment_type === "COD");
     const installmentItems = items.filter(i => i.payment_type === "Installment");
 
@@ -4465,7 +4483,6 @@ function generateSoldUnitsReportPDF() {
 
     totalCod += codItems.length;
 
-    // Check page space before next table
     if (startY + 50 > pageHeight - marginBottom) {
       doc.addPage();
       startY = 20;
@@ -4516,17 +4533,16 @@ function generateSoldUnitsReportPDF() {
 
     totalInstallment += installmentItems.length;
 
-    // Check page space before next branch
     if (startY + 50 > pageHeight - marginBottom) {
       doc.addPage();
       startY = 20;
     }
   }
 
-  // --- Summary Cards for COD, Installment, and Combined ---
+  // --- Summary Cards ---
   const totalCombined = totalCod + totalInstallment;
 
-  const cardWidth = (pageWidth - 3 * marginLR - 20) / 3; // 3 cards with 10 spacing between
+  const cardWidth = (pageWidth - 3 * marginLR - 20) / 3;
   const cardHeight = 45;
   let cardY = startY;
 
