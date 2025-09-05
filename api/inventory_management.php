@@ -2434,8 +2434,14 @@ function getAvailableMotorcyclesReport() {
 function getSoldMotorcyclesReport() {
     global $conn;
 
-    $saleType = isset($_GET['sale_type']) ? sanitizeInput($_GET['sale_type']) : 'all';
-    $validTypes = ['all', 'COD', 'Installment'];
+    // Sanitize and normalize inputs to lowercase for consistent comparison
+    $saleType = isset($_GET['sale_type']) ? strtolower(sanitizeInput($_GET['sale_type'])) : 'all';
+    $branch = isset($_GET['branch']) ? strtolower(sanitizeInput($_GET['branch'])) : 'all';
+    $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null; // expected format: YYYY-MM
+
+    $validTypes = ['all', 'cod', 'installment'];
     if (!in_array($saleType, $validTypes)) {
         echo json_encode(['success' => false, 'message' => 'Invalid sale type']);
         return;
@@ -2443,7 +2449,7 @@ function getSoldMotorcyclesReport() {
 
     $sqlBase = "SELECT ms.sale_date, ms.customer_name, mi.model, mi.engine_number, mi.frame_number,
                        ms.payment_type, ms.dr_number, ms.cod_amount, ms.terms, ms.monthly_amortization,
-                       mi.current_branch
+                       mi.current_branch, mi.brand, mi.category
                 FROM motorcycle_sales ms
                 INNER JOIN motorcycle_inventory mi ON ms.motorcycle_id = mi.id
                 WHERE 1=1 ";
@@ -2452,8 +2458,32 @@ function getSoldMotorcyclesReport() {
     $types = '';
 
     if ($saleType !== 'all') {
-        $sqlBase .= " AND ms.payment_type = ?";
+        $sqlBase .= " AND LOWER(ms.payment_type) = ?";
         $params[] = $saleType;
+        $types .= 's';
+    }
+
+    if ($branch !== 'all') {
+        $sqlBase .= " AND LOWER(mi.current_branch) = ?";
+        $params[] = $branch;
+        $types .= 's';
+    }
+
+    if ($category !== 'all') {
+        $sqlBase .= " AND LOWER(mi.category) = ?";
+        $params[] = $category;
+        $types .= 's';
+    }
+
+    if ($brand !== 'all') {
+        $sqlBase .= " AND LOWER(mi.brand) = ?";
+        $params[] = $brand;
+        $types .= 's';
+    }
+
+    if ($month) {
+        $sqlBase .= " AND DATE_FORMAT(ms.sale_date, '%Y-%m') = ?";
+        $params[] = $month;
         $types .= 's';
     }
 
@@ -2466,7 +2496,14 @@ function getSoldMotorcyclesReport() {
     }
 
     if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
+        // bind_param requires references, so create an array of references
+        $bind_names[] = $types;
+        for ($i = 0; $i < count($params); $i++) {
+            $bind_name = 'bind' . $i;
+            $$bind_name = $params[$i];
+            $bind_names[] = &$$bind_name;
+        }
+        call_user_func_array([$stmt, 'bind_param'], $bind_names);
     }
 
     $stmt->execute();
@@ -2479,6 +2516,7 @@ function getSoldMotorcyclesReport() {
 
     echo json_encode(['success' => true, 'data' => $data]);
 }
+
 
 
 function searchTransferReceipt() {

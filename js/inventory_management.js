@@ -19,6 +19,7 @@ let currentReportMonth = null;
 let currentReportBranch = null;
 let currentReportType = null; 
 let currentReportSummary = null;
+let currentReportSaleType = null;
 let modelCount = 0;
 let currentUserRole = "USER";
 
@@ -3422,41 +3423,32 @@ $(document).ready(function() {
   $('#reportType').trigger('change');
 });
 
-// Handle Generate Report button click
 $('#generateReportBtn').on('click', function() {
   const reportType = $('#reportType').val();
   const month = $('#reportMonth').val();
-  const branch = $('#reportBranch').val();
+  const branch = $('#reportBranch').val() || 'all';
   const category = $('#reportCategoryFilter').val() || 'all';
   const brand = $('#reportBrandFilter').val() || 'all';
   const saleType = $('#soldSaleTypeFilter').val() || 'all';
 
   if (!month && reportType !== 'motorcycle') {
-    alert('Please select a month.');
+    showErrorModal('Please select a month.');
     return;
   }
 
-  // Hide the modal
   $('#monthlyReportOptionsModal').modal('hide');
-
-  // Clear previous report content and show loading spinner
   $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
 
   if (reportType === 'inventory') {
-    // Call your existing function to generate monthly inventory report
     generateMonthlyInventoryReport(month, branch, category, brand);
   } else if (reportType === 'transferred') {
-    // Call your existing function to generate transferred summary
     generateTransferredSummary(month, branch, category, brand);
   } else if (reportType === 'motorcycle') {
-    // Call your existing function to generate available motorcycle units report
-    generateMotorcycleReport(branch, brand);
+    generateMotorcycleReport(branch, brand, category);
   } else if (reportType === 'sold_units') {
-    // Call your new function to generate sold units report with saleType filter
     generateSoldUnitsReport(branch, saleType);
   }
 });
-
 
 // =======================
 // Monthly Inventory Report
@@ -3531,58 +3523,236 @@ function populateBranchesDropdown() {
   });
 }
 
-// Example function to generate sold units report (you need to implement this)
 function generateSoldUnitsReport(branch, saleType) {
-  // Example AJAX call to your API
+  const month = $('#reportMonth').val() || null;
+  const category = $('#reportCategoryFilter').val() || 'all';
+  const brand = $('#reportBrandFilter').val() || 'all';
+
+  // Show loading indicator (optional)
+  $('#monthlyReportContent').html('<div class="text-center my-3"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading report...</div>');
+
   $.ajax({
     url: '../api/inventory_management.php',
     method: 'GET',
     data: {
       action: 'get_sold_motorcycles_report',
       sale_type: saleType,
-      branch: branch
+      branch: branch,
+      category: category,
+      brand: brand,
+      month: month
     },
     dataType: 'json',
     success: function(response) {
       if (response.success) {
-        // Render the report in your modal or page
+        currentReportData = response.data;
+        currentReportType = 'sold_units';
+        currentReportBranch = branch || 'all';
+        currentReportSaleType = saleType || 'all';
+        currentReportMonth = month;
+
         renderSoldUnitsReport(response.data);
         $('#monthlyInventoryReportModal').modal('show');
       } else {
-        alert('Failed to generate sold units report: ' + response.message);
+        showErrorModal(`Failed to generate sold units report: ${response.message}`);
+        $('#monthlyReportContent').empty();
       }
     },
     error: function() {
-      alert('Error generating sold units report.');
+      showErrorModal('Error generating sold units report.');
+      $('#monthlyReportContent').empty();
     }
   });
+}
+function renderSoldUnitsReport(data) {
+  const branch = currentReportBranch && currentReportBranch.toLowerCase() !== 'all' ? currentReportBranch : 'ALL BRANCHES';
+  const saleType = currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' ? currentReportSaleType : 'ALL TYPES OF SALE';
+
+  const timestamp = new Date().toLocaleString();
+  $('#monthlyReportTimestamp').text('Generated on: ' + timestamp);
+  $('#monthlyInventoryReportModalLabel').text('Sold Units Report');
+
+  if (!data || data.length === 0) {
+    $('#monthlyReportContent').html(`
+      <div class="alert alert-info text-center my-3">
+        No sold units found for the selected filters.
+      </div>
+    `);
+    return;
+  }
+
+  // Group data by branch
+  const branches = {};
+  data.forEach(item => {
+    const b = item.current_branch || 'Unknown Branch';
+    if (!branches[b]) branches[b] = [];
+    branches[b].push(item);
+  });
+
+  // Separate total counts for summary
+  let totalCod = 0;
+  let totalInstallment = 0;
+
+  let html = `
+    <div class="report-header text-center mb-4">
+      <div class="d-flex align-items-center justify-content-center mb-2">
+        <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+        <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+          SOLID MOTORCYCLE DISTRIBUTORS, INC.
+        </h4>
+        <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+      </div>
+      <h5 class="mb-2" style="color: #495057; font-weight: 500;">SOLD UNITS REPORT</h5>
+      <p class="text-muted">${saleType} | ${branch}</p>
+      <p class="text-muted small mb-0" style="font-size: 0.85rem;">
+        Generated on ${new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+      </p>
+    </div>
+  `;
+
+  // Helper to escape HTML
+  function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // Helper to format date (reuse your existing formatDate if available)
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Helper to build table HTML for a sale type
+  function buildTableHtml(title, salesData) {
+    if (!salesData.length) {
+      return `<h6 class="mt-3">${title}</h6><p class="text-muted">No ${title.toLowerCase()} found.</p>`;
+    }
+
+    let rowsHtml = '';
+    salesData.forEach(item => {
+      const details = item.payment_type === 'COD'
+        ? `DR#: ${escapeHtml(item.dr_number || 'N/A')}, COD Amount: ${escapeHtml(item.cod_amount || 'N/A')}`
+        : item.payment_type === 'Installment'
+          ? `Terms: ${escapeHtml(item.terms || 'N/A')}, Monthly Amortization: ${escapeHtml(item.monthly_amortization || 'N/A')}`
+          : 'N/A';
+
+      rowsHtml += `
+        <tr>
+          <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">${formatDate(item.sale_date)}</td>
+          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.customer_name)}</td>
+          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.model)}</td>
+          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.engine_number)}</td>
+          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.frame_number)}</td>
+          <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(item.payment_type)}</td>
+          <td class="py-2">${details}</td>
+        </tr>
+      `;
+    });
+
+    return `
+      <h6 class="mt-3">${title}</h6>
+      <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 50vh; overflow-y: auto;">
+        <table class="table table-sm mb-0" style="min-width: 100%;">
+          <thead>
+            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
+              <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 90px;">Date</th>
+              <th class="py-3" style="font-weight: 600; color: #495057;">Customer</th>
+              <th class="py-3" style="font-weight: 600; color: #495057;">Model</th>
+              <th class="py-3" style="font-weight: 600; color: #495057;">Engine #</th>
+              <th class="py-3" style="font-weight: 600; color: #495057;">Frame #</th>
+              <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 110px;">Type of Sale</th>
+              <th class="py-3" style="font-weight: 600; color: #495057;">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Build cards per branch with two tables inside
+  Object.keys(branches).forEach(branchName => {
+    const branchData = branches[branchName];
+    const codSales = branchData.filter(i => i.payment_type === 'COD');
+    const installmentSales = branchData.filter(i => i.payment_type === 'Installment');
+
+    totalCod += codSales.length;
+    totalInstallment += installmentSales.length;
+
+    html += `
+      <div class="card mb-4" style="box-shadow: 0 4px 6px rgba(0,0,0,0.04); border-radius: 6px;">
+        <div class="card-header bg-light" style="border-bottom: 1px solid #e9ecef;">
+          <h6 class="mb-0">${branchName} - ${branchData.length} units</h6>
+        </div>
+        <div class="card-body p-3">
+          ${buildTableHtml('COD Sales', codSales)}
+          ${buildTableHtml('Installment Sales', installmentSales)}
+        </div>
+      </div>
+    `;
+  });
+
+  // Summary section
+  const totalSales = totalCod + totalInstallment;
+  html += `
+    <div class="alert alert-primary mt-3">
+      <div class="row text-center">
+        <div class="col-md-4 mb-2 mb-md-0">
+          <strong>Total Sold for COD:</strong> ${totalCod}
+        </div>
+        <div class="col-md-4 mb-2 mb-md-0">
+          <strong>Total Sold for Installment:</strong> ${totalInstallment}
+        </div>
+        <div class="col-md-4">
+          <strong>Total Sold Units:</strong> ${totalSales}
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('#monthlyReportContent').html(html);
+
+  // Add styling for modal and tables (if not already added)
+  $("<style>")
+    .prop("type", "text/css")
+    .html(`
+      #monthlyInventoryReportModal .modal-body {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+      }
+      #monthlyInventoryReportModal .modal-dialog {
+        max-width: 95%;
+        height: calc(100vh - 100px);
+      }
+      #monthlyInventoryReportModal .modal-content {
+        height: 100%;
+      }
+      .table-container { overflow: hidden; }
+      .table th { font-weight: 600; font-size: 0.9rem; }
+      .table td { font-size: 0.9rem; color: #495057; }
+      .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+      .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
+      .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
+    `)
+    .appendTo("head");
 }
 
-// Example render function (customize to your UI)
-function renderSoldUnitsReport(data) {
-  // Render your sold units report here, similar to your other reports
-  // For example, build HTML table and insert into #monthlyReportContent
-  let html = '<h5>Sold Units Report</h5><table class="table table-striped"><thead><tr><th>Date</th><th>Customer</th><th>Model</th><th>Engine #</th><th>Frame #</th><th>Type of Sale</th><th>Details</th></tr></thead><tbody>';
-  data.forEach(item => {
-    let details = '';
-    if (item.payment_type === 'COD') {
-      details = `DR#: ${item.dr_number || 'N/A'}, COD Amount: ${item.cod_amount || 'N/A'}`;
-    } else if (item.payment_type === 'Installment') {
-      details = `Terms: ${item.terms || 'N/A'}, Monthly Amortization: ${item.monthly_amortization || 'N/A'}`;
-    }
-    html += `<tr>
-      <td>${formatDate(item.sale_date)}</td>
-      <td>${escapeHtml(item.customer_name)}</td>
-      <td>${escapeHtml(item.model)}</td>
-      <td>${escapeHtml(item.engine_number)}</td>
-      <td>${escapeHtml(item.frame_number)}</td>
-      <td>${escapeHtml(item.payment_type)}</td>
-      <td>${details}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  $('#monthlyReportContent').html(html);
-}
+
 
 function generateMonthlyInventoryReport(month, branch, category = 'all', brand = 'all') {
     $("#monthlyInventoryOptionsModal").modal("hide");
@@ -3884,85 +4054,85 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-function exportMonthlyReportToPDF() {
-    // Show loading indicator
-    const loadingModal = showPdfLoadingModal();
+// function exportMonthlyReportToPDF() {
+//     // Show loading indicator
+//     const loadingModal = showPdfLoadingModal();
     
-    // Use setTimeout to allow the UI to update before PDF generation
-    setTimeout(function() {
-        try {
-            // Clone the report content to avoid modifying the original
-            const reportContent = document.getElementById('monthlyReportContent');
-            const printContainer = document.getElementById('monthlyReportPrintContainer');
+//     // Use setTimeout to allow the UI to update before PDF generation
+//     setTimeout(function() {
+//         try {
+//             // Clone the report content to avoid modifying the original
+//             const reportContent = document.getElementById('monthlyReportContent');
+//             const printContainer = document.getElementById('monthlyReportPrintContainer');
             
-            if (!reportContent || !printContainer) {
-                hidePdfLoadingModal(loadingModal);
-                showErrorModal("Report content not found");
-                return;
-            }
+//             if (!reportContent || !printContainer) {
+//                 hidePdfLoadingModal(loadingModal);
+//                 showErrorModal("Report content not found");
+//                 return;
+//             }
             
-            // Clone the content
-            const contentClone = reportContent.cloneNode(true);
-            printContainer.innerHTML = '';
-            printContainer.appendChild(contentClone);
-            printContainer.style.display = 'block';
+//             // Clone the content
+//             const contentClone = reportContent.cloneNode(true);
+//             printContainer.innerHTML = '';
+//             printContainer.appendChild(contentClone);
+//             printContainer.style.display = 'block';
             
-            // Simplify content for PDF export
-            simplifyForPdf(printContainer);
+//             // Simplify content for PDF export
+//             simplifyForPdf(printContainer);
             
-            // PDF configuration
-            const opt = {
-                margin: 0.5,
-                filename: `Monthly_Inventory_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 1, 
-                    useCORS: true,
-                    logging: false,
-                    scrollX: 0,
-                    scrollY: -window.scrollY,
-                    width: printContainer.scrollWidth,
-                    height: printContainer.scrollHeight,
-                    onclone: function(clonedDoc) {
-                        // Ensure all content is visible in the clone
-                        const tables = clonedDoc.querySelectorAll('table');
-                        tables.forEach(table => {
-                            table.style.display = 'table';
-                            table.style.width = '100%';
-                        });
-                    }
-                },
-                jsPDF: { 
-                    unit: 'in', 
-                    format: 'letter', 
-                    orientation: 'portrait' 
-                }
-            };
+//             // PDF configuration
+//             const opt = {
+//                 margin: 0.5,
+//                 filename: `Monthly_Inventory_Report_${new Date().toISOString().slice(0, 10)}.pdf`,
+//                 image: { type: 'jpeg', quality: 0.98 },
+//                 html2canvas: { 
+//                     scale: 1, 
+//                     useCORS: true,
+//                     logging: false,
+//                     scrollX: 0,
+//                     scrollY: -window.scrollY,
+//                     width: printContainer.scrollWidth,
+//                     height: printContainer.scrollHeight,
+//                     onclone: function(clonedDoc) {
+//                         // Ensure all content is visible in the clone
+//                         const tables = clonedDoc.querySelectorAll('table');
+//                         tables.forEach(table => {
+//                             table.style.display = 'table';
+//                             table.style.width = '100%';
+//                         });
+//                     }
+//                 },
+//                 jsPDF: { 
+//                     unit: 'in', 
+//                     format: 'letter', 
+//                     orientation: 'portrait' 
+//                 }
+//             };
             
-            // Generate PDF
-            html2pdf()
-                .set(opt)
-                .from(printContainer)
-                .save()
-                .then(() => {
-                    printContainer.style.display = 'none';
-                    hidePdfLoadingModal(loadingModal);
-                    showSuccessModal("PDF exported successfully!");
-                })
-                .catch((error) => {
-                    console.error("PDF generation error:", error);
-                    hidePdfLoadingModal(loadingModal);
-                    showErrorModal("Error generating PDF: " + error.message);
-                    printContainer.style.display = 'none';
-                });
+//             // Generate PDF
+//             html2pdf()
+//                 .set(opt)
+//                 .from(printContainer)
+//                 .save()
+//                 .then(() => {
+//                     printContainer.style.display = 'none';
+//                     hidePdfLoadingModal(loadingModal);
+//                     showSuccessModal("PDF exported successfully!");
+//                 })
+//                 .catch((error) => {
+//                     console.error("PDF generation error:", error);
+//                     hidePdfLoadingModal(loadingModal);
+//                     showErrorModal("Error generating PDF: " + error.message);
+//                     printContainer.style.display = 'none';
+//                 });
                 
-        } catch (error) {
-            console.error("PDF generation error:", error);
-            hidePdfLoadingModal(loadingModal);
-            showErrorModal("Error generating PDF: " + error.message);
-        }
-    }, 500);
-}
+//         } catch (error) {
+//             console.error("PDF generation error:", error);
+//             hidePdfLoadingModal(loadingModal);
+//             showErrorModal("Error generating PDF: " + error.message);
+//         }
+//     }, 500);
+// }
 function exportMonthlyReport() {
   let csvContent = "data:text/csv;charset=utf-8,";
 
@@ -4116,8 +4286,261 @@ function generateReportPDF() {
         generateTransferredReportPDF();
     } else if (currentReportType === 'motorcycle') {
         generateMotorcycleReportPDF();
+    } else if (currentReportType === 'sold_units') {
+        generateSoldUnitsReportPDF();
     }
 }
+function generateSoldUnitsReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  if (!currentReportData || !currentReportData.length) {
+    showErrorModal("No sold units data available to export.");
+    return;
+  }
+
+  const branch = (typeof currentReportBranch === 'string' && currentReportBranch.toLowerCase() !== 'all')
+    ? currentReportBranch
+    : 'All Branches';
+
+  const saleType = (typeof currentReportSaleType === 'string' && currentReportSaleType.toLowerCase() !== 'all')
+    ? currentReportSaleType
+    : 'All Types of Sale';
+
+  const now = new Date();
+  const generatedOn = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Group data by branch
+  const groupedData = {};
+  currentReportData.forEach(item => {
+    const branchName = item.current_branch || 'Unknown Branch';
+    if (!groupedData[branchName]) groupedData[branchName] = [];
+    groupedData[branchName].push(item);
+  });
+
+  // --- Header ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", 105, 15, null, null, "center");
+
+  doc.setFontSize(12);
+  doc.setTextColor(73, 80, 87);
+  doc.text("SOLD UNITS REPORT", 105, 25, null, null, "center");
+
+  doc.setFontSize(10);
+  doc.setTextColor(108, 117, 125);
+  doc.text(`${branch} | ${saleType}`, 105, 32, null, null, "center");
+  doc.text(`Generated on: ${generatedOn}`, 105, 38, null, null, "center");
+
+  doc.setDrawColor(0, 15, 113);
+  doc.setLineWidth(0.8);
+  doc.line(10, 42, 200, 42);
+
+  // --- Table Columns ---
+  const columns = [
+    { header: "Date", dataKey: "sale_date" },
+    { header: "Customer Name", dataKey: "customer_name" },
+    { header: "Model", dataKey: "model" },
+    { header: "Engine Number", dataKey: "engine_number" },
+    { header: "Frame Number", dataKey: "frame_number" },
+    { header: "Type of Sale", dataKey: "payment_type" },
+    { header: "Details", dataKey: "details" },
+  ];
+
+  // Helper to format rows with details text
+  function formatRows(items) {
+    return items.map(item => {
+      let details = "";
+      if (item.payment_type === "COD") {
+        details = `DR#: ${item.dr_number || "N/A"}, COD Amount: ${formatCurrency(item.cod_amount)}`;
+      } else if (item.payment_type === "Installment") {
+        details = `Terms: ${item.terms || "N/A"}, Monthly Amortization: ${formatCurrency(item.monthly_amortization)}`;
+      }
+      return {
+        sale_date: formatDate(item.sale_date),
+        customer_name: item.customer_name || "",
+        model: item.model || "",
+        engine_number: item.engine_number || "",
+        frame_number: item.frame_number || "",
+        payment_type: item.payment_type || "",
+        details: details,
+      };
+    });
+  }
+
+  let startY = 48;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLR = 10;
+  const marginBottom = 20;
+
+  // Column widths (Details column wider)
+  const columnWidths = {
+    sale_date: 20,
+    customer_name: 30,
+    model: 25,
+    engine_number: 25,
+    frame_number: 25,
+    payment_type: 25,
+    details: pageWidth - marginLR * 2 - (20 + 30 + 25 + 25 + 25 + 25),
+  };
+
+  // For summary totals
+  let totalCod = 0;
+  let totalInstallment = 0;
+
+  // Add each branch section with separate tables for COD and Installment
+  for (const branchName in groupedData) {
+    const items = groupedData[branchName];
+
+    // Separate COD and Installment sales
+    const codItems = items.filter(i => i.payment_type === "COD");
+    const installmentItems = items.filter(i => i.payment_type === "Installment");
+
+    doc.setFontSize(11);
+    doc.setTextColor(0, 64, 133);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${branchName} - ${items.length} units`, marginLR, startY);
+    startY += 6;
+
+    // COD Sales Table
+    doc.setFontSize(10);
+    doc.setTextColor(0, 15, 113);
+    doc.setFont("helvetica", "bold");
+    doc.text("COD Sales", marginLR, startY);
+    startY += 4;
+
+    doc.autoTable({
+      startY: startY,
+      margin: { left: marginLR, right: marginLR },
+      head: [columns.map(c => c.header)],
+      body: codItems.length > 0 ? formatRows(codItems).map(r => columns.map(c => r[c.dataKey])) : [[
+        "", "No COD sales found", "", "", "", "", ""
+      ]],
+      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', cellWidth: 'wrap', valign: 'middle' },
+      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: 'bold', halign: 'center' },
+      columnStyles: {
+        sale_date: { cellWidth: columnWidths.sale_date, halign: 'center' },
+        customer_name: { cellWidth: columnWidths.customer_name },
+        model: { cellWidth: columnWidths.model },
+        engine_number: { cellWidth: columnWidths.engine_number },
+        frame_number: { cellWidth: columnWidths.frame_number },
+        payment_type: { cellWidth: columnWidths.payment_type, halign: 'center' },
+        details: { cellWidth: columnWidths.details },
+      },
+      theme: 'striped',
+      didDrawPage: (data) => {
+        startY = data.cursor.y + 10;
+      },
+    });
+
+    totalCod += codItems.length;
+
+    // Check page space before next table
+    if (startY + 50 > pageHeight - marginBottom) {
+      doc.addPage();
+      startY = 20;
+    }
+
+    // Installment Sales Table
+    doc.setFontSize(10);
+    doc.setTextColor(0, 15, 113);
+    doc.setFont("helvetica", "bold");
+    doc.text("Installment Sales", marginLR, startY);
+    startY += 4;
+
+    doc.autoTable({
+      startY: startY,
+      margin: { left: marginLR, right: marginLR },
+      head: [columns.map(c => c.header)],
+      body: installmentItems.length > 0 ? formatRows(installmentItems).map(r => columns.map(c => r[c.dataKey])) : [[
+        "", "No Installment sales found", "", "", "", "", ""
+      ]],
+      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', cellWidth: 'wrap', valign: 'middle' },
+      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: 'bold', halign: 'center' },
+      columnStyles: {
+        sale_date: { cellWidth: columnWidths.sale_date, halign: 'center' },
+        customer_name: { cellWidth: columnWidths.customer_name },
+        model: { cellWidth: columnWidths.model },
+        engine_number: { cellWidth: columnWidths.engine_number },
+        frame_number: { cellWidth: columnWidths.frame_number },
+        payment_type: { cellWidth: columnWidths.payment_type, halign: 'center' },
+        details: { cellWidth: columnWidths.details },
+      },
+      theme: 'striped',
+      didDrawPage: (data) => {
+        startY = data.cursor.y + 15;
+      },
+    });
+
+    totalInstallment += installmentItems.length;
+
+    // Check page space before next branch
+    if (startY + 50 > pageHeight - marginBottom) {
+      doc.addPage();
+      startY = 20;
+    }
+  }
+
+  // --- Summary Cards for COD, Installment, and Combined ---
+  const totalCombined = totalCod + totalInstallment;
+
+  const cardWidth = (pageWidth - 3 * marginLR - 20) / 3; // 3 cards with 10 spacing between
+  const cardHeight = 45;
+  let cardY = startY;
+
+  if (cardY + cardHeight + marginBottom > pageHeight) {
+    doc.addPage();
+    cardY = 20;
+  }
+
+  function drawCard(x, y, width, height, title, mainValue, subValue) {
+    doc.setDrawColor(233, 236, 239);
+    doc.setFillColor(248, 249, 250);
+    doc.rect(x, y, width, height, 'F');
+
+    doc.setFontSize(9)
+      .setTextColor(73, 80, 87)
+      .setFont("helvetica", "bold")
+      .text(title, x + width / 2, y + 8, { align: "center" });
+
+    doc.setFontSize(18)
+      .setTextColor(0, 64, 133)
+      .setFont("helvetica", "bold")
+      .text(String(mainValue), x + width / 2, y + 25, { align: "center" });
+
+    doc.setFontSize(10)
+      .setTextColor(108, 117, 125)
+      .setFont("helvetica", "normal")
+      .text(subValue, x + width / 2, y + 35, { align: "center" });
+  }
+
+  drawCard(marginLR, cardY, cardWidth, cardHeight, "TOTAL SOLD FOR COD", totalCod, "Units sold");
+  drawCard(marginLR + cardWidth + 10, cardY, cardWidth, cardHeight, "TOTAL SOLD FOR INSTALLMENT", totalInstallment, "Units sold");
+  drawCard(marginLR + 2 * (cardWidth + 10), cardY, cardWidth, cardHeight, "TOTAL SOLD UNITS", totalCombined, "Units sold");
+
+  // --- Page Numbering ---
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(108, 117, 125);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, null, null, "center");
+  }
+
+  // --- Save PDF ---
+  const safeBranch = branch.replace(/\s+/g, '_');
+  const safeSaleType = saleType.replace(/\s+/g, '_');
+  const dateStr = now.toISOString().slice(0, 10);
+  doc.save(`Sold_Units_Report_${safeSaleType}_${safeBranch}_${dateStr}.pdf`);
+}
+
 function generateMotorcycleReportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
