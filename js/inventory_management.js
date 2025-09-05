@@ -3211,6 +3211,7 @@ function viewModelDetails(id) {
 // =======================
 // Search Models
 // =======================
+
 function searchModels() {
   const query = $("#searchModel").val().trim();
   if (query.length < 2) return;
@@ -3229,7 +3230,7 @@ function searchModels() {
       if (response.success && Array.isArray(response.data) && response.data.length > 0) {
         let html = "<h6>Search Results</h6>";
 
-        // ✅ group by model so one card per model
+        // Group by model so one card per model
         const modelGroups = {};
         response.data.forEach((item) => {
           const modelKey = item.model?.trim() || "Unknown Model"; // normalize key
@@ -3239,26 +3240,38 @@ function searchModels() {
           modelGroups[modelKey].push(item);
         });
 
-        // ✅ render each model card
         Object.keys(modelGroups).forEach((model) => {
-          const items = modelGroups[model];
-          const first = items[0]; // preview first unit
-          html += `
-            <div class="card mb-2 model-item" data-model="${model}">
-              <div class="card-body">
-                <h6 class="card-title">${model}</h6>
-                <p class="card-text small">
-                  ${first.color} · ${first.current_branch} <br>
-                  ${items.length} unit(s) available
-                </p>
-              </div>
-            </div>
-          `;
-        });
+  const items = modelGroups[model];
+  const first = items[0]; // preview first unit
+
+  // Check if any unit in this model group is sold
+  const soldUnit = items.find(unit => unit.status.toLowerCase() === 'sold');
+
+  let soldInfoHtml = '';
+  if (soldUnit) {
+    const saleDate = soldUnit.sale_date ? formatDate(soldUnit.sale_date) : 'Sold';
+    soldInfoHtml = `<span class="badge bg-danger">SOLD on ${saleDate}</span>`;
+  } else {
+    soldInfoHtml = `${items.length} unit(s) available`;
+  }
+
+  html += `
+    <div class="card mb-2 model-item" data-model="${model}">
+      <div class="card-body">
+        <h6 class="card-title">${model}</h6>
+        <p class="card-text small">
+          ${first.color} · ${first.current_branch} <br>
+          ${soldInfoHtml}
+        </p>
+      </div>
+    </div>
+  `;
+});
+
 
         $("#modelList").html(html);
 
-        // ✅ When a model card is clicked, show all its units in modal
+        // When a model card is clicked, show all its units in modal
         $(".model-item").click(function () {
           const model = $(this).data("model");
           const items = modelGroups[model] || []; // fallback to []
@@ -3275,11 +3288,55 @@ function searchModels() {
   );
 }
 
-
 function viewModelDetails(units) {
   let html = "";
 
   units.forEach((data, index) => {
+    const isSold = data.status.toLowerCase() === 'sold';
+
+    // Prepare sale info HTML (only if sold)
+    const saleInfoHtml = isSold ? `
+      <hr>
+      <h6 class='text-primary'>Sale Information</h6>
+      <div class='row'>
+        <div class='col-md-6 mb-2'>
+          <p><strong>Sale Date:</strong> ${data.sale_date ? formatDate(data.sale_date) : 'N/A'}</p>
+        </div>
+        <div class='col-md-6 mb-2'>
+          <p><strong>Customer Name:</strong> ${data.customer_name || 'N/A'}</p>
+        </div>
+      </div>
+      <div class='row'>
+        <div class='col-md-6 mb-2'>
+          <p><strong>Payment Type:</strong> ${data.payment_type || 'N/A'}</p>
+        </div>
+      </div>
+
+      <!-- COD Details -->
+      ${data.payment_type === 'COD' ? `
+        <div class='row'>
+          <div class='col-md-6 mb-2'>
+            <p><strong>DR Number:</strong> ${data.dr_number || 'N/A'}</p>
+          </div>
+          <div class='col-md-6 mb-2'>
+            <p><strong>COD Amount:</strong> ${data.cod_amount ? formatCurrency(data.cod_amount) : 'N/A'}</p>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Installment Details -->
+      ${data.payment_type === 'Installment' ? `
+        <div class='row'>
+          <div class='col-md-6 mb-2'>
+            <p><strong>Terms (months):</strong> ${data.terms || 'N/A'}</p>
+          </div>
+          <div class='col-md-6 mb-2'>
+            <p><strong>Monthly Amortization:</strong> ${data.monthly_amortization ? formatCurrency(data.monthly_amortization) : 'N/A'}</p>
+          </div>
+        </div>
+      ` : ''}
+    ` : '';
+
     html += `
       <div class="card mb-3">
         <div class="card-header">
@@ -3311,6 +3368,7 @@ function viewModelDetails(units) {
               }</p>
             </div>
           </div>
+          ${saleInfoHtml}
         </div>
       </div>
     `;
@@ -3319,8 +3377,6 @@ function viewModelDetails(units) {
   $("#detailsModal .modal-body").html(html);
   $("#detailsModal").modal("show");
 }
-
-
 
 $("#addMotorcycleModal").on("shown.bs.modal", function () {
   if (!isAdmin) {

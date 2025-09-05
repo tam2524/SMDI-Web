@@ -1002,52 +1002,73 @@ function getBranchesWithInventory() {
 function searchInventory() {
     global $conn;
 
-    $query = isset( $_GET[ 'query' ] ) ? sanitizeInput( $_GET[ 'query' ] ) : '';
-    $field = isset( $_GET[ 'field' ] ) ? sanitizeInput( $_GET[ 'field' ] ) : 'all';
-    $includeInventoryCost = isset( $_GET[ 'include_inventory_cost' ] ) ? true : false;
+    $query = isset($_GET['query']) ? trim($_GET['query']) : '';
+    $field = isset($_GET['field']) ? trim($_GET['field']) : 'all';
+    $includeInventoryCost = isset($_GET['include_inventory_cost']) ? true : false;
 
-    $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
-                   mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number
-            FROM motorcycle_inventory mi
-            LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE mi.status = 'available'";
+   $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
+               mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number,
+               ms.sale_date, ms.customer_name, ms.payment_type, ms.dr_number, ms.cod_amount, ms.terms, ms.monthly_amortization
+        FROM motorcycle_inventory mi
+        LEFT JOIN invoices i ON mi.invoice_id = i.id
+        LEFT JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
+        WHERE mi.status IN ('available', 'sold')";
+
 
     $params = [];
     $types = '';
 
-    if ( !empty( $query ) ) {
-        if ( $field === 'engine_number' ) {
-            $sql .= ' AND mi.engine_number LIKE ?';
-            $searchTerm = "%$query%";
+    if (!empty($query)) {
+        $searchTerm = "%$query%";
+        if ($field === 'engine_number') {
+            $sql .= " AND mi.engine_number LIKE ?";
             $params[] = $searchTerm;
-            $types = 's';
+            $types .= 's';
         } else {
             $sql .= " AND (mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? 
-                      OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
-            $searchTerm = "%$query%";
-            $params = array_fill( 0, 5, $searchTerm );
-            $types = str_repeat( 's', count( $params ) );
+                        OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
+            // Add the same search term 5 times for the 5 LIKE conditions
+            for ($i = 0; $i < 5; $i++) {
+                $params[] = $searchTerm;
+                $types .= 's';
+            }
         }
     }
 
-    $sql .= ' ORDER BY mi.brand, mi.model LIMIT 10';
+    $sql .= " ORDER BY mi.brand, mi.model LIMIT 10";
 
-    $stmt = $conn->prepare( $sql );
-
-    if ( !empty( $params ) ) {
-        $stmt->bind_param( $types, ...$params );
+    $stmt = $conn->prepare($sql);
+    if ($stmt === false) {
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare statement']);
+        return;
     }
 
-    $stmt->execute();
+    if (!empty($params)) {
+        // Use call_user_func_array to bind params dynamically
+        $bind_names[] = $types;
+        for ($i=0; $i<count($params); $i++) {
+            $bind_name = 'bind' . $i;
+            $$bind_name = $params[$i];
+            $bind_names[] = &$$bind_name; // Note the reference
+        }
+        call_user_func_array([$stmt, 'bind_param'], $bind_names);
+    }
+
+    if (!$stmt->execute()) {
+        echo json_encode(['success' => false, 'message' => 'Failed to execute statement']);
+        return;
+    }
+
     $result = $stmt->get_result();
 
     $data = [];
-    while ( $row = $result->fetch_assoc() ) {
+    while ($row = $result->fetch_assoc()) {
         $data[] = $row;
     }
 
-    echo json_encode( [ 'success' => true, 'data' => $data ] );
+    echo json_encode(['success' => true, 'data' => $data]);
 }
+
 
 function searchInventoryByEngine() {
     global $conn;
@@ -1063,11 +1084,13 @@ function searchInventoryByEngine() {
     $includeInventoryCost = isset( $_GET[ 'include_inventory_cost' ] ) ? true : false;
     $fuzzySearch = isset( $_GET[ 'fuzzy_search' ] ) ? true : false;
 
-    $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
-                   mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number
-            FROM motorcycle_inventory mi
-            LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE mi.status = 'available' AND mi.current_branch = '$userBranch'";
+   $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
+               mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number,
+               ms.sale_date
+        FROM motorcycle_inventory mi
+        LEFT JOIN invoices i ON mi.invoice_id = i.id
+        LEFT JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
+        WHERE mi.status IN ('available', 'sold') AND mi.current_branch = '$userBranch'";
 
     $params = [];
     $types = '';
