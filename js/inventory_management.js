@@ -4315,6 +4315,12 @@ function generateSoldUnitsReportPDF() {
     day: "numeric",
   });
 
+  // Helper to insert zero-width spaces every 15 chars to allow wrapping of long strings without spaces
+  function insertZeroWidthSpaces(str) {
+    if (!str) return '';
+    return str.replace(/(.{15})/g, '$1\u200B');
+  }
+
   // Group data by branch
   const groupedData = {};
   currentReportData.forEach(item => {
@@ -4353,7 +4359,7 @@ function generateSoldUnitsReportPDF() {
     { header: "Details", dataKey: "details" },
   ];
 
-  // Helper to format rows with details text
+  // Helper to format rows with details text and insert zero-width spaces for wrapping
   function formatRows(items) {
     return items.map(item => {
       let details = "";
@@ -4363,13 +4369,13 @@ function generateSoldUnitsReportPDF() {
         details = `Terms: ${item.terms || "N/A"}, Monthly Amortization: ${formatCurrency(item.monthly_amortization)}`;
       }
       return {
-        sale_date: formatDate(item.sale_date),
-        customer_name: item.customer_name || "",
-        model: item.model || "",
-        engine_number: item.engine_number || "",
-        frame_number: item.frame_number || "",
-        payment_type: item.payment_type || "",
-        details: details,
+        sale_date: insertZeroWidthSpaces(formatDate(item.sale_date)),
+        customer_name: insertZeroWidthSpaces(item.customer_name || ""),
+        model: insertZeroWidthSpaces(item.model || ""),
+        engine_number: insertZeroWidthSpaces(item.engine_number || ""),
+        frame_number: insertZeroWidthSpaces(item.frame_number || ""),
+        payment_type: insertZeroWidthSpaces(item.payment_type || ""),
+        details: insertZeroWidthSpaces(details),
       };
     });
   }
@@ -4423,16 +4429,28 @@ function generateSoldUnitsReportPDF() {
       body: codItems.length > 0 ? formatRows(codItems).map(r => columns.map(c => r[c.dataKey])) : [[
         "", "No COD sales found", "", "", "", "", ""
       ]],
-      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', cellWidth: 'wrap', valign: 'middle' },
-      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: 'bold', halign: 'center' },
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        valign: 'middle',
+        overflow: 'linebreak',
+        minCellHeight: 6,
+        cellWidth: 'wrap',
+      },
+      headStyles: {
+        fillColor: [248, 249, 250],
+        textColor: [73, 80, 87],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
       columnStyles: {
-        sale_date: { cellWidth: columnWidths.sale_date, halign: 'center' },
-        customer_name: { cellWidth: columnWidths.customer_name },
-        model: { cellWidth: columnWidths.model },
-        engine_number: { cellWidth: columnWidths.engine_number },
-        frame_number: { cellWidth: columnWidths.frame_number },
-        payment_type: { cellWidth: columnWidths.payment_type, halign: 'center' },
-        details: { cellWidth: columnWidths.details },
+        sale_date: { cellWidth: columnWidths.sale_date, halign: 'center', overflow: 'linebreak' },
+        customer_name: { cellWidth: columnWidths.customer_name, overflow: 'linebreak' },
+        model: { cellWidth: columnWidths.model, overflow: 'linebreak' },
+        engine_number: { cellWidth: columnWidths.engine_number, overflow: 'linebreak' },
+        frame_number: { cellWidth: columnWidths.frame_number, overflow: 'linebreak' },
+        payment_type: { cellWidth: columnWidths.payment_type, halign: 'center', overflow: 'linebreak' },
+        details: { cellWidth: columnWidths.details, overflow: 'linebreak' },
       },
       theme: 'striped',
       didDrawPage: (data) => {
@@ -4462,16 +4480,28 @@ function generateSoldUnitsReportPDF() {
       body: installmentItems.length > 0 ? formatRows(installmentItems).map(r => columns.map(c => r[c.dataKey])) : [[
         "", "No Installment sales found", "", "", "", "", ""
       ]],
-      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', cellWidth: 'wrap', valign: 'middle' },
-      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: 'bold', halign: 'center' },
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        valign: 'middle',
+        overflow: 'linebreak',
+        minCellHeight: 6,
+        cellWidth: 'wrap',
+      },
+      headStyles: {
+        fillColor: [248, 249, 250],
+        textColor: [73, 80, 87],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
       columnStyles: {
-        sale_date: { cellWidth: columnWidths.sale_date, halign: 'center' },
-        customer_name: { cellWidth: columnWidths.customer_name },
-        model: { cellWidth: columnWidths.model },
-        engine_number: { cellWidth: columnWidths.engine_number },
-        frame_number: { cellWidth: columnWidths.frame_number },
-        payment_type: { cellWidth: columnWidths.payment_type, halign: 'center' },
-        details: { cellWidth: columnWidths.details },
+        sale_date: { cellWidth: columnWidths.sale_date, halign: 'center', overflow: 'linebreak' },
+        customer_name: { cellWidth: columnWidths.customer_name, overflow: 'linebreak' },
+        model: { cellWidth: columnWidths.model, overflow: 'linebreak' },
+        engine_number: { cellWidth: columnWidths.engine_number, overflow: 'linebreak' },
+        frame_number: { cellWidth: columnWidths.frame_number, overflow: 'linebreak' },
+        payment_type: { cellWidth: columnWidths.payment_type, halign: 'center', overflow: 'linebreak' },
+        details: { cellWidth: columnWidths.details, overflow: 'linebreak' },
       },
       theme: 'striped',
       didDrawPage: (data) => {
@@ -4540,6 +4570,7 @@ function generateSoldUnitsReportPDF() {
   const dateStr = now.toISOString().slice(0, 10);
   doc.save(`Sold_Units_Report_${safeSaleType}_${safeBranch}_${dateStr}.pdf`);
 }
+
 
 function generateMotorcycleReportPDF() {
     const { jsPDF } = window.jspdf;
