@@ -4291,8 +4291,13 @@ function generateReportPDF() {
     }
 }
 function generateSoldUnitsReportPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+ const { jsPDF } = window.jspdf;
+  // Create PDF in landscape mode
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
 
   if (!currentReportData || !currentReportData.length) {
     showErrorModal("No sold units data available to export.");
