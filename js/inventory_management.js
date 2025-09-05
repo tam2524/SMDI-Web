@@ -4266,92 +4266,92 @@ function generateInventoryReportPDF() {
     if (!finalTableY || isNaN(finalTableY)) {
         finalTableY = 50; // A safe default starting Y if table didn't draw or was empty
     }
+// --- Summary Cards ---
 
-    // --- Summary Cards ---
+// Define card dimensions and margins
+const cardMargin = 8;
+const pageWidth = doc.internal.pageSize.getWidth();
+const pageHeight = doc.internal.pageSize.getHeight();
+const leftRightMargin = 10;
+const topMargin = 20;
+const bottomMargin = 20;
+const cardHeight = 45; // Height of each summary card
+const spaceAfterTable = 10; // Space between table and summary cards
 
-    // Define card dimensions and margins
-    const cardMargin = 8;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const leftRightMargin = 10;
-    const topMargin = 20; // Standard top margin for new pages
-    const bottomMargin = 20; // Standard bottom margin for new pages
-    const cardWidth = (pageWidth - (2 * leftRightMargin) - (3 * cardMargin)) / 4;
-    const cardHeight = 45; // Height of each summary card
-    const spaceAfterTable = 10; // Space between table and summary cards
+// Adjust card width for 3 cards
+const cardWidth = (pageWidth - (2 * leftRightMargin) - (2 * cardMargin)) / 3;
 
-    // Calculate the required height for the summary cards section
-    const summarySectionHeight = cardHeight + 10; // Card height + some padding below cards
+// Calculate the required height for the summary cards section
+const summarySectionHeight = cardHeight + 10;
 
-    // Determine the starting Y position for the summary cards
-    let currentY = finalTableY + spaceAfterTable;
+// Determine the starting Y position for the summary cards
+let currentY = finalTableY + spaceAfterTable;
 
-    // Check if the summary section fits on the current page
-    // If not, add a new page and reset currentY to the top margin of the new page
-    if (currentY + summarySectionHeight + bottomMargin > pageHeight) {
-        doc.addPage();
-        currentY = topMargin; // Start drawing cards from the top margin of the new page
+// Check if the summary section fits on the current page
+if (currentY + summarySectionHeight + bottomMargin > pageHeight) {
+    doc.addPage();
+    currentY = topMargin;
+}
+
+// Function to draw a summary card
+function drawCard(x, y, cardWidth, cardHeight, title, mainValue, subValue, mainColor, subColor, extraText) {
+    doc.setDrawColor(233, 236, 239);
+    doc.setFillColor(248, 249, 250);
+    doc.rect(x, y, cardWidth, cardHeight, 'F');
+
+    doc.setFontSize(9)
+       .setTextColor(73, 80, 87)
+       .setFont("helvetica", "bold")
+       .text(title, x + cardWidth / 2, y + 8, { align: "center" });
+
+    doc.setFontSize(16)
+       .setTextColor(...mainColor)
+       .setFont("helvetica", "bold")
+       .text(String(mainValue), x + cardWidth / 2, y + 25, { align: "center" });
+
+    doc.setFontSize(10)
+       .setTextColor(...subColor)
+       .setFont("helvetica", "normal");
+
+    const subValueLines = doc.splitTextToSize(String(subValue), cardWidth - 10);
+    doc.text(subValueLines, x + cardWidth / 2, y + 33, { align: "center" });
+
+    if (extraText) {
+        doc.setFontSize(7)
+           .setTextColor(73, 80, 87);
+
+        const extraTextLines = doc.splitTextToSize(extraText, cardWidth - 10);
+        doc.text(extraTextLines, x + cardWidth / 2, y + 40, { align: "center" });
     }
+}
 
-    // Function to draw a summary card
-    function drawCard(x, y, cardWidth, cardHeight, title, mainValue, subValue, mainColor, subColor, extraText) {
-        doc.setDrawColor(233, 236, 239);
-        doc.setFillColor(248, 249, 250);
-        doc.rect(x, y, cardWidth, cardHeight, 'F');
+// Draw 3 cards evenly spaced
+drawCard(
+    leftRightMargin, currentY, cardWidth, cardHeight,
+    "IN",
+    totalIn,
+    formatCurrency(costTotalIn),
+    [40, 167, 69], [40, 167, 69],
+    `Received: ${receivedTransfers} | New: ${newDeliveries}`
+);
 
-        doc.setFontSize(9)
-           .setTextColor(73, 80, 87)
-           .setFont("helvetica", "bold")
-           .text(title, x + cardWidth / 2, y + 8, { align: "center" });
+drawCard(
+    leftRightMargin + (cardWidth + cardMargin), currentY, cardWidth, cardHeight,
+    "OUT",
+    totalOut,
+    formatCurrency(costTotalOut),
+    [220, 53, 69], [220, 53, 69],
+    `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`
+);
 
-        doc.setFontSize(16)
-           .setTextColor(...mainColor)
-           .setFont("helvetica", "bold")
-           .text(String(mainValue), x + cardWidth / 2, y + 25, { align: "center" });
-
-        doc.setFontSize(10)
-           .setTextColor(...subColor)
-           .setFont("helvetica", "normal");
-
-        const subValueLines = doc.splitTextToSize(String(subValue), cardWidth - 10);
-        doc.text(subValueLines, x + cardWidth / 2, y + 33, { align: "center" });
-
-        if (extraText) {
-            doc.setFontSize(7)
-               .setTextColor(73, 80, 87);
-
-            const extraTextLines = doc.splitTextToSize(extraText, cardWidth - 10);
-            doc.text(extraTextLines, x + cardWidth / 2, y + 40, { align: "center" });
-        }
-    }
-
-
-    drawCard(
-        leftRightMargin + cardWidth + cardMargin, currentY, cardWidth, cardHeight,
-        "IN",
-        totalIn,
-        formatCurrency(costTotalIn),
-        [40, 167, 69], [40, 167, 69],
-        `Received: ${receivedTransfers} | New: ${newDeliveries}`
-    );
-
-    drawCard(
-        leftRightMargin + 2 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight,
-        "OUT",
-        totalOut,
-        formatCurrency(costTotalOut),
-        [220, 53, 69], [220, 53, 69],
-        `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`
-    );
-
-    drawCard(
-        leftRightMargin + 3 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight,
-        "ENDING BALANCE",
-        endingActual,
-        formatCurrency(costEndingActual),
-        [0, 64, 133], [0, 86, 179],
-        null
-    );
+drawCard(
+    leftRightMargin + 2 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight,
+    "ENDING BALANCE",
+    endingActual,
+    formatCurrency(costEndingActual),
+    [0, 64, 133], [0, 86, 179],
+    null
+);
 
     // --- Global Page Numbering ---
     const totalPages = doc.internal.getNumberOfPages();
