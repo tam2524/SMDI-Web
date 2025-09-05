@@ -3671,15 +3671,7 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
               </h6>
             </div>
             <div class="card-body px-4 pb-3 pt-0">
-              <div class="summary-item d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f1f3f4;">
-                <div>
-                  <div class="fw-semibold small" style="color: #495057;">Calculated</div>
-                </div>
-                <div class="text-end">
-                  <span class="fw-bold" style="color: #000f71;">${endingCalculated}</span>
-                  <div class="small text-muted">${formatCurrency(costEndingCalculated)}</div>
-                </div>
-              </div>
+              
               
               <div class="summary-item d-flex justify-content-between align-items-center pt-2">
                 <div>
@@ -3691,17 +3683,7 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Discrepancy Alert (if any) -->
-          ${endingCalculated !== endingActual ? `
-          <div class="alert alert-warning alert-sm">
-            <div class="d-flex justify-content-between">
-              <small><strong>Discrepancy:</strong></small>
-              <small><strong>${endingActual - endingCalculated}</strong></small>
-            </div>
-          </div>
-          ` : ''}
+          </div>          
         </div>
       </div>
     </div>
