@@ -84,6 +84,9 @@ switch ( $action ) {
     case 'get_available_motorcycles_report':
     getAvailableMotorcyclesReport();
     break;
+    case 'get_sold_motorcycles_report':
+    getSoldMotorcyclesReport();
+    break;
     case 'search_transfer_receipt':
     searchTransferReceipt();
     break;
@@ -2427,6 +2430,56 @@ function getAvailableMotorcyclesReport() {
         echo json_encode(['success' => false, 'message' => 'Error fetching report data: ' . $conn->error]);
     }
 }
+
+function getSoldMotorcyclesReport() {
+    global $conn;
+
+    $saleType = isset($_GET['sale_type']) ? sanitizeInput($_GET['sale_type']) : 'all';
+    $validTypes = ['all', 'COD', 'Installment'];
+    if (!in_array($saleType, $validTypes)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid sale type']);
+        return;
+    }
+
+    $sqlBase = "SELECT ms.sale_date, ms.customer_name, mi.model, mi.engine_number, mi.frame_number,
+                       ms.payment_type, ms.dr_number, ms.cod_amount, ms.terms, ms.monthly_amortization,
+                       mi.current_branch
+                FROM motorcycle_sales ms
+                INNER JOIN motorcycle_inventory mi ON ms.motorcycle_id = mi.id
+                WHERE 1=1 ";
+
+    $params = [];
+    $types = '';
+
+    if ($saleType !== 'all') {
+        $sqlBase .= " AND ms.payment_type = ?";
+        $params[] = $saleType;
+        $types .= 's';
+    }
+
+    $sqlBase .= " ORDER BY ms.sale_date DESC";
+
+    $stmt = $conn->prepare($sqlBase);
+    if ($stmt === false) {
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare statement']);
+        return;
+    }
+
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
 
 function searchTransferReceipt() {
     global $conn;

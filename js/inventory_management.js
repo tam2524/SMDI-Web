@@ -428,6 +428,7 @@ $(document).off('click', '#rejectSelectedBtn').on('click', '#rejectSelectedBtn',
   $("#reportPeriod").change(toggleReportOptions);
 }
 
+
 function searchTransferReceipt() {
     const transferInvoiceNumber = $("#transferInvoiceSearch").val().trim();
     
@@ -2734,7 +2735,6 @@ function updateMotorcycleCost(motorcycleId, newCost) {
 
 
 // Function to save cost for a specific motorcycle
-// Function to save cost for a specific motorcycle
 function saveCost(motorcycleId) {
   const costInput = document.getElementById(`inventory-cost-${motorcycleId}`);
   const newCost = parseFloat(costInput.value);
@@ -3397,20 +3397,64 @@ $("#addMotorcycleModal").on("hidden.bs.modal", function () {
 // =======================
 
 
-// Show/hide brand filter based on report type selection
-$('#reportType').change(function() {
-    if ($(this).val() === 'motorcycle') {
-        $('#brandFilterContainer').show();
-    } else {
-        $('#brandFilterContainer').hide();
-    }
+$('#reportType').on('change', function() {
+  const selectedReport = $(this).val();
+
+  if (selectedReport === 'motorcycle' || selectedReport === 'inventory' || selectedReport === 'transferred') {
+    // Show brand filter for these report types
+    $('#brandFilterContainer').show();
+  } else {
+    $('#brandFilterContainer').hide();
+  }
+
+  if (selectedReport === 'sold_units') {
+    // Show the "Type of Sale" filter only for Sold Units Report
+    
+    $('#brandFilterContainer').show();
+    $('#soldSaleTypeContainer').show();
+  } else {
+    $('#soldSaleTypeContainer').hide();
+  }
 });
 
-// Initialize the visibility on page load
+// Initialize visibility on page load
 $(document).ready(function() {
-    if ($('#reportType').val() === 'motorcycle') {
-        $('#brandFilterContainer').show();
-    }
+  $('#reportType').trigger('change');
+});
+
+// Handle Generate Report button click
+$('#generateReportBtn').on('click', function() {
+  const reportType = $('#reportType').val();
+  const month = $('#reportMonth').val();
+  const branch = $('#reportBranch').val();
+  const category = $('#reportCategoryFilter').val() || 'all';
+  const brand = $('#reportBrandFilter').val() || 'all';
+  const saleType = $('#soldSaleTypeFilter').val() || 'all';
+
+  if (!month && reportType !== 'motorcycle') {
+    alert('Please select a month.');
+    return;
+  }
+
+  // Hide the modal
+  $('#monthlyReportOptionsModal').modal('hide');
+
+  // Clear previous report content and show loading spinner
+  $('#monthlyReportContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>');
+
+  if (reportType === 'inventory') {
+    // Call your existing function to generate monthly inventory report
+    generateMonthlyInventoryReport(month, branch, category, brand);
+  } else if (reportType === 'transferred') {
+    // Call your existing function to generate transferred summary
+    generateTransferredSummary(month, branch, category, brand);
+  } else if (reportType === 'motorcycle') {
+    // Call your existing function to generate available motorcycle units report
+    generateMotorcycleReport(branch, brand);
+  } else if (reportType === 'sold_units') {
+    // Call your new function to generate sold units report with saleType filter
+    generateSoldUnitsReport(branch, saleType);
+  }
 });
 
 
@@ -3485,6 +3529,59 @@ function populateBranchesDropdown() {
   branches.forEach((branch) => {
     $dropdown.append(`<option value="${branch}">${branch}</option>`);
   });
+}
+
+// Example function to generate sold units report (you need to implement this)
+function generateSoldUnitsReport(branch, saleType) {
+  // Example AJAX call to your API
+  $.ajax({
+    url: '../api/inventory_management.php',
+    method: 'GET',
+    data: {
+      action: 'get_sold_motorcycles_report',
+      sale_type: saleType,
+      branch: branch
+    },
+    dataType: 'json',
+    success: function(response) {
+      if (response.success) {
+        // Render the report in your modal or page
+        renderSoldUnitsReport(response.data);
+        $('#monthlyInventoryReportModal').modal('show');
+      } else {
+        alert('Failed to generate sold units report: ' + response.message);
+      }
+    },
+    error: function() {
+      alert('Error generating sold units report.');
+    }
+  });
+}
+
+// Example render function (customize to your UI)
+function renderSoldUnitsReport(data) {
+  // Render your sold units report here, similar to your other reports
+  // For example, build HTML table and insert into #monthlyReportContent
+  let html = '<h5>Sold Units Report</h5><table class="table table-striped"><thead><tr><th>Date</th><th>Customer</th><th>Model</th><th>Engine #</th><th>Frame #</th><th>Type of Sale</th><th>Details</th></tr></thead><tbody>';
+  data.forEach(item => {
+    let details = '';
+    if (item.payment_type === 'COD') {
+      details = `DR#: ${item.dr_number || 'N/A'}, COD Amount: ${item.cod_amount || 'N/A'}`;
+    } else if (item.payment_type === 'Installment') {
+      details = `Terms: ${item.terms || 'N/A'}, Monthly Amortization: ${item.monthly_amortization || 'N/A'}`;
+    }
+    html += `<tr>
+      <td>${formatDate(item.sale_date)}</td>
+      <td>${escapeHtml(item.customer_name)}</td>
+      <td>${escapeHtml(item.model)}</td>
+      <td>${escapeHtml(item.engine_number)}</td>
+      <td>${escapeHtml(item.frame_number)}</td>
+      <td>${escapeHtml(item.payment_type)}</td>
+      <td>${details}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('#monthlyReportContent').html(html);
 }
 
 function generateMonthlyInventoryReport(month, branch, category = 'all', brand = 'all') {

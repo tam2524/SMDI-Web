@@ -874,50 +874,82 @@
         </div>
     </div>
 
-    <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1"
-        aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Select Month</label>
-                        <input type="month" class="form-control" id="reportMonth" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Select Branch</label>
-                        <select class="form-select" id="reportBranch">
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" id="reportCategoryFilter">
-                            <option value="all">All</option>
-                            <option value="brandnew">Brand New</option>
-                            <option value="repo">Repo</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Select Report Type</label>
-                        <select class="form-select" id="reportType" required>
-                            <option value="inventory">Monthly Inventory Balance Report</option>
-                            <option value="transferred">Monthly Summary of Transferred Stocks</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate
-                        Report</button>
-                </div>
-            </div>
+<div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1" aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="reportMonth" class="form-label">Select Month</label>
+          <input type="month" class="form-control" id="reportMonth" required aria-describedby="monthHelp">
+          <div id="monthHelp" class="form-text">Choose the month for the report.</div>
         </div>
+
+        <div class="mb-3">
+          <label for="reportBranch" class="form-label">Select Branch</label>
+          <select class="form-select" id="reportBranch" aria-describedby="branchHelp" required>
+            <option value="ALL">ALL BRANCHES</option>
+            <!-- Options will be populated dynamically -->
+          </select>
+          <div id="branchHelp" class="form-text">Choose the branch to filter the report.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="reportCategoryFilter" class="form-label">Category</label>
+          <select class="form-select" id="reportCategoryFilter" aria-describedby="categoryHelp">
+            <option value="all">All</option>
+            <option value="brandnew">Brand New</option>
+            <option value="repo">Repo</option>
+          </select>
+          <div id="categoryHelp" class="form-text">Filter by motorcycle category.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="reportType" class="form-label">Select Report Type</label>
+          <select class="form-select" id="reportType" required aria-describedby="reportTypeHelp">
+            <option value="inventory">Monthly Inventory Balance Report</option>
+            <option value="transferred">Monthly Summary of Transferred Stocks</option>
+            <option value="motorcycle">Available Motorcycle Units Report</option>
+            <option value="sold_units">Sold Units Report</option> <!-- Added new report type -->
+          </select>
+          <div id="reportTypeHelp" class="form-text">Choose the type of report to generate.</div>
+        </div>
+
+        <div class="mb-3" id="brandFilterContainer" style="display: none;">
+          <label for="reportBrandFilter" class="form-label">Filter by Brand</label>
+          <select class="form-select" id="reportBrandFilter" aria-describedby="brandFilterHelp">
+            <option value="all">ALL BRANDS</option>
+            <option value="Suzuki">SUZUKI</option>
+            <option value="Honda">HONDA</option>
+            <option value="Kawasaki">KAWASAKI</option>
+            <option value="Yamaha">YAMAHA</option>
+            <option value="Asiastar">ASIASTAR</option>
+          </select>
+          <div id="brandFilterHelp" class="form-text">Filter the report by motorcycle brand.</div>
+        </div>
+
+        <div class="mb-3" id="soldSaleTypeContainer" style="display: none;">
+          <label for="soldSaleTypeFilter" class="form-label">Filter by Type of Sale</label>
+          <select class="form-select" id="soldSaleTypeFilter" aria-describedby="soldSaleTypeHelp">
+            <option value="all" selected>All</option>
+            <option value="COD">COD</option>
+            <option value="Installment">Installment</option>
+          </select>
+          <div id="soldSaleTypeHelp" class="form-text">Filter sold units by type of sale.</div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate Report</button>
+      </div>
     </div>
+  </div>
+</div>
+
 
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
