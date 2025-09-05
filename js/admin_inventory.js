@@ -1289,7 +1289,6 @@ function renderInventoryTable(data) {
                <tr data-id="${item.id}">
        <td><input type="checkbox" value="${item.id}"></td>
        <td>${item.invoice_number || "N/A"}</td>
-                <td>${item.invoice_number || "N/A"}</td>
                     <td>${formatDate(item.date_delivered)}</td>
                     <td>${item.brand}</td>
                     <td>${item.model}</td>

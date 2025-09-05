@@ -256,7 +256,7 @@
                                 <thead>
                                     <tr>
                                         <th><input type="checkbox" id="selectAllInventory"></th>
-                                        <th>Invoice No./MT</th>
+                                        <th>Invoice No</th>
                                         <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
                                         <th class='sortable-header' data-sort='brand'>Brand</th>
                                         <th class='sortable-header' data-sort='model'>Model</th>
