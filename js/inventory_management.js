@@ -3455,7 +3455,7 @@ function generateMonthlyInventoryReport(month, branch, category = 'all') {
                 currentReportSummary = response.summary;
                 currentReportType = 'inventory';
 
-                $("#monthlyInventoryReportModalLabel").text('Monthly Inventory Balance Report (with Beginning Balance)');
+                $("#monthlyInventoryReportModalLabel").text('Monthly Inventory Balance Report');
 
                 renderMonthlyInventoryReport(
                     response.data,
@@ -3485,7 +3485,6 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
   // Sort data by model for cleaner display
   data.sort((a, b) => a.model.localeCompare(b.model));
 
-const beginningBalance = currentReportSummary?.beginning_balance || 0;
     const receivedTransfers = currentReportSummary?.received_transfers || 0;
     const newDeliveries = currentReportSummary?.new_deliveries || 0;
     const totalIn = currentReportSummary?.in || 0; // Changed from total_in to in
@@ -3496,7 +3495,6 @@ const beginningBalance = currentReportSummary?.beginning_balance || 0;
     const endingActual = currentReportSummary?.ending_actual || 0;
     
     // Inventory cost values
-    const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
     const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
     const costNewDeliveries = currentReportSummary?.inventory_cost?.new_deliveries || 0;
     const costTotalIn = currentReportSummary?.inventory_cost?.in || 0; // Changed from total_in to in
@@ -3584,21 +3582,7 @@ const beginningBalance = currentReportSummary?.beginning_balance || 0;
       
       <div class="col-md-4">
         <div class="summary-section" style="position: sticky; top: 20px;">
-          <!-- Beginning Balance Card -->
-          <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
-            <div class="card-header bg-transparent border-0 pt-3 pb-2">
-              <h6 class="card-title text-center mb-0" style="color: #6c757d; font-weight: 600; font-size: 0.9rem;">
-                BEGINNING BALANCE
-              </h6>
-            </div>
-            <div class="card-body px-4 pb-3 pt-0">
-              <div class="text-center">
-                <span class="fs-4 fw-bold" style="color: #6c757d;">${beginningBalance}</span>
-                <div class="small text-muted mt-1">${formatCurrency(costBeginning)}</div>
-              </div>
-            </div>
-          </div>
-
+        
           <!-- IN Section -->
           <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
             <div class="card-header bg-transparent border-0 pt-3 pb-2">
@@ -4188,7 +4172,6 @@ function generateInventoryReportPDF() {
     const branchName = currentReportBranch === "all" ? "All Branches" : currentReportBranch;
 
     // Summary values
-    const beginningBalance = currentReportSummary?.beginning_balance || 0;
     const receivedTransfers = currentReportSummary?.received_transfers || 0;
     const newDeliveries = currentReportSummary?.new_deliveries || 0;
     const totalIn = currentReportSummary?.in || 0;
@@ -4199,7 +4182,7 @@ function generateInventoryReportPDF() {
     const endingActual = currentReportSummary?.ending_actual || 0;
 
     // Inventory cost values
-    const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
+    
     const costReceived = currentReportSummary?.inventory_cost?.received_transfers || 0;
     const costNewDeliveries = currentReportSummary?.inventory_cost?.new_deliveries || 0;
     const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
@@ -4359,15 +4342,6 @@ function generateInventoryReportPDF() {
         }
     }
 
-    // Draw summary cards
-    drawCard(
-        leftRightMargin, currentY, cardWidth, cardHeight,
-        "BEGINNING BALANCE",
-        beginningBalance,
-        formatCurrency(costBeginning),
-        [108, 117, 125], [108, 117, 125],
-        null
-    );
 
     drawCard(
         leftRightMargin + cardWidth + cardMargin, currentY, cardWidth, cardHeight,
