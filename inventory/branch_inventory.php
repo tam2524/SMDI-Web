@@ -874,7 +874,7 @@
         </div>
     </div>
 
-<div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1" aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
+ <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1" aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -885,7 +885,6 @@
         <div class="mb-3">
           <label for="reportMonth" class="form-label">Select Month</label>
           <input type="month" class="form-control" id="reportMonth" required aria-describedby="monthHelp">
-          <div id="monthHelp" class="form-text">Choose the month for the report.</div>
         </div>
 
         <div class="mb-3">
@@ -894,7 +893,6 @@
             <option value="ALL">ALL BRANCHES</option>
             <!-- Options will be populated dynamically -->
           </select>
-          <div id="branchHelp" class="form-text">Choose the branch to filter the report.</div>
         </div>
 
         <div class="mb-3">
@@ -904,7 +902,6 @@
             <option value="brandnew">Brand New</option>
             <option value="repo">Repo</option>
           </select>
-          <div id="categoryHelp" class="form-text">Filter by motorcycle category.</div>
         </div>
 
         <div class="mb-3">
@@ -915,7 +912,6 @@
             <option value="motorcycle">Available Motorcycle Units Report</option>
             <option value="sold_units">Sold Units Report</option> <!-- Added new report type -->
           </select>
-          <div id="reportTypeHelp" class="form-text">Choose the type of report to generate.</div>
         </div>
 
         <div class="mb-3" id="brandFilterContainer" style="display: none;">
@@ -928,7 +924,6 @@
             <option value="Yamaha">YAMAHA</option>
             <option value="Asiastar">ASIASTAR</option>
           </select>
-          <div id="brandFilterHelp" class="form-text">Filter the report by motorcycle brand.</div>
         </div>
 
         <div class="mb-3" id="soldSaleTypeContainer" style="display: none;">
@@ -938,7 +933,6 @@
             <option value="COD">COD</option>
             <option value="Installment">Installment</option>
           </select>
-          <div id="soldSaleTypeHelp" class="form-text">Filter sold units by type of sale.</div>
         </div>
 
       </div>
@@ -949,7 +943,6 @@
     </div>
   </div>
 </div>
-
 
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
