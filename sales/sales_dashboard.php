@@ -499,7 +499,7 @@
                                     <option value="3SMB">MINDORO MB</option>
                                     <option value="3SMIN">MINDORO 3S</option>
                                     <option value="MAN">MANSALAY</option>
-                                    <option value="K-RIDERS">K-RIDERS</option>
+                                    <option value="K-RID">K-RIDERS</option>
                                     <option value="IBAJAY">IBAJAY</option>
                                     <option value="NUMANCIA">NUMANCIA</option>
                                     <option value="HEADOFFICE">HEADOFFICE</option>
@@ -659,7 +659,7 @@
                                 <option value="MINDORO MB">MINDORO MB</option>
                                 <option value="MINDORO 3S">MINDORO 3S</option>
                                 <option value="MANSALAY">MANSALAY</option>
-                                <option value="K-RIDERS">K-RIDERS</option>
+                                <option value="K-RID">K-RIDERS</option>
                                 <option value="IBAJAY">IBAJAY</option>
                                 <option value="NUMANCIA">NUMANCIA</option>
                                 <option value="HEADOFFICE">HEADOFFICE</option>
@@ -766,7 +766,7 @@
                     <option value="MINDORO MB">MINDORO MB</option>
                     <option value="MINDORO 3S">MINDORO 3S</option>
                     <option value="MANSALAY">MANSALAY</option>
-                    <option value="K-RIDERS">K-RIDERS</option>
+                    <option value="K-RID">K-RIDERS</option>
                     <option value="IBAJAY">IBAJAY</option>
                     <option value="NUMANCIA">NUMANCIA</option>
                     <option value="HEADOFFICE">HEADOFFICE</option>

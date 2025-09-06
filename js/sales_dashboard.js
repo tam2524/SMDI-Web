@@ -435,7 +435,7 @@ function populateBranchDropdown() {
         "RXS-S", "RXS-H", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
         "JARO-1", "JARO-2", "KALIBO-1", "KALIBO-2", "ALTAVAS", "EMAP", "CULASI",
         "BACOLOD", "PASSI-1", "PASSI-2", "BALASAN", "GUIMARAS", "PEMDI", "EEMSI",
-        "AJUY", "BAILAN", "MINDORO MB", "MINDORO 3S", "MANSALAY", "K-RIDERS",
+        "AJUY", "BAILAN", "MINDORO MB", "MINDORO 3S", "MANSALAY", "K-RID",
         "IBAJAY", "NUMANCIA", "HEADOFFICE", "CEBU", "GT"
     ];
     
