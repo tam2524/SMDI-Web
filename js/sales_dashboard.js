@@ -432,11 +432,10 @@ function initQuotaManagement() {
 
 function populateBranchDropdown() {
     const branches = [
-        "RXS-S", "RXS-H", "ANTIQUE-1", "ANTIQUE-2", "DELGADO-1", "DELGADO-2",
-        "JARO-1", "JARO-2", "KALIBO-1", "KALIBO-2", "ALTAVAS", "EMAP", "CULASI",
-        "BACOLOD", "PASSI-1", "PASSI-2", "BALASAN", "GUIMARAS", "PEMDI", "EEMSI",
-        "AJUY", "BAILAN", "MINDORO MB", "MINDORO 3S", "MANSALAY", "K-RID",
-        "IBAJAY", "NUMANCIA", "HEADOFFICE", "CEBU", "GT"
+          'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2',
+    'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
+    'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', '3SMB', '3SMIN',
+    'MAN', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
     ];
     
     const $branchDropdown = $('#quotaBranch');
