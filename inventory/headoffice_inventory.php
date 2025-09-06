@@ -212,7 +212,7 @@
             <option value="inventory">Monthly Inventory Balance Report</option>
             <option value="transferred">Monthly Summary of Transferred Stocks</option>
             <option value="motorcycle">Available Motorcycle Units Report</option>
-            <option value="sold_units">Sold Units Report</option> <!-- Added new report type -->
+            <option value="sold_units">Summary of Sold Units Report</option> <!-- Added new report type -->
           </select>
         </div>
         <div class="mb-3">

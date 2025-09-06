@@ -3409,7 +3409,7 @@ $('#reportType').on('change', function() {
   }
 
   if (selectedReport === 'sold_units') {
-    // Show the "Type of Sale" filter only for Sold Units Report
+    // Show the "Type of Sale" filter only for Summary of Sold Units Report
     
     $('#brandFilterContainer').show();
     $('#soldSaleTypeContainer').show();
@@ -3554,12 +3554,12 @@ function generateSoldUnitsReport(branch, saleType) {
         renderSoldUnitsReport(response.data);
         $('#monthlyInventoryReportModal').modal('show');
       } else {
-        showErrorModal(`Failed to generate sold units report: ${response.message}`);
+        showErrorModal(`Failed to generate Summary of Sold Units Report: ${response.message}`);
         $('#monthlyReportContent').empty();
       }
     },
     error: function() {
-      showErrorModal('Error generating sold units report.');
+      showErrorModal('Error generating Summary of Sold Units Report.');
       $('#monthlyReportContent').empty();
     }
   });
@@ -3570,7 +3570,7 @@ function renderSoldUnitsReport(data) {
 
   const timestamp = new Date().toLocaleString();
   $('#monthlyReportTimestamp').text('Generated on: ' + timestamp);
-  $('#monthlyInventoryReportModalLabel').text('Sold Units Report');
+  $('#monthlyInventoryReportModalLabel').text('Summary of Sold Units Report');
 
   if (!data || data.length === 0) {
     $('#monthlyReportContent').html(`
@@ -3602,7 +3602,7 @@ function renderSoldUnitsReport(data) {
         </h4>
         <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
       </div>
-      <h5 class="mb-2" style="color: #495057; font-weight: 500;">SOLD UNITS REPORT</h5>
+      <h5 class="mb-2" style="color: #495057; font-weight: 500;">Summary of Sold Units Report</h5>
       <p class="text-muted">${saleType} | ${branch}</p>
       <p class="text-muted small mb-0" style="font-size: 0.85rem;">
         Generated on ${new Date().toLocaleDateString("en-US", {
@@ -4382,7 +4382,7 @@ function generateSoldUnitsReportPDF() {
 
   doc.setFontSize(11);
   doc.setTextColor(73, 80, 87);
-  doc.text("SOLD UNITS REPORT", 148, 24, null, null, "center");
+  doc.text("Summary of Sold Units Report", 148, 24, null, null, "center");
   
   doc.setFontSize(10);
   doc.setTextColor(0, 64, 133);
