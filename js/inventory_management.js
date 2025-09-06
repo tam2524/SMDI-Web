@@ -4304,6 +4304,7 @@ function generateSoldUnitsReportPDF() {
     return;
   }
 
+  // Determine branch and sale type filters for header and filename
   const branch = (typeof currentReportBranch === 'string' && currentReportBranch.toLowerCase() !== 'all')
     ? currentReportBranch
     : 'All Branches';
@@ -4312,6 +4313,7 @@ function generateSoldUnitsReportPDF() {
     ? currentReportSaleType
     : 'All Types of Sale';
 
+  // Get formatted current date
   const now = new Date();
   const generatedOn = now.toLocaleDateString("en-US", {
     weekday: "long",
@@ -4320,23 +4322,22 @@ function generateSoldUnitsReportPDF() {
     day: "numeric",
   });
 
-  // Helper: clean control chars like vertical tabs, newlines, carriage returns
-function cleanString(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/[\u000B\r\n]+/g, ' ')   // Replace vertical tabs, newlines, carriage returns with space
-    .replace(/\s+/g, ' ')              // Replace multiple spaces/tabs with single space
-    .trim();                          // Trim leading and trailing spaces
-}
+  // Helper: clean control characters (vertical tabs, newlines, carriage returns) and trim spaces
+  function cleanString(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/[\u000B\r\n]+/g, ' ')   // Replace vertical tabs, newlines, carriage returns with space
+      .replace(/\s+/g, ' ')              // Replace multiple spaces/tabs with single space
+      .trim();                          // Trim leading and trailing spaces
+  }
 
-
-  // Helper: insert zero-width spaces every 15 chars to allow wrapping long words
+  // Helper: insert zero-width spaces every 15 chars to allow wrapping long words (except details)
   function insertZeroWidthSpaces(str) {
     if (!str) return '';
     return str.replace(/(.{15})/g, '$1\u200B');
   }
 
-  // Helper: format date (adjust as needed)
+  // Helper: format date string to MM/DD/YYYY format like "Sep 1, 2025"
   function formatDate(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr);
@@ -4344,13 +4345,13 @@ function cleanString(str) {
     return d.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
-  // Helper: format currency (adjust as needed)
-function formatCurrency(amount) {
-  if (amount == null || amount === '') return 'N/A';
-  return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+  // Helper: format currency amounts, show 'N/A' if no amount
+  function formatCurrency(amount) {
+    if (amount == null || amount === '') return 'N/A';
+    return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
-  // Group data by branch
+  // Group currentReportData by branch
   const groupedData = {};
   currentReportData.forEach(item => {
     const branchName = item.current_branch || 'Unknown Branch';
@@ -4358,26 +4359,26 @@ function formatCurrency(amount) {
     groupedData[branchName].push(item);
   });
 
-  // --- Header ---
+  // --- Header Section ---
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13); // Reduced from 14
+  doc.setFontSize(13);
   doc.setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", 148, 15, null, null, "center");
 
-  doc.setFontSize(11); // Reduced from 12
+  doc.setFontSize(11);
   doc.setTextColor(73, 80, 87);
-  doc.text("SOLD UNITS REPORT", 148, 24, null, null, "center"); // Reduced vertical spacing
+  doc.text("SOLD UNITS REPORT", 148, 24, null, null, "center");
 
-  doc.setFontSize(9); // Reduced from 10
+  doc.setFontSize(9);
   doc.setTextColor(108, 117, 125);
-  doc.text(`${branch} | ${saleType}`, 148, 30, null, null, "center"); // Reduced vertical spacing
-  doc.text(`Generated on: ${generatedOn}`, 148, 35, null, null, "center"); // Reduced vertical spacing
+  doc.text(`${branch} | ${saleType}`, 148, 30, null, null, "center");
+  doc.text(`Generated on: ${generatedOn}`, 148, 35, null, null, "center");
 
   doc.setDrawColor(0, 15, 113);
   doc.setLineWidth(0.8);
-  doc.line(10, 39, 286, 39); // moved line up to reduce space
+  doc.line(10, 39, 286, 39);  // Horizontal line under header
 
-  // --- Table Columns ---
+  // Table definitions (columns)
   const columns = [
     { header: "Date", dataKey: "sale_date" },
     { header: "Customer Name", dataKey: "customer_name" },
@@ -4388,7 +4389,7 @@ function formatCurrency(amount) {
     { header: "Details", dataKey: "details" },
   ];
 
-  // Format rows with cleaning and zero-width spaces (removed zero-width spaces for details)
+  // Format rows by cleaning strings and applying zero-width spaces except for details (improves text wrapping)
   function formatRows(items) {
     return items.map(item => {
       let details = "";
@@ -4410,13 +4411,14 @@ function formatCurrency(amount) {
     });
   }
 
-  let startY = 43; // moved up from 48 to reduce space after header
+  // Layout variables
+  let startY = 43;  // Starting vertical position after header
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const marginLR = 10;
-  const marginBottom = 15; // reduced bottom margin
+  const marginBottom = 15;
 
-  // Column widths (adjusted for landscape A4 width ~297mm minus margins)
+  // Column widths adjusted to landscape A4 width (~297mm width minus margins)
   const columnWidths = {
     sale_date: 25,
     customer_name: 50,
@@ -4424,31 +4426,35 @@ function formatCurrency(amount) {
     engine_number: 40,
     frame_number: 40,
     payment_type: 30,
-    details: pageWidth - marginLR * 2 - (25 + 50 + 40 + 40 + 40 + 30),
+    details: pageWidth - marginLR * 2 - (25 + 50 + 40 + 40 + 40 + 30),  // Remaining width after other columns
   };
 
   let totalCod = 0;
   let totalInstallment = 0;
 
+  // For each branch, render sales grouped by payment type (COD and Installment)
   for (const branchName in groupedData) {
     const items = groupedData[branchName];
 
+    // Separate items by payment type
     const codItems = items.filter(i => i.payment_type === "COD");
     const installmentItems = items.filter(i => i.payment_type === "Installment");
 
-    doc.setFontSize(10); // Reduced from 11
+    // Branch Header
+    doc.setFontSize(10);
     doc.setTextColor(0, 64, 133);
     doc.setFont("helvetica", "bold");
     doc.text(`${branchName} - ${items.length} units`, marginLR, startY);
-    startY += 5; // reduced from 6
+    startY += 5;
 
-    // COD Sales Table
-    doc.setFontSize(9); // Reduced from 10
+    // COD Sales Table Header
+    doc.setFontSize(9);
     doc.setTextColor(0, 15, 113);
     doc.setFont("helvetica", "bold");
     doc.text("COD Sales", marginLR, startY);
-    startY += 3; // reduced from 4
+    startY += 3;
 
+    // COD Sales Table
     doc.autoTable({
       startY: startY,
       margin: { left: marginLR, right: marginLR },
@@ -4457,11 +4463,11 @@ function formatCurrency(amount) {
         "", "No COD sales found", "", "", "", "", ""
       ]],
       styles: {
-        fontSize: 7, // Reduced from 8
-        cellPadding: 1.5, // Reduced from 2
+        fontSize: 7,
+        cellPadding: 1.5,
         valign: 'middle',
         overflow: 'linebreak',
-        minCellHeight: 5, // Reduced from 6
+        minCellHeight: 5,
         cellWidth: 'wrap',
       },
       headStyles: {
@@ -4478,44 +4484,47 @@ function formatCurrency(amount) {
         frame_number: { cellWidth: columnWidths.frame_number, overflow: 'linebreak' },
         payment_type: { cellWidth: columnWidths.payment_type, halign: 'center', overflow: 'linebreak' },
         details: {
-          cellWidth: columnWidths.details * 0.8, // reduce width to 80% of original
-          overflow: 'ellipsize', // limit text height with ellipsis
-          cellPadding: 1, // reduce padding specifically for details
+          cellWidth: columnWidths.details * 0.8, // Adjusting details width to 80% of assigned width
+          overflow: 'ellipsize',
+          cellPadding: 1,
         },
       },
       theme: 'striped',
       didDrawPage: (data) => {
-        startY = data.cursor.y + 7; // reduced from 10
+        // Update startY to new cursor position for next content and add a small margin
+        startY = data.cursor.y + 7;
       },
     });
 
     totalCod += codItems.length;
 
-    if (startY + 40 > pageHeight - marginBottom) { // reduced from 50
+    // Add a new page if needed
+    if (startY + 40 > pageHeight - marginBottom) {
       doc.addPage();
       startY = 20;
     }
 
-    // Installment Sales Table
-    doc.setFontSize(9); // Reduced from 10
+    // Installment Sales Table Header
+    doc.setFontSize(9);
     doc.setTextColor(0, 15, 113);
     doc.setFont("helvetica", "bold");
     doc.text("Installment Sales", marginLR, startY);
-    startY += 3; // reduced from 4
+    startY += 3;
 
+    // Installment Sales Table
     doc.autoTable({
       startY: startY,
       margin: { left: marginLR, right: marginLR },
       head: [columns.map(c => c.header)],
-           body: installmentItems.length > 0 ? formatRows(installmentItems).map(r => columns.map(c => r[c.dataKey])) : [[
+      body: installmentItems.length > 0 ? formatRows(installmentItems).map(r => columns.map(c => r[c.dataKey])) : [[
         "", "No Installment sales found", "", "", "", "", ""
       ]],
       styles: {
-        fontSize: 7, // Reduced from 8
-        cellPadding: 1.5, // Reduced from 2
+        fontSize: 7,
+        cellPadding: 1.5,
         valign: 'middle',
         overflow: 'linebreak',
-        minCellHeight: 5, // Reduced from 6
+        minCellHeight: 5,
         cellWidth: 'wrap',
       },
       headStyles: {
@@ -4532,63 +4541,67 @@ function formatCurrency(amount) {
         frame_number: { cellWidth: columnWidths.frame_number, overflow: 'linebreak' },
         payment_type: { cellWidth: columnWidths.payment_type, halign: 'center', overflow: 'linebreak' },
         details: {
-          cellWidth: columnWidths.details * 0.8, // reduce width to 80% of original
-          overflow: 'ellipsize', // limit text height with ellipsis
-          cellPadding: 1, // reduce padding specifically for details
+          cellWidth: columnWidths.details * 0.8,
+          overflow: 'ellipsize',
+          cellPadding: 1,
         },
       },
       theme: 'striped',
       didDrawPage: (data) => {
-        startY = data.cursor.y + 7; // reduced from 15 to 7 for tighter spacing
+        startY = data.cursor.y + 7;  // Tight spacing after table
       },
     });
 
     totalInstallment += installmentItems.length;
 
-    if (startY + 40 > pageHeight - marginBottom) { // reduced from 50
+    // Add a new page if needed
+    if (startY + 40 > pageHeight - marginBottom) {
       doc.addPage();
       startY = 20;
     }
   }
 
-  // --- Summary Cards ---
+  // --- Summary Cards Section ---
   const totalCombined = totalCod + totalInstallment;
 
   const cardWidth = (pageWidth - 3 * marginLR - 20) / 3;
-  const cardHeight = 40; // Reduced from 45
+  const cardHeight = 40;
   let cardY = startY;
 
+  // Add a new page if card(s) don't fit on current page
   if (cardY + cardHeight + marginBottom > pageHeight) {
     doc.addPage();
     cardY = 20;
   }
 
+  // Helper to draw summary cards with background, title, main value, and subtitle
   function drawCard(x, y, width, height, title, mainValue, subValue) {
     doc.setDrawColor(233, 236, 239);
     doc.setFillColor(248, 249, 250);
-    doc.rect(x, y, width, height, 'F');
+    doc.rect(x, y, width, height, 'F');  // filled rectangle
 
-    doc.setFontSize(8) // Reduced from 9
+    doc.setFontSize(8)
       .setTextColor(73, 80, 87)
       .setFont("helvetica", "bold")
-      .text(title, x + width / 2, y + 7, { align: "center" }); // moved up slightly
+      .text(title, x + width / 2, y + 7, { align: "center" });
 
-    doc.setFontSize(16) // Reduced from 18
+    doc.setFontSize(16)
       .setTextColor(0, 64, 133)
       .setFont("helvetica", "bold")
-      .text(String(mainValue), x + width / 2, y + 22, { align: "center" }); // moved up slightly
+      .text(String(mainValue), x + width / 2, y + 22, { align: "center" });
 
-    doc.setFontSize(9) // Reduced from 10
+    doc.setFontSize(9)
       .setTextColor(108, 117, 125)
       .setFont("helvetica", "normal")
-      .text(subValue, x + width / 2, y + 32, { align: "center" }); // moved up slightly
+      .text(subValue, x + width / 2, y + 32, { align: "center" });
   }
 
+  // Draw 3 summary cards for COD total, Installment total, and combined total
   drawCard(marginLR, cardY, cardWidth, cardHeight, "TOTAL SOLD FOR COD", totalCod, "Units sold");
   drawCard(marginLR + cardWidth + 10, cardY, cardWidth, cardHeight, "TOTAL SOLD FOR INSTALLMENT", totalInstallment, "Units sold");
   drawCard(marginLR + 2 * (cardWidth + 10), cardY, cardWidth, cardHeight, "TOTAL SOLD UNITS", totalCombined, "Units sold");
 
-  // --- Page Numbering ---
+  // --- Page numbering at bottom center ---
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -4597,7 +4610,7 @@ function formatCurrency(amount) {
     doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, null, null, "center");
   }
 
-  // --- Save PDF ---
+  // --- Save the PDF with sanitized filename ---
   const safeBranch = branch.replace(/\s+/g, '_');
   const safeSaleType = saleType.replace(/\s+/g, '_');
   const dateStr = now.toISOString().slice(0, 10);
