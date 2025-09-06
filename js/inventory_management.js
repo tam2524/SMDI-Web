@@ -4322,14 +4322,13 @@ function generateSoldUnitsReportPDF() {
     day: "numeric",
   });
 
-  // Helper: clean control characters (vertical tabs, newlines, carriage returns) and trim spaces
-  function cleanString(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/[\u000B\r\n]+/g, ' ')   // Replace vertical tabs, newlines, carriage returns with space
-      .replace(/\s+/g, ' ')              // Replace multiple spaces/tabs with single space
-      .trim();                          // Trim leading and trailing spaces
-  }
+function cleanString(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/[\u000B\r\n]+/g, ' ')   // Replace vertical tabs, newlines, carriage returns with space
+    .replace(/\s+/g, ' ')              // Replace multiple spaces/tabs with single space
+    .trim();                          // Trim leading and trailing spaces
+}
 
   // Helper: insert zero-width spaces every 15 chars to allow wrapping long words (except details)
   function insertZeroWidthSpaces(str) {
@@ -4401,7 +4400,7 @@ function generateSoldUnitsReportPDF() {
 
       return {
         sale_date: insertZeroWidthSpaces(cleanString(formatDate(item.sale_date))),
-        customer_name: insertZeroWidthSpaces(cleanString(item.customer_name)),
+        customer_name: cleanString(item.customer_name),
         model: insertZeroWidthSpaces(cleanString(item.model)),
         engine_number: insertZeroWidthSpaces(cleanString(item.engine_number)),
         frame_number: insertZeroWidthSpaces(cleanString(item.frame_number)),
