@@ -4321,10 +4321,14 @@ function generateSoldUnitsReportPDF() {
   });
 
   // Helper: clean control chars like vertical tabs, newlines, carriage returns
-  function cleanString(str) {
-    if (!str) return '';
-    return String(str).replace(/[\u000B\r\n]+/g, ' ').trim();
-  }
+function cleanString(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/[\u000B\r\n]+/g, ' ')   // Replace vertical tabs, newlines, carriage returns with space
+    .replace(/\s+/g, ' ')              // Replace multiple spaces/tabs with single space
+    .trim();                          // Trim leading and trailing spaces
+}
+
 
   // Helper: insert zero-width spaces every 15 chars to allow wrapping long words
   function insertZeroWidthSpaces(str) {
