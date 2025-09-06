@@ -494,7 +494,7 @@
                                     <option value="GUIM">GUIM</option>
                                     <option value="PEMDI">PEMDI</option>
                                     <option value="EEM">EEM</option>
-                                    <option value="AJU">AJU</option>
+                                    <option value="AJUY">AJUY</option>
                                     <option value="BAIL">BAIL</option>
                                     <option value="3SMB">MINDORO MB</option>
                                     <option value="3SMIN">MINDORO 3S</option>

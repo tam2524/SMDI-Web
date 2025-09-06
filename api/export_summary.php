@@ -33,7 +33,7 @@ $orderedBranches = [
     'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2',
     'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
     'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', '3SMB', '3SMIN',
-    'MAN', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
+    'MAN', 'K-RIDERS', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
 ];
 
 // Get sales data with filtering
@@ -87,30 +87,28 @@ while ($row = $quotasResult->fetch_assoc()) {
     $quotas[] = $row;
 }
 
-// Process data - only include branches with sales
-$allBranches = array_unique(array_column($sales, 'branch'));
-$branches = array_intersect($orderedBranches, $allBranches);
+// Process data - include ALL branches from orderedBranches, not just those with sales
+$allBranches = $orderedBranches; // Use all ordered branches instead of filtering by sales
 
 // If a specific branch is filtered, only show that branch
 if ($branchFilter !== 'all') {
     $branches = [$branchFilter];
+} else {
+    $branches = $allBranches;
 }
 
 // Determine if we need to show special columns (TTL, CEBU, GT)
-$showTTL = count(array_intersect($allBranches, array_slice($orderedBranches, 0, -3))) > 0;
-$showCEBU = in_array('CEBU', $allBranches);
+$showTTL = count(array_intersect($branches, array_slice($orderedBranches, 0, -3))) > 0;
+$showCEBU = in_array('CEBU', $branches);
 $showGT = $showTTL || $showCEBU;
 
 // Remove TTL, CEBU, GT to avoid duplicates
-$displayBranches = array_diff(array_intersect($orderedBranches, $allBranches), ['TTL', 'CEBU', 'GT']);
+$displayBranches = array_diff($branches, ['TTL', 'CEBU', 'GT']);
 
 // Add TTL, CEBU, GT in the desired order
-if ($showTTL || $showCEBU || $showGT) {
-    if ($showTTL) $displayBranches[] = 'TTL';
-    if ($showCEBU) $displayBranches[] = 'CEBU';
-    if ($showGT) $displayBranches[] = 'GT';
-}
-
+if ($showTTL) $displayBranches[] = 'TTL';
+if ($showCEBU) $displayBranches[] = 'CEBU';
+if ($showGT) $displayBranches[] = 'GT';
 
 // Filter models to only those with sales
 $modelsWithSales = [];
@@ -139,6 +137,13 @@ foreach ($sales as $sale) {
     $modelTotals[$model] = ($modelTotals[$model] ?? 0) + $qty;
     $key = $sale['brand'] . '|' . $branch;
     $brandBranchTotals[$key] = ($brandBranchTotals[$key] ?? 0) + $qty;
+}
+
+// Initialize branch totals for all branches (even those with no sales)
+foreach ($branches as $branch) {
+    if (!isset($branchTotals[$branch])) {
+        $branchTotals[$branch] = 0;
+    }
 }
 
 $grandTotal = (int)array_sum($branchTotals);
