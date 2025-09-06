@@ -24,6 +24,7 @@ let currentUserRole = "USER";
 let currentTransferPage = 1;
 const perPage = 25;
 
+
 // Add this to your CSS or as a style element
 const pdfStyles = `
     @media print {

@@ -2768,9 +2768,11 @@ function getAllTransferHistories() {
         $data[] = $row;
     }
 
-    // Count query
     $countSql = "SELECT COUNT(*) as total FROM inventory_transfers it
-                 JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id";
+             JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
+             LEFT JOIN invoices i ON mi.invoice_id = i.id
+             LEFT JOIN users u ON it.transferred_by = u.id";
+
 
     if (count($whereClauses) > 0) {
         $countSql .= " WHERE " . implode(" AND ", $whereClauses);
