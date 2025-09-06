@@ -632,37 +632,37 @@
                         <div class="mb-3">
                             <label for="branchSelect" class="form-label">Branch:</label>
                             <select class="form-select" id="branchSelect">
-                                 <option value="all">All Branches</option>
+                                <option value="all">All Branches</option>
                                 <option value="RXS-S">RXS-S</option>
-                                    <option value="RXS-H">RXS-H</option>
-                                    <option value="ANT-1">ANTIQUE-1</option>
-                                    <option value="ANT-2">ANTIQUE-2</option>
-                                    <option value="SDH">DELGADO-1</option>
-                                    <option value="SDS">DELGADO-2</option>
-                                    <option value="JAR-1">JARO-1</option>
-                                    <option value="JAR-2">JARO-2</option>
-                                    <option value="SKM">KALIBO-1</option>
-                                    <option value="SKS">KALIBO-2</option>
-                                    <option value="ALTA">ALTAVAS</option>
-                                    <option value="EMAP">EMAP</option>
-                                    <option value="CUL">CULASI</option>
-                                    <option value="BAC">BACOLOD</option>
-                                    <option value="PAS-1">PASSI-1</option>
-                                    <option value="PAS-2">PASSI-2</option>
-                                    <option value="BAL">BALASAN</option>
-                                    <option value="GUIM">GUIMARAS</option>
-                                    <option value="PEMDI">PEMDI</option>
-                                    <option value="EEM">EEMSI</option>
-                                    <option value="AJUY">AJUY</option>
-                                    <option value="BAIL">BAILAN</option>
-                                    <option value="3SMB">MINDORO MB</option>
-                                    <option value="3SMIN">MINDORO 3S</option>
-                                    <option value="MAN">MANSALAY</option>
-                                    <option value="K-RID">K-RIDERS</option>
-                                    <option value="IBAJAY">IBAJAY</option>
-                                    <option value="NUM">NUMANCIA</option>
-                                    <option value="HO">HEADOFFICE</option>
-                                    <option value="CEBU">CEBU</option>
+                                <option value="RXS-H">RXS-H</option>
+                                <option value="ANT-1">ANTIQUE-1</option>
+                                <option value="ANT-2">ANTIQUE-2</option>
+                                <option value="SDH">DELGADO-1</option>
+                                <option value="SDS">DELGADO-2</option>
+                                <option value="JAR-1">JARO-1</option>
+                                <option value="JAR-2">JARO-2</option>
+                                <option value="SKM">KALIBO-1</option>
+                                <option value="SKS">KALIBO-2</option>
+                                <option value="ALTA">ALTAVAS</option>
+                                <option value="EMAP">EMAP</option>
+                                <option value="CUL">CULASI</option>
+                                <option value="BAC">BACOLOD</option>
+                                <option value="PAS-1">PASSI-1</option>
+                                <option value="PAS-2">PASSI-2</option>
+                                <option value="BAL">BALASAN</option>
+                                <option value="GUIM">GUIMARAS</option>
+                                <option value="PEMDI">PEMDI</option>
+                                <option value="EEM">EEMSI</option>
+                                <option value="AJUY">AJUY</option>
+                                <option value="BAIL">BAILAN</option>
+                                <option value="3SMB">MINDORO MB</option>
+                                <option value="3SMIN">MINDORO 3S</option>
+                                <option value="MAN">MANSALAY</option>
+                                <option value="K-RID">K-RIDERS</option>
+                                <option value="IBAJAY">IBAJAY</option>
+                                <option value="NUM">NUMANCIA</option>
+                                <option value="HO">HEADOFFICE</option>
+                                <option value="CEBU">CEBU</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -702,45 +702,66 @@
                         aria-label="Close"></button>
                 </div>
 
-            <!-- Modal Body -->
-<div class="modal-body px-4 pt-4 pb-2">
+                <!-- Modal Body -->
+                <div class="modal-body px-4 pt-4 pb-2">
 
-    <!-- Filter Panel -->
-    <div class="bg-light border rounded shadow-sm p-4 mb-3">
-        <form class="row g-4 align-items-end">
+                    <!-- Filter Panel -->
+                    <div class="bg-light border rounded shadow-sm p-4 mb-3">
+                        <form class="row g-4 align-items-end" id="summaryFilterForm">
 
-            <!-- Month Filter -->
-            <div class="col-12 col-md-3">
-                <label for="summaryMonthFilter" class="form-label fw-semibold text-muted">Month</label>
-                <select class="form-select" id="summaryMonthFilter">
-                    <option value="all">All Months</option>
-                    <option value="01">January</option>
-                    <option value="02">February</option>
-                    <option value="03">March</option>
-                    <option value="04">April</option>
-                    <option value="05">May</option>
-                    <option value="06">June</option>
-                    <option value="07">July</option>
-                    <option value="08">August</option>
-                    <option value="09">September</option>
-                    <option value="10">October</option>
-                    <option value="11">November</option>
-                    <option value="12">December</option>
-                </select>
-            </div>
+                            <!-- Filter Type -->
+                            <div class="col-12 col-md-3">
+                                <label for="filterType" class="form-label fw-semibold text-muted">Filter Type</label>
+                                <select class="form-select" id="filterType" required>
+                                    <option value="monthly" selected>Monthly</option>
+                                    <option value="daily">Daily</option>
+                                </select>
+                            </div>
 
-            <!-- Year Filter -->
-            <div class="col-12 col-md-3">
-                <label for="summaryYearFilter" class="form-label fw-semibold text-muted">Year</label>
-                <input type="number" class="form-control" id="summaryYearFilter" min="2000" max="2100" value="2025">
-            </div>
+                            <!-- Monthly Filters: Month and Year -->
+                            <div class="col-12 col-md-3 filter-monthly">
+                                <label for="summaryMonthFilter" class="form-label fw-semibold text-muted">Month</label>
+                                <select class="form-select" id="summaryMonthFilter">
+                                    <option value="all">All Months</option>
+                                    <option value="01">January</option>
+                                    <option value="02">February</option>
+                                    <option value="03">March</option>
+                                    <option value="04">April</option>
+                                    <option value="05">May</option>
+                                    <option value="06">June</option>
+                                    <option value="07">July</option>
+                                    <option value="08">August</option>
+                                    <option value="09">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                            </div>
 
-            <!-- Branch Filter -->
-            <div class="col-12 col-md-3">
-                <label for="summaryBranchFilter" class="form-label fw-semibold text-muted">Branch</label>
-                <select class="form-select" id="summaryBranchFilter">
-                     <option value="all">All Branches</option>
-                    <option value="RXS-S">RXS-S</option>
+                            <div class="col-12 col-md-3 filter-monthly">
+                                <label for="summaryYearFilter" class="form-label fw-semibold text-muted">Year</label>
+                                <input type="number" class="form-control" id="summaryYearFilter" min="2000" max="2100"
+                                    value="2025">
+                            </div>
+
+                            <!-- Daily Filters: From Date and To Date -->
+                            <div class="col-12 col-md-3 filter-daily" style="display:none;">
+                                <label for="fromDateFilter" class="form-label fw-semibold text-muted">From Date</label>
+                                <input type="date" class="form-control" id="fromDateFilter">
+                            </div>
+
+                            <div class="col-12 col-md-3 filter-daily" style="display:none;">
+                                <label for="toDateFilter" class="form-label fw-semibold text-muted">To Date</label>
+                                <input type="date" class="form-control" id="toDateFilter">
+                            </div>
+
+                            <!-- Branch Filter -->
+                            <div class="col-12 col-md-3">
+                                <label for="summaryBranchFilter"
+                                    class="form-label fw-semibold text-muted">Branch</label>
+                                <select class="form-select" id="summaryBranchFilter">
+                                    <option value="all">All Branches</option>
+                                    <option value="RXS-S">RXS-S</option>
                                     <option value="RXS-H">RXS-H</option>
                                     <option value="ANT-1">ANTIQUE-1</option>
                                     <option value="ANT-2">ANTIQUE-2</option>
@@ -770,32 +791,32 @@
                                     <option value="NUM">NUMANCIA</option>
                                     <option value="HO">HEADOFFICE</option>
                                     <option value="CEBU">CEBU</option>
-                </select>
-            </div>
+                                </select>
+                            </div>
 
-            <!-- Brand Filter -->
-            <div class="col-12 col-md-3">
-                <label for="summaryBrandFilter" class="form-label fw-semibold text-muted">Brand</label>
-                <select class="form-select" id="summaryBrandFilter">
-                    <option value="all">All Brands</option>
-                    <option value="Suzuki">Suzuki</option>
-                    <option value="Honda">Honda</option>
-                    <option value="Kawasaki">Kawasaki</option>
-                    <option value="Yamaha">Yamaha</option>
-                </select>
-            </div>
+                            <!-- Brand Filter -->
+                            <div class="col-12 col-md-3">
+                                <label for="summaryBrandFilter" class="form-label fw-semibold text-muted">Brand</label>
+                                <select class="form-select" id="summaryBrandFilter">
+                                    <option value="all">All Brands</option>
+                                    <option value="Suzuki">Suzuki</option>
+                                    <option value="Honda">Honda</option>
+                                    <option value="Kawasaki">Kawasaki</option>
+                                    <option value="Yamaha">Yamaha</option>
+                                </select>
+                            </div>
 
-            <!-- Action Button -->
-            <div class="col-12 text-end">
-                <button type="button" id="exportExcelBtn" class="btn btn-success px-4">
-                    <i class="fas fa-file-excel me-2"></i>Export to Excel
-                </button>
-            </div>
+                            <!-- Action Button -->
+                            <div class="col-12 text-end">
+                                <button type="button" id="exportExcelBtn" class="btn btn-success px-4">
+                                    <i class="fas fa-file-excel me-2"></i>Export to Excel
+                                </button>
+                            </div>
 
-        </form>
-    </div>
+                        </form>
+                    </div>
 
-</div>
+                </div>
 
             </div>
         </div>

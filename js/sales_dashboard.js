@@ -24,6 +24,87 @@ $(document).ready(function() {
     
     // Initial load of sales
     loadSales();
+
+    // Show/hide inputs based on filter type selection
+$('#filterType').on('change', function() {
+    const filterType = $(this).val();
+    if (filterType === 'monthly') {
+        $('.filter-monthly').show();
+        $('.filter-daily').hide();
+    } else if (filterType === 'daily') {
+        $('.filter-monthly').hide();
+        $('.filter-daily').show();
+    }
+});
+
+// Update exportReport function to use filter type and inputs
+function exportReport(format) {
+    const filterType = $('#filterType').val();
+    const branch = $('#summaryBranchFilter').val();
+    const brand = $('#summaryBrandFilter').val();
+
+    let url = `../api/export_summary.php?format=${format}`;
+
+    if (filterType === 'monthly') {
+        const month = $('#summaryMonthFilter').val();
+        const year = $('#summaryYearFilter').val();
+
+        if (!year) {
+            showWarningModal('Please enter a valid year.');
+            return;
+        }
+
+        if (month && month !== 'all') url += `&month=${month}`;
+        url += `&year=${year}`;
+    } else if (filterType === 'daily') {
+        const fromDate = $('#fromDateFilter').val();
+        const toDate = $('#toDateFilter').val();
+
+        if (!fromDate || !toDate) {
+            showWarningModal('Please select both From and To dates.');
+            return;
+        }
+
+        url += `&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+    }
+
+    if (branch && branch !== 'all') url += `&branch=${encodeURIComponent(branch)}`;
+    if (brand && brand !== 'all') url += `&brand=${encodeURIComponent(brand)}`;
+
+    // Show loading state
+    const btn = format === 'excel' ? $('#exportExcelBtn') : $('#exportPdfBtn');
+    const originalText = btn.html();
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+
+    // Create hidden iframe for download
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    // Check if data exists before download
+    fetch(url, { method: 'HEAD', cache: 'no-cache' })
+        .then(response => {
+            if (response.ok) {
+                iframe.src = url;
+                setTimeout(() => {
+                    btn.prop('disabled', false).html(originalText);
+                    setTimeout(() => document.body.removeChild(iframe), 5000);
+                }, 3000);
+            } else if (response.status === 404) {
+                showWarningModal('No sales data found for the selected criteria.');
+                btn.prop('disabled', false).html(originalText);
+                document.body.removeChild(iframe);
+            } else {
+                throw new Error('Export failed');
+            }
+        })
+        .catch(error => {
+            showWarningModal(error.message || 'Error generating report');
+            btn.prop('disabled', false).html(originalText);
+            document.body.removeChild(iframe);
+        });
+}
+
 });
 
 // ==================== SALES TABLE FUNCTIONS ====================
@@ -529,35 +610,51 @@ function initSummaryReport() {
 }
 
 function generateSummaryReport() {
-    const year = $('#summaryYear').val();
+    const filterType = $('#filterType').val();
     const branch = $('#summaryBranchFilter').val();
     const brand = $('#summaryBrandFilter').val();
-    const fromDate = $('#fromDate').val();
-    const toDate = $('#toDate').val();
 
+    let data = {
+        action: 'get_summary_report',
+        branch: branch,
+        brand: brand
+    };
 
+    if (filterType === 'monthly') {
+        const month = $('#summaryMonthFilter').val();
+        const year = $('#summaryYearFilter').val();
+
+        if (!year) {
+            showWarningModal('Please enter a valid year.');
+            return;
+        }
+
+        if (month && month !== 'all') data.month = month;
+        data.year = year;
+    } else if (filterType === 'daily') {
+        const fromDate = $('#fromDateFilter').val();
+        const toDate = $('#toDateFilter').val();
+
+        if (!fromDate || !toDate) {
+            showWarningModal('Please select both From and To dates.');
+            return;
+        }
+
+        data.fromDate = fromDate;
+        data.toDate = toDate;
+    }
 
     showLoading(true, '#summaryReportBody');
-    
+
     $.ajax({
         url: '../api/sales_data_management.php',
         method: 'GET',
-        data: {
-            action: 'get_summary_report',
-            year: year,
-            branch: branch,
-            brand: brand,
-            fromDate: fromDate,
-            toDate: toDate
-        },
+        data: data,
         dataType: 'json',
         success: function(response) {
             showLoading(false, '#summaryReportBody');
             if (response.success) {
-                // Update the record count
                 $('#recordCount').text(response.total_records + ' records');
-                
-                // Render the report data
                 renderSummaryReport(response.data);
             } else {
                 showErrorModal(response.message || 'Failed to generate report');
@@ -569,6 +666,7 @@ function generateSummaryReport() {
         }
     });
 }
+
 
 function renderSummaryReport(data) {
     const $tbody = $('#summaryReportBody');
@@ -593,22 +691,42 @@ function renderSummaryReport(data) {
 }
 
 function exportReport(format) {
+    const filterType = $('#filterType').val();
     const branch = $('#summaryBranchFilter').val();
     const brand = $('#summaryBrandFilter').val();
-    const month = $('#summaryMonthFilter').val();
-    const year = $('#summaryYearFilter').val();
+
+    let url = `../api/export_summary.php?format=${format}`;
+
+    if (filterType === 'monthly') {
+        const month = $('#summaryMonthFilter').val();
+        const year = $('#summaryYearFilter').val();
+
+        if (!year) {
+            showWarningModal('Please enter a valid year.');
+            return;
+        }
+
+        if (month && month !== 'all') url += `&month=${month}`;
+        url += `&year=${year}`;
+    } else if (filterType === 'daily') {
+        const fromDate = $('#fromDateFilter').val();
+        const toDate = $('#toDateFilter').val();
+
+        if (!fromDate || !toDate) {
+            showWarningModal('Please select both From and To dates.');
+            return;
+        }
+
+        url += `&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+    }
+
+    if (branch && branch !== 'all') url += `&branch=${encodeURIComponent(branch)}`;
+    if (brand && brand !== 'all') url += `&brand=${encodeURIComponent(brand)}`;
 
     // Show loading state
     const btn = format === 'excel' ? $('#exportExcelBtn') : $('#exportPdfBtn');
     const originalText = btn.html();
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
-
-    // Build export URL
-    let url = `../api/export_summary.php?format=${format}`;
-    if (month && month !== 'all') url += `&month=${month}`;
-    if (year) url += `&year=${year}`;
-    if (branch && branch !== 'all') url += `&branch=${encodeURIComponent(branch)}`;
-    if (brand && brand !== 'all') url += `&brand=${encodeURIComponent(brand)}`;
 
     // Create hidden iframe for download
     const iframe = document.createElement('iframe');
@@ -624,15 +742,15 @@ function exportReport(format) {
         if (response.ok) {
             // Data exists - trigger download
             iframe.src = url;
-            
-            // Set timeout to reset button
+
+            // Reset button and remove iframe after delay
             setTimeout(() => {
                 btn.prop('disabled', false).html(originalText);
                 setTimeout(() => document.body.removeChild(iframe), 5000);
             }, 3000);
         } else if (response.status === 404) {
             // No data found
-            showWarningModal(`No sales data found for ${month}/${year}`);
+            showWarningModal(`No sales data found for the selected filters.`);
             btn.prop('disabled', false).html(originalText);
             document.body.removeChild(iframe);
         } else {
@@ -645,6 +763,7 @@ function exportReport(format) {
         document.body.removeChild(iframe);
     });
 }
+
 
 function showLoading(show, element) {
     if (show) {
