@@ -33,7 +33,7 @@ $orderedBranches = [
     'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2',
     'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
     'BAL', 'GUIM', 'PEMDI', 'EEM', 'AJUY', 'BAIL', '3SMB', '3SMIN',
-    'MAN', 'K-RIDERS', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
+    'MAN', 'K-RID', 'IBAJAY', 'NUM', 'HO', 'TTL', 'CEBU', 'GT'
 ];
 
 // Get sales data with filtering
