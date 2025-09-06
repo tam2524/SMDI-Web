@@ -632,6 +632,7 @@
                         <div class="mb-3">
                             <label for="branchSelect" class="form-label">Branch:</label>
                             <select class="form-select" id="branchSelect">
+                                 <option value="all">All Branches</option>
                                 <option value="RXS-S">RXS-S</option>
                                     <option value="RXS-H">RXS-H</option>
                                     <option value="ANT-1">ANTIQUE-1</option>
