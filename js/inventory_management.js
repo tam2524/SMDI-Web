@@ -4399,12 +4399,12 @@ function cleanString(str) {
       }
 
       return {
-        sale_date: insertZeroWidthSpaces(cleanString(formatDate(item.sale_date))),
+        sale_date: cleanString(formatDate(item.sale_date)),
         customer_name: cleanString(item.customer_name),
-        model: insertZeroWidthSpaces(cleanString(item.model)),
-        engine_number: insertZeroWidthSpaces(cleanString(item.engine_number)),
-        frame_number: insertZeroWidthSpaces(cleanString(item.frame_number)),
-        payment_type: insertZeroWidthSpaces(cleanString(item.payment_type)),
+        model: cleanString(item.model),
+        engine_number: cleanString(item.engine_number),
+        frame_number: cleanString(item.frame_number),
+        payment_type: cleanString(item.payment_type),
         details: cleanString(details), // No zero-width spaces here
       };
     });
