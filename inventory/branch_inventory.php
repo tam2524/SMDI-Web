@@ -882,6 +882,15 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+              <div class="mb-3">
+          <label for="reportType" class="form-label">Select Report Type</label>
+          <select class="form-select" id="reportType" required aria-describedby="reportTypeHelp">
+            <option value="inventory">Monthly Inventory Balance Report</option>
+            <option value="transferred">Monthly Summary of Transferred Stocks</option>
+            <option value="motorcycle">Available Motorcycle Units Report</option>
+            <option value="sold_units">Sold Units Report</option> <!-- Added new report type -->
+          </select>
+        </div>
         <div class="mb-3">
           <label for="reportMonth" class="form-label">Select Month</label>
           <input type="month" class="form-control" id="reportMonth" required aria-describedby="monthHelp">
@@ -904,15 +913,7 @@
           </select>
         </div>
 
-        <div class="mb-3">
-          <label for="reportType" class="form-label">Select Report Type</label>
-          <select class="form-select" id="reportType" required aria-describedby="reportTypeHelp">
-            <option value="inventory">Monthly Inventory Balance Report</option>
-            <option value="transferred">Monthly Summary of Transferred Stocks</option>
-            <option value="motorcycle">Available Motorcycle Units Report</option>
-            <option value="sold_units">Sold Units Report</option> <!-- Added new report type -->
-          </select>
-        </div>
+  
 
         <div class="mb-3" id="brandFilterContainer" style="display: none;">
           <label for="reportBrandFilter" class="form-label">Filter by Brand</label>

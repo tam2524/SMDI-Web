@@ -4341,10 +4341,10 @@ function generateSoldUnitsReportPDF() {
   }
 
   // Helper: format currency (adjust as needed)
-  function formatCurrency(amount) {
-    if (amount == null || amount === '') return 'N/A';
-    return Number(amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-  }
+function formatCurrency(amount) {
+  if (amount == null || amount === '') return 'N/A';
+  return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
   // Group data by branch
   const groupedData = {};
@@ -4356,22 +4356,22 @@ function generateSoldUnitsReportPDF() {
 
   // --- Header ---
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(13); // Reduced from 14
   doc.setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", 148, 15, null, null, "center");
 
-  doc.setFontSize(12);
+  doc.setFontSize(11); // Reduced from 12
   doc.setTextColor(73, 80, 87);
-  doc.text("SOLD UNITS REPORT", 148, 25, null, null, "center");
+  doc.text("SOLD UNITS REPORT", 148, 24, null, null, "center"); // Reduced vertical spacing
 
-  doc.setFontSize(10);
+  doc.setFontSize(9); // Reduced from 10
   doc.setTextColor(108, 117, 125);
-  doc.text(`${branch} | ${saleType}`, 148, 32, null, null, "center");
-  doc.text(`Generated on: ${generatedOn}`, 148, 38, null, null, "center");
+  doc.text(`${branch} | ${saleType}`, 148, 30, null, null, "center"); // Reduced vertical spacing
+  doc.text(`Generated on: ${generatedOn}`, 148, 35, null, null, "center"); // Reduced vertical spacing
 
   doc.setDrawColor(0, 15, 113);
   doc.setLineWidth(0.8);
-  doc.line(10, 42, 286, 42); // wider line for landscape
+  doc.line(10, 39, 286, 39); // moved line up to reduce space
 
   // --- Table Columns ---
   const columns = [
@@ -4384,7 +4384,7 @@ function generateSoldUnitsReportPDF() {
     { header: "Details", dataKey: "details" },
   ];
 
-  // Format rows with cleaning and zero-width spaces
+  // Format rows with cleaning and zero-width spaces (removed zero-width spaces for details)
   function formatRows(items) {
     return items.map(item => {
       let details = "";
@@ -4401,16 +4401,16 @@ function generateSoldUnitsReportPDF() {
         engine_number: insertZeroWidthSpaces(cleanString(item.engine_number)),
         frame_number: insertZeroWidthSpaces(cleanString(item.frame_number)),
         payment_type: insertZeroWidthSpaces(cleanString(item.payment_type)),
-        details: insertZeroWidthSpaces(details),
+        details: cleanString(details), // No zero-width spaces here
       };
     });
   }
 
-  let startY = 48;
+  let startY = 43; // moved up from 48 to reduce space after header
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const marginLR = 10;
-  const marginBottom = 20;
+  const marginBottom = 15; // reduced bottom margin
 
   // Column widths (adjusted for landscape A4 width ~297mm minus margins)
   const columnWidths = {
@@ -4432,18 +4432,18 @@ function generateSoldUnitsReportPDF() {
     const codItems = items.filter(i => i.payment_type === "COD");
     const installmentItems = items.filter(i => i.payment_type === "Installment");
 
-    doc.setFontSize(11);
+    doc.setFontSize(10); // Reduced from 11
     doc.setTextColor(0, 64, 133);
     doc.setFont("helvetica", "bold");
     doc.text(`${branchName} - ${items.length} units`, marginLR, startY);
-    startY += 6;
+    startY += 5; // reduced from 6
 
     // COD Sales Table
-    doc.setFontSize(10);
+    doc.setFontSize(9); // Reduced from 10
     doc.setTextColor(0, 15, 113);
     doc.setFont("helvetica", "bold");
     doc.text("COD Sales", marginLR, startY);
-    startY += 4;
+    startY += 3; // reduced from 4
 
     doc.autoTable({
       startY: startY,
@@ -4453,11 +4453,11 @@ function generateSoldUnitsReportPDF() {
         "", "No COD sales found", "", "", "", "", ""
       ]],
       styles: {
-        fontSize: 8,
-        cellPadding: 2,
+        fontSize: 7, // Reduced from 8
+        cellPadding: 1.5, // Reduced from 2
         valign: 'middle',
         overflow: 'linebreak',
-        minCellHeight: 6,
+        minCellHeight: 5, // Reduced from 6
         cellWidth: 'wrap',
       },
       headStyles: {
@@ -4473,41 +4473,45 @@ function generateSoldUnitsReportPDF() {
         engine_number: { cellWidth: columnWidths.engine_number, overflow: 'linebreak' },
         frame_number: { cellWidth: columnWidths.frame_number, overflow: 'linebreak' },
         payment_type: { cellWidth: columnWidths.payment_type, halign: 'center', overflow: 'linebreak' },
-        details: { cellWidth: columnWidths.details, overflow: 'linebreak' },
+        details: {
+          cellWidth: columnWidths.details * 0.8, // reduce width to 80% of original
+          overflow: 'ellipsize', // limit text height with ellipsis
+          cellPadding: 1, // reduce padding specifically for details
+        },
       },
       theme: 'striped',
       didDrawPage: (data) => {
-        startY = data.cursor.y + 10;
+        startY = data.cursor.y + 7; // reduced from 10
       },
     });
 
     totalCod += codItems.length;
 
-    if (startY + 50 > pageHeight - marginBottom) {
+    if (startY + 40 > pageHeight - marginBottom) { // reduced from 50
       doc.addPage();
       startY = 20;
     }
 
     // Installment Sales Table
-    doc.setFontSize(10);
+    doc.setFontSize(9); // Reduced from 10
     doc.setTextColor(0, 15, 113);
     doc.setFont("helvetica", "bold");
     doc.text("Installment Sales", marginLR, startY);
-    startY += 4;
+    startY += 3; // reduced from 4
 
     doc.autoTable({
       startY: startY,
       margin: { left: marginLR, right: marginLR },
       head: [columns.map(c => c.header)],
-      body: installmentItems.length > 0 ? formatRows(installmentItems).map(r => columns.map(c => r[c.dataKey])) : [[
+           body: installmentItems.length > 0 ? formatRows(installmentItems).map(r => columns.map(c => r[c.dataKey])) : [[
         "", "No Installment sales found", "", "", "", "", ""
       ]],
       styles: {
-        fontSize: 8,
-        cellPadding: 2,
+        fontSize: 7, // Reduced from 8
+        cellPadding: 1.5, // Reduced from 2
         valign: 'middle',
         overflow: 'linebreak',
-        minCellHeight: 6,
+        minCellHeight: 5, // Reduced from 6
         cellWidth: 'wrap',
       },
       headStyles: {
@@ -4523,17 +4527,21 @@ function generateSoldUnitsReportPDF() {
         engine_number: { cellWidth: columnWidths.engine_number, overflow: 'linebreak' },
         frame_number: { cellWidth: columnWidths.frame_number, overflow: 'linebreak' },
         payment_type: { cellWidth: columnWidths.payment_type, halign: 'center', overflow: 'linebreak' },
-        details: { cellWidth: columnWidths.details, overflow: 'linebreak' },
+        details: {
+          cellWidth: columnWidths.details * 0.8, // reduce width to 80% of original
+          overflow: 'ellipsize', // limit text height with ellipsis
+          cellPadding: 1, // reduce padding specifically for details
+        },
       },
       theme: 'striped',
       didDrawPage: (data) => {
-        startY = data.cursor.y + 15;
+        startY = data.cursor.y + 7; // reduced from 15 to 7 for tighter spacing
       },
     });
 
     totalInstallment += installmentItems.length;
 
-    if (startY + 50 > pageHeight - marginBottom) {
+    if (startY + 40 > pageHeight - marginBottom) { // reduced from 50
       doc.addPage();
       startY = 20;
     }
@@ -4543,7 +4551,7 @@ function generateSoldUnitsReportPDF() {
   const totalCombined = totalCod + totalInstallment;
 
   const cardWidth = (pageWidth - 3 * marginLR - 20) / 3;
-  const cardHeight = 45;
+  const cardHeight = 40; // Reduced from 45
   let cardY = startY;
 
   if (cardY + cardHeight + marginBottom > pageHeight) {
@@ -4556,20 +4564,20 @@ function generateSoldUnitsReportPDF() {
     doc.setFillColor(248, 249, 250);
     doc.rect(x, y, width, height, 'F');
 
-    doc.setFontSize(9)
+    doc.setFontSize(8) // Reduced from 9
       .setTextColor(73, 80, 87)
       .setFont("helvetica", "bold")
-      .text(title, x + width / 2, y + 8, { align: "center" });
+      .text(title, x + width / 2, y + 7, { align: "center" }); // moved up slightly
 
-    doc.setFontSize(18)
+    doc.setFontSize(16) // Reduced from 18
       .setTextColor(0, 64, 133)
       .setFont("helvetica", "bold")
-      .text(String(mainValue), x + width / 2, y + 25, { align: "center" });
+      .text(String(mainValue), x + width / 2, y + 22, { align: "center" }); // moved up slightly
 
-    doc.setFontSize(10)
+    doc.setFontSize(9) // Reduced from 10
       .setTextColor(108, 117, 125)
       .setFont("helvetica", "normal")
-      .text(subValue, x + width / 2, y + 35, { align: "center" });
+      .text(subValue, x + width / 2, y + 32, { align: "center" }); // moved up slightly
   }
 
   drawCard(marginLR, cardY, cardWidth, cardHeight, "TOTAL SOLD FOR COD", totalCod, "Units sold");
