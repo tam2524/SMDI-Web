@@ -739,6 +739,7 @@
             <div class="col-12 col-md-3">
                 <label for="summaryBranchFilter" class="form-label fw-semibold text-muted">Branch</label>
                 <select class="form-select" id="summaryBranchFilter">
+                     <option value="all">All Branches</option>
                     <option value="RXS-S">RXS-S</option>
                                     <option value="RXS-H">RXS-H</option>
                                     <option value="ANT-1">ANTIQUE-1</option>
