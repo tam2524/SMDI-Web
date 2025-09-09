@@ -302,6 +302,7 @@
                                     <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
+                                    <option value='MINDORO-MB'>MINDORO-MB</option>
                                     <option value='3S MINDORO'>3S MINDORO</option>
                                     <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
                                     <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
@@ -504,6 +505,7 @@
                                     <option value='INFINITY BACOLOD'>INFINITY BACOLOD</option>
                                     <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
+                                    <option value='MINDORO-MB'>MINDORO-MB</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
                                     <option value='3S MINDORO'>3S MINDORO</option>
                                     <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
