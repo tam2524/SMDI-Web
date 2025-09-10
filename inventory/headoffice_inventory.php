@@ -131,13 +131,13 @@
                                     id='generateReportsButton'>
                                     <i class='bi bi-file-earmark-text'></i> Generate Reports
                                 </button>
-                                 <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
-                            <i class="bi bi-receipt"></i> Print by MT
-                        </button>
-                        <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
-    <i class='bi bi-receipt'></i> Print by Invoice
-</button>
-                    </div>
+                                <button class="btn btn-primary text-white me-2" id="searchTransferReceiptBtn">
+                                    <i class="bi bi-receipt"></i> Print by MT
+                                </button>
+                                <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
+                                    <i class='bi bi-receipt'></i> Print by Invoice
+                                </button>
+                            </div>
                             <div class='input-group' style='max-width: 300px;'>
                                 <input type='text' id='searchInventory' class='form-control'
                                     placeholder='Search inventory...'>
@@ -197,77 +197,83 @@
         </div>
     </main>
 
-    <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1" aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
+    <div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1"
+        aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="monthlyReportOptionsModalLabel">Generate Reports</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
 
-          <div class="mb-3">
-          <label for="reportType" class="form-label">Select Report Type</label>
-          <select class="form-select" id="reportType" required aria-describedby="reportTypeHelp">
-            <option value="inventory">Monthly Inventory Balance Report</option>
-            <option value="transferred">Monthly Summary of Transferred Stocks</option>
-            <option value="motorcycle">Available Motorcycle Units Report</option>
-            <option value="sold_units">Summary of Sold Units Report</option> <!-- Added new report type -->
-          </select>
+                    <div class="mb-3">
+                        <label for="reportType" class="form-label">Select Report Type</label>
+                        <select class="form-select" id="reportType" required aria-describedby="reportTypeHelp">
+                            <option value="inventory">Monthly Inventory Balance Report</option>
+                            <option value="transferred">Monthly Summary of Transferred Stocks</option>
+                            <option value="motorcycle">Available Motorcycle Units Report</option>
+                            <option value="sold_units">Monthly Summary of Sold Units Report</option>
+                            <option value="daily_sold_units">Daily Summary of Sold Units Report</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reportMonth" class="form-label">Select Month</label>
+                        <input type="month" class="form-control" id="reportMonth" required aria-describedby="monthHelp">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reportBranch" class="form-label">Select Branch</label>
+                        <select class="form-select" id="reportBranch" aria-describedby="branchHelp" required>
+                            <option value="ALL">ALL BRANCHES</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reportCategoryFilter" class="form-label">Category</label>
+                        <select class="form-select" id="reportCategoryFilter" aria-describedby="categoryHelp">
+                            <option value="all">All</option>
+                            <option value="brandnew">Brand New</option>
+                            <option value="repo">Repo</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="dailyReportDateContainer" style="display: none;">
+                        <label for="dailyReportDate" class="form-label">Select Date</label>
+                        <input type="date" class="form-control" id="dailyReportDate" required>
+                    </div>
+
+                    <div class="mb-3" id="brandFilterContainer" style="display: none;">
+                        <label for="reportBrandFilter" class="form-label">Filter by Brand</label>
+                        <select class="form-select" id="reportBrandFilter" aria-describedby="brandFilterHelp">
+                            <option value="all">ALL BRANDS</option>
+                            <option value="Suzuki">SUZUKI</option>
+                            <option value="Honda">HONDA</option>
+                            <option value="Kawasaki">KAWASAKI</option>
+                            <option value="Yamaha">YAMAHA</option>
+                            <option value="Asiastar">ASIASTAR</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="soldSaleTypeContainer" style="display: none;">
+                        <label for="soldSaleTypeFilter" class="form-label">Filter by Type of Sale</label>
+                        <select class="form-select" id="soldSaleTypeFilter" aria-describedby="soldSaleTypeHelp">
+                            <option value="all" selected>All</option>
+                            <option value="COD">COD</option>
+                            <option value="Installment">Installment</option>
+                        </select>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate
+                        Report</button>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-          <label for="reportMonth" class="form-label">Select Month</label>
-          <input type="month" class="form-control" id="reportMonth" required aria-describedby="monthHelp">
-        </div>
-
-        <div class="mb-3">
-          <label for="reportBranch" class="form-label">Select Branch</label>
-          <select class="form-select" id="reportBranch" aria-describedby="branchHelp" required>
-            <option value="ALL">ALL BRANCHES</option>
-            <!-- Options will be populated dynamically -->
-          </select>
-        </div>
-
-        <div class="mb-3">
-          <label for="reportCategoryFilter" class="form-label">Category</label>
-          <select class="form-select" id="reportCategoryFilter" aria-describedby="categoryHelp">
-            <option value="all">All</option>
-            <option value="brandnew">Brand New</option>
-            <option value="repo">Repo</option>
-          </select>
-        </div>
-
-    
-
-        <div class="mb-3" id="brandFilterContainer" style="display: none;">
-          <label for="reportBrandFilter" class="form-label">Filter by Brand</label>
-          <select class="form-select" id="reportBrandFilter" aria-describedby="brandFilterHelp">
-            <option value="all">ALL BRANDS</option>
-            <option value="Suzuki">SUZUKI</option>
-            <option value="Honda">HONDA</option>
-            <option value="Kawasaki">KAWASAKI</option>
-            <option value="Yamaha">YAMAHA</option>
-            <option value="Asiastar">ASIASTAR</option>
-          </select>
-        </div>
-
-        <div class="mb-3" id="soldSaleTypeContainer" style="display: none;">
-          <label for="soldSaleTypeFilter" class="form-label">Filter by Type of Sale</label>
-          <select class="form-select" id="soldSaleTypeFilter" aria-describedby="soldSaleTypeHelp">
-            <option value="all" selected>All</option>
-            <option value="COD">COD</option>
-            <option value="Installment">Installment</option>
-          </select>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary text-white" id="generateReportBtn">Generate Report</button>
-      </div>
     </div>
-  </div>
-</div>
 
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
@@ -529,14 +535,13 @@
                                 <div class='row'>
                                     <div class='col-md-6 mb-2'>
                                         <label for='editSaleDate' class='form-label'><strong>Sale Date:</strong></label>
-                                        <input type='date' class='form-control' id='editSaleDate' name='sale_date'
-                                            >
+                                        <input type='date' class='form-control' id='editSaleDate' name='sale_date'>
                                     </div>
                                     <div class='col-md-6 mb-2'>
                                         <label for='editCustomerName' class='form-label'><strong>Customer
                                                 Name:</strong></label>
                                         <input type='text' class='form-control' id='editCustomerName'
-                                            name='customer_name' >
+                                            name='customer_name'>
                                     </div>
                                 </div>
                                 <div class='row'>
@@ -1014,32 +1019,32 @@
             </div>
         </div>
     </div>
-    <div class='modal fade' id='searchInvoiceNumberModal' tabindex='-1'
-    aria-labelledby='searchInvoiceNumberModalLabel' aria-hidden='true'>
-   <div class='modal-dialog modal-lg'>
-        <div class='modal-content'>
-            <div class='modal-header'>
-                <h5 class='modal-title' id='searchInvoiceNumberModalLabel'>Search Invoice Number</h5>
-                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-            </div>
-            <div class='modal-body'>
-                <div class='mb-3'>
-                    <label for='invoiceNumberSearch' class='form-label'>Invoice Number</label>
-                    <input type='text' class='form-control' id='invoiceNumberSearch'
-                        placeholder='Enter invoice number'>
+    <div class='modal fade' id='searchInvoiceNumberModal' tabindex='-1' aria-labelledby='searchInvoiceNumberModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='searchInvoiceNumberModalLabel'>Search Invoice Number</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
-                <div id='invoiceSearchResultsContainer' class='mt-3' style='display: none;'>
-                    <h6>Search Results:</h6>
-                    <div id='invoiceSearchResults' class='search-results'></div>
+                <div class='modal-body'>
+                    <div class='mb-3'>
+                        <label for='invoiceNumberSearch' class='form-label'>Invoice Number</label>
+                        <input type='text' class='form-control' id='invoiceNumberSearch'
+                            placeholder='Enter invoice number'>
+                    </div>
+                    <div id='invoiceSearchResultsContainer' class='mt-3' style='display: none;'>
+                        <h6>Search Results:</h6>
+                        <div id='invoiceSearchResults' class='search-results'></div>
+                    </div>
                 </div>
-            </div>
-            <div class='modal-footer'>
-                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                <button type='button' class='btn btn-primary text-white' id='searchInvoiceBtn'>Search</button>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-primary text-white' id='searchInvoiceBtn'>Search</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
     <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-xl'>
