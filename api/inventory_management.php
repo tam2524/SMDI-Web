@@ -2266,7 +2266,6 @@ $data = array_merge($data, $transferDetails);
                 'ending_actual' => $costEndingActual
             ]
         ],
-        'transfer_details' => $transferDetails,
         'inventory_cost_formatted' => [
             'beginning_balance' => number_format($costBeginning, 2),
             'received_transfers' => number_format($costReceived, 2),
