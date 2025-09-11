@@ -1708,6 +1708,7 @@ function sellMotorcycle() {
         echo json_encode( [ 'success' => false, 'message' => 'Error selling motorcycle: ' . $e->getMessage() ] );
     }
 }
+
 function getMonthlyInventory() {
     global $conn;
 
@@ -2168,10 +2169,31 @@ if ($applyBrandFilter) {
     $stmtTransferDetails->execute();
     $transferDetailsResult = $stmtTransferDetails->get_result();
 
-    $transferDetails = [];
-    while ($row = $transferDetailsResult->fetch_assoc()) {
-        $transferDetails[] = $row;
-    }
+   $transferDetails = [];
+while ($row = $transferDetailsResult->fetch_assoc()) {
+    $transferDetails[] = [
+        'id' => (int)$row['motorcycle_id'],
+        'brand' => $row['brand'],
+        'model' => $row['model'],
+        'color' => null, // add if available
+        'engine_number' => $row['engine_number'],
+        'frame_number' => $row['frame_number'],
+        'inventory_cost' => (float)$row['inventory_cost'],
+        'current_branch' => $row['to_branch'] ?? $row['from_branch'],
+        'status' => 'transfer_' . strtolower($row['transfer_type']), // e.g. transfer_in / transfer_out
+        'date_delivered' => $row['transfer_date'],
+        'invoice_number' => null,
+        'category' => null,
+        'branch_at_cutoff' => null,
+        'record_type' => 'transfer',
+        'transfer_type' => $row['transfer_type'],
+        'from_branch' => $row['from_branch'],
+        'to_branch' => $row['to_branch'],
+        'date_received' => $row['date_received']
+    ];
+}
+
+$data = array_merge($data, $transferDetails);
 
     // === Discrepancy by model & branch (actual vs movement-based) ===
     $actualByModelBranch = [];
@@ -2255,8 +2277,7 @@ if ($applyBrandFilter) {
                 'ending_calculated' => $costEndingCalculated,
                 'ending_actual' => $costEndingActual
             ]
-        ],
-        'transfer_details' => $transferDetails,
+        ], 
         'inventory_cost_formatted' => [
             'beginning_balance' => number_format($costBeginning, 2),
             'received_transfers' => number_format($costReceived, 2),
