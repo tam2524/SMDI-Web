@@ -1708,6 +1708,7 @@ function sellMotorcycle() {
         echo json_encode( [ 'success' => false, 'message' => 'Error selling motorcycle: ' . $e->getMessage() ] );
     }
 }
+
 function getMonthlyInventory() {
     global $conn;
 
@@ -2107,25 +2108,30 @@ if ($applyBrandFilter) {
     $countEndingActual = (int)$endingActualResult['count_ending'];
     $costEndingActual  = (float)$endingActualResult['cost_ending'];
 
-    // === Build $data array from resultData ===
-    $data = [];
-    while ($row = $resultData->fetch_assoc()) {
-        $data[] = [
-            'id' => (int)$row['id'],
-            'brand' => $row['brand'],
-            'model' => $row['model'],
-            'color' => $row['color'],
-            'engine_number' => $row['engine_number'],
-            'frame_number' => $row['frame_number'],
-            'inventory_cost' => (float)$row['inventory_cost'],
-            'current_branch' => $row['current_branch'],
-            'status' => $row['status'],
-            'date_delivered' => $row['date_delivered'],
-            'invoice_number' => $row['invoice_number'],
-            'category' => $row['category'],
-            'branch_at_cutoff' => $row['branch_at_cutoff'] ?? null
-        ];
-    }
+   $transferDetails = [];
+while ($row = $transferDetailsResult->fetch_assoc()) {
+    // Normalize transfers so they look similar to inventory data
+    $transferDetails[] = [
+        'id' => (int)$row['motorcycle_id'],
+        'brand' => $row['brand'],
+        'model' => $row['model'],
+        'color' => null, // or $row['color'] if available
+        'engine_number' => $row['engine_number'],
+        'frame_number' => $row['frame_number'],
+        'inventory_cost' => (float)$row['inventory_cost'],
+        'current_branch' => $row['to_branch'], // where it went
+        'status' => 'transfer_' . strtolower($row['transfer_type']), // e.g. transfer_in / transfer_out
+        'date_delivered' => $row['transfer_date'],
+        'invoice_number' => null,
+        'category' => null,
+        'branch_at_cutoff' => null,
+        'transfer_type' => $row['transfer_type'],
+        'from_branch' => $row['from_branch'],
+        'to_branch' => $row['to_branch'],
+        'date_received' => $row['date_received']
+    ];
+}
+
 
     // === TRANSFER DETAILS (for discrepancy calc) ===
     if (strtoupper($branch) === 'ALL') {
@@ -2227,6 +2233,10 @@ if ($applyBrandFilter) {
             'cost_discrepancy' => $actual['cost'] - $calculated['cost'],
         ];
     }
+
+    // Merge transfers into data
+$data = array_merge($data, $transferDetails);
+
 
     // === Build response ===
     $response = [
