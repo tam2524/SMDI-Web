@@ -3860,7 +3860,7 @@ function renderSoldUnitsReport(data) {
 function generateDailySoldUnitsReport(date, branch, saleType) {
   const category = $("#reportCategoryFilter").val() || "all";
   const brand = $("#reportBrandFilter").val() || "all";
-r
+
   $("#monthlyReportContent").html(
     '<div class="text-center my-3"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading daily report...</div>'
   );

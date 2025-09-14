@@ -2433,12 +2433,11 @@ function getAvailableMotorcyclesReport() {
         $sql .= " AND LOWER(mi.category) = '$category'";
     }
 
-    // Handle branch filter
     if ($branch !== 'all') {
         $sql .= " AND mi.current_branch = '$branch'";
     } elseif (!empty($userBranch) && $userBranch !== 'headoffice' &&
         !in_array($userPosition, ['ADMIN', 'IT STAFF', 'HEAD'])) {
-        // For non-admin users, default to their branch if no branch specified
+      
         $sql .= " AND mi.current_branch = '$userBranch'";
     }
 
@@ -2460,12 +2459,12 @@ function getAvailableMotorcyclesReport() {
 function getSoldMotorcyclesReport() {
     global $conn;
 
-    // Sanitize and normalize inputs to lowercase for consistent comparison
+ 
     $saleType = isset($_GET['sale_type']) ? strtolower(sanitizeInput($_GET['sale_type'])) : 'all';
     $branch = isset($_GET['branch']) ? strtolower(sanitizeInput($_GET['branch'])) : 'all';
     $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
     $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
-    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null; // expected format: YYYY-MM
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null; 
 
     $validTypes = ['all', 'cod', 'installment'];
     if (!in_array($saleType, $validTypes)) {
@@ -2522,7 +2521,7 @@ function getSoldMotorcyclesReport() {
     }
 
     if (!empty($params)) {
-        // bind_param requires references, so create an array of references
+
         $bind_names[] = $types;
         for ($i = 0; $i < count($params); $i++) {
             $bind_name = 'bind' . $i;
@@ -2584,8 +2583,7 @@ function getTransferReceipt() {
         echo json_encode(['success' => false, 'message' => 'Invalid transfer ID']);
         return;
     }
-    
-    // Get transfer header information
+
     $headerSql = "SELECT it.*, u.username as transferred_by_name
                  FROM inventory_transfers it
                  LEFT JOIN users u ON it.transferred_by = u.id
@@ -2603,7 +2601,7 @@ function getTransferReceipt() {
     
     $headerData = $headerResult->fetch_assoc();
     
-    // Get motorcycle details for this transfer
+
     $detailsSql = "SELECT mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.inventory_cost
                   FROM motorcycle_inventory mi
                   INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
@@ -2681,7 +2679,6 @@ function getInvoiceDetails() {
         return;
     }
     
-    // Get invoice header information
     $headerSql = "SELECT * FROM invoices WHERE id = ?";
     $headerStmt = $conn->prepare($headerSql);
     $headerStmt->bind_param('i', $invoiceId);
@@ -2695,7 +2692,7 @@ function getInvoiceDetails() {
     
     $invoice = $headerResult->fetch_assoc();
     
-    // Get motorcycles associated with this invoice
+
     $motorcyclesSql = "SELECT * FROM motorcycle_inventory WHERE invoice_id = ?";
     $motorcyclesStmt = $conn->prepare($motorcyclesSql);
     $motorcyclesStmt->bind_param('i', $invoiceId);
@@ -2714,16 +2711,16 @@ function getInvoiceDetails() {
 function getAllTransferHistories() {
     global $conn;
 
-    // Pagination parameters
+
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $perPage = isset($_GET['per_page']) ? min(100, max(1, intval($_GET['per_page']))) : 20;
     $offset = ($page - 1) * $perPage;
 
-    // Optional filters
+
     $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
     $model = isset($_GET['model']) ? sanitizeInput($_GET['model']) : '';
-    $status = isset($_GET['status']) ? sanitizeInput($_GET['status']) : ''; // New status filter
+    $status = isset($_GET['status']) ? sanitizeInput($_GET['status']) : ''; 
 
     $whereClauses = [];
     $params = [];
@@ -2838,7 +2835,6 @@ function getAllTransferHistories() {
 function getDailySoldMotorcyclesReport() {
     global $conn;
 
-    // Sanitize and normalize inputs
     $saleType = isset($_GET['sale_type']) ? strtolower(sanitizeInput($_GET['sale_type'])) : 'all';
     $branch = isset($_GET['branch']) ? strtolower(sanitizeInput($_GET['branch'])) : 'all';
     $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
@@ -2899,7 +2895,7 @@ function getDailySoldMotorcyclesReport() {
     }
 
     if (!empty($params)) {
-        // bind_param requires references
+
         $bind_names[] = $types;
         for ($i = 0; $i < count($params); $i++) {
             $bind_name = 'bind' . $i;
