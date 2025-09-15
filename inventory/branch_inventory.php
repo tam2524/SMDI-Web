@@ -273,6 +273,7 @@
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
                                     <option value='TANQUE'>TANQUE</option>
+                                    <option value='DFISHER'>DFISHER</option>
                                     <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
                                     <option value='MAMBUSAO'>MAMBUSAO</option>
                                     <option value='SIGMA'>SIGMA</option>
@@ -477,6 +478,7 @@
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
                                     <option value='TANQUE'>TANQUE</option>
+                                    <option value='DFISHER'>DFISHER</option>
                                     <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
                                     <option value='MAMBUSAO'>MAMBUSAO</option>
                                     <option value='SIGMA'>SIGMA</option>
