@@ -112,10 +112,9 @@ case 'scrap_motorcycle':
     scrapMotorcycle();
     break;
 
-    case 'get_scrapped_motorcycles_report':
-    getScrappedMotorcyclesReport();
+case 'get_monthly_scrapped_summary':
+    getMonthlyScrappedSummary();
     break;
-
     default:
     echo json_encode( [ 'success' => false, 'message' => 'Invalid action' ] );
     break;
@@ -2980,12 +2979,15 @@ function scrapMotorcycle() {
     }
 }
 
-
-function getScrappedMotorcyclesReport() {
+function getMonthlyScrappedSummary() {
     global $conn;
 
     // Get month parameter (format: YYYY-MM)
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+
     if (empty($month)) {
         echo json_encode(['success' => false, 'message' => 'Month parameter is required (format: YYYY-MM)']);
         return;
@@ -2995,49 +2997,157 @@ function getScrappedMotorcyclesReport() {
     $startDate = date('Y-m-01', strtotime($month));
     $endDate = date('Y-m-t', strtotime($month));
 
-    // Optional: filter by branch
-    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
-
-    // Base SQL query joining motorcycle_inventory and motorcycle_scraps
-    $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.current_branch, 
-                   ms.scrap_date, ms.scrap_reason
-            FROM motorcycle_inventory mi
-            INNER JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id
-            WHERE ms.scrap_date BETWEEN ? AND ?";
-
-    $params = [$startDate, $endDate];
-    $types = 'ss';
-
-    if (!empty($branch)) {
-        $sql .= " AND mi.current_branch = ?";
+    // --- Build conditions for all queries (main and summary) ---
+    $conditions = [];
+    $params = [];
+    $types = '';
+    
+    // Non-date filters for all queries
+    if ($branch !== 'ALL') { // FIX: Only add this condition if the branch is not 'ALL'
+        $conditions[] = "mi.current_branch = ?";
         $params[] = $branch;
         $types .= 's';
     }
+    if ($category !== 'all') {
+        $conditions[] = "LOWER(mi.category) = ?";
+        $params[] = $category;
+        $types .= 's';
+    }
+    if ($brand !== 'all') {
+        $conditions[] = "LOWER(mi.brand) = ?";
+        $params[] = $brand;
+        $types .= 's';
+    }
+    
+    // Add date condition
+    $conditions[] = "ms.scrap_date BETWEEN ? AND ?";
+    $params[] = $startDate;
+    $params[] = $endDate;
+    $types .= 'ss';
 
-    $sql .= " ORDER BY ms.scrap_date DESC, mi.brand, mi.model";
+    $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+
+    // --- Main Query: Get scrapped motorcycles with details ---
+    $sql = "SELECT 
+                mi.id, 
+                mi.brand, 
+                mi.model, 
+                mi.color, 
+                mi.engine_number, 
+                mi.frame_number, 
+                mi.current_branch,
+                mi.inventory_cost,
+                mi.category,
+                ms.scrap_date, 
+                ms.scrap_reason,
+                i.invoice_number
+            FROM motorcycle_inventory mi
+            INNER JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            $whereClause
+            ORDER BY ms.scrap_date DESC, mi.brand, mi.model";
 
     $stmt = $conn->prepare($sql);
+    
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
         return;
     }
 
-    $stmt->bind_param($types, ...$params);
+    // Bind parameters for the main query
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
     $stmt->execute();
     $result = $stmt->get_result();
 
     $data = [];
+    $totalScrapped = 0;
+    $totalInventoryCost = 0;
+
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
+        $totalScrapped++;
+        $totalInventoryCost += (float)$row['inventory_cost'];
+    }
+
+    // --- Summary by brand and branch ---
+    $summarySql = "SELECT 
+                    mi.brand,
+                    mi.current_branch,
+                    COUNT(*) as count,
+                    SUM(mi.inventory_cost) as total_cost
+                  FROM motorcycle_inventory mi
+                  INNER JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id
+                  $whereClause
+                  GROUP BY mi.brand, mi.current_branch
+                  ORDER BY mi.brand, mi.current_branch";
+
+    $summaryStmt = $conn->prepare($summarySql);
+    
+    if (!$summaryStmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+        return;
+    }
+
+    // Bind parameters for the summary query
+    if (!empty($params)) { 
+        $summaryStmt->bind_param($types, ...$params);
+    }
+    
+    $summaryStmt->execute();
+    $summaryResult = $summaryStmt->get_result();
+
+    $summaryByBrandBranch = [];
+    while ($row = $summaryResult->fetch_assoc()) {
+        $summaryByBrandBranch[] = $row;
+    }
+
+    // --- Summary by reason ---
+    $reasonSql = "SELECT 
+                    ms.scrap_reason,
+                    COUNT(*) as count,
+                    SUM(mi.inventory_cost) as total_cost
+                  FROM motorcycle_inventory mi
+                  INNER JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id
+                  $whereClause
+                  GROUP BY ms.scrap_reason
+                  ORDER BY count DESC";
+
+    $reasonStmt = $conn->prepare($reasonSql);
+    
+    if (!$reasonStmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+        return;
+    }
+
+    // Bind parameters for the reason query
+    if (!empty($params)) { 
+        $reasonStmt->bind_param($types, ...$params);
+    }
+    
+    $reasonStmt->execute();
+    $reasonResult = $reasonStmt->get_result();
+
+    $summaryByReason = [];
+    while ($row = $reasonResult->fetch_assoc()) {
+        $summaryByReason[] = $row;
     }
 
     echo json_encode([
         'success' => true,
         'month' => $month,
         'branch' => $branch,
-        'total_scrapped' => count($data),
-        'data' => $data
+        'category' => $category,
+        'brand' => $brand,
+        'data' => $data,
+        'summary' => [
+            'total_scrapped' => $totalScrapped,
+            'total_inventory_cost' => $totalInventoryCost
+        ],
+        'summary_by_brand_branch' => $summaryByBrandBranch,
+        'summary_by_reason' => $summaryByReason
     ]);
 }
-
 ?>

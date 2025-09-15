@@ -214,6 +214,7 @@
                             <option value='motorcycle'>Available Motorcycle Units Report</option>
                             <option value='sold_units'>Monthly Summary of Sold Units Report</option>
                             <option value='daily_sold_units'>Daily Summary of Sold Units Report</option>
+                            <option value="scrapped">Monthly Summary of Scrapped Units Report</option>
                         </select>
                     </div>
                     <div class='mb-3'>

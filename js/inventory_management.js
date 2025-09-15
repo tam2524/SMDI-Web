@@ -20,6 +20,8 @@ let currentReportBranch = null;
 let currentReportType = null;
 let currentReportSummary = null;
 let currentReportSaleType = null;
+let currentReportCategory = null; 
+let currentReportBrand = null;
 let modelCount = 0;
 let currentUserRole = "USER";
 const canAccessScrapFeature = isHeadOffice || isAdminUser ;
@@ -3580,7 +3582,545 @@ $("#generateReportBtn").on("click", function () {
   }
 });
 
+function generateScrappedReport() {
+    const month = $("#reportMonth").val();
+    const branch = $("#reportBranch").val() || "all";
+    const category = $("#reportCategoryFilter").val() || "all";
+    const brand = $("#reportBrandFilter").val() || "all";
 
+    if (!month) {
+        showErrorModal("Please select a month.");
+        return;
+    }
+
+    $("#monthlyReportOptionsModal").modal("hide");
+    $("#monthlyReportContent").html(
+        '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    );
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_monthly_scrapped_summary",
+            month: month,
+            branch: branch,
+            category: category,
+            brand: brand
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                currentReportData = response.data;
+                currentReportMonth = response.month;
+                currentReportBranch = response.branch;
+                currentReportType = "scrapped";
+                currentReportSummary = response.summary;
+                currentReportCategory = category; // Add this line
+                currentReportBrand = brand;     // Add this line
+
+                renderScrappedReport(response);
+                $("#monthlyInventoryReportModal").modal("show");
+            } else {
+                showErrorModal(response.message || "Error generating scrapped units report");
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal("Error generating scrapped units report: " + error);
+        }
+    });
+}
+
+function renderScrappedReport(response) {
+    const [year, monthNum] = response.month.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long"
+    });
+    
+    const branchName = response.branch === "all" ? "All Branches" : response.branch;
+    const brandName = response.brand === "all" ? "All Brands" : response.brand;
+    const categoryName = response.category === "all" ? "All Categories" : response.category;
+
+    const totalScrapped = response.summary.total_scrapped || 0;
+    const totalInventoryCost = response.summary.total_inventory_cost || 0;
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
+                </h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY SUMMARY OF SCRAPPED UNITS</h5>
+            <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
+            <p class="mb-1">
+                <span style="color: #6c757d;">Branch:</span> 
+                <span style="color: #000f71; font-weight: 500;">${branchName}</span> | 
+                <span style="color: #6c757d;">Brand:</span> 
+                <span style="color: #000f71; font-weight: 500;">${brandName}</span> | 
+                <span style="color: #6c757d;">Category:</span> 
+                <span style="color: #000f71; font-weight: 500;">${categoryName}</span>
+            </p>
+            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
+                Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric"
+                })}
+            </p>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white;">
+                    <div class="card-body py-4">
+                        <h6 class="card-title mb-2 text-white">TOTAL SCRAPPED</h6>
+                        <h3 class="mb-0 text-white">${totalScrapped}</h3>
+                        <small>Motorcycles scrapped</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #fd7e14, #e36209); color: white;">
+                    <div class="card-body py-4">
+                        <h6 class="card-title mb-2 text-white">TOTAL INVENTORY LOSS</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalInventoryCost)}</h3>
+                        <small>Total value scrapped</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Summary by brand and branch
+    if (response.summary_by_brand_branch && response.summary_by_brand_branch.length > 0) {
+        html += `
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Summary by Brand and Branch</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Brand</th>
+                                    <th>Branch</th>
+                                    <th class="text-center">Units</th>
+                                    <th class="text-end">Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+
+        response.summary_by_brand_branch.forEach(item => {
+            html += `
+                <tr>
+                    <td>${escapeHtml(item.brand)}</td>
+                    <td>${escapeHtml(item.current_branch)}</td>
+                    <td class="text-center">${item.count}</td>
+                    <td class="text-end">${formatCurrency(item.total_cost)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Summary by reason
+    if (response.summary_by_reason && response.summary_by_reason.length > 0) {
+        html += `
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Summary by Scrap Reason</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Reason</th>
+                                    <th class="text-center">Units</th>
+                                    <th class="text-end">Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+
+        response.summary_by_reason.forEach(item => {
+            const reason = item.scrap_reason || "No reason specified";
+            html += `
+                <tr>
+                    <td>${escapeHtml(reason)}</td>
+                    <td class="text-center">${item.count}</td>
+                    <td class="text-end">${formatCurrency(item.total_cost)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Detailed list
+    if (response.data && response.data.length > 0) {
+        html += `
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Detailed List of Scrapped Units</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Brand</th>
+                                    <th>Model</th>
+                                    <th>Color</th>
+                                    <th>Engine #</th>
+                                    <th>Frame #</th>
+                                    <th>Branch</th>
+                                    <th>Scrap Date</th>
+                                    <th>Reason</th>
+                                    <th class="text-end">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+
+        response.data.forEach(item => {
+            html += `
+                <tr>
+                    <td>${escapeHtml(item.brand)}</td>
+                    <td>${escapeHtml(item.model)}</td>
+                    <td>${escapeHtml(item.color)}</td>
+                    <td><code>${escapeHtml(item.engine_number)}</code></td>
+                    <td><code>${escapeHtml(item.frame_number)}</code></td>
+                    <td>${escapeHtml(item.current_branch)}</td>
+                    <td>${formatDate(item.scrap_date)}</td>
+                    <td>${escapeHtml(item.scrap_reason || "N/A")}</td>
+                    <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>
+                No scrapped units found for ${monthName} ${year}.
+            </div>
+        `;
+    }
+
+    $("#monthlyReportContent").html(html);
+}
+function generateScrappedReportPDF() {
+  const { jsPDF } = window.jspdf;
+
+  // Create PDF in landscape mode for more horizontal space
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+
+  if (!currentReportData || !currentReportData.length) {
+    showErrorModal("No scrapped unit/s data available to export.");
+    return;
+  }
+
+  // Determine report parameters for the header
+  const month = currentReportMonth;
+  const [year, monthNum] = month.split("-");
+  const formattedMonth = new Date(year, monthNum - 1, 1).toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const branch = currentReportBranch.toUpperCase() !== "ALL" ? currentReportBranch : "All Branches";
+  const category = currentReportCategory.toLowerCase() !== "all" ? currentReportCategory : "All Categories";
+  const brand = currentReportBrand.toLowerCase() !== "all" ? currentReportBrand : "All Brands";
+
+  // Get formatted current date
+  const now = new Date();
+  const generatedOn = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Utility to clean string values
+  function cleanString(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/[\u000B\r\n]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  // Format date string
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  // Format currency values
+  function formatCurrency(amount) {
+    if (amount == null || amount === "") return "N/A";
+    return Number(amount).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  // Group data by branch name
+  const groupedData = {};
+  currentReportData.forEach((item) => {
+    const branchName = item.current_branch || "Unknown Branch";
+    if (!groupedData[branchName]) groupedData[branchName] = [];
+    groupedData[branchName].push(item);
+  });
+
+  // --- HEADER SECTION ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(0, 15, 113);
+  doc.text(
+    "SOLID MOTORCYCLE DISTRIBUTORS, INC.",
+    148,
+    15,
+    null,
+    null,
+    "center"
+  );
+
+  doc.setFontSize(11);
+  doc.setTextColor(73, 80, 87);
+  doc.text("Monthly Summary of Scrapped Units", 148, 24, null, null, "center");
+
+  doc.setFontSize(10);
+  doc.setTextColor(0, 64, 133);
+  doc.text(formattedMonth, 148, 28, null, null, "center");
+
+  doc.setFontSize(9);
+  doc.setTextColor(108, 117, 125);
+  doc.text(`Branch: ${branch} | Category: ${category} | Brand: ${brand}`, 148, 33, null, null, "center");
+
+  doc.setDrawColor(0, 15, 113);
+  doc.setLineWidth(0.8);
+  doc.line(10, 39, 286, 39);
+
+  // Table column definitions for autoTable
+  const columns = [
+    { header: "Brand", dataKey: "brand" },
+    { header: "Model", dataKey: "model" },
+    { header: "Color", dataKey: "color" },
+    { header: "Engine #", dataKey: "engine_number" },
+    { header: "Frame #", dataKey: "frame_number" },
+    { header: "Scrap Date", dataKey: "scrap_date" },
+    { header: "Reason", dataKey: "scrap_reason" },
+    { header: "Cost", dataKey: "inventory_cost" },
+  ];
+
+  // Format rows for tables
+  function formatRows(items) {
+    return items.map((item) => {
+      return {
+        brand: cleanString(item.brand),
+        model: cleanString(item.model),
+        color: cleanString(item.color),
+        engine_number: cleanString(item.engine_number),
+        frame_number: cleanString(item.frame_number),
+        scrap_date: cleanString(formatDate(item.scrap_date)),
+        scrap_reason: cleanString(item.scrap_reason || 'N/A'),
+        inventory_cost: cleanString(formatCurrency(item.inventory_cost)),
+      };
+    });
+  }
+
+  // Layout and margins
+  let startY = 43;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLR = 10;
+  const marginBottom = 15;
+
+  // Column widths adjusted for landscape A4
+  const columnWidths = {
+    brand: 30,
+    model: 40,
+    color: 25,
+    engine_number: 35,
+    frame_number: 35,
+    scrap_date: 25,
+    scrap_reason: 50,
+    inventory_cost: 30,
+  };
+
+  // Iterate through each branch grouping to create tables
+  for (const branchName in groupedData) {
+    const items = groupedData[branchName];
+
+    // Add new page if content exceeds the current page
+    if (startY + 40 > pageHeight - marginBottom) {
+      doc.addPage();
+      startY = 20;
+    }
+
+    // Branch header
+    doc.setFontSize(10);
+    doc.setTextColor(0, 64, 133);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${branchName} - ${items.length} unit/s scrapped`, marginLR, startY);
+    startY += 5;
+
+    doc.autoTable({
+      startY: startY,
+      margin: { left: marginLR, right: marginLR },
+      head: [columns.map((c) => c.header)],
+      body: formatRows(items).map((r) => columns.map((c) => r[c.dataKey])),
+      styles: {
+        fontSize: 7,
+        cellPadding: 1.5,
+        valign: "middle",
+        overflow: "linebreak",
+        minCellHeight: 5,
+        cellWidth: "wrap",
+      },
+      headStyles: {
+        fillColor: [248, 249, 250],
+        textColor: [73, 80, 87],
+        fontStyle: "bold",
+        halign: "center",
+      },
+      columnStyles: {
+        brand: { cellWidth: columnWidths.brand, halign: "center", overflow: "linebreak" },
+        model: { cellWidth: columnWidths.model, halign: "center", overflow: "linebreak" },
+        color: { cellWidth: columnWidths.color, halign: "center", overflow: "linebreak" },
+        engine_number: { cellWidth: columnWidths.engine_number, halign: "center", overflow: "linebreak" },
+        frame_number: { cellWidth: columnWidths.frame_number, halign: "center", overflow: "linebreak" },
+        scrap_date: { cellWidth: columnWidths.scrap_date, halign: "center", overflow: "linebreak" },
+        scrap_reason: { cellWidth: columnWidths.scrap_reason, overflow: "linebreak" },
+        inventory_cost: { cellWidth: columnWidths.inventory_cost, halign: "right", overflow: "linebreak" },
+      },
+      theme: "striped",
+      didDrawPage: (data) => {
+        startY = data.cursor.y + 7;
+      },
+    });
+
+    startY = doc.autoTable.previous.finalY + 10;
+  }
+
+  // --- SUMMARY CARDS SECTION ---
+  const totalScrapped = currentReportSummary.total_scrapped;
+  const totalInventoryCost = currentReportSummary.total_inventory_cost;
+  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+  const cardHeight = 40;
+  let cardY = startY;
+
+  if (cardY + cardHeight + marginBottom > pageHeight) {
+    doc.addPage();
+    cardY = 20;
+  }
+
+  function drawCard(x, y, width, height, title, mainValue, subValue) {
+    doc.setDrawColor(233, 236, 239);
+    doc.setFillColor(248, 249, 250);
+    doc.rect(x, y, width, height, "F");
+
+    doc
+      .setFontSize(8)
+      .setTextColor(73, 80, 87)
+      .setFont("helvetica", "bold")
+      .text(title, x + width / 2, y + 7, { align: "center" });
+
+    doc
+      .setFontSize(16)
+      .setTextColor(0, 64, 133)
+      .setFont("helvetica", "bold")
+      .text(String(mainValue), x + width / 2, y + 22, { align: "center" });
+
+    doc
+      .setFontSize(9)
+      .setTextColor(108, 117, 125)
+      .setFont("helvetica", "normal")
+      .text(subValue, x + width / 2, y + 32, { align: "center" });
+  }
+
+  drawCard(
+    marginLR,
+    cardY,
+    cardWidth,
+    cardHeight,
+    "TOTAL SCRAPPED UNITS",
+    totalScrapped,
+    "Units scrapped"
+  );
+  drawCard(
+    marginLR + cardWidth + 10,
+    cardY,
+    cardWidth,
+    cardHeight,
+    "TOTAL INVENTORY LOSS",
+    formatCurrency(totalInventoryCost),
+    "Total value scrapped"
+  );
+
+  // --- PAGE NUMBERS AND GENERATED DATE FOOTER ---
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(108, 117, 125);
+
+    doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
+
+    doc.text(
+      `Page ${i} of ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 10,
+      null,
+      null,
+      "center"
+    );
+  }
+
+  // --- SAVE PDF ---
+  const safeBranch = branch.replace(/\s+/g, "_");
+  const dateStr = now.toISOString().slice(0, 10);
+  doc.save(`Scrapped_Units_Report_${safeBranch}_${dateStr}.pdf`);
+}
 // =======================
 // Monthly Inventory Report
 // =======================
@@ -3716,7 +4256,7 @@ function renderSoldUnitsReport(data) {
   if (!data || data.length === 0) {
     $("#monthlyReportContent").html(`
       <div class="alert alert-info text-center my-3">
-        No sold units found for the selected filters.
+        No sold unit/s found for the selected filters.
       </div>
     `);
     return;
@@ -3856,7 +4396,7 @@ function renderSoldUnitsReport(data) {
     html += `
       <div class="card mb-4" style="box-shadow: 0 4px 6px rgba(0,0,0,0.04); border-radius: 6px;">
         <div class="card-header bg-light" style="border-bottom: 1px solid #e9ecef;">
-          <h6 class="mb-0">${branchName} - ${branchData.length} units</h6>
+          <h6 class="mb-0">${branchName} - ${branchData.length} unit/s</h6>
         </div>
         <div class="card-body p-3">
           ${buildTableHtml("COD Sales", codSales)}
@@ -3976,7 +4516,7 @@ function renderDailySoldUnitsReport(data, date) {
   if (!data || data.length === 0) {
     $("#monthlyReportContent").html(`
       <div class="alert alert-info text-center my-3">
-        No sold units found for ${formatDate(date)}.
+        No sold unit/s found for ${formatDate(date)}.
       </div>
     `);
     return;
@@ -4116,7 +4656,7 @@ function renderDailySoldUnitsReport(data, date) {
     html += `
       <div class="card mb-4" style="box-shadow: 0 4px 6px rgba(0,0,0,0.04); border-radius: 6px;">
         <div class="card-header bg-light" style="border-bottom: 1px solid #e9ecef;">
-          <h6 class="mb-0">${branchName} - ${branchData.length} units</h6>
+          <h6 class="mb-0">${branchName} - ${branchData.length} unit/s</h6>
         </div>
         <div class="card-body p-3">
           ${buildTableHtml("COD Sales", codSales)}
@@ -4185,7 +4725,7 @@ function generateDailySoldUnitsReportPDF() {
 
   if (!currentReportData || currentReportType !== "daily_sold_units") {
     showErrorModal(
-      "Please generate a daily sold units report first before exporting to PDF"
+      "Please generate a daily sold unit/s report first before exporting to PDF"
     );
     return;
   }
@@ -4339,7 +4879,7 @@ function generateDailySoldUnitsReportPDF() {
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "bold");
   doc.text(
-    `Total Sales: ${totalSales} units (COD: ${totalCod} | Installment: ${totalInstallment})`,
+    `Total Sales: ${totalSales} unit/s (COD: ${totalCod} | Installment: ${totalInstallment})`,
     pageWidth / 2,
     startY + 10,
     { align: "center" }
@@ -4385,7 +4925,7 @@ function generateDailySoldUnitsReportPDF() {
   } else {
     doc.setFontSize(12);
     doc.setTextColor(108, 117, 125);
-    doc.text("No sold units found for this date", pageWidth / 2, startY + 20, {
+    doc.text("No sold unit/s found for this date", pageWidth / 2, startY + 20, {
       align: "center",
     });
     startY += 30;
@@ -4757,7 +5297,7 @@ function generateDailySoldUnitsReportPDF() {
 
   if (!currentReportData || currentReportType !== "daily_sold_units") {
     showErrorModal(
-      "Please generate a daily sold units report first before exporting to PDF"
+      "Please generate a daily sold unit/s report first before exporting to PDF"
     );
     return;
   }
@@ -4911,7 +5451,7 @@ function generateDailySoldUnitsReportPDF() {
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "bold");
   doc.text(
-    `Total Sales: ${totalSales} units (COD: ${totalCod} | Installment: ${totalInstallment})`,
+    `Total Sales: ${totalSales} unit/s (COD: ${totalCod} | Installment: ${totalInstallment})`,
     pageWidth / 2,
     startY + 10,
     { align: "center" }
@@ -4957,7 +5497,7 @@ function generateDailySoldUnitsReportPDF() {
   } else {
     doc.setFontSize(12);
     doc.setTextColor(108, 117, 125);
-    doc.text("No sold units found for this date", pageWidth / 2, startY + 20, {
+    doc.text("No sold unit/s found for this date", pageWidth / 2, startY + 20, {
       align: "center",
     });
     startY += 30;
@@ -5244,6 +5784,9 @@ function generateReport() {
   } else if (reportType === "motorcycle") {
     generateMotorcycleReport(reportBranch, brandFilter, categoryFilter);
   }
+  else if (reportType === "scrapped") {
+      generateScrappedReport();
+}
 }
 
 function generateReportPDF() {
@@ -5262,6 +5805,8 @@ function generateReportPDF() {
     generateSoldUnitsReportPDF();
   } else if (currentReportType === "daily_sold_units") {
     generateDailySoldUnitsReportPDF();
+     } else if (currentReportType === "scrapped") {
+      generateScrappedReportPDF();
   } else {
     showErrorModal("PDF export not available for this report type");
   }
@@ -5286,7 +5831,7 @@ function generateSoldUnitsReportPDF() {
   });
 
   if (!currentReportData || !currentReportData.length) {
-    showErrorModal("No sold units data available to export.");
+    showErrorModal("No sold unit/s data available to export.");
     return;
   }
 
@@ -5447,7 +5992,7 @@ function generateSoldUnitsReportPDF() {
     doc.setFontSize(10);
     doc.setTextColor(0, 64, 133);
     doc.setFont("helvetica", "bold");
-    doc.text(`${branchName} - ${items.length} units`, marginLR, startY);
+    doc.text(`${branchName} - ${items.length} unit/s`, marginLR, startY);
     startY += 5;
 
     // --- COD SALES SECTION (Only if codItems exist) ---
@@ -5785,7 +6330,7 @@ function generateMotorcycleReportPDF() {
     doc.setFontSize(11);
     doc.setTextColor(0, 64, 133);
     doc.setFont("helvetica", "bold");
-    doc.text(`${branchName} - ${items.length} units`, marginLR, startY);
+    doc.text(`${branchName} - ${items.length} unit/s`, marginLR, startY);
     startY += 6;
 
     const rows = items.map((item) => ({
@@ -6795,7 +7340,7 @@ function renderMotorcycleReport(data, branch, brandFilter) {
       html += `
                 <div class="card mb-4">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0">${branch} - ${branchData.length} units</h6>
+                        <h6 class="mb-0">${branch} - ${branchData.length} unit/s</h6>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
