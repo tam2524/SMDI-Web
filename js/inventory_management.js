@@ -3580,29 +3580,6 @@ $("#generateReportBtn").on("click", function () {
   }
 });
 
-function loadScrappedMotorcyclesReport(month, branch = '') {
-    $.ajax({
-        url: '../api/inventory_management.php',
-        method: 'GET',
-        data: {
-            action: 'get_scrapped_motorcycles_report',
-            month: month,       // e.g. '2025-09'
-            branch: branch      // optional
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                console.log('Scrapped Motorcycles:', response.data);
-                // TODO: Render the data in your UI table or report
-            } else {
-                alert('Error: ' + response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            alert('AJAX error: ' + error);
-        }
-    });
-}
 
 // =======================
 // Monthly Inventory Report
