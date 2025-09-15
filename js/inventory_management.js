@@ -1319,6 +1319,11 @@ function renderInventoryTable(data) {
                          <button class="btn btn-outline-danger sell-btn">
     <i class="bi"></i> ₱
 </button>
+<?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+        <button class="btn btn-outline-warning scrap-btn">
+            <i class="bi bi-trash"></i> Scrap
+        </button>
+        <?php endif; ?>
 
                         </div>
                     </td>
@@ -1356,6 +1361,10 @@ function setupTableActionButtons() {
     $("#editMotorcycleModal").modal("hide");
     sellMotorcycle(id);
   });
+   $(".scrap-btn").click(function () {
+        const id = $(this).closest("tr").data("id");
+        scrapMotorcycle(id);
+    });
 }
 
 function getStatusBadgeClass(status) {
@@ -2062,6 +2071,52 @@ function submitSale() {
       showErrorModal("Error marking motorcycle as sold: " + error);
     },
   });
+}
+
+function scrapMotorcycle(id) {
+    $("#scrapMotorcycleId").val(id);
+    $("#scrapDate").val(new Date().toISOString().split('T')[0]);
+    $("#scrapReason").val("");
+    $("#scrapMotorcycleModal").modal("show");
+}
+
+// Submit scrap function
+function submitScrap() {
+    const formData = {
+        action: "scrap_motorcycle",
+        motorcycle_id: $("#scrapMotorcycleId").val(),
+        scrap_date: $("#scrapDate").val(),
+        scrap_reason: $("#scrapReason").val()
+    };
+
+    if (!formData.scrap_date) {
+        showErrorModal("Please select a scrap date");
+        return;
+    }
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "POST",
+        data: formData,
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                $("#scrapMotorcycleModal").modal("hide");
+                showSuccessModal("Motorcycle marked as scrapped successfully!");
+                
+                loadInventoryTable(
+                    currentInventoryPage,
+                    currentInventorySort,
+                    currentInventoryQuery
+                );
+            } else {
+                showErrorModal(response.message || "Error marking motorcycle as scrapped");
+            }
+        },
+        error: function (xhr, status, error) {
+            showErrorModal("Error marking motorcycle as scrapped: " + error);
+        }
+    });
 }
 // =======================
 // Transfer Functions

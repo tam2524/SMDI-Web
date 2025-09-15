@@ -108,6 +108,10 @@ case 'get_daily_sold_motorcycles_report':
 getDailySoldMotorcyclesReport();
 break;
 
+case 'scrap_motorcycle':
+    scrapMotorcycle();
+    break;
+
     default:
     echo json_encode( [ 'success' => false, 'message' => 'Invalid action' ] );
     break;
@@ -121,9 +125,9 @@ function getInventoryDashboard() {
     $userBranch = isset( $_SESSION[ 'user_branch' ] ) ? $_SESSION[ 'user_branch' ] : '';
     $userPosition = isset( $_SESSION[ 'position' ] ) ? $_SESSION[ 'position' ] : '';
 
-    $sql = "SELECT model, brand, color, COUNT(*) as total_quantity 
-            FROM motorcycle_inventory 
-            WHERE status = 'available'";
+   $sql = "SELECT model, brand, color, COUNT(*) as total_quantity 
+        FROM motorcycle_inventory 
+        WHERE status = 'available' AND status != 'scrapped'";
 
     if ( !empty( $userBranch ) && $userBranch !== 'HEADOFFICE' &&
     !in_array( strtoupper( $userPosition ), [ 'ADMIN', 'IT STAFF', 'HEAD' ] ) ) {
@@ -197,7 +201,7 @@ function getInventoryTable() {
     }
 
     $search = isset( $_GET[ 'query' ] ) ? sanitizeInput( $_GET[ 'query' ] ) : '';
-    $where = "WHERE mi.status != 'deleted'";
+   $where = "WHERE mi.status != 'deleted'";
 
     if ( !empty( $userBranch ) && $userBranch !== 'HEADOFFICE' &&
     !in_array( strtoupper( $userPosition ), [ 'ADMIN', 'IT STAFF', 'HEAD' ] ) ) {
@@ -2914,6 +2918,62 @@ function getDailySoldMotorcyclesReport() {
     }
 
     echo json_encode(['success' => true, 'data' => $data]);
+}
+
+function scrapMotorcycle() {
+    global $conn;
+
+    $required = ['motorcycle_id', 'scrap_date'];
+    foreach ($required as $field) {
+        if (empty($_POST[$field])) {
+            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
+            return;
+        }
+    }
+
+    $motorcycleId = intval($_POST['motorcycle_id']);
+    $scrapDate = sanitizeInput($_POST['scrap_date']);
+    $scrapReason = isset($_POST['scrap_reason']) ? sanitizeInput($_POST['scrap_reason']) : '';
+
+    $conn->begin_transaction();
+
+    try {
+        // Insert scrap record
+        $scrapStmt = $conn->prepare("INSERT INTO motorcycle_scraps 
+                                   (motorcycle_id, scrap_date, scrap_reason) 
+                                   VALUES (?, ?, ?)");
+        $scrapStmt->bind_param('iss', $motorcycleId, $scrapDate, $scrapReason);
+        if (!$scrapStmt->execute()) {
+            throw new Exception("Failed to insert scrap record: " . $scrapStmt->error);
+        }
+
+        // Update motorcycle status to scrapped
+        $updateStmt = $conn->prepare("UPDATE motorcycle_inventory 
+                                    SET status = 'scrapped' 
+                                    WHERE id = ?");
+        $updateStmt->bind_param('i', $motorcycleId);
+        if (!$updateStmt->execute()) {
+            throw new Exception("Failed to update motorcycle status: " . $updateStmt->error);
+        }
+
+        $conn->commit();
+
+        // Fetch updated motorcycle data
+        $stmt = $conn->prepare("SELECT * FROM motorcycle_inventory WHERE id = ?");
+        $stmt->bind_param('i', $motorcycleId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $motorcycle = $result->fetch_assoc();
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Motorcycle marked as scrapped successfully',
+            'data' => $motorcycle
+        ]);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Error scrapping motorcycle: ' . $e->getMessage()]);
+    }
 }
 
 ?>
