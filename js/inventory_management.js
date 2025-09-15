@@ -22,6 +22,7 @@ let currentReportSummary = null;
 let currentReportSaleType = null;
 let modelCount = 0;
 let currentUserRole = "USER";
+const canAccessScrapFeature = isHeadOffice || isAdminUser ;
 
 const pdfStyles = `
     @media print {
@@ -1296,39 +1297,33 @@ function renderInventoryTable(data) {
       }
 
       html += `
-                <tr data-id="${item.id}">
-                <td>${item.invoice_number || "N/A"}</td>
-                    <td>${
-                      item.date_received
-                        ? formatDate(item.date_received)
-                        : formatDate(item.date_delivered)
-                    }</td>
-                    <td>${item.brand}</td>
-                    <td>${item.model}</td>
-                    <td>${categoryBadge}</td>
-                    <td>${item.engine_number}</td>
-                    <td>${item.frame_number}</td>
-                    <td>${item.color}</td>
-                    <td>${formatCurrency(item.inventory_cost)}</td>
-                    <td>${item.current_branch}</td>
-                    <td>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary edit-btn">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                         <button class="btn btn-outline-danger sell-btn">
-    <i class="bi"></i> ₱
-</button>
-<?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-        <button class="btn btn-outline-warning scrap-btn">
-            <i class="bi bi-trash"></i> Scrap
-        </button>
-        <?php endif; ?>
-
-                        </div>
-                    </td>
-                </tr>
-            `;
+        <tr data-id="${item.id}">
+          <td>${item.invoice_number || "N/A"}</td>
+          <td>${item.date_received ? formatDate(item.date_received) : formatDate(item.date_delivered)}</td>
+          <td>${item.brand}</td>
+          <td>${item.model}</td>
+          <td>${categoryBadge}</td>
+          <td>${item.engine_number}</td>
+          <td>${item.frame_number}</td>
+          <td>${item.color}</td>
+          <td>${formatCurrency(item.inventory_cost)}</td>
+          <td>${item.current_branch}</td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-primary edit-btn">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-outline-danger sell-btn">
+                <i class="bi"></i> ₱
+              </button>
+              ${canAccessScrapFeature ? `
+              <button class="btn btn-outline-warning scrap-btn">
+                <i class="bi bi-trash"></i> Scrap
+              </button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
     });
   }
 
@@ -1361,10 +1356,14 @@ function setupTableActionButtons() {
     $("#editMotorcycleModal").modal("hide");
     sellMotorcycle(id);
   });
-   $(".scrap-btn").click(function () {
-        const id = $(this).closest("tr").data("id");
-        scrapMotorcycle(id);
-    });
+ $(".scrap-btn").click(function () {
+    if (!canAccessScrapFeature) {
+      showErrorModal("You do not have permission to scrap motorcycles.");
+      return;
+    }
+    const id = $(this).closest("tr").data("id");
+    scrapMotorcycle(id);
+  });
 }
 
 function getStatusBadgeClass(status) {
@@ -3580,6 +3579,30 @@ $("#generateReportBtn").on("click", function () {
     generateDailySoldUnitsReport(date, branch, saleType);
   }
 });
+
+function loadScrappedMotorcyclesReport(month, branch = '') {
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: {
+            action: 'get_scrapped_motorcycles_report',
+            month: month,       // e.g. '2025-09'
+            branch: branch      // optional
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                console.log('Scrapped Motorcycles:', response.data);
+                // TODO: Render the data in your UI table or report
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('AJAX error: ' + error);
+        }
+    });
+}
 
 // =======================
 // Monthly Inventory Report

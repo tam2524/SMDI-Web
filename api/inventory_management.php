@@ -112,6 +112,10 @@ case 'scrap_motorcycle':
     scrapMotorcycle();
     break;
 
+    case 'get_scrapped_motorcycles_report':
+    getScrappedMotorcyclesReport();
+    break;
+
     default:
     echo json_encode( [ 'success' => false, 'message' => 'Invalid action' ] );
     break;
@@ -2974,6 +2978,66 @@ function scrapMotorcycle() {
         $conn->rollback();
         echo json_encode(['success' => false, 'message' => 'Error scrapping motorcycle: ' . $e->getMessage()]);
     }
+}
+
+
+function getScrappedMotorcyclesReport() {
+    global $conn;
+
+    // Get month parameter (format: YYYY-MM)
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
+    if (empty($month)) {
+        echo json_encode(['success' => false, 'message' => 'Month parameter is required (format: YYYY-MM)']);
+        return;
+    }
+
+    // Calculate first and last day of the month
+    $startDate = date('Y-m-01', strtotime($month));
+    $endDate = date('Y-m-t', strtotime($month));
+
+    // Optional: filter by branch
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : '';
+
+    // Base SQL query joining motorcycle_inventory and motorcycle_scraps
+    $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.current_branch, 
+                   ms.scrap_date, ms.scrap_reason
+            FROM motorcycle_inventory mi
+            INNER JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id
+            WHERE ms.scrap_date BETWEEN ? AND ?";
+
+    $params = [$startDate, $endDate];
+    $types = 'ss';
+
+    if (!empty($branch)) {
+        $sql .= " AND mi.current_branch = ?";
+        $params[] = $branch;
+        $types .= 's';
+    }
+
+    $sql .= " ORDER BY ms.scrap_date DESC, mi.brand, mi.model";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+        return;
+    }
+
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'month' => $month,
+        'branch' => $branch,
+        'total_scrapped' => count($data),
+        'data' => $data
+    ]);
 }
 
 ?>
