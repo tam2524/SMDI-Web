@@ -1102,7 +1102,7 @@ function searchInventoryByEngine() {
         FROM motorcycle_inventory mi
         LEFT JOIN invoices i ON mi.invoice_id = i.id
         LEFT JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
-        WHERE mi.status IN ('available', 'sold') AND mi.current_branch = '$userBranch'";
+        WHERE mi.status IN ('available', 'transferred', 'sold') AND mi.current_branch = '$userBranch'";
 
     $params = [];
     $types = '';
@@ -1344,12 +1344,12 @@ function acceptTransfers() {
 
     $transferIds = array_map('intval', $transferIds);
     $placeholders = implode(',', array_fill(0, count($transferIds), '?'));
-    $currentDate = date('Y-m-d H:i:s'); // Acceptance datetime
+    $currentDate = date('Y-m-d H:i:s'); 
 
     $conn->begin_transaction();
 
     try {
-        // Get transfer details before updating
+
         $getTransfersStmt = $conn->prepare("SELECT id, motorcycle_id, to_branch, from_branch, transfer_invoice_number, transfer_date FROM inventory_transfers 
                                            WHERE id IN ($placeholders) AND transfer_status = 'in-transit'");
         $getTransfersStmt->bind_param(str_repeat('i', count($transferIds)), ...$transferIds);
