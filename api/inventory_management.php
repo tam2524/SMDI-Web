@@ -2338,14 +2338,12 @@ function getMonthlyReceivedSummary() {
     global $conn;
 
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
-    // FIX 1: Remove strtolower() to keep original casing.
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
     $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
     $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
-    
+
     $userBranch = isset($_SESSION['user_branch']) ? strtoupper($_SESSION['user_branch']) : '';
     $applyBrandFilter = ($userBranch === 'HEADOFFICE' && $brand !== 'all');
-    $brandCondition = $applyBrandFilter ? " AND LOWER(mi.brand) = '$brand' " : "";
 
     if (empty($month)) {
         echo json_encode(['success' => false, 'message' => 'Month parameter is required']);
@@ -2355,36 +2353,52 @@ function getMonthlyReceivedSummary() {
     $startDate = date('Y-m-01', strtotime($month));
     $endDate = date('Y-m-t', strtotime($month));
 
-    $categoryCondition = '';
+    // --- Build WHERE clauses and parameters for the main query ---
+    $mainWhereClauses = ["it.transfer_status = 'completed'"];
+    $params = [];
+    $types = '';
+
+    if ($branch !== 'all') {
+        $mainWhereClauses[] = "UPPER(it.to_branch) = UPPER(?)";
+        $params[] = $branch;
+        $types .= 's';
+    }
     if ($category !== 'all') {
-        $categoryCondition = " AND LOWER(mi.category) = '$category' ";
+        $mainWhereClauses[] = "LOWER(mi.category) = ?";
+        $params[] = $category;
+        $types .= 's';
+    }
+    if ($applyBrandFilter) {
+        $mainWhereClauses[] = "LOWER(mi.brand) = ?";
+        $params[] = $brand;
+        $types .= 's';
     }
     
-    // FIX 2: Make the SQL query case-insensitive for robustness.
-    $branchCondition = ($branch === 'all') ? "1=1" : "UPPER(it.to_branch) = UPPER(?)";
+    $whereClause = implode(" AND ", $mainWhereClauses);
 
+    // --- New SQL query to avoid duplicates ---
     $sql = "SELECT 
                 mi.model, mi.color, mi.brand, mi.engine_number, mi.frame_number, mi.inventory_cost,
-                it.date_received,
-                it.from_branch as received_from,
-                it.to_branch as received_by,
-                i.invoice_number
+                it.date_received, it.from_branch as received_from, it.to_branch as received_by, i.invoice_number
             FROM motorcycle_inventory mi
-            INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
+            JOIN inventory_transfers it ON mi.id = it.motorcycle_id
+            -- This INNER JOIN ensures we only get the latest transfer record for each motorcycle within the period
+            JOIN (
+                SELECT motorcycle_id, MAX(date_received) as max_date_received
+                FROM inventory_transfers
+                WHERE date_received BETWEEN ? AND ? AND transfer_status = 'completed'
+                GROUP BY motorcycle_id
+            ) latest ON it.motorcycle_id = latest.motorcycle_id AND it.date_received = latest.max_date_received
             LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE $branchCondition
-            AND it.date_received BETWEEN ? AND ?
-            AND it.transfer_status = 'completed'
-            $categoryCondition
-            $brandCondition
+            WHERE $whereClause
             ORDER BY it.date_received DESC, mi.model";
 
+    // Combine parameters for subquery (dates) and main query
+    $final_params = array_merge([$startDate, $endDate], $params);
+    $final_types = 'ss' . $types;
+    
     $stmt = $conn->prepare($sql);
-    if ($branch === 'all') {
-        $stmt->bind_param('ss', $startDate, $endDate);
-    } else {
-        $stmt->bind_param('sss', $branch, $startDate, $endDate);
-    }
+    $stmt->bind_param($final_types, ...$final_params);
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -2410,8 +2424,6 @@ function getMonthlyReceivedSummary() {
         ]
     ]);
 }
-
-
 
 function getMonthlyTransferredSummary() {
     global $conn;
