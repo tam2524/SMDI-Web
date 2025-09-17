@@ -809,6 +809,8 @@
                                             <input type='text' class='form-control form-control-sm'
                                                 id='multipleTransferInvoiceNumber' required
                                                 placeholder='Enter transfer invoice number'>
+                                                <div id="transferInvoiceInfo" class="form-text small mt-1"></div>
+
                                         </div>
 
                                         <div class='mb-3'>
@@ -1227,14 +1229,67 @@
                     </div>
                 </div>
                 <div class='modal-footer'>
-                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                    <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
-                        <i class='bi bi-printer me-2'></i>Print Receipt
-                    </button>
-                </div>
+    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+    <!-- <button type='button' class='btn btn-warning' id='editTransferBtn'>
+        <i class='bi bi-pencil-square me-2'></i> Manage Items
+    </button> -->
+    <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
+        <i class='bi bi-printer me-2'></i>Print Receipt
+    </button>
+</div>
             </div>
         </div>
     </div>
+
+    <div class='modal fade' id='manageTransferModal' tabindex='-1' aria-labelledby='manageTransferModalLabel' aria-hidden='true'>
+    <div class='modal-dialog modal-xl'>
+        <div class='modal-content'>
+            <div class='modal-header bg-warning text-dark'>
+                <h5 class='modal-title' id='manageTransferModalLabel'><i class='bi bi-pencil-square me-2'></i>Manage Transfer Items</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="card">
+                            <div class="card-body p-3">
+                                <h6 class="card-title">Transfer Details</h6>
+                                <p class="card-text mb-1">
+                                    <strong>Invoice No:</strong> <span id="manageTransferInvoiceNo"></span>
+                                </p>
+                                <p class="card-text mb-0">
+                                    <strong>From:</strong> <span id="manageTransferFromBranch"></span> &rarr;
+                                    <strong>To:</strong> <span id="manageTransferToBranch"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Currently in Transfer (<span id="currentItemsCount">0</span>)</h6>
+                        <div id="manageTransferCurrentList" class="list-container border rounded p-2" style="max-height: 400px; overflow-y: auto;">
+                            </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Add Available Motorcycles</h6>
+                        <div class="input-group mb-2">
+                            <input type="text" id="manageTransferEngineSearch" class="form-control" placeholder="Search by Engine No. from source branch...">
+                            <button class="btn btn-primary text-white" type="button" id="manageTransferSearchBtn"><i class="bi bi-search"></i></button>
+                        </div>
+                        <div id="manageTransferSearchResults" class="list-container border rounded p-2" style="max-height: 350px; overflow-y: auto;">
+                           <div class="text-center text-muted p-4">Search for motorcycles to add them to this transfer.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class='modal-footer'>
+                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                <button type='button' class='btn btn-success' id='saveTransferChangesBtn'>
+                    <i class='bi bi-save me-2'></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>

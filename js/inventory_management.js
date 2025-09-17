@@ -26,6 +26,17 @@ let modelCount = 0;
 let currentUserRole = "USER";
 const canAccessScrapFeature = isHeadOffice || isAdminUser ;
 
+let managingTransfer = {
+    invoiceNumber: null,
+    fromBranch: null,
+    toBranch: null,
+    transferDate: null,
+    notes: null,
+    initialItems: [], // Motorcycles originally in the transfer
+    itemsToAdd: [],   // New motorcycles to be added
+    itemsToRemove: [] // Original motorcycles to be removed
+};
+
 const pdfStyles = `
     @media print {
         body * {
@@ -201,6 +212,16 @@ function setupEventListeners() {
     updateTransferSelection();
   });
 
+    $('#editTransferBtn').click(openManageTransferModal);
+    $('#manageTransferSearchBtn').click(searchAvailableForTransfer);
+    $('#manageTransferEngineSearch').keypress(function(e) {
+        if (e.which == 13) {
+            searchAvailableForTransfer();
+            e.preventDefault();
+        }
+    });
+    $('#saveTransferChangesBtn').click(saveTransferChanges);
+
   $(document).on("change", ".transfer-checkbox", function () {
     const transferId = $(this).val();
     const isChecked = $(this).prop("checked");
@@ -365,6 +386,21 @@ function setupEventListeners() {
       currentInventoryQuery
     );
   });
+
+  $('#saveTransferChangesBtn').click(saveTransferChanges);
+
+    // NEW LISTENER FOR AUTO-FETCHING INVOICE DETAILS
+    $('#multipleTransferInvoiceNumber').on('blur', function() {
+        const invoiceNumber = $(this).val().trim();
+        if (invoiceNumber) {
+            fetchTransferDetailsByInvoice(invoiceNumber);
+        } else {
+            // If field is cleared, reset the form
+            $('#multipleToBranch').prop('disabled', false).val('');
+            $('#multipleTransferDate').prop('disabled', false);
+            $('#transferInvoiceInfo').html('');
+        }
+    });
 
   $("#addMotorcycleForm").submit(function (e) {
     e.preventDefault();
@@ -990,6 +1026,255 @@ function loadTransferReceipt(transferId, invoiceNumber) {
     },
   });
 }
+
+// ==============================================
+// MANAGE EXISTING TRANSFER FUNCTIONS (NEW)
+// ==============================================
+
+/**
+ * Opens the Manage Transfer modal by fetching current transfer details.
+ */
+function openManageTransferModal() {
+    const invoiceNumber = $('#receiptInvoiceNo').text();
+    const fromBranch = $('#receiptFromBranch').text();
+
+    if (!invoiceNumber || !fromBranch) {
+        showErrorModal("Could not get transfer details. Please try again.");
+        return;
+    }
+
+    // Hide the receipt modal and show a loading state
+    $('#transferReceiptModal').modal('hide');
+    showInfoModal("Loading transfer details...");
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_transfer_details_by_invoice",
+            transfer_invoice_number: invoiceNumber
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                // Initialize the managingTransfer object
+                managingTransfer.invoiceNumber = response.header.transfer_invoice_number;
+                managingTransfer.fromBranch = response.header.from_branch;
+                managingTransfer.toBranch = response.header.to_branch;
+                managingTransfer.transferDate = response.header.transfer_date;
+                managingTransfer.notes = response.header.notes;
+                managingTransfer.initialItems = response.motorcycles;
+                managingTransfer.itemsToAdd = [];
+                managingTransfer.itemsToRemove = [];
+
+                // Populate and show the modal
+                populateManageTransferModal();
+                $('#manageTransferModal').modal('show');
+            } else {
+                showErrorModal(response.message || "Failed to load transfer details.");
+                $('#transferReceiptModal').modal('show'); // Re-show the receipt modal on failure
+            }
+        },
+        error: function() {
+            showErrorModal("An error occurred while fetching transfer details.");
+            $('#transferReceiptModal').modal('show');
+        }
+    });
+}
+
+/**
+ * Populates the Manage Transfer modal with current data.
+ */
+function populateManageTransferModal() {
+    // Set header info
+    $('#manageTransferInvoiceNo').text(managingTransfer.invoiceNumber);
+    $('#manageTransferFromBranch').text(managingTransfer.fromBranch);
+    $('#manageTransferToBranch').text(managingTransfer.toBranch);
+    $('#manageTransferEngineSearch').val('');
+    $('#manageTransferSearchResults').html('<div class="text-center text-muted p-4">Search for available motorcycles to add.</div>');
+
+    updateManageTransferDisplay();
+}
+
+/**
+ * Renders the lists of items in the manage transfer modal.
+ */
+function updateManageTransferDisplay() {
+    const currentListHtml = managingTransfer.initialItems.map(item => {
+        const isToBeRemoved = managingTransfer.itemsToRemove.some(rem => rem.id === item.id);
+        return `
+            <div class="transfer-item ${isToBeRemoved ? 'to-be-removed' : ''}" data-id="${item.id}">
+                <div>
+                    <strong>${escapeHtml(item.engine_number)}</strong>
+                    <small class="text-muted d-block">${escapeHtml(item.brand)} ${escapeHtml(item.model)}</small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="toggleRemoveItem(${item.id})">
+                    <i class="bi ${isToBeRemoved ? 'bi-arrow-counterclockwise' : 'bi-trash'}"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    const toAddListHtml = managingTransfer.itemsToAdd.map(item => `
+        <div class="transfer-item to-be-added" data-id="${item.id}">
+            <div>
+                <strong>${escapeHtml(item.engine_number)}</strong>
+                <small class="text-muted d-block">${escapeHtml(item.brand)} ${escapeHtml(item.model)}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="removeItemFromAddList(${item.id})">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        </div>
+    `).join('');
+    
+    $('#manageTransferCurrentList').html(currentListHtml + toAddListHtml);
+    $('#currentItemsCount').text(managingTransfer.initialItems.length - managingTransfer.itemsToRemove.length + managingTransfer.itemsToAdd.length);
+}
+
+/**
+ * Toggles an item for removal from the initial list.
+ */
+function toggleRemoveItem(motorcycleId) {
+    const itemIndex = managingTransfer.itemsToRemove.findIndex(item => item.id === motorcycleId);
+    if (itemIndex > -1) {
+        // It's already marked for removal, so un-mark it
+        managingTransfer.itemsToRemove.splice(itemIndex, 1);
+    } else {
+        // Mark it for removal
+        const item = managingTransfer.initialItems.find(i => i.id === motorcycleId);
+        if (item) {
+            managingTransfer.itemsToRemove.push(item);
+        }
+    }
+    updateManageTransferDisplay();
+}
+
+/**
+ * Removes a newly added item before saving.
+ */
+function removeItemFromAddList(motorcycleId) {
+    managingTransfer.itemsToAdd = managingTransfer.itemsToAdd.filter(item => item.id !== motorcycleId);
+    updateManageTransferDisplay();
+    // Refresh search results to make the item available again
+    $('#manageTransferSearchBtn').click();
+}
+
+/**
+ * Searches for available motorcycles from the source branch.
+ */
+function searchAvailableForTransfer() {
+    const searchTerm = $('#manageTransferEngineSearch').val().trim();
+    if (!searchTerm) return;
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "search_inventory_by_engine",
+            query: searchTerm,
+            branch: managingTransfer.fromBranch,
+            status: 'available' // Explicitly search for available units
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success && response.data.length > 0) {
+                let resultsHtml = '';
+                response.data.forEach(item => {
+                    const isAlreadyInTransfer = managingTransfer.initialItems.some(i => i.id === item.id) && !managingTransfer.itemsToRemove.some(r => r.id === item.id);
+                    const isPendingAdd = managingTransfer.itemsToAdd.some(a => a.id === item.id);
+
+                    if (isAlreadyInTransfer || isPendingAdd) return; // Skip if already included
+
+                    resultsHtml += `
+                        <div class="transfer-item">
+                            <div>
+                                <strong>${escapeHtml(item.engine_number)}</strong>
+                                <small class="text-muted d-block">${escapeHtml(item.brand)} ${escapeHtml(item.model)}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success" onclick='addItemToAddList(${JSON.stringify(item)})'>
+                                <i class="bi bi-plus-circle"></i> Add
+                            </button>
+                        </div>`;
+                });
+                $('#manageTransferSearchResults').html(resultsHtml || '<div class="text-center text-muted p-3">No available matches found.</div>');
+            } else {
+                $('#manageTransferSearchResults').html('<div class="text-center text-muted p-3">No available motorcycles found.</div>');
+            }
+        }
+    });
+}
+
+/**
+ * Adds a searched item to the pending "to add" list.
+ */
+function addItemToAddList(item) {
+    // Ensure it's not already in the list
+    if (!managingTransfer.itemsToAdd.some(i => i.id === item.id)) {
+        managingTransfer.itemsToAdd.push(item);
+        updateManageTransferDisplay();
+        $('#manageTransferSearchResults').html('<div class="text-center text-muted p-4">Search for more motorcycles...</div>');
+        $('#manageTransferEngineSearch').val('').focus();
+    }
+}
+
+
+/**
+ * Sends the changes (items to add/remove) to the backend.
+ */
+function saveTransferChanges() {
+    const payload = {
+        action: 'update_transfer_items',
+        transfer_invoice_number: managingTransfer.invoiceNumber,
+        from_branch: managingTransfer.fromBranch,
+        to_branch: managingTransfer.toBranch,
+        transfer_date: managingTransfer.transferDate,
+        notes: managingTransfer.notes,
+        motorcycles_to_add: managingTransfer.itemsToAdd.map(item => ({ id: item.id, inventory_cost: item.inventory_cost })),
+        motorcycles_to_remove: managingTransfer.itemsToRemove.map(item => item.id)
+    };
+    
+    if (payload.motorcycles_to_add.length === 0 && payload.motorcycles_to_remove.length === 0) {
+        showInfoModal("No changes to save.");
+        return;
+    }
+
+    $('#saveTransferChangesBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "POST",
+        data: payload,
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                $('#manageTransferModal').modal('hide');
+                showSuccessModal(response.message);
+                // Reload inventory and dashboard to reflect changes
+                loadInventoryTable();
+                loadInventoryDashboard();
+            } else {
+                showErrorModal(response.message || "Failed to save changes.");
+            }
+        },
+        error: function() {
+            showErrorModal("An error occurred while saving changes.");
+        },
+        complete: function() {
+            $('#saveTransferChangesBtn').prop('disabled', false).html('<i class="bi bi-save me-2"></i>Save Changes');
+        }
+    });
+}
+
+// Add some CSS for better visuals in the new modal
+const manageTransferStyles = `
+    .list-container .transfer-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+    .list-container .transfer-item:last-child { border-bottom: none; }
+    .transfer-item.to-be-removed { background-color: #ffe5e5; text-decoration: line-through; opacity: 0.7; }
+    .transfer-item.to-be-added { background-color: #e5f5e5; }
+`;
+const styleSheetManage = document.createElement("style");
+styleSheetManage.textContent = manageTransferStyles;
+document.head.appendChild(styleSheetManage);
 // =======================
 // Modal Functions
 // =======================
@@ -2125,7 +2410,11 @@ function submitScrap() {
 function transferSelectedMotorcycles() {
   $("#multipleFromBranch").val(currentBranch);
   $("#multipleTransferDate").val(new Date().toISOString().split("T")[0]);
-  $("#selectedCount").text("0");
+   $('#multipleToBranch').prop('disabled', false).val('');
+    $('#multipleTransferDate').prop('disabled', false);
+    $('#transferInvoiceInfo').html(''); // Clear any previous info message
+
+    $("#selectedCount").text("0");$("#selectedCount").text("0");
 
   selectedMotorcycles = [];
   updateSelectedMotorcyclesList();
@@ -7253,6 +7542,48 @@ function renderTransferredSummaryReport(data, month, branch, summary) {
   $("#monthlyReportContent").html(html);
 }
 
+function fetchTransferDetailsByInvoice(invoiceNumber) {
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_transfer_details_by_invoice",
+            transfer_invoice_number: invoiceNumber
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success && response.header) {
+                // SUCCESS: An existing transfer was found
+                const header = response.header;
+                
+                // Auto-fill and disable the fields
+                $('#multipleToBranch').val(header.to_branch).prop('disabled', true);
+                $('#multipleTransferDate').val(header.transfer_date).prop('disabled', true);
+
+                // Show an info message to the user
+                $('#transferInvoiceInfo').html(
+                    `<i class="bi bi-info-circle-fill text-primary"></i> Existing transfer found. Details are locked.`
+                );
+
+            } else {
+                // NOT FOUND: This is a new transfer invoice number
+                // Ensure fields are enabled for new entry
+                $('#multipleToBranch').prop('disabled', false).val('');
+                $('#multipleTransferDate').prop('disabled', false);
+                
+                // Clear the info message
+                $('#transferInvoiceInfo').html('');
+            }
+        },
+        error: function() {
+            // On error, assume it's a new invoice and keep fields enabled
+            console.error("AJAX error while fetching transfer details.");
+            $('#multipleToBranch').prop('disabled', false);
+            $('#multipleTransferDate').prop('disabled', false);
+            $('#transferInvoiceInfo').html('');
+        }
+    });
+}
 // Function to generate motorcycle report
 function generateMotorcycleReport(branch, brandFilter) {
   $("#monthlyReportOptionsModal").modal("hide");

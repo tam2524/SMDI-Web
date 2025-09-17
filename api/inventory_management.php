@@ -115,6 +115,13 @@ case 'scrap_motorcycle':
 case 'get_monthly_scrapped_summary':
     getMonthlyScrappedSummary();
     break;
+
+    case 'get_transfer_details_by_invoice':
+    getTransferDetailsByInvoice();
+    break;
+case 'update_transfer_items':
+    updateTransferItems();
+    break;
     default:
     echo json_encode( [ 'success' => false, 'message' => 'Invalid action' ] );
     break;
@@ -1160,6 +1167,7 @@ function getCurrentBranch() {
 function transferMultipleMotorcycles() {
     global $conn;
 
+    // 1. Validate required fields
     $required = [ 'motorcycle_ids', 'from_branch', 'to_branch', 'transfer_date', 'inventory_costs', 'transfer_invoice_number' ];
     foreach ( $required as $field ) {
         if ( empty( $_POST[ $field ] ) ) {
@@ -1168,6 +1176,7 @@ function transferMultipleMotorcycles() {
         }
     }
 
+    // 2. Sanitize inputs
     $motorcycleIds = explode( ',', sanitizeInput( $_POST[ 'motorcycle_ids' ] ) );
     $inventoryCosts = array_map('floatval', explode(',', sanitizeInput( $_POST[ 'inventory_costs' ] )));
     $fromBranch = sanitizeInput( $_POST[ 'from_branch' ] );
@@ -1182,38 +1191,31 @@ function transferMultipleMotorcycles() {
         return;
     }
 
-    // Check if transfer invoice number already exists
-    $checkInvoiceStmt = $conn->prepare("SELECT id FROM inventory_transfers WHERE transfer_invoice_number = ?");
-    $checkInvoiceStmt->bind_param('s', $transferInvoiceNumber);
-    $checkInvoiceStmt->execute();
-    $invoiceResult = $checkInvoiceStmt->get_result();
-    
-    if ($invoiceResult->num_rows > 0) {
-        echo json_encode([ 'success' => false, 'message' => 'Transfer invoice number already exists' ]);
-        return;
-    }
+    // THIS IS THE BLOCK THAT WAS REMOVED.
+    // The check for an existing transfer invoice number has been deleted to allow grouping.
 
     $placeholders = implode( ',', array_fill( 0, count( $motorcycleIds ), '?' ) );
     $types = str_repeat( 'i', count( $motorcycleIds ) );
 
-    $checkStmt = $conn->prepare( "SELECT COUNT(*) as count FROM motorcycle_inventory 
-                               WHERE id IN ($placeholders) AND current_branch = ? AND status = 'available'" );
+    // 3. Verify that the motorcycles are available for transfer from the correct branch
+    $checkStmt = $conn->prepare( "SELECT COUNT(*) as count FROM motorcycle_inventory
+                                  WHERE id IN ($placeholders) AND current_branch = ? AND status = 'available'" );
     $checkStmt->bind_param( $types.'s', ...array_merge( $motorcycleIds, [ $fromBranch ] ) );
     $checkStmt->execute();
     $result = $checkStmt->get_result()->fetch_assoc();
 
     if ( $result[ 'count' ] != count( $motorcycleIds ) ) {
-        echo json_encode( [ 'success' => false, 'message' => 'Some motorcycles not found, not available, or not from the specified branch' ] );
+        echo json_encode( [ 'success' => false, 'message' => 'Error: One or more selected motorcycles are not available or do not belong to the specified branch.' ] );
         return;
     }
 
     $conn->begin_transaction();
 
     try {
-        // Get motorcycle details for receipt before updating
+        // 4. Get motorcycle details for the receipt before updating their status
         $motorcycleDetails = [];
-        $getDetailsStmt = $conn->prepare("SELECT id, brand, model, color, engine_number, frame_number, inventory_cost 
-                                        FROM motorcycle_inventory WHERE id IN ($placeholders)");
+        $getDetailsStmt = $conn->prepare("SELECT id, brand, model, color, engine_number, frame_number, inventory_cost
+                                           FROM motorcycle_inventory WHERE id IN ($placeholders)");
         $getDetailsStmt->bind_param($types, ...$motorcycleIds);
         $getDetailsStmt->execute();
         $detailsResult = $getDetailsStmt->get_result();
@@ -1222,10 +1224,10 @@ function transferMultipleMotorcycles() {
             $motorcycleDetails[] = $row;
         }
 
-        // ONLY UPDATE STATUS TO 'transferred' and inventory_cost - DO NOT CHANGE current_branch YET
-        $updateStmt = $conn->prepare( "UPDATE motorcycle_inventory 
-                                    SET status = 'transferred', inventory_cost = ?
-                                    WHERE id = ?" );
+        // 5. Update each motorcycle's status to 'transferred'
+        $updateStmt = $conn->prepare( "UPDATE motorcycle_inventory
+                                       SET status = 'transferred', inventory_cost = ?
+                                       WHERE id = ?" );
 
         foreach ( $motorcycleIds as $index => $id ) {
             $inventoryCost = $inventoryCosts[$index] ?? null;
@@ -1233,11 +1235,11 @@ function transferMultipleMotorcycles() {
             $updateStmt->execute();
         }
 
-        // Insert transfer records with the same transfer invoice number
+        // 6. Insert a record for each transfer, linking them with the same invoice number
         $transferIds = [];
-      $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers 
-                              (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
-                              VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)" );
+        $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers
+                                      (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
+                                      VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)" );
 
         foreach ( $motorcycleIds as $id ) {
             $transferStmt->bind_param( 'isssiss', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $transferInvoiceNumber );
@@ -1247,17 +1249,13 @@ function transferMultipleMotorcycles() {
 
         $conn->commit();
         
-        // Calculate totals for receipt
         $totalCost = array_sum($inventoryCosts);
         
+        // 7. Send a success response with receipt data
         echo json_encode( [
             'success' => true,
-            'message' => 'Successfully initiated transfer for ' . count( $motorcycleIds ) . ' motorcycle(s). Motorcycles will remain at current branch until accepted.',
-            'transferred_count' => count( $motorcycleIds ),
-            'to_branch' => $toBranch,
-            'transfer_invoice_number' => $transferInvoiceNumber,
+            'message' => 'Successfully initiated transfer for ' . count( $motorcycleIds ) . ' motorcycle(s).',
             'receipt_data' => [
-                'transfer_ids' => $transferIds,
                 'from_branch' => $fromBranch,
                 'to_branch' => $toBranch,
                 'transfer_date' => $transferDate,
@@ -1268,12 +1266,12 @@ function transferMultipleMotorcycles() {
                 'transfer_invoice_number' => $transferInvoiceNumber
             ]
         ] );
+
     } catch ( Exception $e ) {
         $conn->rollback();
         echo json_encode( [
             'success' => false,
-            'message' => 'Error transferring motorcycles: ' . $e->getMessage(),
-            'error_details' => $conn->error
+            'message' => 'Error transferring motorcycles: ' . $e->getMessage()
         ] );
     }
 }
@@ -2561,9 +2559,20 @@ function searchTransferReceipt() {
         return;
     }
     
-    $sql = "SELECT DISTINCT it.id, it.transfer_invoice_number, it.from_branch, it.to_branch, it.transfer_date
+    // NEW, CORRECTED QUERY USING GROUP BY
+    $sql = "SELECT
+                MIN(it.id) as id, -- Select one representative ID for the group
+                it.transfer_invoice_number,
+                it.from_branch,
+                it.to_branch,
+                it.transfer_date
             FROM inventory_transfers it
             WHERE it.transfer_invoice_number LIKE ?
+            GROUP BY
+                it.transfer_invoice_number,
+                it.from_branch,
+                it.to_branch,
+                it.transfer_date
             ORDER BY it.transfer_date DESC
             LIMIT 10";
     
@@ -3149,5 +3158,115 @@ function getMonthlyScrappedSummary() {
         'summary_by_brand_branch' => $summaryByBrandBranch,
         'summary_by_reason' => $summaryByReason
     ]);
+}
+
+function getTransferDetailsByInvoice() {
+    global $conn;
+    
+    $invoiceNumber = isset($_GET['transfer_invoice_number']) ? sanitizeInput($_GET['transfer_invoice_number']) : '';
+    if (empty($invoiceNumber)) {
+        echo json_encode(['success' => false, 'message' => 'Transfer Invoice Number is required.']);
+        return;
+    }
+
+    // Get header info from the first transfer record found
+    $headerSql = "SELECT * FROM inventory_transfers WHERE transfer_invoice_number = ? LIMIT 1";
+    $headerStmt = $conn->prepare($headerSql);
+    $headerStmt->bind_param('s', $invoiceNumber);
+    $headerStmt->execute();
+    $headerResult = $headerStmt->get_result();
+
+    if ($headerResult->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Transfer not found.']);
+        return;
+    }
+    $headerData = $headerResult->fetch_assoc();
+
+    // Get all motorcycles associated with this transfer invoice
+    $motorcyclesSql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.inventory_cost
+                       FROM inventory_transfers it
+                       JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id
+                       WHERE it.transfer_invoice_number = ?";
+    $motorcyclesStmt = $conn->prepare($motorcyclesSql);
+    $motorcyclesStmt->bind_param('s', $invoiceNumber);
+    $motorcyclesStmt->execute();
+    $motorcyclesResult = $motorcyclesStmt->get_result();
+
+    $motorcycles = [];
+    while ($row = $motorcyclesResult->fetch_assoc()) {
+        $motorcycles[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'header' => $headerData,
+        'motorcycles' => $motorcycles
+    ]);
+}
+function updateTransferItems() {
+    global $conn;
+
+    $invoiceNumber = isset($_POST['transfer_invoice_number']) ? sanitizeInput($_POST['transfer_invoice_number']) : '';
+    $fromBranch = isset($_POST['from_branch']) ? sanitizeInput($_POST['from_branch']) : '';
+    $toBranch = isset($_POST['to_branch']) ? sanitizeInput($_POST['to_branch']) : '';
+    $transferDate = isset($_POST['transfer_date']) ? sanitizeInput($_POST['transfer_date']) : '';
+    $notes = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : '';
+    $transferredBy = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
+    
+    $itemsToAdd = isset($_POST['motorcycles_to_add']) ? $_POST['motorcycles_to_add'] : [];
+    $itemsToRemove = isset($_POST['motorcycles_to_remove']) ? $_POST['motorcycles_to_remove'] : [];
+
+    if (empty($invoiceNumber)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid transfer invoice number.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+    try {
+        // Handle items to remove
+        if (!empty($itemsToRemove)) {
+            $removeIds = array_map('intval', $itemsToRemove);
+            $placeholders = implode(',', array_fill(0, count($removeIds), '?'));
+            $types = str_repeat('i', count($removeIds));
+
+            // Set motorcycle status back to 'available'
+            $updateMotorcycleStmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'available' WHERE id IN ($placeholders)");
+            $updateMotorcycleStmt->bind_param($types, ...$removeIds);
+            $updateMotorcycleStmt->execute();
+
+            // Delete from transfers table
+            $deleteTransferStmt = $conn->prepare("DELETE FROM inventory_transfers WHERE motorcycle_id IN ($placeholders) AND transfer_invoice_number = ?");
+            $deleteTransferStmt->bind_param($types . 's', ...array_merge($removeIds, [$invoiceNumber]));
+            $deleteTransferStmt->execute();
+        }
+
+        // Handle items to add
+        if (!empty($itemsToAdd)) {
+             $transferStmt = $conn->prepare( "INSERT INTO inventory_transfers
+                                      (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
+                                      VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)" );
+            $updateMotorcycleStmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'transferred', inventory_cost = ? WHERE id = ?");
+
+            foreach ($itemsToAdd as $item) {
+                $motorcycleId = intval($item['id']);
+                $inventoryCost = floatval($item['inventory_cost']);
+
+                // Update motorcycle status and cost
+                $updateMotorcycleStmt->bind_param('di', $inventoryCost, $motorcycleId);
+                $updateMotorcycleStmt->execute();
+
+                // Create new transfer record
+                $transferStmt->bind_param('isssiss', $motorcycleId, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $invoiceNumber);
+                $transferStmt->execute();
+            }
+        }
+
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Transfer has been successfully updated.']);
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+    }
 }
 ?>
