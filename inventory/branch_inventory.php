@@ -891,6 +891,7 @@
                         <select class="form-select" id="reportType" required aria-describedby="reportTypeHelp">
                             <option value="inventory">Monthly Inventory Balance Report</option>
                             <option value="transferred">Monthly Summary of Transferred Stocks</option>
+                            <option value='received'>Monthly Summary of Received Stocks</option>
                             <option value="motorcycle">Available Motorcycle Units Report</option>
                             <option value="sold_units">Monthly Summary of Sold Units Report</option>
                             <option value="daily_sold_units">Daily Summary of Sold Units Report</option>

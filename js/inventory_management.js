@@ -3803,7 +3803,11 @@ $("#reportType").on("change", function () {
   if (
     selectedReport === "motorcycle" ||
     selectedReport === "inventory" ||
-    selectedReport === "transferred"
+    selectedReport === "transferred" ||
+    selectedReport === "scrapped" ||
+    selectedReport === "sold_units" ||
+    selectedReport === "daily_sold_units" ||
+    selectedReport === "received"
   ) {
     $("#brandFilterContainer").show();
   } else {
@@ -6037,71 +6041,78 @@ function populateBranchesDropdown() {
   });
 }
 function generateReport() {
-  const month = $("#reportMonth").val();
-  const branch = $("#reportBranch").val();
-  const reportType = $("#reportType").val();
-  const brandFilter = $("#reportBrandFilter").val() || "all";
-  const categoryFilter = $("#reportCategoryFilter").val() || "all";
+    const reportType = $("#reportType").val();
+    const month = $("#reportMonth").val();
+    const branch = $("#reportBranch").val() || "all";
+    const category = $("#reportCategoryFilter").val() || "all";
+    const brand = $("#reportBrandFilter").val() || "all";
+    const saleType = $("#soldSaleTypeFilter").val() || "all";
+    const date = $("#dailyReportDate").val();
 
-  // For non-admin users, use their branch if branch is ALL or empty
-  const reportBranch = branch === "ALL" || !branch ? "all" : branch;
-
-  $("#monthlyReportOptionsModal").modal("hide");
-  $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
-  );
-
-  if (reportType === "inventory") {
-    if (!month) {
-      showErrorModal("Please select a month.");
-      return;
+    if (
+        reportType !== "motorcycle" &&
+        reportType !== "daily_sold_units" &&
+        !month
+    ) {
+        showErrorModal("Please select a month.");
+        return;
     }
-    generateMonthlyInventoryReport(
-      month,
-      reportBranch,
-      categoryFilter,
-      brandFilter
-    );
-  } else if (reportType === "transferred") {
-    if (!month) {
-      showErrorModal("Please select a month.");
-      return;
+
+    if (reportType === "daily_sold_units" && !date) {
+        showErrorModal("Please select a date.");
+        return;
     }
-    generateTransferredSummary(
-      month,
-      reportBranch,
-      categoryFilter,
-      brandFilter
+
+    $("#monthlyReportOptionsModal").modal("hide");
+    $("#monthlyReportContent").html(
+        '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
     );
-  } else if (reportType === "motorcycle") {
-    generateMotorcycleReport(reportBranch, brandFilter, categoryFilter);
-  }
-  else if (reportType === "scrapped") {
-      generateScrappedReport();
+
+    if (reportType === "inventory") {
+        generateMonthlyInventoryReport(month, branch, category, brand);
+    } else if (reportType === "transferred") {
+        generateTransferredSummary(month, branch, category, brand);
+    } else if (reportType === "motorcycle") {
+        generateMotorcycleReport(branch, brand, category);
+    } else if (reportType === "sold_units") {
+        generateSoldUnitsReport(branch, saleType);
+    } else if (reportType === "daily_sold_units") {
+        generateDailySoldUnitsReport(date, branch, saleType);
+    } else if (reportType === "scrapped") {
+        generateScrappedReport();
+    } else if (reportType === "received") { // NEW: Handle the 'received' report type
+        if (!month) {
+            showErrorModal("Please select a month.");
+            return;
+        }
+        generateReceivedSummary(month, branch, category, brand);
+    }
 }
-}
+
 
 function generateReportPDF() {
-  if (!currentReportData || !currentReportType) {
-    showErrorModal("Please generate a report first before exporting to PDF");
-    return;
-  }
+    if (!currentReportData || !currentReportType) {
+        showErrorModal("Please generate a report first before exporting to PDF");
+        return;
+    }
 
-  if (currentReportType === "inventory") {
-    generateInventoryReportPDF();
-  } else if (currentReportType === "transferred") {
-    generateTransferredReportPDF();
-  } else if (currentReportType === "motorcycle") {
-    generateMotorcycleReportPDF();
-  } else if (currentReportType === "sold_units") {
-    generateSoldUnitsReportPDF();
-  } else if (currentReportType === "daily_sold_units") {
-    generateDailySoldUnitsReportPDF();
-     } else if (currentReportType === "scrapped") {
-      generateScrappedReportPDF();
-  } else {
-    showErrorModal("PDF export not available for this report type");
-  }
+    if (currentReportType === "inventory") {
+        generateInventoryReportPDF();
+    } else if (currentReportType === "transferred") {
+        generateTransferredReportPDF();
+    } else if (currentReportType === "motorcycle") {
+        generateMotorcycleReportPDF();
+    } else if (currentReportType === "sold_units") {
+        generateSoldUnitsReportPDF();
+    } else if (currentReportType === "daily_sold_units") {
+        generateDailySoldUnitsReportPDF();
+    } else if (currentReportType === "scrapped") {
+        generateScrappedReportPDF();
+    } else if (currentReportType === "received") { // NEW
+        generateReceivedReportPDF();
+    } else {
+        showErrorModal("PDF export not available for this report type");
+    }
 }
 function generateSoldUnitsReportPDF() {
   const { jsPDF } = window.jspdf;
@@ -7060,7 +7071,6 @@ function generateInventoryReportPDF() {
     });
   }
 }
-
 function generateTransferredReportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("l", "mm", "a4");
@@ -7541,7 +7551,396 @@ function renderTransferredSummaryReport(data, month, branch, summary) {
 
   $("#monthlyReportContent").html(html);
 }
+function generateReceivedSummary(month, branch, category = "all", brand = "all") {
+    $("#monthlyReportContent").html(
+        '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    );
 
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_monthly_received_summary", // New API action
+            month: month,
+            branch: branch,
+            category: category,
+            brand: brand,
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                currentReportData = response.data;
+                currentReportMonth = response.month;
+                currentReportBranch = response.branch;
+                currentReportType = "received"; // Set the current report type
+                currentReportSummary = response.summary;
+
+                renderReceivedSummaryReport(
+                    response.data,
+                    response.month,
+                    response.branch,
+                    response.summary
+                );
+                $("#monthlyInventoryReportModal").modal("show");
+            } else {
+                showErrorModal(
+                    response.message || "Error generating received stocks summary"
+                );
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal("Error generating received stocks summary: " + error);
+        },
+    });
+}
+
+// Add this new function to your inventory_management.js file
+function renderReceivedSummaryReport(data, month, branch, summary) {
+    const [year, monthNum] = month.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long",
+    });
+
+    const totalReceived = summary?.total_received || 0;
+    const totalInventoryCost = summary?.total_inventory_cost || 0;
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
+                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
+                </h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY SUMMARY OF RECEIVED STOCKS</h5>
+            <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
+            <p class="mb-1"><span style="color: #6c757d;">Branch:</span>
+             <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
+            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
+                Generated on ${new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                })}
+            </p>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #000f71, #1a237e); color: white;">
+                    <div class="card-body py-4">
+                        <h6 class="card-title mb-2 text-white">TOTAL RECEIVED</h6>
+                        <h3 class="mb-0 text-white">${totalReceived}</h3>
+                        <small>Motorcycles received</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+                    <div class="card-body py-4">
+                        <h6 class="card-title mb-2 text-white">TOTAL INVENTORY COST</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalInventoryCost)}</h3>
+                        <small>Total value received</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (data.length === 0) {
+        html += `
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>
+                No stocks received for ${monthName} ${year} at ${branch} branch.
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Invoice Number</th>
+                            <th>Model</th>
+                            <th>Brand</th>
+                            <th>Color</th>
+                            <th>Engine Number</th>
+                            <th>Frame Number</th>
+                            <th>Received Date</th>
+                            <th>Received From</th>
+                            <th class="text-end">Inventory Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        data.forEach((item, index) => {
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(item.invoice_number || "N/A")}</td>
+                    <td>${escapeHtml(item.model)}</td>
+                    <td class="fw-bold">${escapeHtml(item.brand)}</td>
+                    <td>${escapeHtml(item.color)}</td>
+                    <td><code>${escapeHtml(item.engine_number)}</code></td>
+                    <td><code>${escapeHtml(item.frame_number)}</code></td>
+                    <td>${formatDate(item.date_received)}</td>
+                    <td><span class="badge bg-info">${escapeHtml(item.received_from)}</span></td>
+                    <td class="text-end fw-bold">${formatCurrency(item.inventory_cost)}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                    <tfoot class="table-group-divider">
+                        <tr class="table-active">
+                            <td colspan="9" class="text-end fw-bold">Total:</td>
+                            <td class="text-end fw-bold">${formatCurrency(totalInventoryCost)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+    }
+
+    $("#monthlyReportContent").html(html);
+}
+function generateReceivedReportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF("l", "mm", "a4");
+
+    const categoryFilter = $("#reportCategoryFilter").val() || "All Categories";
+
+    // 1. Check if the correct report data is available
+    if (
+        !currentReportData ||
+        !currentReportMonth ||
+        currentReportType !== "received" // Check for 'received' type
+    ) {
+        showErrorModal(
+            "Please generate a received stocks summary report first before exporting to PDF"
+        );
+        return;
+    }
+
+    // 2. Set up report headers and titles
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+        month: "long",
+    });
+    const branchName = currentReportBranch;
+
+    const totalReceived =
+        currentReportSummary?.total_received || currentReportData.length;
+    const totalInventoryCost =
+        currentReportSummary?.total_inventory_cost ||
+        currentReportData.reduce((sum, item) => {
+            return sum + (parseFloat(item.inventory_cost) || 0);
+        }, 0);
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const leftRightMargin = 15;
+    const topMargin = 15;
+    const bottomMargin = 15;
+    let currentY = topMargin;
+
+    const cardBgColor = [248, 249, 250];
+    const cardBorderColor = [233, 236, 239];
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
+        align: "center",
+    });
+    currentY += 10;
+
+    doc.setFontSize(13);
+    doc.text("MONTHLY SUMMARY OF RECEIVED STOCKS", pageWidth / 2, currentY, { // <-- Changed Title
+        align: "center",
+    });
+    currentY += 8;
+
+    doc.setFontSize(10);
+    doc.text(`${monthName} ${year}`, pageWidth / 2, currentY, {
+        align: "center",
+    });
+    currentY += 6;
+
+    doc.text(
+        `Branch: ${branchName} | Category: ${categoryFilter}`,
+        pageWidth / 2,
+        currentY,
+        { align: "center" }
+    );
+    currentY += 8;
+
+    // 3. Define table columns with correct headers for "Received"
+    const tableColumns = [
+        { header: "#", dataKey: "index" },
+        { header: "Invoice Number", dataKey: "invoice_number" },
+        { header: "Model", dataKey: "model" },
+        { header: "Brand", dataKey: "brand" },
+        { header: "Color", dataKey: "color" },
+        { header: "Engine Number", dataKey: "engine_number" },
+        { header: "Frame Number", dataKey: "frame_number" },
+        { header: "Received Date", dataKey: "date_received" }, // <-- Changed Header
+        { header: "Received From", dataKey: "received_from" }, // <-- Changed Header
+        { header: "Inventory Cost", dataKey: "inventory_cost" },
+    ];
+
+    function formatDate(dateStr) {
+        if (!dateStr) return "";
+        const d = new Date(dateStr);
+        if (isNaN(d)) return "";
+        return d.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+        });
+    }
+
+    function formatCurrency(amount) {
+        if (amount == null || amount === "") return "N/A";
+        return Number(amount).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    }
+
+    // 4. Map the data to the correct table row keys
+    const tableRows =
+        currentReportData.length === 0
+            ? [
+                {
+                    index: "",
+                    invoice_number: "No received stocks found for this period",
+                    model: "", brand: "", color: "", engine_number: "",
+                    frame_number: "", date_received: "", received_from: "",
+                    inventory_cost: "",
+                },
+                ]
+            : currentReportData.map((item, index) => ({
+                index: index + 1,
+                invoice_number: item.invoice_number || "N/A",
+                model: item.model,
+                brand: item.brand,
+                color: item.color,
+                engine_number: item.engine_number,
+                frame_number: item.frame_number,
+                date_received: formatDate(item.date_received), // <-- Changed data key
+                received_from: item.received_from,           // <-- Changed data key
+                inventory_cost: formatCurrency(item.inventory_cost),
+            }));
+
+    // Use fixed column widths to prevent overflow
+    const tableColumnStyles = {
+        index: { halign: 'center', cellWidth: 8 },
+        invoice_number: { cellWidth: 30 },
+        model: { cellWidth: 35 },
+        brand: { cellWidth: 20 },
+        color: { cellWidth: 20 },
+        engine_number: { cellWidth: 35 },
+        frame_number: { cellWidth: 35 },
+        date_received: { cellWidth: 22 }, // <-- Changed data key
+        received_from: { cellWidth: 25, halign: "center" }, // <-- Changed data key
+        inventory_cost: { halign: "right", cellWidth: 25 },
+    };
+
+    doc.autoTable({
+        startY: currentY,
+        headStyles: { fillColor: cardBgColor, textColor: 0, fontStyle: "bold", fontSize: 8 },
+        styles: { fontSize: 8, cellPadding: 2, textColor: 0 },
+        columnStyles: tableColumnStyles,
+        columns: tableColumns,
+        body: tableRows,
+        margin: { left: leftRightMargin, right: leftRightMargin },
+        tableWidth: "auto",
+        didParseCell: function (data) {
+            if (data.column.dataKey === "brand" && data.cell.section === "body") {
+                data.cell.styles.textColor = [0, 0, 0];
+                data.cell.styles.fontStyle = "bold";
+            }
+            if (data.cell.section === "body" && data.row.index % 2 !== 0) {
+                data.cell.styles.fillColor = cardBgColor;
+            }
+        },
+    });
+
+    let finalTableY = doc.autoTable.previous.finalY;
+    if (!finalTableY || isNaN(finalTableY)) {
+        finalTableY = currentY + 10;
+    }
+
+    // 5. Update summary cards with correct titles and values
+    const cardPadding = 5;
+    const cardHeight = 45;
+    const cardSpacing = 10;
+    const cardWidth = (pageWidth - 2 * leftRightMargin - cardSpacing) / 2;
+    const twoCardTotalWidth = 2 * cardWidth + cardSpacing;
+    const twoCardStartX = pageWidth / 2 - twoCardTotalWidth / 2;
+
+    function drawCard(x, y, width, height, title, mainValue, subValue) {
+        doc.setDrawColor(...cardBorderColor);
+        doc.setFillColor(...cardBgColor);
+        doc.roundedRect(x, y, width, height, 3, 3, "F");
+        doc.setFontSize(9).setTextColor(0, 0, 0).setFont("helvetica", "bold").text(title, x + width / 2, y + 8, { align: "center" });
+        doc.setFontSize(18).setTextColor(0, 0, 0).setFont("helvetica", "bold").text(String(mainValue), x + width / 2, y + 25, { align: "center" });
+        doc.setFontSize(8).setTextColor(0, 0, 0).setFont("helvetica", "normal");
+        const subValueLines = doc.splitTextToSize(String(subValue), width - 10);
+        doc.text(subValueLines, x + width / 2, y + 33, { align: "center" });
+    }
+
+    const spaceAfterTable = 15;
+    let summaryCardsY = finalTableY + spaceAfterTable;
+    const summarySectionHeight = cardHeight + 10;
+    if (summaryCardsY + summarySectionHeight + bottomMargin > pageHeight) {
+        doc.addPage();
+        summaryCardsY = topMargin;
+    }
+
+    drawCard(
+        twoCardStartX,
+        summaryCardsY,
+        cardWidth,
+        cardHeight,
+        "TOTAL RECEIVED", 
+        totalReceived,
+        "Motorcycles received" 
+    );
+
+    drawCard(
+        twoCardStartX + cardWidth + cardSpacing,
+        summaryCardsY,
+        cardWidth,
+        cardHeight,
+        "TOTAL INVENTORY COST",
+        formatCurrency(totalInventoryCost),
+        "Total value received" 
+    );
+
+    // 6. Add footer and save the document
+    const generatedOn = new Date().toLocaleDateString("en-US", {
+        weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(108, 117, 125);
+        doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, null, null, "center");
+    }
+
+    const safeBranchName = branchName.replace(/\s+/g, "_");
+    doc.save(`Monthly_Received_Summary_${monthName}_${year}_${safeBranchName}.pdf`); // <-- Changed filename
+}
 function fetchTransferDetailsByInvoice(invoiceNumber) {
     $.ajax({
         url: "../api/inventory_management.php",

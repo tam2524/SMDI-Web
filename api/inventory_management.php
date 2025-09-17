@@ -69,6 +69,9 @@ switch ( $action ) {
     case 'get_monthly_transferred_summary':
     getMonthlyTransferredSummary();
     break;
+    case 'get_monthly_received_summary':
+        getMonthlyReceivedSummary();
+        break;
     case 'check_invoice_number':
     checkInvoiceNumber();
     break;
@@ -2330,6 +2333,82 @@ if (strtoupper($branch) === 'ALL') {
     ];
 
     echo json_encode($response);
+}
+function getMonthlyReceivedSummary() {
+    global $conn;
+
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
+    // FIX 1: Remove strtolower() to keep original casing.
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+    
+    $userBranch = isset($_SESSION['user_branch']) ? strtoupper($_SESSION['user_branch']) : '';
+    $applyBrandFilter = ($userBranch === 'HEADOFFICE' && $brand !== 'all');
+    $brandCondition = $applyBrandFilter ? " AND LOWER(mi.brand) = '$brand' " : "";
+
+    if (empty($month)) {
+        echo json_encode(['success' => false, 'message' => 'Month parameter is required']);
+        return;
+    }
+
+    $startDate = date('Y-m-01', strtotime($month));
+    $endDate = date('Y-m-t', strtotime($month));
+
+    $categoryCondition = '';
+    if ($category !== 'all') {
+        $categoryCondition = " AND LOWER(mi.category) = '$category' ";
+    }
+    
+    // FIX 2: Make the SQL query case-insensitive for robustness.
+    $branchCondition = ($branch === 'all') ? "1=1" : "UPPER(it.to_branch) = UPPER(?)";
+
+    $sql = "SELECT 
+                mi.model, mi.color, mi.brand, mi.engine_number, mi.frame_number, mi.inventory_cost,
+                it.date_received,
+                it.from_branch as received_from,
+                it.to_branch as received_by,
+                i.invoice_number
+            FROM motorcycle_inventory mi
+            INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            WHERE $branchCondition
+            AND it.date_received BETWEEN ? AND ?
+            AND it.transfer_status = 'completed'
+            $categoryCondition
+            $brandCondition
+            ORDER BY it.date_received DESC, mi.model";
+
+    $stmt = $conn->prepare($sql);
+    if ($branch === 'all') {
+        $stmt->bind_param('ss', $startDate, $endDate);
+    } else {
+        $stmt->bind_param('sss', $branch, $startDate, $endDate);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    $totalReceived = 0;
+    $totalInventoryCost = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+        $totalReceived++;
+        $totalInventoryCost += (float)$row['inventory_cost'];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'month' => $month,
+        'branch' => $branch,
+        'category' => $category,
+        'summary' => [
+            'total_received' => $totalReceived,
+            'total_inventory_cost' => $totalInventoryCost
+        ]
+    ]);
 }
 
 
