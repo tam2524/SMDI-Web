@@ -7562,7 +7562,7 @@ function fetchTransferDetailsByInvoice(invoiceNumber) {
 
                 // Show an info message to the user
                 $('#transferInvoiceInfo').html(
-                    `<i class="bi bi-info-circle-fill text-primary"></i> Existing transfer found. Details are locked.`
+                    `<i class="text-primary"></i> Existing transfer found.`
                 );
 
             } else {
