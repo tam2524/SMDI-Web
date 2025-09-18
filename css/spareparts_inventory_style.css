@@ -691,3 +691,26 @@ body.modal-open {
     overflow-x: hidden;
     overflow-y: auto;
 }
+
+/* Custom Styles for Professional Modals */
+.modal-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    padding: 1.5rem;
+}
+
+.item-list-table {
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    overflow: hidden; /* Ensures rounded corners are visible */
+}
+
+.item-list-table thead {
+    background-color: #e9ecef;
+}
+
+.modal-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
