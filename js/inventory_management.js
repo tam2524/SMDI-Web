@@ -1633,10 +1633,47 @@ function setupTableActionButtons() {
       }
     );
   });
-  $(".sell-btn").click(function () {
+// ✅ NEW and IMPROVED code
+$(".sell-btn").click(function () {
     const id = $(this).closest("tr").data("id");
-    sellMotorcycle(id);
-  });
+
+    // First, check the motorcycle's status via an AJAX call
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_motorcycle",
+            id: id,
+        },
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                const motorcycle = response.data;
+                // Check the status
+                if (motorcycle.status === 'sold') {
+                    // If already sold, show an info message and do nothing else.
+                    showInfoModal('This motorcycle unit has already been sold.');
+                } else if (motorcycle.status === 'transferred') {
+                    // Also handle 'transferred' status as a good practice
+                    showInfoModal('This unit is currently in transit and cannot be sold.');
+                } else if (motorcycle.status === 'scrapped') {
+                    // Also handle 'scrapped' status
+                    showInfoModal('This unit has been scrapped and cannot be sold.');
+                }
+                else {
+                    // If the status is 'available', open the sell modal as normal.
+                    sellMotorcycle(id);
+                }
+            } else {
+                // Handle error if motorcycle data can't be fetched
+                showErrorModal(response.message || "Could not retrieve motorcycle details.");
+            }
+        },
+        error: function () {
+            showErrorModal("An error occurred while checking the motorcycle's status.");
+        },
+    });
+});
 
   $("#markAsSoldBtn").click(function () {
     const id = $("#editId").val();
