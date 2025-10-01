@@ -2654,237 +2654,168 @@ function showTransferReceipt(receiptData) {
   $("#printReceiptBtn")
     .off("click")
     .on("click", function () {
-      printReceipt();
+       printMTLayout(receiptData); 
     });
 }
 
-function printReceipt() {
-  const currentDate = new Date().toISOString().slice(0, 10);
-  const title = `Transfer_Receipt_${$(
-    "#receiptInvoiceNo"
-  ).text()}_${currentDate}`;
-
-  const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>${title}</title>
-            <style>
-    body { 
-        font-family: Arial, sans-serif; 
-        margin: 5px; 
-        color: #333;
-        line-height: 1.2;
-        font-size: 11px;
+/**
+ * Generates a print layout with only data, positioned to overlay a pre-printed form.
+ * @param {object} receiptData - The data object containing transfer details.
+ */
+function printMTLayout(receiptData) {
+    if (!receiptData || !receiptData.header) {
+        showErrorModal("Cannot print. The required receipt data is missing or incomplete.");
+        return;
     }
 
-    .report-header { 
-        text-align: center; 
-        margin-bottom: 10px; 
-        border-bottom: 1px solid #000f71;
-        padding-bottom: 5px;
-    }
+    const header = receiptData.header;
+    const motorcycles = receiptData.motorcycles;
+    const totalCount = motorcycles.length;
+    const totalCost = motorcycles.reduce((sum, mc) => sum + parseFloat(mc.inventory_cost || 0), 0);
     
-    .report-header h4 { 
-        color: #000f71; 
-        font-weight: 600; 
-        margin: 0;
-        font-size: 14px;
-    }
-    
-    .report-header h5 { 
-        color: #495057; 
-        font-weight: 500; 
-        margin: 0;
-        font-size: 11px;
-    }
-    
-    .company-address {
-        text-align: center;
-        color: #666;
-        font-size: 10px;
-        margin-bottom: 8px;
-    }
-    
-    table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        margin-bottom: 8px; 
-        font-size: 10px;
-    }
-    
-    th, td { 
-        border: 1px solid #ddd; 
-        padding: 3px; 
-        text-align: left; 
-    }
-    
-    th { 
-        background-color: #f1f1f1; 
-        font-weight: 600; 
-        color: #333;
-    }
-    
-    .card { 
-        margin-bottom: 8px; 
-        border: 1px solid #e9ecef; 
-        border-radius: 3px; 
-    }
-    
-    .card-header { 
-        background-color: #f8f9fa; 
-        padding: 4px; 
-        border-bottom: 1px solid #e9ecef; 
-        font-weight: 600;
-        font-size: 11px;
-    }
-    
-    .card-body {
-        padding: 5px;
-        font-size: 10px;
-    }
-    
-    .info-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 3px;
-        font-size: 10px;
-    }
-    
-    .total-row {
-        background-color: #f8f9fa;
-        font-weight: 600;
-    }
-    
-    .footer-info {
-        margin-top: 10px;
-        padding-top: 5px;
-        border-top: 1px solid #ddd;
-        text-align: center;
-        font-size: 9px;
-        color: #666;
-    }
+    // Sanitize and get numbers-only version of the invoice number for printing
+    const numericInvoiceNumber = String(header.transfer_invoice_number).replace(/[^0-9]/g, '');
 
-    @page {
-        size: 80mm auto; /* Or 8.5in 5.5in for short coupon */
-        margin: 5mm;
-    }
+    // Format date to mm/dd/yyyy
+    const transferDate = new Date(header.transfer_date);
+    const formattedDate = !isNaN(transferDate.getTime()) 
+        ? `${String(transferDate.getMonth() + 1).padStart(2, '0')}/${String(transferDate.getDate()).padStart(2, '0')}/${transferDate.getFullYear()}`
+        : '';
 
-    @media print {
-        body { margin: 0; }
-        .no-print { display: none !important; }
-    }
-</style>
+    // Create table rows for motorcycle data
+    const motorcycleRows = motorcycles.map(mc => `
+        <tr>
+            <td class="qty">1</td>
+            <td class="uom"></td>
+            <td class="model">${escapeHtml(mc.model)}</td>
+            <td class="engine">${escapeHtml(mc.engine_number)}</td>
+            <td class="frame">${escapeHtml(mc.frame_number)}</td>
+            <td class="color">${escapeHtml(mc.color)}</td>
+            <td class="remarks">${formatCurrency(mc.inventory_cost)}</td>
+        </tr>
+    `).join('');
 
-        </head>
-        <body>
-            <div class="report-header">
-                <h4>SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
-                <h5>Merchandise Transfer Receipt</h5>
-            </div>
-            <div class="info-grid">
-                <div class="card">
-                    <div class="card-header">Transfer Information</div>
-                    <div class="card-body">
-                        <div class="info-row">
-                            <span class="info-label">Date:</span>
-                            <span class="info-value">${$(
-                              "#receiptDate"
-                            ).text()}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Transfer Invoice No:</span>
-                            <span class="info-value">${$(
-                              "#receiptInvoiceNo"
-                            ).text()}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-header">Branch Information</div>
-                    <div class="card-body">
-                        <div class="info-row">
-                            <span class="info-label">From Branch:</span>
-                            <span class="info-value">${$(
-                              "#receiptFromBranch"
-                            ).text()}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">To Branch:</span>
-                            <span class="info-value">${$(
-                              "#receiptToBranch"
-                            ).text()}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">Transferred Motorcycles</div>
-                <div class="card-body">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Brand</th>
-                                <th>Model</th>
-                                <th>Color</th>
-                                <th>Engine Number</th>
-                                <th>Frame Number</th>
-                                <th>Inventory Cost</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${$("#receiptMotorcyclesList").html()}
-                        </tbody>
-                        <tfoot>
-                            <tr class="total-row">
-                                <td colspan="6" style="text-align: right; font-weight: 600;">Total Motorcycles:</td>
-                                <td style="font-weight: 600;">${$(
-                                  "#receiptTotalCount"
-                                ).text()}</td>
-                            </tr>
-                            <tr class="total-row">
-                                <td colspan="6" style="text-align: right; font-weight: 600;">Total Inventory Cost:</td>
-                                <td style="font-weight: 600;">${$(
-                                  "#receiptTotalCost"
-                                ).text()}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="card notes-section">
-                <div class="card-header">Transfer Notes</div>
-                <div class="card-body">
-                    <div>${
-                      $("#receiptNotes").text() ||
-                      "No additional notes provided."
-                    }</div>
-                </div>
-            </div>
-            
-           
-            
-            <div class="footer-info">
-                <div>Generated on: ${new Date().toLocaleString()}</div>
-                <div>Document Reference: ${$("#receiptInvoiceNo").text()}</div>
-                
-            </div>
-        </body>
-        </html>
+    // Create the total row with a new class for styling
+    const totalRow = `
+        <tr>
+            <td colspan="6" class="total-label total-summary">Total No. of unit(s) Delivered: ${totalCount}</td>
+            <td class="total-cost total-summary">${formatCurrency(totalCost)}</td>
+        </tr>
     `;
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-  printWindow.focus();
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>MT Data Overlay - ${escapeHtml(numericInvoiceNumber)}</title>
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+            }
+            .overlay-container {
+                position: relative;
+                width: 210mm;
+                height: 297mm;
+            }
+            .data-point {
+                position: absolute;
+                white-space: nowrap;
+            }
 
-  setTimeout(function () {
-    printWindow.print();
-  }, 250);
+            /* --- Positioning Guide --- */
+            /* UPDATED: Set all 'left' values to be the same for alignment */
+            #data-date { top: 58mm; left: 38mm; }
+            #data-to   { top: 67mm; left: 38mm; font-weight: bold; }
+            #data-from { top: 76mm; left: 38mm; }
+
+            #data-mt-number { 
+                top: 63mm; 
+                right: 25mm; 
+                color: red; 
+                font-weight: bold; 
+                font-size: 16pt; 
+                font-family: 'Times New Roman', Times, serif;
+            }
+            
+            #data-table-wrapper { top: 97mm; left: 18mm; width: 184mm; }
+            #data-table { width: 100%; border-collapse: collapse; }
+            #data-table td { padding: 2px 2px; font-size: 9pt; vertical-align: middle; }
+
+            /* Column widths */
+            #data-table .qty     { width: 1%; text-align: center; }
+            #data-table .uom     { width: 0%; }
+            #data-table .model   { width: 5%; }
+            #data-table .engine  { width: 8%; }
+            #data-table .frame   { width: 8%; }
+            #data-table .color   { width: 2%; }
+            #data-table .remarks { width: 10%; text-align: right; }
+
+            /* Totals row styling */
+            #data-table .total-label {
+                text-align: left;
+                padding-left: 14%; 
+            }
+            #data-table .total-cost {
+                text-align: right;
+            }
+            #data-table .total-summary {
+                font-weight: bold;
+                font-style: italic;
+            }
+            
+                .signature-name {
+                top: 201mm;
+                width: 55mm;
+                text-align: center;
+            }
+            #data-prepared-by   { left: 25mm; }
+            #data-delivered-by  { left: 90mm; }
+            #data-checked-by    { left: 155mm; }
+            #data-approved-by   { top: 220mm; left: 155mm; }
+
+            @media print {
+                .overlay-container {
+                    border: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="overlay-container">
+            <div id="data-date" class="data-point">${formattedDate}</div>
+            <div id="data-to" class="data-point">${escapeHtml(header.to_branch)}</div>
+            <div id="data-from" class="data-point">${escapeHtml(header.from_branch)}</div>
+            <div id="data-mt-number" class="data-point">${escapeHtml(numericInvoiceNumber)}</div>
+
+            <div id="data-table-wrapper" class="data-point">
+                <table id="data-table">
+                    <tbody>
+                        ${motorcycleRows}
+                        ${totalRow}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="data-prepared-by" class="data-point signature-name"></div>
+            <div id="data-delivered-by" class="data-point signature-name"></div>
+            <div id="data-checked-by" class="data-point signature-name"></div>
+            <div id="data-approved-by" class="data-point signature-name"></div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+    }, 500);
 }
 
 function searchMotorcyclesByEngine() {
