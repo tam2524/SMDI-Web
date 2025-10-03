@@ -2336,6 +2336,21 @@ function submitSale() {
     payment_type: $("#paymentType").val(),
   };
 
+  const saleDateInput = formData.sale_date;
+    if (saleDateInput) {
+        const saleDate = new Date(saleDateInput);
+        const today = new Date();
+
+        // Reset time to compare dates only
+        saleDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        if (saleDate > today) {
+            showErrorModal("Future dates are not allowed. Please select a valid sale date.");
+            return; // Stop the function from proceeding
+        }
+    }
+
   if (formData.payment_type === "COD") {
     formData.dr_number = $("#drNumber").val();
     formData.cod_amount = $("#codAmount").val();

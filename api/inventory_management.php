@@ -1667,16 +1667,39 @@ function checkFrameNumber() {
 function sellMotorcycle() {
     global $conn;
 
-    $required = [ 'motorcycle_id', 'sale_date', 'customer_name', 'payment_type' ];
-    foreach ( $required as $field ) {
-        if ( empty( $_POST[ $field ] ) ) {
-            echo json_encode( [ 'success' => false, 'message' => "Missing required field: $field" ] );
+    // 1. Check for all required fields
+    $required = ['motorcycle_id', 'sale_date', 'customer_name', 'payment_type'];
+    foreach ($required as $field) {
+        if (empty($_POST[$field])) {
+            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
             return;
         }
     }
 
-     // ✅ --- ADD THIS NEW VALIDATION BLOCK ---
-    // Server-side check to ensure the motorcycle is available before proceeding
+    // 2. Sanitize all inputs
+    $motorcycleId = intval($_POST['motorcycle_id']);
+    $saleDate = sanitizeInput($_POST['sale_date']);
+
+    $today = date('Y-m-d');
+    if ($saleDate > $today) {
+        echo json_encode(['success' => false, 'message' => 'Error: The sale date cannot be in the future.']);
+        return;
+    }
+    $customerName = sanitizeInput($_POST['customer_name']);
+    $paymentType = sanitizeInput($_POST['payment_type']);
+    $drNumber = isset($_POST['dr_number']) ? sanitizeInput($_POST['dr_number']) : null;
+    $codAmount = isset($_POST['cod_amount']) ? floatval($_POST['cod_amount']) : null;
+    $terms = isset($_POST['terms']) ? intval($_POST['terms']) : null;
+    $monthlyAmortization = isset($_POST['monthly_amortization']) ? floatval($_POST['monthly_amortization']) : null;
+
+    // 3. Validate the sale date (cannot be in the future)
+    $today = date('Y-m-d');
+    if ($saleDate > $today) {
+        echo json_encode(['success' => false, 'message' => 'Error: The sale date cannot be in the future.']);
+        return;
+    }
+
+    // 4. Validate the motorcycle exists and is available
     $checkStatusStmt = $conn->prepare("SELECT status FROM motorcycle_inventory WHERE id = ?");
     if (!$checkStatusStmt) {
         echo json_encode(['success' => false, 'message' => 'Database error preparing status check.']);
@@ -1685,58 +1708,48 @@ function sellMotorcycle() {
     $checkStatusStmt->bind_param('i', $motorcycleId);
     $checkStatusStmt->execute();
     $statusResult = $checkStatusStmt->get_result();
-    
+
     if ($statusResult->num_rows === 0) {
         echo json_encode(['success' => false, 'message' => 'Motorcycle not found.']);
         return;
     }
-    
+
     $currentStatus = $statusResult->fetch_assoc()['status'];
-    
+
     if ($currentStatus !== 'available') {
-        echo json_encode(['success' => false, 'message' => "This unit cannot be sold. Its current status is '{$currentStatus}'."]);
+        echo json_encode(['success' => false, 'message' => "This unit cannot be sold because its status is currently '{$currentStatus}'."]);
         return;
     }
 
-    $motorcycleId = intval( $_POST[ 'motorcycle_id' ] );
-    $saleDate = sanitizeInput( $_POST[ 'sale_date' ] );
-    $customerName = sanitizeInput( $_POST[ 'customer_name' ] );
-    $paymentType = sanitizeInput( $_POST[ 'payment_type' ] );
-    $drNumber = isset( $_POST[ 'dr_number' ] ) ? sanitizeInput( $_POST[ 'dr_number' ] ) : null;
-    $codAmount = isset( $_POST[ 'cod_amount' ] ) ? floatval( $_POST[ 'cod_amount' ] ) : null;
-    $terms = isset( $_POST[ 'terms' ] ) ? intval( $_POST[ 'terms' ] ) : null;
-    $monthlyAmortization = isset( $_POST[ 'monthly_amortization' ] ) ? floatval( $_POST[ 'monthly_amortization' ] ) : null;
-
-    if ( $paymentType === 'COD' ) {
-        if ( empty( $drNumber ) || $codAmount === null ) {
-            echo json_encode( [ 'success' => false, 'message' => 'DR Number and COD Amount are required for COD payment' ] );
+    // 5. Validate payment-specific fields
+    if ($paymentType === 'COD') {
+        if (empty($drNumber) || $codAmount === null) {
+            echo json_encode(['success' => false, 'message' => 'DR Number and COD Amount are required for COD payment']);
             return;
         }
-    } else if ( $paymentType === 'Installment' ) {
-        if ( $terms === null || $monthlyAmortization === null ) {
-            echo json_encode( [ 'success' => false, 'message' => 'Terms and Monthly Amortization are required for Installment payment' ] );
+    } else if ($paymentType === 'Installment') {
+        if ($terms === null || $monthlyAmortization === null) {
+            echo json_encode(['success' => false, 'message' => 'Terms and Monthly Amortization are required for Installment payment']);
             return;
         }
     }
 
+    // 6. Process the sale
     $conn->begin_transaction();
-
     try {
-        $saleStmt = $conn->prepare( "INSERT INTO motorcycle_sales 
-                                  (motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization)
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)" );
-        $saleStmt->bind_param( 'issssdid', $motorcycleId, $saleDate, $customerName, $paymentType, $drNumber, $codAmount, $terms, $monthlyAmortization );
+        $saleStmt = $conn->prepare("INSERT INTO motorcycle_sales (motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $saleStmt->bind_param('issssdid', $motorcycleId, $saleDate, $customerName, $paymentType, $drNumber, $codAmount, $terms, $monthlyAmortization);
         $saleStmt->execute();
 
-        $updateStmt = $conn->prepare( "UPDATE motorcycle_inventory SET status = 'sold' WHERE id = ?" );
-        $updateStmt->bind_param( 'i', $motorcycleId );
+        $updateStmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'sold' WHERE id = ?");
+        $updateStmt->bind_param('i', $motorcycleId);
         $updateStmt->execute();
 
         $conn->commit();
-        echo json_encode( [ 'success' => true, 'message' => 'Motorcycle marked as sold successfully' ] );
-    } catch ( Exception $e ) {
+        echo json_encode(['success' => true, 'message' => 'Motorcycle marked as sold successfully']);
+    } catch (Exception $e) {
         $conn->rollback();
-        echo json_encode( [ 'success' => false, 'message' => 'Error selling motorcycle: ' . $e->getMessage() ] );
+        echo json_encode(['success' => false, 'message' => 'Error selling motorcycle: ' . $e->getMessage()]);
     }
 }
 function getMonthlyInventory() {
