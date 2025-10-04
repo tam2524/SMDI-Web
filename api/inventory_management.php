@@ -645,7 +645,7 @@ function updateMotorcycle() {
         // Handle sale details if status is 'sold'
         if ($status === 'sold') {
             // Check if sale record exists
-            $checkSaleStmt = $conn->prepare("SELECT id FROM motorcycle_sales WHERE motorcycle_id = ?");
+$checkSaleStmt = $conn->prepare("SELECT id FROM motorcycle_sales WHERE motorcycle_id = ? ORDER BY sale_date DESC LIMIT 1");
             $checkSaleStmt->bind_param('i', $id);
             $checkSaleStmt->execute();
             $saleResult = $checkSaleStmt->get_result();
