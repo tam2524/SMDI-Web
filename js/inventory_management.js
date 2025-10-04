@@ -2441,7 +2441,7 @@ function submitScrap() {
             if (response.success) {
                 $("#scrapMotorcycleModal").modal("hide");
                 showSuccessModal("Motorcycle marked as scrapped successfully!");
-                
+                loadInventoryDashboard();
                 loadInventoryTable(
                     currentInventoryPage,
                     currentInventorySort,
