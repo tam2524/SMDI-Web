@@ -204,68 +204,75 @@
                     <h5 class='modal-title' id='monthlyReportOptionsModalLabel'>Generate Reports</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
-                <div class='modal-body'>
+               <div class="modal-body">
+    <div class="mb-3">
+        <label for="reportType" class="form-label">Select Report Type</label>
+        <select class="form-select" id="reportType" required>
+            <option value="inventory">Inventory Balance Report</option>
+            <option value="sold_units">Summary of Sold Units</option>
+            <option value="daily_sold_units">Daily Summary of Sold Units</option>
+            <option value="transferred">Summary of Transferred Stocks</option>
+            <option value="received">Summary of Received Stocks</option>
+            <option value="scrapped">Summary of Scrapped Units</option>
+            <option value="motorcycle">Available Motorcycle Units List</option>
+        </select>
+    </div>
 
-                    <div class='mb-3'>
-                        <label for='reportType' class='form-label'>Select Report Type</label>
-                        <select class='form-select' id='reportType' required aria-describedby='reportTypeHelp'>
-                            <option value='inventory'>Monthly Inventory Balance Report</option>
-                            <option value='transferred'>Monthly Summary of Transferred Stocks</option>
-                            <option value='received'>Monthly Summary of Received Stocks</option>
-                            <option value='motorcycle'>Available Motorcycle Units Report</option>
-                            <option value='sold_units'>Monthly Summary of Sold Units Report</option>
-                            <option value='daily_sold_units'>Daily Summary of Sold Units Report</option>
-                            <option value="scrapped">Monthly Summary of Scrapped Units Report</option>
-                        </select>
-                    </div>
-                    <div class='mb-3'>
-                        <label for='reportMonth' class='form-label'>Select Month</label>
-                        <input type='month' class='form-control' id='reportMonth' required aria-describedby='monthHelp'>
-                    </div>
+    <div class="mb-3 p-3 bg-light border rounded" id="reportPeriodContainer" style="display: none;">
+        <label class="form-label d-block mb-2">Report Period</label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="reportPeriod" id="periodMonthly" value="monthly" checked>
+            <label class="form-check-label" for="periodMonthly">Full Month</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="reportPeriod" id="periodAsOf" value="as_of_date">
+            <label class="form-check-label" for="periodAsOf">As of Date</label>
+        </div>
+    </div>
 
-                    <div class='mb-3'>
-                        <label for='reportBranch' class='form-label'>Select Branch</label>
-                        <select class='form-select' id='reportBranch' aria-describedby='branchHelp' required>
-                            <option value='ALL'>ALL BRANCHES</option>
-                        </select>
-                    </div>
-
-                    <div class='mb-3'>
-                        <label for='reportCategoryFilter' class='form-label'>Category</label>
-                        <select class='form-select' id='reportCategoryFilter' aria-describedby='categoryHelp'>
-                            <option value='all'>All</option>
-                            <option value='brandnew'>Brand New</option>
-                            <option value='repo'>Repo</option>
-                        </select>
-                    </div>
-
-                    <div class='mb-3' id='dailyReportDateContainer' style='display: none;'>
-                        <label for='dailyReportDate' class='form-label'>Select Date</label>
-                        <input type='date' class='form-control' id='dailyReportDate' required>
-                    </div>
-
-                    <div class='mb-3' id='brandFilterContainer' style='display: none;'>
-                        <label for='reportBrandFilter' class='form-label'>Filter by Brand</label>
-                        <select class='form-select' id='reportBrandFilter' aria-describedby='brandFilterHelp'>
-                            <option value='all'>ALL BRANDS</option>
-                            <option value='Suzuki'>SUZUKI</option>
-                            <option value='Honda'>HONDA</option>
-                            <option value='Kawasaki'>KAWASAKI</option>
-                            <option value='Yamaha'>YAMAHA</option>
-                            <option value='Asiastar'>ASIASTAR</option>
-                        </select>
-                    </div>
-
-                    <div class='mb-3' id='soldSaleTypeContainer' style='display: none;'>
-                        <label for='soldSaleTypeFilter' class='form-label'>Filter by Type of Sale</label>
-                        <select class='form-select' id='soldSaleTypeFilter' aria-describedby='soldSaleTypeHelp'>
-                            <option value='all' selected>All</option>
-                            <option value='COD'>COD</option>
-                            <option value='Installment'>Installment</option>
-                        </select>
-                    </div>
-
-                </div>
+    <div class="mb-3" id="monthPickerContainer">
+        <label for="reportMonth" class="form-label">Select Month</label>
+        <input type="month" class="form-control" id="reportMonth">
+    </div>
+    <div class="mb-3" id="datePickerContainer" style="display: none;">
+        <label for="asOfDate" class="form-label">Select Date</label>
+        <input type="date" class="form-control" id="asOfDate">
+    </div>
+    
+    <div class="mb-3">
+        <label for="reportBranch" class="form-label">Select Branch</label>
+        <select class="form-select" id="reportBranch" required>
+            <option value="ALL">ALL BRANCHES</option>
+            </select>
+    </div>
+    <div class="mb-3">
+        <label for="reportCategoryFilter" class="form-label">Category</label>
+        <select class="form-select" id="reportCategoryFilter">
+            <option value="all">All</option>
+            <option value="brandnew">Brand New</option>
+            <option value="repo">Repo</option>
+        </select>
+    </div>
+    <div class="mb-3" id="brandFilterContainer" style="display: none;">
+        <label for="reportBrandFilter" class="form-label">Filter by Brand</label>
+        <select class="form-select" id="reportBrandFilter">
+            <option value="all">ALL BRANDS</option>
+            <option value="Suzuki">SUZUKI</option>
+            <option value="Honda">HONDA</option>
+            <option value="Kawasaki">KAWASAKI</option>
+            <option value="Yamaha">YAMAHA</option>
+            <option value="Asiastar">ASIASTAR</option>
+        </select>
+    </div>
+    <div class="mb-3" id="soldSaleTypeContainer" style="display: none;">
+        <label for="soldSaleTypeFilter" class="form-label">Filter by Type of Sale</label>
+        <select class="form-select" id="soldSaleTypeFilter">
+            <option value="all" selected>All</option>
+            <option value="COD">COD</option>
+            <option value="Installment">Installment</option>
+        </select>
+    </div>
+</div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
                     <button type='button' class='btn btn-primary text-white' id='generateReportBtn'>Generate
