@@ -3071,6 +3071,27 @@ function scrapMotorcycle() {
     }
 
     $motorcycleId = intval($_POST['motorcycle_id']);
+
+        $checkStatusStmt = $conn->prepare("SELECT status FROM motorcycle_inventory WHERE id = ?");
+    if (!$checkStatusStmt) {
+        echo json_encode(['success' => false, 'message' => 'Database error preparing status check.']);
+        return;
+    }
+    $checkStatusStmt->bind_param('i', $motorcycleId);
+    $checkStatusStmt->execute();
+    $statusResult = $checkStatusStmt->get_result();
+    
+    if ($statusResult->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Motorcycle not found.']);
+        return;
+    }
+    
+    $currentStatus = $statusResult->fetch_assoc()['status'];
+    
+    if ($currentStatus === 'scrapped') {
+        echo json_encode(['success' => false, 'message' => 'This motorcycle has already been scrapped.']);
+        return;
+    }
     $scrapDate = sanitizeInput($_POST['scrap_date']);
     $scrapReason = isset($_POST['scrap_reason']) ? sanitizeInput($_POST['scrap_reason']) : '';
 

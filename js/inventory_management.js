@@ -1680,13 +1680,40 @@ $(".sell-btn").click(function () {
     $("#editMotorcycleModal").modal("hide");
     sellMotorcycle(id);
   });
+
  $(".scrap-btn").click(function () {
     if (!canAccessScrapFeature) {
       showErrorModal("You do not have permission to scrap motorcycles.");
       return;
     }
     const id = $(this).closest("tr").data("id");
-    scrapMotorcycle(id);
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "GET",
+        data: {
+            action: "get_motorcycle",
+            id: id,
+        },
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                const motorcycle = response.data;
+                // Check the status
+                if (motorcycle.status === 'scrapped') {
+                    // If already scrapped, show an info message and stop.
+                    showInfoModal('This motorcycle unit has already been scrapped.');
+                } else {
+                    // Otherwise, open the scrap modal as normal.
+                    scrapMotorcycle(id);
+                }
+            } else {
+                showErrorModal(response.message || "Could not retrieve motorcycle details.");
+            }
+        },
+        error: function () {
+            showErrorModal("An error occurred while checking the motorcycle's status.");
+        },
+    });
   });
 }
 
