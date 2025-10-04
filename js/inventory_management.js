@@ -5405,7 +5405,8 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
 
   // Sort data by model for cleaner display
   data.sort((a, b) => a.model.localeCompare(b.model));
-
+  const beginningBalance = currentReportSummary?.beginning_balance || 0;
+    const costBeginning = currentReportSummary?.inventory_cost?.beginning_balance || 0;
   const receivedTransfers = currentReportSummary?.received_transfers || 0;
   const newDeliveries = currentReportSummary?.new_deliveries || 0;
   const totalIn = currentReportSummary?.in || 0; // Changed from total_in to in
@@ -5515,7 +5516,24 @@ function renderMonthlyInventoryReport(data, month, branch, summary) {
       
       <div class="col-md-4">
         <div class="summary-section" style="position: sticky; top: 20px;">
-        
+        <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
+                <div class="card-header bg-transparent border-0 pt-3 pb-2">
+                    <h6 class="card-title text-center mb-0" style="color: #6c757d; font-weight: 600; font-size: 0.9rem;">
+                        BEGINNING BALANCE
+                    </h6>
+                </div>
+                <div class="card-body px-4 pb-3 pt-0">
+                    <div class="summary-item d-flex justify-content-between align-items-center pt-2">
+                        <div>
+                            <div class="fw-bold" style="color: #6c757d;">Balance Forward</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="fs-4 fw-bold" style="color: #6c757d;">${beginningBalance}</span>
+                            <div class="small text-muted fw-bold">${formatCurrency(costBeginning)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
           <!-- IN Section -->
           <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
             <div class="card-header bg-transparent border-0 pt-3 pb-2">

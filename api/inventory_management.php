@@ -1809,62 +1809,58 @@ function getMonthlyInventory() {
     $countSoldDuringMonth = 0;
     $costSoldDuringMonth = 0;
 
-    // === BEGINNING BALANCE (as of previous month end) ===
     if (strtoupper($branch) === 'ALL') {
         $sqlBeginning = "
             SELECT COUNT(*) AS count_beginning, COALESCE(SUM(mi.inventory_cost), 0) AS cost_beginning
             FROM motorcycle_inventory mi
             WHERE mi.deleted_at IS NULL
-              AND mi.date_delivered <= ?
-              $categoryCondition
-               $brandCondition
-        ";
-        $stmtBeginning = $conn->prepare($sqlBeginning);
-        $types = 's' . $paramTypes;
-        $paramsBeginning = array_merge([$prevMonthEnd], $params);
-        bindParams($stmtBeginning, $types, $paramsBeginning);
-    } else {
-        $sqlBeginning = "
-            SELECT COUNT(*) AS count_beginning, COALESCE(SUM(mi.inventory_cost), 0) AS cost_beginning
-            FROM motorcycle_inventory mi
-            LEFT JOIN (
-                SELECT it1.motorcycle_id, it1.from_branch, it1.to_branch, it1.transfer_date, it1.date_received
-                FROM inventory_transfers it1
-                JOIN (
-                    SELECT motorcycle_id, MAX(transfer_date) AS max_transfer_date
-                    FROM inventory_transfers
-                    WHERE transfer_date <= ? AND transfer_status = 'completed'
-                    GROUP BY motorcycle_id
-                ) it2 ON it1.motorcycle_id = it2.motorcycle_id AND it1.transfer_date = it2.max_transfer_date
-                WHERE it1.transfer_status = 'completed'
-            ) lt ON mi.id = lt.motorcycle_id
-            WHERE mi.deleted_at IS NULL
-              AND mi.date_delivered <= ?
               AND (
-                    (lt.transfer_date IS NULL AND mi.current_branch = ?)
-                 OR (lt.transfer_date <= ? AND lt.to_branch = ?)
-                 OR (lt.transfer_date >  ? AND lt.from_branch = ?)
+                   mi.date_delivered <= ?
+                OR (mi.date_received IS NOT NULL AND mi.date_received <= ?)
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM motorcycle_sales s
+                  WHERE s.motorcycle_id = mi.id
+                    AND s.sale_date <= ?
               )
               $categoryCondition
-               $brandCondition
+              $brandCondition
         ";
         $stmtBeginning = $conn->prepare($sqlBeginning);
-        $types = 'sssssss' . $paramTypes;
-        $paramsBeginning = array_merge([
-            $prevMonthEnd,  // for latest transfer subquery cutoff
-            $prevMonthEnd,  // delivered <= prevMonthEnd
-            $branch,        // still at current_branch (no transfer before cutoff)
-            $prevMonthEnd,  // last transfer <= cutoff -> now at to_branch
-            $branch,
-            $prevMonthEnd,  // last transfer after cutoff -> still counted at from_branch
-            $branch
-        ], $params);
-        bindParams($stmtBeginning, $types, $paramsBeginning);
+        $typesBeginning = 'sss' . $paramTypes;
+        $paramsBeginning = array_merge([$prevMonthEnd, $prevMonthEnd, $prevMonthEnd], $params);
+        bindParams($stmtBeginning, $typesBeginning, $paramsBeginning);
+
+    } else {
+        $sqlBeginning = "
+            SELECT COUNT(*) as count_beginning, COALESCE(SUM(mi.inventory_cost), 0) as cost_beginning
+            FROM motorcycle_inventory mi
+            WHERE mi.deleted_at IS NULL
+                AND mi.current_branch = ?
+                AND (
+                    mi.date_delivered <= ?
+                    OR (mi.date_received IS NOT NULL AND mi.date_received <= ?)
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM motorcycle_sales s
+                    WHERE s.motorcycle_id = mi.id
+                    AND s.sale_date <= ?
+                )
+                $categoryCondition
+                $brandCondition
+        ";
+        $stmtBeginning = $conn->prepare($sqlBeginning);
+        $typesBeginning = 'ssss' . $paramTypes;
+        $paramsBeginning = array_merge([$branch, $prevMonthEnd, $prevMonthEnd, $prevMonthEnd], $params);
+        bindParams($stmtBeginning, $typesBeginning, $paramsBeginning);
     }
     $stmtBeginning->execute();
     $beginningResult = $stmtBeginning->get_result()->fetch_assoc();
     $countBeginning = (int)($beginningResult['count_beginning'] ?? 0);
     $costBeginning  = (float)($beginningResult['cost_beginning'] ?? 0);
+    // === END OF NEW CODE BLOCK ===
+
+
 
     // === NEW DELIVERIES ===
     if (strtoupper($branch) === 'ALL') {
