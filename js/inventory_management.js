@@ -2000,7 +2000,7 @@ function updateMotorcycle() {
             response.message || "Motorcycle updated successfully!"
           );
         }
-
+        loadInventoryDashboard();
         loadInventoryTable(
           currentInventoryPage,
           currentInventorySort,
@@ -2395,7 +2395,7 @@ function submitSale() {
       if (response.success) {
         $("#sellMotorcycleModal").modal("hide");
         showSuccessModal("Motorcycle marked as sold successfully!");
-
+        loadInventoryDashboard();
         loadInventoryTable(
           currentInventoryPage,
           currentInventorySort,
