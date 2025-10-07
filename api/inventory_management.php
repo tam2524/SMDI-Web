@@ -3201,52 +3201,71 @@ function getMonthlyScrappedSummary() {
 function getAvailableMotorcyclesReport() {
     global $conn;
 
-    // Get all parameters
-    $period_type = isset($_GET['period_type']) ? sanitizeInput($_GET['period_type']) : 'daily'; // Default to today
+    // --- 1. Sanitize all input parameters ---
+    $period_type = isset($_GET['period_type']) ? sanitizeInput($_GET['period_type']) : 'as_of_date';
     $date = isset($_GET['date']) ? sanitizeInput($_GET['date']) : date('Y-m-d');
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null;
-    $start_date = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : null;
-    $end_date = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : null;
-
+    $start_date_param = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : null;
+    $end_date_param = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : null;
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
     $category = isset($_GET['category']) ? sanitizeInput($_GET['category']) : 'all';
     $brand = isset($_GET['brand']) ? sanitizeInput($_GET['brand']) : 'all';
     $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
     
-    // Determine the single cut-off date (endDate) based on the period type
-    $snapshotDate = date('Y-m-d'); // Default to today
-    switch($period_type) {
+    // --- 2. Determine the true Start and End Dates for the query ---
+    $startDate = date('Y-m-d');
+    $endDate = date('Y-m-d');
+
+    switch ($period_type) {
         case 'daily':
         case 'as_of_date':
-            $snapshotDate = $date;
+            // For a single day or "as of", the start and end are the same.
+            $startDate = $date;
+            $endDate = $date;
             break;
         case 'monthly':
             if ($month) {
-                $snapshotDate = date('Y-m-t', strtotime($month));
+                $startDate = date('Y-m-01', strtotime($month));
+                $endDate = date('Y-m-t', strtotime($month));
             }
             break;
-        case 'custom':
-            if ($end_date) {
-                $snapshotDate = $end_date;
+        case 'custom_range':
+            if ($start_date_param && $end_date_param) {
+                $startDate = $start_date_param;
+                $endDate = $end_date_param;
             }
             break;
     }
-    
-    $params = [$snapshotDate, $snapshotDate];
-    $types = 'ss';
 
+    // --- 3. Build the SQL query with correct logic ---
+    $params = [];
+    $types = '';
+
+    // The core logic:
+    // - A motorcycle is "available" in a period if its arrival was on/before the END of the period.
+    // - AND it was NOT sold, scrapped, or transferred out BEFORE the START of the period.
     $sql = "SELECT mi.*, i.invoice_number
             FROM motorcycle_inventory mi
             LEFT JOIN invoices i ON mi.invoice_id = i.id
             WHERE 
-                (mi.date_delivered <= ? OR (mi.date_received IS NOT NULL AND mi.date_received <= ?)) -- It existed on or before the snapshot date
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date <= ?) -- It was not sold on or before the snapshot date
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date <= ?) -- It was not scrapped on or before the snapshot date
+                -- Use date_received if available, otherwise fall back to date_delivered
+                (COALESCE(mi.date_received, mi.date_delivered) <= ?) -- Arrived on or before the end date
                 AND mi.deleted_at IS NULL ";
+    
+    $params[] = $endDate;
+    $types .= 's';
 
-    array_push($params, $snapshotDate, $snapshotDate);
-    $types .= 'ss';
+    // Subquery to check for 'exit' events (sold, scrapped, transferred out)
+    // The motorcycle is available if it has NO exit event date that is EARLIER than our start date.
+  $sql .= " AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date < ?) ";
+    $params[] = $startDate;
+    $types .= 's';
 
+    $sql .= " AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date < ?) ";
+    $params[] = $startDate;
+    $types .= 's';
+
+    // --- 4. Append optional filters ---
     if ($branch !== 'all') {
         $sql .= " AND mi.current_branch = ?";
         $params[] = $branch;
@@ -3263,33 +3282,36 @@ function getAvailableMotorcyclesReport() {
         $types .= 's';
     }
     if ($models_str !== 'all' && !empty($models_str)) {
-    $models = array_map('trim', explode(',', $models_str));
-    if (!empty($models)) {
-        $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
-        $sql .= " AND mi.model IN ($modelPlaceholders)";
-        foreach ($models as $model) {
-            $params[] = $model;
-            $types .= 's';
+        $models = array_map('trim', explode(',', $models_str));
+        if (!empty($models)) {
+            $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
+            $sql .= " AND mi.model IN ($modelPlaceholders)";
+            foreach ($models as $model) {
+                $params[] = $model;
+                $types .= 's';
+            }
         }
     }
-}
     
     $sql .= " ORDER BY mi.current_branch, mi.brand, mi.model";
 
+    // --- 5. Execute the query and return data ---
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $data = [];
-    while ($row = $result->fetch_assoc()) {
-        $data[] = $row;
+    if ($stmt) {
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        $stmt->close();
+        echo json_encode(['success' => true, 'data' => $data, 'start_date' => $startDate, 'end_date' => $endDate]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare the SQL statement.']);
     }
-
-    echo json_encode(['success' => true, 'data' => $data, 'snapshot_date' => $snapshotDate]);
 }
-// REPLACE the existing getSoldMotorcyclesReport function with this one
-
 function getSoldMotorcyclesReport() {
     global $conn;
 

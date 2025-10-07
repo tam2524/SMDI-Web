@@ -669,7 +669,7 @@ function loadInventoryDashboard(
   sortOrder = "asc"
 ) {
   $("#inventoryCards").html(
-    '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>'
+    '<div class="col-12 text-center py-5"><div class="spinner-border text-black" role="status"><span class="visually-hidden">Loading...</span></div></div>'
   );
 
   $.ajax({
@@ -808,7 +808,7 @@ function filterByModel(brand, model) {
 
 function loadInventoryTable(page = 1, sort = "", query = "") {
   $("#inventoryTableBody").html(
-    '<tr><td colspan="11" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>'
+    '<tr><td colspan="11" class="text-center py-5"><div class="spinner-border text-black" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>'
   );
 
   $.ajax({
@@ -1530,7 +1530,7 @@ function searchModels() {
   if (query.length < 2) return;
 
   $("#modelList").html(
-    '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-3"><div class="spinner-border text-black" role="status"></div></div>'
   );
 
   $.get(
@@ -1613,7 +1613,7 @@ function viewModelDetails(units) {
     const saleInfoHtml = isSold
       ? `
       <hr>
-      <h6 class='text-primary'>Sale Information</h6>
+      <h6 class='text-black'>Sale Information</h6>
       <div class='row'>
         <div class='col-md-6 mb-2'>
           <p><strong>Sale Date:</strong> ${
@@ -1730,7 +1730,7 @@ $("#addMotorcycleModal").on("hidden.bs.modal", function () {
 
 function viewModelDetails(id) {
   $("#motorcycleDetails").html(
-    '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-4"><div class="spinner-border text-black" role="status"></div></div>'
   );
 
   $.get(
@@ -1787,7 +1787,7 @@ function viewModelDetails(id) {
                     <hr>
                     <div class="row">
                         <div class="col-12">
-                            <h6 class="text-primary">Transfer History</h6>
+                            <h6 class="text-black">Transfer History</h6>
                             <div class="table-responsive">
                                 <table class="table table-sm table-striped">
                                     <thead>
@@ -1828,7 +1828,7 @@ function viewModelDetails(id) {
                     <hr>
                     <div class="row">
                         <div class="col-12">
-                            <h6 class="text-primary">Location</h6>
+                            <h6 class="text-black">Location</h6>
                             <div id="mapid" style="height: 300px;"></div>
                         </div>
                     </div>
@@ -2293,7 +2293,7 @@ function updateSelectedMotorcyclesList() {
           <div class="flex-grow-1">
             <div class="d-flex align-items-center mb-1">
               <span class="badge bg-primary me-2">${index + 1}</span>
-              <span class="fw-semibold text-primary">${
+              <span class="fw-semibold text-black">${
                 motorcycle.engine_number
               }</span>
             </div>
@@ -2458,7 +2458,7 @@ function fetchTransferDetailsByInvoice(invoiceNumber) {
 
         // Show an info message to the user
         $("#transferInvoiceInfo").html(
-          `<i class="text-primary"></i> Existing transfer found.`
+          `<i class="text-black"></i> Existing transfer found.`
         );
       } else {
         // NOT FOUND: This is a new transfer invoice number
@@ -3075,7 +3075,7 @@ function searchInvoiceNumber() {
 
   $("#invoiceSearchResults").html(`
         <div class="text-center py-4">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <div class="spinner-border spinner-border-sm text-black" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-2 small text-muted">Searching for invoice...</p>
@@ -3133,7 +3133,7 @@ function displayInvoiceSearchResults(data) {
             <div class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                        <h6 class="mb-1 text-primary">${escapeHtml(
+                        <h6 class="mb-1 text-black">${escapeHtml(
                           invoice.invoice_number
                         )}</h6>
                         <p class="mb-1 small">
@@ -3176,7 +3176,7 @@ function displayInvoiceSearchResults(data) {
 function viewInvoiceDetails(invoiceId, invoiceNumber) {
   $("#invoiceSearchResults").html(`
         <div class="text-center py-4">
-            <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <div class="spinner-border spinner-border-sm text-black" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-2 small text-muted">Loading invoice details...</p>
@@ -4192,7 +4192,7 @@ function generateReport() {
   }
   $("#monthlyReportOptionsModal").modal("hide");
   $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-5"><div class="spinner-border text-black" role="status"></div></div>'
   );
   switch (reportType) {
     case "inventory":
@@ -4313,7 +4313,7 @@ function generateMonthlyInventoryReport(
 ) {
   $("#monthlyInventoryOptionsModal").modal("hide");
   $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-5"><div class="spinner-border text-black" role="status"></div></div>'
   );
 
   const apiData = {
@@ -4985,38 +4985,32 @@ function generateInventoryReportPDF() {
 }
 
 // ---B. Inventory Summary Report ---
-/**
- * Toggles the display of individual units for a clicked model row.
- * This version filters data that is already available on the client.
- */
+
 function toggleInventorySummaryDetails(element, brand, model, branch) {
   const row = $(element);
-  // Create a unique ID for the details row based on brand, model, and branch
+  
   const detailsRowId = `details-${brand.replace(/\W/g, "")}-${model.replace(
     /\W/g,
     ""
   )}-${branch.replace(/\W/g, "")}`;
   const existingDetailsRow = $(`#${detailsRowId}`);
-
-  // If details row already exists, just toggle its visibility
   if (existingDetailsRow.length) {
     existingDetailsRow.toggle();
     row.toggleClass("table-active");
     return;
   }
 
-  // If it doesn't exist, create a new row with a loading spinner
   row.toggleClass("table-active");
   row.after(
     `<tr id="${detailsRowId}" class="model-details-row"><td colspan="100%" class="p-2 bg-light"><div class="text-center"><div class="spinner-border spinner-border-sm"></div> Loading units...</div></td></tr>`
   );
 
-  // Filter the globally stored report data instead of making a new API call
+ 
   const units = currentReportData.data.filter(
     (item) =>
       item.brand === brand &&
       item.model === model &&
-      (branch === "all" || item.current_branch === branch) // 'all' is used for the global head office view
+      (branch === "all" || item.current_branch === branch) 
   );
 
   if (units.length > 0) {
@@ -5044,16 +5038,12 @@ function toggleInventorySummaryDetails(element, brand, model, branch) {
   }
 }
 
-/**
- * Renders the "Summary of Inventory" report using the two-column layout from Inventory Balance.
- * It performs all data aggregation on the client-side from the flat list provided by get_monthly_inventory.
- */
 function renderInventorySummaryReport(response) {
   const { data, summary } = response;
   const reportTitle = "Inventory Summary Report";
   let dateSubtitle = "";
 
-  // Dynamically set the subtitle based on whether a month or a specific date was chosen
+  
   if (currentReportDate) {
     dateSubtitle = `As of ${formatDate(currentReportDate)}`;
   } else if (currentReportMonth) {
@@ -5067,7 +5057,6 @@ function renderInventorySummaryReport(response) {
 
   $("#monthlyInventoryReportModalLabel").text(reportTitle);
 
-  // --- 1. Client-Side Aggregation ---
   const branches = [...new Set(data.map((item) => item.current_branch))].sort();
   const brandNames = ["Suzuki", "Honda", "Yamaha", "Kawasaki"];
   const brands = {};
@@ -5095,7 +5084,6 @@ function renderInventorySummaryReport(response) {
     }
   }
 
-  // --- 2. Build Main Content HTML (Left Column) ---
   let mainContentHtml = `
         <div class="report-header text-center mb-4">
             <div class="d-flex align-items-center justify-content-center mb-2">
@@ -5347,9 +5335,6 @@ function renderInventorySummaryReport(response) {
   const finalHtml = `<div class="row"><div class="col-lg-8">${mainContentHtml}</div><div class="col-lg-4">${summaryCardsHtml}</div></div>`;
   $("#monthlyReportContent").html(finalHtml);
 }
-/**
- * Converts full branch names to shorter codes for PDF reports.
- */
 function getBranchShortcut(branchName) {
     const shortcuts = {
         'HEADOFFICE': 'HO', 'KINGDOM': 'KDM', 'TANQUE': 'TNQ', 'DFISHER': 'DFS',
@@ -5736,7 +5721,6 @@ function generateInventorySummaryReportPDF() {
     }
 }
 // ---c. Sold Report ---
-// START: Replace your existing functions with these two
 
 function renderSoldUnitsReport(response) {
   const { data, summary, branch, month, date, start_date, end_date } = response;
@@ -6494,7 +6478,6 @@ function renderDailySoldUnitsReport(data, date) {
 }
 
 // PDF Export Function
-// START: Replace this function
 function generateDailySoldUnitsReportPDF() {
   const { jsPDF } = window.jspdf;
 
@@ -6702,7 +6685,7 @@ function generateTransferredSummary(
   brand = "all"
 ) {
   $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-5"><div class="spinner-border text-black" role="status"></div></div>'
   );
 
   $.ajax({
@@ -6751,139 +6734,119 @@ function renderTransferredSummaryReport(response) {
     dateSubtitle = `For ${formatDate(date)}`;
   } else if (month && month.includes("-")) {
     const [year, monthNum] = month.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   } else if (start_date && end_date) {
     if (start_date === end_date) {
       dateSubtitle = `For ${formatDate(start_date)}`;
     } else {
-      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(
-        end_date
-      )}`;
+      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
     }
   }
 
   const totalTransferred = summary?.total_transferred || 0;
   const totalInventoryCost = summary?.total_inventory_cost || 0;
 
-  let html = `
-        <div class="report-header text-center mb-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
-                </h4>
-                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-            </div>
-            <h5 class="mb-2" style="color: #495057; font-weight: 500;">SUMMARY OF TRANSFERRED STOCKS</h5>
-            <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-            <p class="mb-1"><span style="color: #6c757d;">Branch:</span>
-             <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
-            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
-                Generated on ${new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-            </p>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #000f71, #1a237e); color: white;">
-                    <div class="card-body py-4">
-                        <h6 class="card-title mb-2 text-white">TOTAL TRANSFERRED</h6>
-                        <h3 class="mb-0 text-white">${totalTransferred}</h3>
-                        <small>Motorcycles transferred</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
-                    <div class="card-body py-4">
-                        <h6 class="card-title mb-2 text-white">TOTAL INVENTORY COST</h6>
-                        <h3 class="mb-0 text-white">${formatCurrency(
-                          totalInventoryCost
-                        )}</h3>
-                        <small>Total value transferred</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
+  let tableHtml = "";
   if (!data || data.length === 0) {
-    html += `
-            <div class="alert alert-info text-center">
-                <i class="bi bi-info-circle me-2"></i>
-                No transfers found for the selected period from ${branch} branch.
-            </div>
-        `;
+    tableHtml = `
+      <div class="alert alert-info text-center mt-4">
+        <i class="bi bi-info-circle me-2"></i>
+        No transfers found for the selected period from ${branch} branch.
+      </div>
+    `;
   } else {
-    html += `
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Invoice Number</th>
-                            <th>Model</th>
-                            <th>Brand</th>
-                            <th>Color</th>
-                            <th>Engine Number</th>
-                            <th>Frame Number</th>
-                            <th>Transfer Date</th>
-                            <th>Transferred To</th>
-                            <th class="text-end">Inventory Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+    tableHtml = `
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+            <tr>
+              <th>#</th>
+              <th>Invoice Number</th>
+              <th>Model</th>
+              <th>Brand</th>
+              <th>Color</th>
+              <th>Engine Number</th>
+              <th>Frame Number</th>
+              <th>Transfer Date</th>
+              <th>Transferred To</th>
+              <th class="text-end">Inventory Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
     data.forEach((item, index) => {
-      html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${escapeHtml(item.invoice_number || "N/A")}</td>
-                    <td>${escapeHtml(item.model)}</td>
-                    <td class="fw-bold">${escapeHtml(item.brand)}</td>
-                    <td>${escapeHtml(item.color)}</td>
-                    <td><code>${escapeHtml(item.engine_number)}</code></td>
-                    <td><code>${escapeHtml(item.frame_number)}</code></td>
-                    <td>${formatDate(item.transfer_date)}</td>
-                    <td><span class="badge bg-info">${escapeHtml(
-                      item.transferred_to
-                    )}</span></td>
-                    <td class="text-end fw-bold">${formatCurrency(
-                      item.inventory_cost
-                    )}</td>
-                </tr>
-            `;
+      tableHtml += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(item.invoice_number || "N/A")}</td>
+          <td>${escapeHtml(item.model)}</td>
+          <td class="fw-bold">${escapeHtml(item.brand)}</td>
+          <td>${escapeHtml(item.color)}</td>
+          <td><code>${escapeHtml(item.engine_number)}</code></td>
+          <td><code>${escapeHtml(item.frame_number)}</code></td>
+          <td>${formatDate(item.transfer_date)}</td>
+          <td><span class="badge bg-info">${escapeHtml(item.transferred_to)}</span></td>
+          <td class="text-end fw-bold">${formatCurrency(item.inventory_cost)}</td>
+        </tr>
+      `;
     });
-    html += `
-                    </tbody>
-                    <tfoot class="table-group-divider">
-                        <tr class="table-active">
-                            <td colspan="9" class="text-end fw-bold">Total:</td>
-                            <td class="text-end fw-bold">${formatCurrency(
-                              totalInventoryCost
-                            )}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        `;
+    tableHtml += `
+          </tbody>
+          <tfoot class="table-group-divider">
+            <tr class="table-active">
+              <td colspan="9" class="text-end fw-bold">Total:</td>
+              <td class="text-end fw-bold">${formatCurrency(totalInventoryCost)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
   }
-  html += generateBrandSummaryHtml(data);
+
+  let html = `
+    <div class="report-header text-center mb-4">
+      <div class="d-flex align-items-center justify-content-center mb-2">
+        <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+        <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+        <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+      </div>
+      <h5 class="mb-2" style="color: #495057; font-weight: 500;">SUMMARY OF TRANSFERRED STOCKS</h5>
+      <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
+      <p class="mb-1"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-md-6 mb-3 mb-md-0">
+        <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #000f71, #1a237e); color: white;">
+          <div class="card-body py-3">
+            <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL TRANSFERRED</h6>
+            <h3 class="mb-0 text-white">${totalTransferred}</h3>
+            <small class="text-white-50">Motorcycles</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+          <div class="card-body py-3">
+            <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY COST</h6>
+            <h3 class="mb-0 text-white">${formatCurrency(totalInventoryCost)}</h3>
+            <small class="text-white-50">Total value</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${tableHtml}
+    ${generateBrandSummaryHtml(data)}
+  `;
+
   $("#monthlyReportContent").html(html);
 }
-
 // START: Replace this function
 function generateTransferredReportPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("l", "mm", "a4"); // FIX: Removed check for `!currentReportMonth` which caused the error on daily reports.
+  const doc = new jsPDF("l", "mm", "a4");
 
   if (!currentReportData || currentReportType !== "transferred") {
     showErrorModal(
@@ -6893,20 +6856,17 @@ function generateTransferredReportPDF() {
   }
 
   const categoryFilter = $("#reportCategoryFilter").val() || "All Categories";
-  const branchName = currentReportBranch; // FIX: Add dynamic logic for date subtitle and filename
+  const branchName = currentReportBranch;
 
   let dateSubtitle = "";
-  let fileNameDate = new Date().toISOString().slice(0, 10); // Fallback
+  let fileNameDate = new Date().toISOString().slice(0, 10);
 
   if (currentReportDate) {
     dateSubtitle = `For ${formatDate(currentReportDate)}`;
     fileNameDate = currentReportDate;
   } else if (currentReportMonth && currentReportMonth.includes("-")) {
     const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
     fileNameDate = currentReportMonth;
   } else if (currentReportStartDate && currentReportEndDate) {
@@ -6914,120 +6874,103 @@ function generateTransferredReportPDF() {
       dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
       fileNameDate = currentReportStartDate;
     } else {
-      dateSubtitle = `From ${formatDate(
-        currentReportStartDate
-      )} to ${formatDate(currentReportEndDate)}`;
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
       fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
     }
   }
 
-  const totalTransferred =
-    currentReportSummary?.total_transferred || currentReportData.length;
-  const totalInventoryCost =
-    currentReportSummary?.total_inventory_cost ||
-    currentReportData.reduce(
-      (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
-      0
-    );
+  const totalTransferred = currentReportSummary?.total_transferred || 0;
+  const totalInventoryCost = currentReportSummary?.total_inventory_cost || 0;
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const leftRightMargin = 15;
   const topMargin = 15;
-  const bottomMargin = 15;
   let currentY = topMargin;
 
-  const cardBgColor = [248, 249, 250];
-  const cardBorderColor = [233, 236, 239]; // Header Section
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
-  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
-    align: "center",
-  });
+  // --- HEADER ---
+  doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
   currentY += 10;
-
-  doc.setFontSize(13);
-  doc.text("SUMMARY OF TRANSFERRED STOCKS", pageWidth / 2, currentY, {
-    align: "center",
-  });
+  doc.setFontSize(13).setTextColor(73, 80, 87);
+  doc.text("SUMMARY OF TRANSFERRED STOCKS", pageWidth / 2, currentY, { align: "center" });
   currentY += 8;
-
   doc.setFontSize(10);
-  doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" }); // Use dynamic subtitle
+  doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
-
-  doc.text(
-    `Branch: ${branchName} | Category: ${categoryFilter}`,
-    pageWidth / 2,
-    currentY,
-    { align: "center" }
-  );
+  doc.text(`Branch: ${branchName} | Category: ${categoryFilter}`, pageWidth / 2, currentY, { align: "center" });
   currentY += 8;
 
+  // --- MAIN TABLE ---
   const tableColumns = [
-    { header: "#", dataKey: "index" },
-    { header: "Invoice Number", dataKey: "invoice_number" },
-    { header: "Model", dataKey: "model" },
-    { header: "Brand", dataKey: "brand" },
-    { header: "Color", dataKey: "color" },
-    { header: "Engine Number", dataKey: "engine_number" },
-    { header: "Frame Number", dataKey: "frame_number" },
-    { header: "Transfer Date", dataKey: "transfer_date" },
-    { header: "Transferred To", dataKey: "transferred_to" },
-    { header: "Inventory Cost", dataKey: "inventory_cost" },
+    { header: "#", dataKey: "index" }, { header: "Invoice Number", dataKey: "invoice_number" },
+    { header: "Model", dataKey: "model" }, { header: "Brand", dataKey: "brand" },
+    { header: "Color", dataKey: "color" }, { header: "Engine Number", dataKey: "engine_number" },
+    { header: "Frame Number", dataKey: "frame_number" }, { header: "Transfer Date", dataKey: "transfer_date" },
+    { header: "Transferred To", dataKey: "transferred_to" }, { header: "Inventory Cost", dataKey: "inventory_cost" },
   ];
 
- const tableRows =
-    !currentReportData.data || currentReportData.data.length === 0 // Check the inner array
-      ? []
-      : currentReportData.data.map((item, index) => ({ // Use .data.map()
-          index: index + 1,
-          invoice_number: item.invoice_number || "N/A",
-          model: item.model,
-          brand: item.brand,
-          color: item.color,
-          engine_number: item.engine_number,
-          frame_number: item.frame_number,
-          transfer_date: formatDate(item.transfer_date),
-          transferred_to: item.transferred_to,
-          inventory_cost: formatCurrency(item.inventory_cost),
-        }));
+  const tableRows = !currentReportData.data || currentReportData.data.length === 0 ? []
+    : currentReportData.data.map((item, index) => ({
+      index: index + 1, invoice_number: item.invoice_number || "N/A",
+      model: item.model, brand: item.brand, color: item.color,
+      engine_number: item.engine_number, frame_number: item.frame_number,
+      transfer_date: formatDate(item.transfer_date), transferred_to: item.transferred_to,
+      inventory_cost: formatCurrency(item.inventory_cost),
+    }));
 
   doc.autoTable({
     startY: currentY,
-    headStyles: {
-      fillColor: cardBgColor,
-      textColor: 0,
-      fontStyle: "bold",
-      fontSize: 8,
-    },
+    head: [tableColumns.map(c => c.header)],
+    body: tableRows.map(row => tableColumns.map(col => row[col.dataKey])),
+    theme: "striped",
+    headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold", fontSize: 8 },
     styles: { fontSize: 8, cellPadding: 2, textColor: 0 },
     columnStyles: {
-      index: { halign: "center", cellWidth: 7 },
-      brand: { cellWidth: 18 },
-      transfer_date: { cellWidth: 19 },
-      transferred_to: { cellWidth: 24, halign: "center" },
+      index: { halign: "center", cellWidth: 7 }, brand: { cellWidth: 18 },
+      transfer_date: { cellWidth: 19 }, transferred_to: { cellWidth: 24, halign: "center" },
       inventory_cost: { halign: "right", cellWidth: 23 },
     },
-    columns: tableColumns,
-    body: tableRows,
     margin: { left: leftRightMargin, right: leftRightMargin },
-    tableWidth: "auto",
-    didParseCell: (data) => {
-      if (data.cell.section === "body" && data.row.index % 2 !== 0) {
-        data.cell.styles.fillColor = cardBgColor;
-      }
-    },
-  }); // ... Footer and Save logic ...
-let finalY = doc.autoTable.previous.finalY;
-  addBrandSummaryToPdf(doc, currentReportData.data, finalY);
+  });
+
+  let finalY = doc.autoTable.previous.finalY + 10;
+
+  // --- SUMMARY SECTION (MOVED TO THE END) ---
+  const cardWidth = (pageWidth - 2 * leftRightMargin - 10) / 2;
+  const cardHeight = 20;
+
+  if (finalY + cardHeight > pageHeight - 25) {
+      doc.addPage();
+      finalY = topMargin;
+  }
+
+  // Card for Total Transferred
+  // Card for Total Transferred
+  doc.setFillColor(0, 15, 113);
+  doc.roundedRect(leftRightMargin, finalY, cardWidth, cardHeight, 3, 3, "F");
+  doc.setFontSize(8).setTextColor(200, 200, 255).setFont("helvetica", "bold"); // Reduced font size
+  doc.text("TOTAL TRANSFERRED", leftRightMargin + 10, finalY + 7);
+  doc.setFontSize(12).setTextColor(255, 255, 255); // Reduced font size
+  doc.text(String(totalTransferred), leftRightMargin + 10, finalY + 15);
+
+  // Card for Total Inventory Cost
+  const secondCardX = leftRightMargin + cardWidth + 10;
+  doc.setFillColor(40, 167, 69);
+  doc.roundedRect(secondCardX, finalY, cardWidth, cardHeight, 3, 3, "F");
+  doc.setFontSize(8).setTextColor(200, 255, 200).setFont("helvetica", "bold"); // Reduced font size
+  doc.text("TOTAL INVENTORY COST", secondCardX + 10, finalY + 7);
+  doc.setFontSize(12).setTextColor(255, 255, 255); // Reduced font size
+  doc.text(formatCurrency(totalInventoryCost), secondCardX + 10, finalY + 15);
+
+  finalY += cardHeight;
+
+  // Add Brand Summary Table
+  finalY = addBrandSummaryToPdf(doc, currentReportData.data, finalY);
+
+  // --- FOOTER ---
   const generatedOn = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -7052,7 +6995,7 @@ function generateReceivedSummary(
   brand = "all"
 ) {
   $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-5"><div class="spinner-border text-black" role="status"></div></div>'
   );
 
   $.ajax({
@@ -7094,183 +7037,150 @@ function generateReceivedSummary(
 }
 
 function renderReceivedSummaryReport(response) {
-  // FIX: Destructure all needed variables from the single 'response' object.
   const { data, summary, branch, month, date, start_date, end_date } = response;
 
   let dateSubtitle = "";
-  // This block correctly handles all date types
   if (date) {
     dateSubtitle = `For ${formatDate(date)}`;
   } else if (month && month.includes("-")) {
     const [year, monthNum] = month.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   } else if (start_date && end_date) {
     if (start_date === end_date) {
       dateSubtitle = `For ${formatDate(start_date)}`;
     } else {
-      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(
-        end_date
-      )}`;
+      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
     }
   }
 
   const totalReceived = summary?.total_received || 0;
   const totalInventoryCost = summary?.total_inventory_cost || 0;
 
-  let html = `
-        <div class="report-header text-center mb-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
-                </h4>
-                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-            </div>
-            <h5 class="mb-2" style="color: #495057; font-weight: 500;">SUMMARY OF RECEIVED STOCKS</h5>
-            <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-            <p class="mb-1"><span style="color: #6c757d;">Branch:</span>
-             <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
-            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
-                Generated on ${new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-            </p>
-        </div>
-
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #000f71, #1a237e); color: white;">
-                    <div class="card-body py-4">
-                        <h6 class="card-title mb-2 text-white">TOTAL RECEIVED</h6>
-                        <h3 class="mb-0 text-white">${totalReceived}</h3>
-                        <small>Motorcycles received</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm text-center" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
-                    <div class="card-body py-4">
-                        <h6 class="card-title mb-2 text-white">TOTAL INVENTORY COST</h6>
-                        <h3 class="mb-0 text-white">${formatCurrency(
-                          totalInventoryCost
-                        )}</h3>
-                        <small>Total value received</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
+  let tableHtml = "";
   if (!data || data.length === 0) {
-    html += `
-            <div class="alert alert-info text-center">
-                <i class="bi bi-info-circle me-2"></i>
-                No stocks received for the selected period at ${branch} branch.
-            </div>
-        `;
+    tableHtml = `
+      <div class="alert alert-info text-center mt-4">
+        <i class="bi bi-info-circle me-2"></i>
+        No stocks received for the selected period at ${branch} branch.
+      </div>
+    `;
   } else {
-    html += `
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Invoice Number</th>
-                            <th>Model</th>
-                            <th>Brand</th>
-                            <th>Color</th>
-                            <th>Engine Number</th>
-                            <th>Frame Number</th>
-                            <th>Received Date</th>
-                            <th>Received From</th>
-                            <th class="text-end">Inventory Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-
+    tableHtml = `
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+            <tr>
+              <th>#</th>
+              <th>Invoice Number</th>
+              <th>Model</th>
+              <th>Brand</th>
+              <th>Color</th>
+              <th>Engine Number</th>
+              <th>Frame Number</th>
+              <th>Received Date</th>
+              <th>Received From</th>
+              <th class="text-end">Inventory Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
     data.forEach((item, index) => {
-      html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${escapeHtml(item.invoice_number || "N/A")}</td>
-                    <td>${escapeHtml(item.model)}</td>
-                    <td class="fw-bold">${escapeHtml(item.brand)}</td>
-                    <td>${escapeHtml(item.color)}</td>
-                    <td><code>${escapeHtml(item.engine_number)}</code></td>
-                    <td><code>${escapeHtml(item.frame_number)}</code></td>
-                    <td>${formatDate(item.date_received)}</td>
-                    <td><span class="badge bg-info">${escapeHtml(
-                      item.received_from
-                    )}</span></td>
-                    <td class="text-end fw-bold">${formatCurrency(
-                      item.inventory_cost
-                    )}</td>
-                </tr>
-            `;
+      tableHtml += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(item.invoice_number || "N/A")}</td>
+          <td>${escapeHtml(item.model)}</td>
+          <td class="fw-bold">${escapeHtml(item.brand)}</td>
+          <td>${escapeHtml(item.color)}</td>
+          <td><code>${escapeHtml(item.engine_number)}</code></td>
+          <td><code>${escapeHtml(item.frame_number)}</code></td>
+          <td>${formatDate(item.date_received)}</td>
+          <td><span class="badge bg-info">${escapeHtml(item.received_from)}</span></td>
+          <td class="text-end fw-bold">${formatCurrency(item.inventory_cost)}</td>
+        </tr>
+      `;
     });
-
-    html += `
-                    </tbody>
-                    <tfoot class="table-group-divider">
-                        <tr class="table-active">
-                            <td colspan="9" class="text-end fw-bold">Total:</td>
-                            <td class="text-end fw-bold">${formatCurrency(
-                              totalInventoryCost
-                            )}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        `;
+    tableHtml += `
+          </tbody>
+          <tfoot class="table-group-divider">
+            <tr class="table-active">
+              <td colspan="9" class="text-end fw-bold">Total:</td>
+              <td class="text-end fw-bold">${formatCurrency(totalInventoryCost)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
   }
-  html += generateBrandSummaryHtml(data);
+
+  let html = `
+    <div class="report-header text-center mb-4">
+        <div class="d-flex align-items-center justify-content-center mb-2">
+            <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+            <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+            <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+        </div>
+        <h5 class="mb-2" style="color: #495057; font-weight: 500;">SUMMARY OF RECEIVED STOCKS</h5>
+        <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
+        <p class="mb-1"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3 mb-md-0">
+            <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #000f71, #1a237e); color: white;">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL RECEIVED</h6>
+                    <h3 class="mb-0 text-white">${totalReceived}</h3>
+                    <small class="text-white-50">Motorcycles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+                <div class="card-body py-3">
+                    <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY COST</h6>
+                    <h3 class="mb-0 text-white">${formatCurrency(totalInventoryCost)}</h3>
+                    <small class="text-white-50">Total value</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    ${tableHtml}
+    ${generateBrandSummaryHtml(data)}
+  `;
+
   $("#monthlyReportContent").html(html);
 }
-// START: Replace this function
 function generateReceivedReportPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("l", "mm", "a4"); // Correct validation to check for the right report type
+  const doc = new jsPDF("l", "mm", "a4");
 
   if (!currentReportData || currentReportType !== "received") {
     showErrorModal(
       "Please generate a received stocks summary report first before exporting to PDF"
     );
     return;
-  } // --- DYNAMIC HEADER AND FILTERS ---
+  }
 
   let dateSubtitle = "";
-  let fileNameDate = new Date().toISOString().slice(0, 10); // Fallback filename date
+  let fileNameDate = new Date().toISOString().slice(0, 10);
 
   if (currentReportDate) {
-    // Handles Daily and As of Date
     dateSubtitle = `For ${formatDate(currentReportDate)}`;
     fileNameDate = currentReportDate;
   } else if (currentReportMonth && currentReportMonth.includes("-")) {
-    // Handles Monthly
     const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
     fileNameDate = currentReportMonth;
   } else if (currentReportStartDate && currentReportEndDate) {
-    // Handles Custom Range
     if (currentReportStartDate === currentReportEndDate) {
       dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
       fileNameDate = currentReportStartDate;
     } else {
-      dateSubtitle = `From ${formatDate(
-        currentReportStartDate
-      )} to ${formatDate(currentReportEndDate)}`;
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
       fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
     }
   }
@@ -7279,197 +7189,109 @@ function generateReceivedReportPDF() {
   const pageHeight = doc.internal.pageSize.getHeight();
   const marginLR = 15;
   const topMargin = 15;
-  const bottomMargin = 15;
-  let currentY = topMargin; // Main Title
+  let currentY = topMargin;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
-  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
-    align: "center",
-  });
+  // --- HEADER ---
+  doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
   currentY += 10;
-  doc.setFontSize(13);
-  doc.text("SUMMARY OF RECEIVED STOCKS", pageWidth / 2, currentY, {
-    align: "center",
-  });
+  doc.setFontSize(13).setTextColor(73, 80, 87);
+  doc.text("SUMMARY OF RECEIVED STOCKS", pageWidth / 2, currentY, { align: "center" });
   currentY += 8;
   doc.setFontSize(10);
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
-  currentY += 6; // Filter Parameters Header
+  currentY += 6;
 
   const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all")
-    filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all")
-    filterParts.push(
-      `Category: ${
-        currentReportCategory.charAt(0).toUpperCase() +
-        currentReportCategory.slice(1)
-      }`
-    );
-  if (currentReportBrand && currentReportBrand !== "all")
-    filterParts.push(`Brand: ${currentReportBrand}`);
-  if (
-    currentReportModel &&
-    currentReportModel !== "all" &&
-    currentReportModel !== ""
-  )
-    filterParts.push(`Model: ${currentReportModel}`);
-
+  if (currentReportBranch && currentReportBranch !== "all") filterParts.push(`Branch: ${currentReportBranch}`);
+  if (currentReportCategory && currentReportCategory !== "all") filterParts.push(`Category: ${currentReportCategory.charAt(0).toUpperCase() + currentReportCategory.slice(1)}`);
+  if (currentReportBrand && currentReportBrand !== "all") filterParts.push(`Brand: ${currentReportBrand}`);
+  if (currentReportModel && currentReportModel !== "all" && currentReportModel !== "") filterParts.push(`Model: ${currentReportModel}`);
   if (filterParts.length > 0) {
-    doc.setFontSize(9);
-    doc.setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, {
-      align: "center",
-    });
+    doc.setFontSize(9).setTextColor(108, 117, 125);
+    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, { align: "center" });
     currentY += 7;
-  } // --- TABLE OF UNITS ---
+  }
 
+  // --- MAIN TABLE ---
   const tableColumns = [
-    { header: "#", dataKey: "index" },
-    { header: "Invoice Number", dataKey: "invoice_number" },
-    { header: "Model", dataKey: "model" },
-    { header: "Brand", dataKey: "brand" },
-    { header: "Color", dataKey: "color" },
-    { header: "Engine Number", dataKey: "engine_number" },
-    { header: "Frame Number", dataKey: "frame_number" },
-    { header: "Received Date", dataKey: "date_received" },
-    { header: "Received From", dataKey: "received_from" },
-    { header: "Inventory Cost", dataKey: "inventory_cost" },
+    { header: "#", dataKey: "index" }, { header: "Invoice Number", dataKey: "invoice_number" },
+    { header: "Model", dataKey: "model" }, { header: "Brand", dataKey: "brand" },
+    { header: "Color", dataKey: "color" }, { header: "Engine Number", dataKey: "engine_number" },
+    { header: "Frame Number", dataKey: "frame_number" }, { header: "Received Date", dataKey: "date_received" },
+    { header: "Received From", dataKey: "received_from" }, { header: "Inventory Cost", dataKey: "inventory_cost" },
   ];
-
-  const tableRows =
-    currentReportData.length === 0
-      ? []
-      : currentReportData.map((item, index) => ({
-          index: index + 1,
-          invoice_number: item.invoice_number || "N/A",
-          model: item.model,
-          brand: item.brand,
-          color: item.color,
-          engine_number: item.engine_number,
-          frame_number: item.frame_number,
-          date_received: formatDate(item.date_received),
-          received_from: item.received_from,
-          inventory_cost: formatCurrency(item.inventory_cost),
-        })); // Adjusted column widths to prevent overflow
-
+  const tableRows = !currentReportData.data || currentReportData.data.length === 0 ? []
+    : currentReportData.data.map((item, index) => ({
+      index: index + 1, invoice_number: item.invoice_number || "N/A",
+      model: item.model, brand: item.brand, color: item.color,
+      engine_number: item.engine_number, frame_number: item.frame_number,
+      date_received: formatDate(item.date_received), received_from: item.received_from,
+      inventory_cost: formatCurrency(item.inventory_cost),
+    }));
   const tableColumnStyles = {
-    index: { halign: "center", cellWidth: 8 },
-    invoice_number: { cellWidth: 28 },
-    model: { cellWidth: 33 },
-    brand: { cellWidth: 18 },
-    color: { cellWidth: 18 },
-    engine_number: { cellWidth: 33 },
-    frame_number: { cellWidth: 33 },
-    date_received: { cellWidth: 22 },
-    received_from: { cellWidth: 25, halign: "center" },
+    index: { halign: "center", cellWidth: 8 }, invoice_number: { cellWidth: 28 },
+    model: { cellWidth: 33 }, brand: { cellWidth: 18 }, color: { cellWidth: 18 },
+    engine_number: { cellWidth: 33 }, frame_number: { cellWidth: 33 },
+    date_received: { cellWidth: 22 }, received_from: { cellWidth: 25, halign: "center" },
     inventory_cost: { halign: "right", cellWidth: 25 },
   };
 
   doc.autoTable({
     startY: currentY,
-    headStyles: {
-      fillColor: [248, 249, 250],
-      textColor: 0,
-      fontStyle: "bold",
-      fontSize: 8,
-    },
+    head: [tableColumns.map(c => c.header)],
+    body: tableRows.map(row => tableColumns.map(col => row[col.dataKey])),
+    theme: "striped",
+    headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold", fontSize: 8 },
     styles: { fontSize: 8, cellPadding: 2, textColor: 0 },
     columnStyles: tableColumnStyles,
-    columns: tableColumns,
-    body: tableRows,
     margin: { left: marginLR, right: marginLR },
-    tableWidth: "auto",
-    didParseCell: function (data) {
-      if (data.column.dataKey === "brand" && data.cell.section === "body") {
-        data.cell.styles.fontStyle = "bold";
-      }
-      if (data.cell.section === "body" && data.row.index % 2 !== 0) {
-        data.cell.styles.fillColor = [248, 249, 250];
-      }
-    },
   });
 
-  let finalTableY = doc.autoTable.previous.finalY;
-  if (!finalTableY || isNaN(finalTableY)) {
-    finalTableY = currentY + 10;
-  } // --- SUMMARY CARDS ---
+  let finalY = doc.autoTable.previous.finalY + 10;
 
-  const totalReceived =
-    currentReportSummary?.total_received || currentReportData.length;
-  const totalInventoryCost =
-    currentReportSummary?.total_inventory_cost ||
-    currentReportData.reduce(
-      (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
-      0
-    );
-  const cardHeight = 45;
-  const cardSpacing = 10;
-  const cardWidth = (pageWidth - 2 * marginLR - cardSpacing) / 2;
-  const twoCardStartX = pageWidth / 2 - (cardWidth * 2 + cardSpacing) / 2;
+  // --- SUMMARY SECTION (MOVED TO THE END) ---
+  const totalReceived = currentReportSummary?.total_received || 0;
+  const totalInventoryCost = currentReportSummary?.total_inventory_cost || 0;
+  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+  const cardHeight = 20;
 
-  function drawCard(x, y, width, height, title, mainValue, subValue) {
-    // Hardcoded colors to fix the "Invalid argument" error
-    doc.setDrawColor(233, 236, 239);
-    doc.setFillColor(248, 249, 250);
-    doc.roundedRect(x, y, width, height, 3, 3, "F");
-    doc
-      .setFontSize(9)
-      .setTextColor(0, 0, 0)
-      .setFont("helvetica", "bold")
-      .text(title, x + width / 2, y + 8, { align: "center" });
-    doc
-      .setFontSize(18)
-      .setTextColor(0, 0, 0)
-      .setFont("helvetica", "bold")
-      .text(String(mainValue), x + width / 2, y + 25, { align: "center" });
-    doc.setFontSize(8).setTextColor(0, 0, 0).setFont("helvetica", "normal");
-    doc.text(subValue, x + width / 2, y + 33, { align: "center" });
+  if (finalY + cardHeight > pageHeight - 25) {
+      doc.addPage();
+      finalY = topMargin;
   }
+  
+  // Card for Total Received
+  doc.setFillColor(0, 15, 113);
+  doc.roundedRect(marginLR, finalY, cardWidth, cardHeight, 3, 3, "F");
+  doc.setFontSize(8).setTextColor(200, 200, 255).setFont("helvetica", "bold");
+  doc.text("TOTAL RECEIVED", marginLR + 10, finalY + 7);
+  doc.setFontSize(12).setTextColor(255, 255, 255);
+  doc.text(String(totalReceived), marginLR + 10, finalY + 15);
 
-  let summaryCardsY = finalTableY + 15;
-  if (summaryCardsY + cardHeight + bottomMargin > pageHeight) {
-    doc.addPage();
-    summaryCardsY = topMargin;
-  }
+  // Card for Total Inventory Cost
+  const secondCardX = marginLR + cardWidth + 10;
+  doc.setFillColor(40, 167, 69);
+  doc.roundedRect(secondCardX, finalY, cardWidth, cardHeight, 3, 3, "F");
+  doc.setFontSize(8).setTextColor(200, 255, 200).setFont("helvetica", "bold");
+  doc.text("TOTAL INVENTORY COST", secondCardX + 10, finalY + 7);
+  doc.setFontSize(12).setTextColor(255, 255, 255);
+  doc.text(formatCurrency(totalInventoryCost), secondCardX + 10, finalY + 15);
 
-  drawCard(
-    twoCardStartX,
-    summaryCardsY,
-    cardWidth,
-    cardHeight,
-    "TOTAL RECEIVED",
-    totalReceived,
-    "Motorcycles received"
-  );
-  drawCard(
-    twoCardStartX + cardWidth + cardSpacing,
-    summaryCardsY,
-    cardWidth,
-    cardHeight,
-    "TOTAL INVENTORY COST",
-    formatCurrency(totalInventoryCost),
-    "Total value received"
-  ); // --- FOOTER AND SAVE ---
-let finalY = doc.autoTable.previous.finalY;
-  addBrandSummaryToPdf(doc, currentReportData.data, finalY);
-  const generatedOn = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  finalY += cardHeight;
+
+  // Add Brand Summary Table
+  finalY = addBrandSummaryToPdf(doc, currentReportData.data, finalY);
+
+  // --- FOOTER ---
+  const generatedOn = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(108, 117, 125);
     doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, {
-      align: "center",
-    });
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
 
   const safeBranchName = (currentReportBranch || "all").replace(/\s+/g, "_");
@@ -7489,7 +7311,7 @@ function generateScrappedReport() {
 
   $("#monthlyReportOptionsModal").modal("hide");
   $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-5"><div class="spinner-border text-black" role="status"></div></div>'
   );
 
   $.ajax({
@@ -8001,7 +7823,7 @@ let finalY = doc.autoTable.previous.finalY;
 function generateMotorcycleReport(branch, brandFilter) {
   $("#monthlyReportOptionsModal").modal("hide");
   $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+    '<div class="text-center py-5"><div class="spinner-border text-black" role="status"></div></div>'
   );
 
   $.ajax({
@@ -8031,62 +7853,24 @@ function generateMotorcycleReport(branch, brandFilter) {
 
 function renderMotorcycleReport(data, branch, brandFilter) {
   let dateSubtitle = "";
-  // FIX: This block correctly handles all date types for the title
   if (currentReportDate) {
     dateSubtitle = `As of ${formatDate(currentReportDate)}`;
   } else if (currentReportStartDate && currentReportEndDate) {
-    dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(
-      currentReportEndDate
-    )}`;
+    dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
   } else if (currentReportMonth) {
     const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   }
-  const timestamp = new Date().toLocaleString();
-  $("#monthlyReportTimestamp").text("Generated on: " + timestamp);
-  $("#monthlyInventoryReportModalLabel").text(
-    "Available Motorcycle Units Report"
-  );
 
-  let html = `
-        <div class="report-header text-center mb-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
-                </h4>
-                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-            </div>
-            <h5 class="mb-2" style="color: #495057; font-weight: 500;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
-            <p class="text-muted">
-                ${
-                  brandFilter === "all"
-                    ? "ALL BRANDS"
-                    : brandFilter.toUpperCase()
-                } | 
-                ${branch ? branch : "ALL BRANCHES"}
-            </p>
-            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
-                Generated on ${new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-            </p>
-        </div>
-    `;
+  $("#monthlyInventoryReportModalLabel").text("Available Motorcycle Units Report");
 
+  const totalUnits = data.length;
+  const totalValue = data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+
+  let tablesHtml = "";
   if (data.length === 0) {
-    html += `
-            <div class="alert alert-info text-center">
-                No available motorcycles found for the selected criteria.
-            </div>
-        `;
+    tablesHtml = `<div class="alert alert-info text-center">No available motorcycles found for the selected criteria.</div>`;
   } else {
     const branches = {};
     data.forEach((item) => {
@@ -8096,156 +7880,122 @@ function renderMotorcycleReport(data, branch, brandFilter) {
       branches[item.current_branch].push(item);
     });
 
-    Object.keys(branches).forEach((branch) => {
-      const branchData = branches[branch];
-
-      html += `
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">${branch} - ${branchData.length} unit/s</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
-                            <table class="table table-sm mb-0">
-                                <thead>
-                                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
-                                        <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 60px;">QTY</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">MODEL</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">COLOR</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">BRAND</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                                        <th class="py-3" style="font-weight: 600; color: #495057;">Inventory Cost</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-            `;
-
-      branchData.forEach((item) => {
-        html += `
-                    <tr>
-                        <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">1</td>
-                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                          item.model
-                        )}</td>
-                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                          item.color
-                        )}</td>
-                        <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                          item.brand
-                        )}</td>
-                        <td class="py-2">${escapeHtml(item.engine_number)}</td>
-                        <td class="py-2">${escapeHtml(item.frame_number)}</td>
-                        <td class="py-2 text-end">${formatCurrency(
-                          item.inventory_cost
-                        )}</td>
-                    </tr>
-                `;
-      });
-
-      html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-    });
-
-    const totalUnits = data.length;
-    const totalValue = data.reduce(
-      (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
-      0
-    );
-
-    html += `
-            <div class="alert alert-primary mt-3">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Total Units:</strong> ${totalUnits}
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <strong>Total Inventory Value:</strong> ${formatCurrency(
-                          totalValue
-                        )}
-                    </div>
-                </div>
-            </div>
+    Object.keys(branches).sort().forEach((branchName) => {
+      const branchData = branches[branchName];
+      tablesHtml += `
+        <div class="card mb-4">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">${branchName} - ${branchData.length} unit/s</h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped table-hover mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>#</th>
+                    <th>Model</th>
+                    <th>Color</th>
+                    <th>Brand</th>
+                    <th>Engine Number</th>
+                    <th>Frame Number</th>
+                    <th class="text-end">Inventory Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+      `;
+      branchData.forEach((item, index) => {
+        tablesHtml += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(item.model)}</td>
+            <td>${escapeHtml(item.color)}</td>
+            <td>${escapeHtml(item.brand)}</td>
+            <td><code>${escapeHtml(item.engine_number)}</code></td>
+            <td><code>${escapeHtml(item.frame_number)}</code></td>
+            <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+          </tr>
         `;
+      });
+      tablesHtml += `</tbody></table></div></div></div>`;
+    });
   }
-  html += generateBrandSummaryHtml(data);
+
+  let html = `
+    <div class="report-header text-center mb-4">
+      <div class="d-flex align-items-center justify-content-center mb-2">
+        <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+        <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+        <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+      </div>
+      <h5 class="mb-2" style="color: #495057; font-weight: 500;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
+      <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
+      <p class="text-muted small">
+        ${brandFilter === "all" ? "ALL BRANDS" : brandFilter.toUpperCase()} | 
+        ${branch ? branch : "ALL BRANCHES"}
+      </p>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-md-6 mb-3 mb-md-0">
+        <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
+          <div class="card-body py-3">
+            <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL AVAILABLE UNITS</h6>
+            <h3 class="mb-0 text-white">${totalUnits}</h3>
+            <small class="text-white-50">Motorcycles</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #198754, #157347); color: white;">
+          <div class="card-body py-3">
+            <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY VALUE</h6>
+            <h3 class="mb-0 text-white">${formatCurrency(totalValue)}</h3>
+            <small class="text-white-50">Total value</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${tablesHtml}
+    ${generateBrandSummaryHtml(data)}
+  `;
+
   $("#monthlyReportContent").html(html);
 
-  $("<style>")
-    .prop("type", "text/css")
-    .html(
-      `
-            #monthlyInventoryReportModal .modal-body {
-                max-height: calc(100vh - 200px);
-                overflow-y: auto;
-            }
-            #monthlyInventoryReportModal .modal-dialog {
-                max-width: 95%;
-                height: calc(100vh - 100px);
-            }
-            #monthlyInventoryReportModal .modal-content {
-                height: 100%;
-            }
-            .table-container { overflow: hidden; }
-            .table th { font-weight: 600; font-size: 0.9rem; }
-            .table td { font-size: 0.9rem; color: #495057; }
-            .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-            .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
-            .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
-        `
-    )
-    .appendTo("head");
-
-  $("#exportMonthlyReportToPDF")
-    .off("click")
-    .on("click", function () {
-      exportMotorcycleReportToPDF(html, branch, brandFilter);
-    });
+  // Remove the old style injection if it's no longer needed or adjust as necessary
+  // For this layout, the default modal styles should suffice.
+  $("<style>").prop("type", "text/css").html(`
+    #monthlyInventoryReportModal .modal-dialog { max-width: 90%; }
+    #monthlyInventoryReportModal .modal-body { max-height: calc(100vh - 120px); }
+  `).appendTo("head");
 }
 
-// START: Replace this function
 function generateMotorcycleReportPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF("l", "mm", "a4");
 
   if (!currentReportData || currentReportType !== "motorcycle") {
-    showErrorModal(
-      "Please generate an available motorcycle units report first before exporting to PDF."
-    );
+    showErrorModal("Please generate an available motorcycle units report first before exporting to PDF.");
     return;
-  } // --- DYNAMIC HEADER AND FILTERS ---
+  }
 
   let dateSubtitle = "";
-  let fileNameDate = new Date().toISOString().slice(0, 10); // Fallback
+  let fileNameDate = new Date().toISOString().slice(0, 10);
 
   if (currentReportDate) {
-    // Handles Daily and As of Date
     dateSubtitle = `As of ${formatDate(currentReportDate)}`;
     fileNameDate = currentReportDate;
   } else if (currentReportMonth && currentReportMonth.includes("-")) {
-    // Handles Monthly
     const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
     fileNameDate = currentReportMonth;
   } else if (currentReportStartDate && currentReportEndDate) {
-    // Handles Custom Range
     if (currentReportStartDate === currentReportEndDate) {
       dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
       fileNameDate = currentReportStartDate;
     } else {
-      dateSubtitle = `From ${formatDate(
-        currentReportStartDate
-      )} to ${formatDate(currentReportEndDate)}`;
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
       fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
     }
   }
@@ -8254,84 +8004,55 @@ function generateMotorcycleReportPDF() {
   const pageHeight = doc.internal.pageSize.getHeight();
   const marginLR = 10;
   const marginBottom = 20;
-  let currentY = 15; // Main Title
+  let currentY = 15;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(0, 15, 113);
-  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
-    align: "center",
-  });
+  // --- HEADER ---
+  doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
   currentY += 10;
-  doc.setFontSize(12);
-  doc.setTextColor(73, 80, 87);
-  doc.text("AVAILABLE MOTORCYCLE UNITS REPORT", pageWidth / 2, currentY, {
-    align: "center",
-  });
+  doc.setFontSize(12).setTextColor(73, 80, 87);
+  doc.text("AVAILABLE MOTORCYCLE UNITS REPORT", pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
-  doc.setFontSize(10);
-  doc.setTextColor(0, 64, 133);
+  doc.setFontSize(10).setTextColor(0, 64, 133);
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
-  currentY += 6; // Filter Parameters Header
+  currentY += 6;
 
   const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all")
-    filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all")
-    filterParts.push(
-      `Category: ${
-        currentReportCategory.charAt(0).toUpperCase() +
-        currentReportCategory.slice(1)
-      }`
-    );
-  if (currentReportBrand && currentReportBrand !== "all")
-    filterParts.push(`Brand: ${currentReportBrand}`);
-  if (
-    currentReportModel &&
-    currentReportModel !== "all" &&
-    currentReportModel !== ""
-  )
-    filterParts.push(`Model: ${currentReportModel}`);
-
+  if (currentReportBranch && currentReportBranch !== "all") filterParts.push(`Branch: ${currentReportBranch}`);
+  if (currentReportCategory && currentReportCategory !== "all") filterParts.push(`Category: ${currentReportCategory.charAt(0).toUpperCase() + currentReportCategory.slice(1)}`);
+  if (currentReportBrand && currentReportBrand !== "all") filterParts.push(`Brand: ${currentReportBrand}`);
+  if (currentReportModel && currentReportModel !== "all" && currentReportModel !== "") filterParts.push(`Model: ${currentReportModel}`);
   if (filterParts.length > 0) {
-    doc.setFontSize(9);
-    doc.setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, {
-      align: "center",
-    });
+    doc.setFontSize(9).setTextColor(108, 117, 125);
+    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, { align: "center" });
     currentY += 7;
-  } // --- DATA PREPARATION & TABLE GENERATION ---
+  }
+
+  // --- DATA TABLES ---
   const columns = [
-    { header: "QTY", dataKey: "qty" },
-    { header: "MODEL", dataKey: "model" },
-    { header: "COLOR", dataKey: "color" },
-    { header: "BRAND", dataKey: "brand" },
-    { header: "ENGINE NUMBER", dataKey: "engine_number" },
-    { header: "FRAME NUMBER", dataKey: "frame_number" },
+    { header: "QTY", dataKey: "qty" }, { header: "MODEL", dataKey: "model" },
+    { header: "COLOR", dataKey: "color" }, { header: "BRAND", dataKey: "brand" },
+    { header: "ENGINE NUMBER", dataKey: "engine_number" }, { header: "FRAME NUMBER", dataKey: "frame_number" },
     { header: "INVENTORY COST", dataKey: "inventory_cost" },
   ];
-
-  const groupedData = {};
-  currentReportData.forEach((item) => {
-    const branchName = item.current_branch || "Unknown Branch";
-    if (!groupedData[branchName]) groupedData[branchName] = [];
-    groupedData[branchName].push(item);
-  }); // Helper to add a branch section table
+const groupedData = {};
+  currentReportData.data.forEach((item) => {
+    const branchName = item.current_branch || "Unknown Branch";
+    if (!groupedData[branchName]) groupedData[branchName] = [];
+    groupedData[branchName].push(item);
+  });
 
   function addBranchSection(branchName, items) {
-    doc.setFontSize(11);
-    doc.setTextColor(0, 64, 133);
-    doc.setFont("helvetica", "bold");
+    if (currentY + 15 > pageHeight - marginBottom) {
+      doc.addPage();
+      currentY = 20;
+    }
+    doc.setFontSize(11).setTextColor(0, 64, 133).setFont("helvetica", "bold");
     doc.text(`${branchName} - ${items.length} unit/s`, marginLR, currentY);
     currentY += 6;
-
     const rows = items.map((item) => ({
-      qty: "1",
-      model: item.model,
-      color: item.color,
-      brand: item.brand,
-      engine_number: item.engine_number,
-      frame_number: item.frame_number,
+      qty: "1", model: item.model, color: item.color, brand: item.brand,
+      engine_number: item.engine_number, frame_number: item.frame_number,
       inventory_cost: formatCurrency(item.inventory_cost),
     }));
 
@@ -8340,108 +8061,62 @@ function generateMotorcycleReportPDF() {
       head: [columns.map((c) => c.header)],
       body: rows.map((r) => columns.map((c) => r[c.dataKey])),
       styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: {
-        fillColor: [248, 249, 250],
-        textColor: [73, 80, 87],
-        fontStyle: "bold",
-      },
+      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold" },
       margin: { left: marginLR, right: marginLR },
       theme: "striped",
-      didDrawPage: (data) => {
-        currentY = data.cursor.y + 10;
-      },
+      didDrawPage: (data) => { currentY = data.cursor.y; }
     });
     currentY = doc.autoTable.previous.finalY + 10;
   }
 
-  for (const branchName in groupedData) {
+  Object.keys(groupedData).sort().forEach((branchName) => {
     addBranchSection(branchName, groupedData[branchName]);
-    if (currentY + 50 > pageHeight - marginBottom) {
-      doc.addPage();
-      currentY = 20;
-    }
-  } // --- SUMMARY CARDS ---
-
-  const totalUnits = currentReportData.length;
-  const totalValue = currentReportData.reduce(
-    (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
-    0
-  );
-  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
-  const cardHeight = 45;
-  let cardY = currentY;
-
-  if (cardY + cardHeight + marginBottom > pageHeight) {
-    doc.addPage();
-    cardY = 20;
-  }
-
-  function drawCard(x, y, width, height, title, mainValue, subValue) {
-    doc.setDrawColor(233, 236, 239);
-    doc.setFillColor(248, 249, 250);
-    doc.rect(x, y, width, height, "F");
-    doc
-      .setFontSize(9)
-      .setTextColor(73, 80, 87)
-      .setFont("helvetica", "bold")
-      .text(title, x + width / 2, y + 8, { align: "center" });
-    doc
-      .setFontSize(18)
-      .setTextColor(0, 64, 133)
-      .setFont("helvetica", "bold")
-      .text(String(mainValue), x + width / 2, y + 25, { align: "center" });
-    doc
-      .setFontSize(10)
-      .setTextColor(108, 117, 125)
-      .setFont("helvetica", "normal")
-      .text(subValue, x + width / 2, y + 35, { align: "center" });
-  }
-
-  drawCard(
-    marginLR,
-    cardY,
-    cardWidth,
-    cardHeight,
-    "TOTAL UNITS",
-    totalUnits,
-    "Motorcycles available"
-  );
-  drawCard(
-    marginLR + cardWidth + 10,
-    cardY,
-    cardWidth,
-    cardHeight,
-    "TOTAL INVENTORY VALUE",
-    formatCurrency(totalValue),
-    "Total value available"
-  ); // --- FOOTER AND SAVE ---
-let finalY = doc.autoTable.previous.finalY;
-  addBrandSummaryToPdf(doc, currentReportData.data, finalY);
-  const generatedOn = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
   });
+
+  // --- SUMMARY SECTION (MOVED TO END) ---
+  const totalUnits = currentReportData.data.length;
+  const totalValue = currentReportData.data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+  const cardHeight = 20;
+
+  if (currentY + cardHeight > pageHeight - marginBottom) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  function drawCard(x, y, width, height, title, mainValue, subValue, bgColor, textColor) {
+    doc.setFillColor(...bgColor);
+    doc.roundedRect(x, y, width, height, 3, 3, "F");
+    doc.setFontSize(8).setTextColor(...textColor).setFont("helvetica", "bold");
+    doc.text(title, x + width / 2, y + 7, { align: "center" });
+    doc.setFontSize(12).setTextColor(255, 255, 255);
+    doc.text(String(mainValue), x + width / 2, y + 15, { align: "center" });
+  }
+
+  drawCard(marginLR, currentY, cardWidth, cardHeight, "TOTAL AVAILABLE UNITS", totalUnits, "Motorcycles", [13, 110, 253], [200, 225, 255]);
+  drawCard(marginLR + cardWidth + 10, currentY, cardWidth, cardHeight, "TOTAL INVENTORY VALUE", formatCurrency(totalValue), "Total value", [25, 135, 84], [200, 255, 220]);
+  
+  currentY += cardHeight;
+  
+  // Add Brand Summary Table
+// Add Brand Summary Table
+  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+
+  // --- FOOTER AND SAVE ---
+  const generatedOn = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125);
+    doc.setFontSize(8).setTextColor(108, 117, 125);
     doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, {
-      align: "center",
-    });
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
 
   const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
   const safeBrand = (currentReportBrand || "all").replace(/\s+/g, "_");
   const safeCategory = (currentReportCategory || "all").replace(/\s+/g, "_");
-  doc.save(
-    `Available_Units_Report_${fileNameDate}_${safeBranch}_${safeBrand}_${safeCategory}.pdf`
-  );
+  doc.save(`Available_Units_Report_${fileNameDate}_${safeBranch}_${safeBrand}_${safeCategory}.pdf`);
 }
-// END: Replace this function
 // =============================================================================
 // X. VALIDATION
 // =============================================================================
@@ -8711,7 +8386,7 @@ function showPdfLoadingModal() {
                 <div class="modal-dialog modal-sm">
                     <div class="modal-content">
                         <div class="modal-body text-center">
-                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <div class="spinner-border text-black mb-3" role="status"></div>
                             <p>Generating PDF... Please wait</p>
                         </div>
                     </div>
@@ -8784,7 +8459,7 @@ function generateBrandSummaryHtml(data) {
 
     let summaryHtml = `
         <div class="mt-4 pt-4 border-top">
-            <h6 class="text-center mb-3 fw-bold">SUMMARY OF QUANTITY PER BRAND</h6>
+            <h6 class="text-center mb-3 text-black fw-bold">SUMMARY OF QUANTITY PER BRAND</h6>
             <div class="d-flex justify-content-center">
                 <table class="table table-sm table-bordered" style="max-width: 400px;">
                     <thead class="table-light">
@@ -8870,6 +8545,7 @@ function addBrandSummaryToPdf(doc, data, startY) {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
     doc.text('SUMMARY OF QUANTITY PER BRAND', doc.internal.pageSize.getWidth() / 2, finalY, { align: 'center' });
     finalY += 5;
 
