@@ -5730,40 +5730,28 @@ function renderSoldUnitsReport(response) {
     dateSubtitle = `For ${formatDate(date)}`;
   } else if (month && month.includes("-")) {
     const [year, monthNum] = month.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   } else if (start_date && end_date) {
     if (start_date === end_date) {
       dateSubtitle = `For ${formatDate(start_date)}`;
     } else {
-      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(
-        end_date
-      )}`;
+      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
     }
   }
 
-  const branchDisplay =
-    currentReportBranch && currentReportBranch.toLowerCase() !== "all"
-      ? currentReportBranch
-      : "ALL BRANCHES";
-  const saleTypeDisplay =
-    currentReportSaleType && currentReportSaleType.toLowerCase() !== "all"
-      ? currentReportSaleType
-      : "ALL TYPES OF SALE";
+  const branchDisplay = currentReportBranch && currentReportBranch.toLowerCase() !== "all" ? currentReportBranch : "ALL BRANCHES";
+  const saleTypeDisplay = currentReportSaleType && currentReportSaleType.toLowerCase() !== "all" ? currentReportSaleType : "ALL TYPES OF SALE";
 
-  $("#monthlyReportTimestamp").text(
-    `Generated on: ${new Date().toLocaleString()}`
-  );
   $("#monthlyInventoryReportModalLabel").text("Summary of Sold Units Report");
 
   if (!data || data.length === 0) {
     $("#monthlyReportContent").html(`
-        <div class="alert alert-info text-center my-3">
-            No sold unit/s found for the selected filters.
-        </div>
+      <div class="report-header text-center mb-4">
+        <h5 class="mb-2" style="color: #495057; font-weight: 500;">Summary of Sold Units Report</h5>
+        <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
+      </div>
+      <div class="alert alert-info text-center my-3">No sold unit/s found for the selected filters.</div>
     `);
     return;
   }
@@ -5775,162 +5763,109 @@ function renderSoldUnitsReport(response) {
     branches[b].push(item);
   });
 
-  let totalCod = 0;
-  let totalInstallment = 0;
-
-  let html = `
-        <div class="report-header text-center mb-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-                    SOLID MOTORCYCLE DISTRIBUTORS, INC.
-                </h4>
-                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-            </div>
-            <h5 class="mb-2" style="color: #495057; font-weight: 500;">Summary of Sold Units Report</h5>
-            <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-            <p class="text-muted">${saleTypeDisplay} | ${branchDisplay}</p>
-            <p class="text-muted small mb-0" style="font-size: 0.85rem;">
-                Generated on ${new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-            </p>
-        </div>
-    `;
-
-  function buildTableHtml(title, salesData) {
-    if (!salesData.length) {
-      return `<h6 class="mt-3">${title}</h6><p class="text-muted">No ${title.toLowerCase()} found.</p>`;
-    }
-
-    let rowsHtml = "";
-    salesData.forEach((item) => {
-      const details =
-        item.payment_type === "COD"
-          ? `DR#: ${escapeHtml(
-              item.dr_number || "N/A"
-            )}, Amount: ${formatCurrency(item.cod_amount)}`
-          : item.payment_type === "Installment"
-          ? `Terms: ${escapeHtml(
-              item.terms || "N/A"
-            )}, Monthly: ${formatCurrency(item.monthly_amortization)}`
-          : "N/A";
-
-      rowsHtml += `
-                <tr>
-                    <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">${formatDate(
-                      item.sale_date
-                    )}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.customer_name
-                    )}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.model
-                    )}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.engine_number
-                    )}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.frame_number
-                    )}</td>
-                    <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.payment_type
-                    )}</td>
-                    <td class="py-2">${details}</td>
-                </tr>
-            `;
-    });
-
-    return `
-            <h6 class="mt-3">${title}</h6>
-            <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 50vh; overflow-y: auto;">
-                <table class="table table-sm mb-0" style="min-width: 100%;">
-                    <thead>
-                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
-                            <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 90px;">Date</th>
-                            <th class="py-3" style="font-weight: 600; color: #495057;">Customer</th>
-                            <th class="py-3" style="font-weight: 600; color: #495057;">Model</th>
-                            <th class="py-3" style="font-weight: 600; color: #495057;">Engine #</th>
-                            <th class="py-3" style="font-weight: 600; color: #495057;">Frame #</th>
-                            <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 110px;">Type of Sale</th>
-                            <th class="py-3" style="font-weight: 600; color: #495057;">Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHtml}
-                    </tbody>
-                </table>
-            </div>
-        `;
-  }
-
-  Object.keys(branches).forEach((branchName) => {
+  let tablesHtml = "";
+  Object.keys(branches).sort().forEach((branchName) => {
     const branchData = branches[branchName];
     const codSales = branchData.filter((i) => i.payment_type === "COD");
-    const installmentSales = branchData.filter(
-      (i) => i.payment_type === "Installment"
-    );
+    const installmentSales = branchData.filter((i) => i.payment_type === "Installment");
 
-    totalCod += codSales.length;
-    totalInstallment += installmentSales.length;
-
-    html += `
-            <div class="card mb-4" style="box-shadow: 0 4px 6px rgba(0,0,0,0.04); border-radius: 6px;">
-                <div class="card-header bg-light" style="border-bottom: 1px solid #e9ecef;">
-                    <h6 class="mb-0">${branchName} - ${
-      branchData.length
-    } unit/s</h6>
-                </div>
-                <div class="card-body p-3">
-                    ${buildTableHtml("COD Sales", codSales)}
-                    ${buildTableHtml("Installment Sales", installmentSales)}
-                </div>
-            </div>
+    const buildTableHtml = (title, salesData) => {
+      if (!salesData.length) return `<h6 class="mt-3">${title}</h6><p class="text-muted small">No ${title.toLowerCase()} found for this branch.</p>`;
+      let rowsHtml = "";
+      salesData.forEach((item) => {
+        const details = item.payment_type === "COD"
+            ? `DR#: ${escapeHtml(item.dr_number || "N/A")}, Amount: ${formatCurrency(item.cod_amount)}`
+            : `Terms: ${escapeHtml(item.terms || "N/A")}, Monthly: ${formatCurrency(item.monthly_amortization)}`;
+        rowsHtml += `
+          <tr>
+            <td>${formatDate(item.sale_date)}</td>
+            <td>${escapeHtml(item.customer_name)}</td>
+            <td>${escapeHtml(item.model)}</td>
+            <td><code>${escapeHtml(item.engine_number)}</code></td>
+            <td><code>${escapeHtml(item.frame_number)}</code></td>
+            <td class="text-center">${escapeHtml(item.payment_type)}</td>
+            <td>${details}</td>
+          </tr>
         `;
+      });
+      return `
+        <h6 class="mt-3">${title} (${salesData.length})</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 10%;">Date</th>
+                <th>Customer</th>
+                <th>Model</th>
+                <th>Engine #</th>
+                <th>Frame #</th>
+                <th class="text-center" style="width: 10%;">Type</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+    };
+
+    tablesHtml += `
+      <div class="card mb-4">
+        <div class="card-header bg-light"><h6 class="mb-0">${branchName} - ${branchData.length} total unit/s sold</h6></div>
+        <div class="card-body p-3">
+          ${buildTableHtml("COD Sales", codSales)}
+          ${buildTableHtml("Installment Sales", installmentSales)}
+        </div>
+      </div>
+    `;
   });
 
-  const totalSales = totalCod + totalInstallment;
-  html += `
-        <div class="alert alert-primary mt-3">
-            <div class="row text-center">
-                <div class="col-md-4 mb-2 mb-md-0">
-                    <strong>Total Sold for COD:</strong> ${totalCod}
-                </div>
-                <div class="col-md-4 mb-2 mb-md-0">
-                    <strong>Total Sold for Installment:</strong> ${totalInstallment}
-                </div>
-                <div class="col-md-4">
-                    <strong>Total Sold Units:</strong> ${totalSales}
-                </div>
-            </div>
-        </div>
-    `;
-  html += generateBrandSummaryHtml(data);
-  $("#monthlyReportContent").html(html);
+  const totalCod = data.filter(i => i.payment_type === 'COD').length;
+  const totalInstallment = data.filter(i => i.payment_type === 'Installment').length;
+  const totalSales = data.length;
 
-  $("<style>")
-    .prop("type", "text/css")
-    .html(
-      `
-        #monthlyInventoryReportModal .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
-        #monthlyInventoryReportModal .modal-dialog { max-width: 95%; height: calc(100vh - 100px); }
-        #monthlyInventoryReportModal .modal-content { height: 100%; }
-        .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
-    `
-    )
-    .appendTo("head");
+  let html = `
+    <div class="report-header text-center mb-4">
+      <div class="d-flex align-items-center justify-content-center mb-2">
+        <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+        <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+        <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+      </div>
+      <h5 class="mb-2" style="color: #495057; font-weight: 500;">Summary of Sold Units Report</h5>
+      <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
+      <p class="text-muted small">${saleTypeDisplay} | ${branchDisplay}</p>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-md-4 mb-3 mb-md-0">
+        <div class="card border-0 shadow-sm text-center h-100">
+          <div class="card-body py-3"><h6 class="card-title mb-1 text-muted small">TOTAL COD SALES</h6><h3 class="mb-0">${totalCod}</h3></div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3 mb-md-0">
+        <div class="card border-0 shadow-sm text-center h-100">
+          <div class="card-body py-3"><h6 class="card-title mb-1 text-muted small">TOTAL INSTALLMENT SALES</h6><h3 class="mb-0">${totalInstallment}</h3></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-primary shadow-sm text-center h-100">
+          <div class="card-body py-3"><h6 class="card-title mb-1 text-muted small">GRAND TOTAL SOLD</h6><h3 class="mb-0">${totalSales}</h3></div>
+        </div>
+      </div>
+    </div>
+
+    ${tablesHtml}
+    ${generateBrandSummaryHtml(data)}
+  `;
+
+  $("#monthlyReportContent").html(html);
 }
 
 function generateSoldUnitsReportPDF() {
   const { jsPDF } = window.jspdf;
 
   if (!currentReportData || currentReportType !== "sold_units") {
-    showErrorModal(
-      "Please generate a sold units report first before exporting to PDF."
-    );
+    showErrorModal("Please generate a sold units report first before exporting to PDF.");
     return;
   }
 
@@ -5944,10 +5879,7 @@ function generateSoldUnitsReportPDF() {
     fileNameDate = currentReportDate;
   } else if (currentReportMonth && currentReportMonth.includes("-")) {
     const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
     fileNameDate = currentReportMonth;
   } else if (currentReportStartDate && currentReportEndDate) {
@@ -5955,9 +5887,7 @@ function generateSoldUnitsReportPDF() {
       dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
       fileNameDate = currentReportStartDate;
     } else {
-      dateSubtitle = `From ${formatDate(
-        currentReportStartDate
-      )} to ${formatDate(currentReportEndDate)}`;
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
       fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
     }
   }
@@ -5968,111 +5898,60 @@ function generateSoldUnitsReportPDF() {
   const marginBottom = 15;
   let currentY = 15;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(0, 15, 113);
-  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
-    align: "center",
-  });
+  // --- HEADER ---
+  doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
   currentY += 9;
-
-  doc.setFontSize(11);
-  doc.setTextColor(73, 80, 87);
-  doc.text("Summary of Sold Units Report", pageWidth / 2, currentY, {
-    align: "center",
-  });
-  currentY += 4;
-
-  doc.setFontSize(10);
-  doc.setTextColor(0, 64, 133);
+  doc.setFontSize(11).setTextColor(73, 80, 87);
+  doc.text("Summary of Sold Units Report", pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+  doc.setFontSize(10).setTextColor(0, 64, 133);
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
 
   const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all")
-    filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all")
-    filterParts.push(
-      `Category: ${
-        currentReportCategory.charAt(0).toUpperCase() +
-        currentReportCategory.slice(1)
-      }`
-    );
-  if (currentReportBrand && currentReportBrand !== "all")
-    filterParts.push(`Brand: ${currentReportBrand}`);
-  if (
-    currentReportModel &&
-    currentReportModel !== "all" &&
-    currentReportModel !== ""
-  )
-    filterParts.push(`Model: ${currentReportModel}`);
-  if (currentReportSaleType && currentReportSaleType !== "all")
-    filterParts.push(`Sale Type: ${currentReportSaleType}`);
-
+  if (currentReportBranch && currentReportBranch !== "all") filterParts.push(`Branch: ${currentReportBranch}`);
+  if (currentReportCategory && currentReportCategory !== "all") filterParts.push(`Category: ${currentReportCategory.charAt(0).toUpperCase() + currentReportCategory.slice(1)}`);
+  if (currentReportBrand && currentReportBrand !== "all") filterParts.push(`Brand: ${currentReportBrand}`);
+  if (currentReportModel && currentReportModel !== "all" && currentReportModel !== "") filterParts.push(`Model: ${currentReportModel}`);
+  if (currentReportSaleType && currentReportSaleType !== "all") filterParts.push(`Sale Type: ${currentReportSaleType}`);
   if (filterParts.length > 0) {
-    doc.setFontSize(9);
-    doc.setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, {
-      align: "center",
-    });
-    currentY += 5;
+    doc.setFontSize(9).setTextColor(108, 117, 125);
+    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, { align: "center" });
+    currentY += 7;
   }
 
-  doc.setDrawColor(0, 15, 113);
-  doc.setLineWidth(0.8);
-  doc.line(10, currentY, pageWidth - 10, currentY);
-  currentY += 4;
-
+  // --- DATA TABLES ---
   const groupedData = {};
-  currentReportData.forEach((item) => {
+  currentReportData.data.forEach((item) => {
     const branchName = item.current_branch || "Unknown Branch";
     if (!groupedData[branchName]) groupedData[branchName] = [];
     groupedData[branchName].push(item);
   });
 
   const columns = [
-    { header: "Date", dataKey: "sale_date" },
-    { header: "Customer Name", dataKey: "customer_name" },
-    { header: "Model", dataKey: "model" },
-    { header: "Engine Number", dataKey: "engine_number" },
-    { header: "Frame Number", dataKey: "frame_number" },
-    { header: "Type of Sale", dataKey: "payment_type" },
+    { header: "Date", dataKey: "sale_date" }, { header: "Customer Name", dataKey: "customer_name" },
+    { header: "Model", dataKey: "model" }, { header: "Engine #", dataKey: "engine_number" },
+    { header: "Frame #", dataKey: "frame_number" }, { header: "Type", dataKey: "payment_type" },
     { header: "Details", dataKey: "details" },
   ];
 
-  function formatRows(items) {
-    return items.map((item) => {
-      let details = "";
-      if (item.payment_type === "COD") {
-        details = `DR#: ${escapeHtml(
-          item.dr_number || "N/A"
-        )}, Amount: ${formatCurrency(item.cod_amount)}`;
-      } else if (item.payment_type === "Installment") {
-        details = `Terms: ${escapeHtml(
-          item.terms || "N/A"
-        )}, Monthly: ${formatCurrency(item.monthly_amortization)}`;
-      }
-      return {
-        sale_date: formatDate(item.sale_date),
-        customer_name: escapeHtml(item.customer_name),
-        model: escapeHtml(item.model),
-        engine_number: escapeHtml(item.engine_number),
-        frame_number: escapeHtml(item.frame_number),
-        payment_type: escapeHtml(item.payment_type),
-        details: details,
-      };
-    });
-  }
-
-  let totalCod = 0;
-  let totalInstallment = 0;
+  const formatRows = (items) => items.map((item) => {
+    const details = item.payment_type === "COD"
+      ? `DR#: ${escapeHtml(item.dr_number || "N/A")}, Amount: ${formatCurrency(item.cod_amount)}`
+      : `Terms: ${escapeHtml(item.terms || "N/A")}, Monthly: ${formatCurrency(item.monthly_amortization)}`;
+    return {
+      sale_date: formatDate(item.sale_date), customer_name: escapeHtml(item.customer_name),
+      model: escapeHtml(item.model), engine_number: escapeHtml(item.engine_number),
+      frame_number: escapeHtml(item.frame_number), payment_type: escapeHtml(item.payment_type),
+      details: details,
+    };
+  });
 
   for (const branchName in groupedData) {
     const items = groupedData[branchName];
     const codItems = items.filter((i) => i.payment_type === "COD");
-    const installmentItems = items.filter(
-      (i) => i.payment_type === "Installment"
-    );
+    const installmentItems = items.filter((i) => i.payment_type === "Installment");
 
     if (currentY + 20 > pageHeight - marginBottom) {
       doc.addPage();
@@ -6080,600 +5959,84 @@ function generateSoldUnitsReportPDF() {
     }
 
     doc.setFontSize(10).setTextColor(0, 64, 133).setFont("helvetica", "bold");
-    doc.text(`${branchName} - ${items.length} unit/s`, marginLR, currentY);
+    doc.text(`${branchName} - ${items.length} unit/s sold`, marginLR, currentY);
     currentY += 5;
 
     if (codItems.length > 0) {
       doc.setFontSize(9).setTextColor(0, 15, 113).setFont("helvetica", "bold");
       doc.text("COD Sales", marginLR, currentY);
-      currentY += 3;
+      currentY += 4;
       doc.autoTable({
-        startY: currentY,
-        margin: { left: marginLR, right: marginLR },
+        startY: currentY, margin: { left: marginLR, right: marginLR },
         head: [columns.map((c) => c.header)],
         body: formatRows(codItems).map((r) => columns.map((c) => r[c.dataKey])),
-        styles: {
-          fontSize: 7,
-          cellPadding: 1.5,
-          valign: "middle",
-          overflow: "linebreak",
-        },
-        headStyles: {
-          fillColor: [248, 249, 250],
-          textColor: [73, 80, 87],
-          fontStyle: "bold",
-          halign: "center",
-        },
+        styles: { fontSize: 7, cellPadding: 1.5, valign: "middle", overflow: "linebreak" },
+        headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold", halign: "center" },
         theme: "striped",
-        didDrawPage: (data) => {
-          currentY = data.cursor.y;
-        },
+        didDrawPage: (data) => { currentY = data.cursor.y; }
       });
       currentY = doc.autoTable.previous.finalY + 7;
-      totalCod += codItems.length;
     }
 
     if (installmentItems.length > 0) {
+      if (currentY + 15 > pageHeight - marginBottom) { doc.addPage(); currentY = 20; }
       doc.setFontSize(9).setTextColor(0, 15, 113).setFont("helvetica", "bold");
       doc.text("Installment Sales", marginLR, currentY);
-      currentY += 3;
+      currentY += 4;
       doc.autoTable({
-        startY: currentY,
-        margin: { left: marginLR, right: marginLR },
+        startY: currentY, margin: { left: marginLR, right: marginLR },
         head: [columns.map((c) => c.header)],
-        body: formatRows(installmentItems).map((r) =>
-          columns.map((c) => r[c.dataKey])
-        ),
-        styles: {
-          fontSize: 7,
-          cellPadding: 1.5,
-          valign: "middle",
-          overflow: "linebreak",
-        },
-        headStyles: {
-          fillColor: [248, 249, 250],
-          textColor: [73, 80, 87],
-          fontStyle: "bold",
-          halign: "center",
-        },
+        body: formatRows(installmentItems).map((r) => columns.map((c) => r[c.dataKey])),
+        styles: { fontSize: 7, cellPadding: 1.5, valign: "middle", overflow: "linebreak" },
+        headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold", halign: "center" },
         theme: "striped",
-        didDrawPage: (data) => {
-          currentY = data.cursor.y;
-        },
+        didDrawPage: (data) => { currentY = data.cursor.y; }
       });
       currentY = doc.autoTable.previous.finalY + 10;
-      totalInstallment += installmentItems.length;
     }
   }
 
+  // --- SUMMARY SECTION (MOVED TO END) ---
+  const totalCod = currentReportData.data.filter(i => i.payment_type === 'COD').length;
+  const totalInstallment = currentReportData.data.filter(i => i.payment_type === 'Installment').length;
   const totalCombined = totalCod + totalInstallment;
   const cardWidth = (pageWidth - 2 * marginLR - 20) / 3;
-  const cardHeight = 30;
-  if (currentY + cardHeight + marginBottom > pageHeight) {
+  const cardHeight = 20;
+
+  if (currentY + cardHeight > pageHeight - marginBottom) {
     doc.addPage();
     currentY = 20;
   }
-
+  
   function drawCard(x, y, title, value) {
-    doc.setDrawColor(233, 236, 239);
-    doc.setFillColor(248, 249, 250);
-    doc.rect(x, y, cardWidth, cardHeight, "F");
-    doc
-      .setFontSize(8)
-      .setTextColor(73, 80, 87)
-      .setFont("helvetica", "bold")
-      .text(title, x + cardWidth / 2, y + 8, { align: "center" });
-    doc
-      .setFontSize(16)
-      .setTextColor(0, 64, 133)
-      .setFont("helvetica", "bold")
-      .text(String(value), x + cardWidth / 2, y + 22, { align: "center" });
+    doc.setDrawColor(222, 226, 230); doc.setFillColor(248, 249, 250);
+    doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, "FD");
+    doc.setFontSize(8).setTextColor(108, 117, 125).setFont("helvetica", "bold");
+    doc.text(title, x + cardWidth / 2, y + 7, { align: "center" });
+    doc.setFontSize(12).setTextColor(0, 0, 0).setFont("helvetica", "bold");
+    doc.text(String(value), x + cardWidth / 2, y + 15, { align: "center" });
   }
 
-  drawCard(marginLR, currentY, "TOTAL SOLD FOR COD", totalCod);
-  drawCard(
-    marginLR + cardWidth + 10,
-    currentY,
-    "TOTAL SOLD FOR INSTALLMENT",
-    totalInstallment
-  );
-  drawCard(
-    marginLR + 2 * (cardWidth + 10),
-    currentY,
-    "TOTAL SOLD UNITS",
-    totalCombined
-  );
-  currentY += cardHeight + 10;
-  addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+  drawCard(marginLR, currentY, "TOTAL SOLD (COD)", totalCod);
+  drawCard(marginLR + cardWidth + 10, currentY, "TOTAL SOLD (INSTALLMENT)", totalInstallment);
+  drawCard(marginLR + 2 * (cardWidth + 10), currentY, "GRAND TOTAL SOLD", totalCombined);
 
+  currentY += cardHeight;
+  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
 
-  const generatedOn = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  // --- FOOTER ---
+  const generatedOn = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125);
+    doc.setFontSize(8).setTextColor(108, 117, 125);
     doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, {
-      align: "center",
-    });
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
 
   const safeBranch = (currentReportBranch || "ALL").replace(/\s+/g, "_");
   const safeSaleType = (currentReportSaleType || "ALL").replace(/\s+/g, "_");
-  doc.save(
-    `Sold_Units_Report_${fileNameDate}_${safeBranch}_${safeSaleType}.pdf`
-  );
-}
-function generateDailySoldUnitsReport(date, branch, saleType) {
-  const category = $("#reportCategoryFilter").val() || "all";
-  const brand = $("#reportBrandFilter").val() || "all";
-
-  $("#monthlyReportContent").html(
-    '<div class="text-center my-3"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading daily report...</div>'
-  );
-
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "GET",
-    data: {
-      action: "get_daily_sold_motorcycles_report",
-      date: date,
-      sale_type: saleType,
-      branch: branch,
-      category: category,
-      brand: brand,
-    },
-    dataType: "json",
-    success: function (response) {
-      if (response.success) {
-        currentReportData = response.data;
-        currentReportType = "daily_sold_units";
-        currentReportBranch = branch || "all";
-        currentReportSaleType = saleType || "all";
-        currentReportDate = date;
-        currentReportCategory = category;
-        currentReportBrand = brand;
-
-        renderDailySoldUnitsReport(response.data, date);
-        $("#monthlyInventoryReportModal").modal("show");
-      } else {
-        showErrorModal(
-          `Failed to generate Daily Summary of Sold Units Report: ${response.message}`
-        );
-        $("#monthlyReportContent").empty();
-      }
-    },
-    error: function () {
-      showErrorModal("Error generating Daily Summary of Sold Units Report.");
-      $("#monthlyReportContent").empty();
-    },
-  });
-}
-function renderDailySoldUnitsReport(data, date) {
-  const branch =
-    currentReportBranch && currentReportBranch.toLowerCase() !== "all"
-      ? currentReportBranch
-      : "ALL BRANCHES";
-  const saleType =
-    currentReportSaleType && currentReportSaleType.toLowerCase() !== "all"
-      ? currentReportSaleType
-      : "ALL TYPES OF SALE";
-
-  const timestamp = new Date().toLocaleString();
-  $("#monthlyReportTimestamp").text("Generated on: " + timestamp);
-  $("#monthlyInventoryReportModalLabel").text(
-    "Daily Summary of Sold Units Report - " + formatDate(date)
-  );
-
-  if (!data || data.length === 0) {
-    $("#monthlyReportContent").html(`
-      <div class="alert alert-info text-center my-3">
-        No sold unit/s found for ${formatDate(date)}.
-      </div>
-    `);
-    return;
-  }
-
-  const branches = {};
-  data.forEach((item) => {
-    const b = item.current_branch || "Unknown Branch";
-    if (!branches[b]) branches[b] = [];
-    branches[b].push(item);
-  });
-
-  let totalCod = 0;
-  let totalInstallment = 0;
-
-  let html = `
-    <div class="report-header text-center mb-4">
-      <div class="d-flex align-items-center justify-content-center mb-2">
-        <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-        <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-          SOLID MOTORCYCLE DISTRIBUTORS, INC.
-        </h4>
-        <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-      </div>
-      <h5 class="mb-2" style="color: #495057; font-weight: 500;">Daily Summary of Sold Units Report</h5>
-      <p class="text-muted">Date: ${formatDate(
-        date
-      )} | ${saleType} | ${branch}</p>
-      <p class="text-muted small mb-0" style="font-size: 0.85rem;">
-        Generated on ${new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </p>
-    </div>
-    
-    
-  `;
-
-  function escapeHtml(text) {
-    if (!text) return "";
-    return String(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-  function formatCurrency(amount) {
-    if (amount == null || amount === "") return "N/A";
-    return Number(amount).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  function buildTableHtml(title, salesData) {
-    if (!salesData.length) {
-      return `<h6 class="mt-3">${title}</h6><p class="text-muted">No ${title.toLowerCase()} found.</p>`;
-    }
-
-    let rowsHtml = "";
-    salesData.forEach((item) => {
-      const details =
-        item.payment_type === "COD"
-          ? `DR#: ${escapeHtml(
-              item.dr_number || "N/A"
-            )}, COD Amount: ${formatCurrency(item.cod_amount || 0)}`
-          : item.payment_type === "Installment"
-          ? `Terms: ${escapeHtml(
-              item.terms || "N/A"
-            )}, Monthly Amortization: ${formatCurrency(
-              item.monthly_amortization || 0
-            )}`
-          : "N/A";
-
-      rowsHtml += `
-        <tr>
-          <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">${formatDate(
-            item.sale_date
-          )}</td>
-          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-            item.customer_name
-          )}</td>
-          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-            item.model
-          )}</td>
-          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-            item.engine_number
-          )}</td>
-          <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-            item.frame_number
-          )}</td>
-          <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-            item.payment_type
-          )}</td>
-          <td class="py-2">${details}</td>
-        </tr>
-      `;
-    });
-
-    return `
-      <h6 class="mt-3">${title}</h6>
-      <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 50vh; overflow-y: auto;">
-        <table class="table table-sm mb-0" style="min-width: 100%;">
-          <thead>
-            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
-              <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 90px;">Date</th>
-              <th class="py-3" style="font-weight: 600; color: #495057;">Customer</th>
-              <th class="py-3" style="font-weight: 600; color: #495057;">Model</th>
-              <th class="py-3" style="font-weight: 600; color: #495057;">Engine #</th>
-              <th class="py-3" style="font-weight: 600; color: #495057;">Frame #</th>
-              <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 110px;">Type of Sale</th>
-              <th class="py-3" style="font-weight: 600; color: #495057;">Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  Object.keys(branches).forEach((branchName) => {
-    const branchData = branches[branchName];
-    const codSales = branchData.filter((i) => i.payment_type === "COD");
-    const installmentSales = branchData.filter(
-      (i) => i.payment_type === "Installment"
-    );
-
-    totalCod += codSales.length;
-    totalInstallment += installmentSales.length;
-
-    html += `
-      <div class="card mb-4" style="box-shadow: 0 4px 6px rgba(0,0,0,0.04); border-radius: 6px;">
-        <div class="card-header bg-light" style="border-bottom: 1px solid #e9ecef;">
-          <h6 class="mb-0">${branchName} - ${branchData.length} unit/s</h6>
-        </div>
-        <div class="card-body p-3">
-          ${buildTableHtml("COD Sales", codSales)}
-          ${buildTableHtml("Installment Sales", installmentSales)}
-        </div>
-      </div>
-    `;
-  });
-
-  const totalSales = totalCod + totalInstallment;
-  html += `
-    <div class="alert alert-primary mt-3">
-      <div class="row text-center">
-        <div class="col-md-4 mb-2 mb-md-0">
-          <strong>Total Sold for COD:</strong> ${totalCod}
-        </div>
-        <div class="col-md-4 mb-2 mb-md-0">
-          <strong>Total Sold for Installment:</strong> ${totalInstallment}
-        </div>
-        <div class="col-md-4">
-          <strong>Total Sold Units:</strong> ${totalSales}
-        </div>
-      </div>
-    </div>
-  `;
-
-  $("#monthlyReportContent").html(html);
-
-  $("<style>")
-    .prop("type", "text/css")
-    .html(
-      `
-      #monthlyInventoryReportModal .modal-body {
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
-      }
-      #monthlyInventoryReportModal .modal-dialog {
-        max-width: 95%;
-        height: calc(100vh - 100px);
-      }
-      #monthlyInventoryReportModal .modal-content {
-        height: 100%;
-      }
-      .table-container { overflow: hidden; }
-      .table th { font-weight: 600; font-size: 0.9rem; }
-      .table td { font-size: 0.9rem; color: #495057; }
-      .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04); }
-      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-      .modal-body { max-height: calc(100vh - 200px); overflow-y: auto; }
-      .table-container thead th { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
-    `
-    )
-    .appendTo("head");
-
-  // Add event listener for PDF export button
-  $("#exportDailyReportToPDF")
-    .off("click")
-    .on("click", function () {
-      generateDailySoldUnitsReportPDF();
-    });
-}
-
-// PDF Export Function
-function generateDailySoldUnitsReportPDF() {
-  const { jsPDF } = window.jspdf;
-
-  if (!currentReportData || currentReportType !== "daily_sold_units") {
-    showErrorModal(
-      "Please generate a daily sold units report first before exporting to PDF"
-    );
-    return;
-  }
-
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" }); // --- HEADER AND FILTERS ---
-
-  const date = currentReportDate;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const marginLR = 10;
-  let currentY = 15; // Main Title
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(0, 15, 113);
-  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
-    align: "center",
-  });
-  currentY += 7;
-  doc.setFontSize(12);
-  doc.setTextColor(73, 80, 87);
-  doc.text("DAILY SUMMARY OF SOLD UNITS REPORT", pageWidth / 2, currentY, {
-    align: "center",
-  });
-  currentY += 6;
-  doc.setFontSize(10);
-  doc.setTextColor(0, 64, 133);
-  doc.text(`Date: ${formatDate(date)}`, pageWidth / 2, currentY, {
-    align: "center",
-  });
-  currentY += 6; // Filter Parameters Header
-
-  const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all")
-    filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all")
-    filterParts.push(
-      `Category: ${
-        currentReportCategory.charAt(0).toUpperCase() +
-        currentReportCategory.slice(1)
-      }`
-    );
-  if (currentReportBrand && currentReportBrand !== "all")
-    filterParts.push(`Brand: ${currentReportBrand}`);
-  if (
-    currentReportModel &&
-    currentReportModel !== "all" &&
-    currentReportModel !== ""
-  )
-    filterParts.push(`Model: ${currentReportModel}`);
-  if (currentReportSaleType && currentReportSaleType !== "all")
-    filterParts.push(`Sale Type: ${currentReportSaleType}`);
-
-  if (filterParts.length > 0) {
-    doc.setFontSize(9);
-    doc.setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, {
-      align: "center",
-    });
-    currentY += 5;
-  }
-  doc.setDrawColor(0, 15, 113);
-  doc.setLineWidth(0.5);
-  doc.line(marginLR, currentY, pageWidth - marginLR, currentY);
-  currentY += 4; // --- SUMMARY STATS ---
-
-  const totalCod = currentReportData.filter(
-    (item) => item.payment_type === "COD"
-  ).length;
-  const totalInstallment = currentReportData.filter(
-    (item) => item.payment_type === "Installment"
-  ).length;
-  const totalSales = currentReportData.length;
-
-  doc.setFillColor(248, 249, 250);
-  doc.rect(marginLR, currentY, pageWidth - 2 * marginLR, 15, "F");
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "bold");
-  doc.text(
-    `Total Sales: ${totalSales} unit/s (COD: ${totalCod} | Installment: ${totalInstallment})`,
-    pageWidth / 2,
-    currentY + 10,
-    { align: "center" }
-  );
-  currentY += 20; // --- MAIN TABLE ---
-
-  if (currentReportData.length > 0) {
-    const columns = [
-      { header: "Date", dataKey: "sale_date" },
-      { header: "Customer", dataKey: "customer_name" },
-      { header: "Model", dataKey: "model" },
-      { header: "Engine #", dataKey: "engine_number" },
-      { header: "Frame #", dataKey: "frame_number" },
-      { header: "Type of Sale", dataKey: "payment_type" },
-      { header: "Details", dataKey: "details" },
-      { header: "Branch", dataKey: "current_branch" },
-    ];
-
-    const tableData = currentReportData.map((item) => {
-      const details =
-        item.payment_type === "COD"
-          ? `DR#: ${item.dr_number || "N/A"}, COD: ${formatCurrency(
-              item.cod_amount || 0
-            )}`
-          : item.payment_type === "Installment"
-          ? `Terms: ${item.terms || "N/A"}, Monthly: ${formatCurrency(
-              item.monthly_amortization || 0
-            )}`
-          : "N/A";
-
-      return {
-        sale_date: formatDate(item.sale_date),
-        customer_name: item.customer_name,
-        model: item.model,
-        engine_number: item.engine_number,
-        frame_number: item.frame_number,
-        payment_type: item.payment_type,
-        details: details,
-        current_branch: item.current_branch,
-      };
-    });
-
-    doc.autoTable({
-      startY: currentY,
-      head: [columns.map((col) => col.header)],
-      body: tableData.map((row) => columns.map((col) => row[col.dataKey])),
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-        valign: "middle",
-        overflow: "linebreak",
-      },
-      headStyles: {
-        fillColor: [0, 15, 113],
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        halign: "center",
-      },
-      columnStyles: {
-        sale_date: { cellWidth: 20, halign: "center" },
-        customer_name: { cellWidth: 30 },
-        model: { cellWidth: 25 },
-        engine_number: { cellWidth: 25 },
-        frame_number: { cellWidth: 25 },
-        payment_type: { cellWidth: 20, halign: "center" },
-        details: { cellWidth: 40 },
-        current_branch: { cellWidth: 20, halign: "center" },
-      },
-      margin: { left: marginLR, right: marginLR },
-      theme: "grid",
-    });
-  } else {
-    doc.setFontSize(12);
-    doc.setTextColor(108, 117, 125);
-    doc.text(
-      "No sold units found for this date",
-      pageWidth / 2,
-      currentY + 20,
-      { align: "center" }
-    );
-  } // --- FOOTER ---
-let finalY = doc.autoTable.previous.finalY;
-  addBrandSummaryToPdf(doc, currentReportData.data, finalY);
-  const generatedOn = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125);
-    doc.text(`Generated on: ${generatedOn}`, marginLR, pageHeight - 10);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, {
-      align: "center",
-    });
-    doc.text(
-      `Ref: DAILY_SOLD_${date.replace(/-/g, "")}`,
-      pageWidth - marginLR,
-      pageHeight - 10,
-      { align: "right" }
-    );
-  } // --- SAVE PDF ---
-
-  const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
-  const safeDate = date.replace(/-/g, "");
-  doc.save(`Daily_Sold_Units_Report_${safeDate}_${safeBranch}.pdf`);
+  doc.save(`Sold_Units_Report_${fileNameDate}_${safeBranch}_${safeSaleType}.pdf`);
 }
 // END: Replace this function
 
