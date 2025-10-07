@@ -4363,6 +4363,7 @@ function generateMonthlyInventoryReport(
 function renderMonthlyInventoryReport(response) {
   // FIX: Destructure variables from the response object. 'data' is now correctly defined as the array.
   const { data, month, branch, summary } = response;
+ const isRepoReport = currentReportCategory === 'repo'; // Check if this is a REPO report
 
   let reportTitle = "Inventory Balance Report";
   let dateSubtitle = "";
@@ -4410,75 +4411,59 @@ function renderMonthlyInventoryReport(response) {
   const costEndingActual = summary?.inventory_cost?.ending_actual || 0;
 
   let html = `
-      <div class="report-header text-center mb-4">
-        <div class="d-flex align-items-center justify-content-center mb-2">
-          <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-          <h4 class="mb-0" style="color: #000f71; font-weight: 600; letter-spacing: 0.5px;">
-            SOLID MOTORCYCLE DISTRIBUTORS, INC.
-          </h4>
-          <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-        </div>
-       <h5 class="mb-2" style="color: #495057; font-weight: 500;">${reportTitle}</h5>
-        <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-          ${buildFilterDisplayHtml()}
-      <p class="text-muted small mb-0" style="font-size: 0.85rem;">
-        Generated on ${new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </p>
+    <div class="report-header text-center mb-4">
+      <div class="d-flex align-items-center justify-content-center mb-2">
+        <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+        <h4 class="mb-0" style="color: #000f71; font-weight: 600;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+        <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+      </div>
+      <h5 class="mb-2" style="color: #495057;">${reportTitle}</h5>
+      <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
+      ${buildFilterDisplayHtml()}
     </div>
     
     <div class="row">
-      <div class="col-md-8">
-        <div class="table-container" style="border: 1px solid #e9ecef; border-radius: 6px; max-height: 60vh; overflow-y: auto;">
-          <table class="table table-sm mb-0">
-            <thead>
-              <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10;">
-                <th class="text-center py-3" style="font-weight: 600; color: #495057; width: 60px;">QTY</th>
-                <th class="py-3" style="font-weight: 600; color: #495057;">MODEL</th>
-                <th class="py-3" style="font-weight: 600; color: #495057;">COLOR</th>
-                <th class="py-3" style="font-weight: 600; color: #495057;">BRAND</th>
-                <th class="py-3" style="font-weight: 600; color: #495057;">ENGINE NUMBER</th>
-                <th class="py-3" style="font-weight: 600; color: #495057;">FRAME NUMBER</th>
-                <th class="py-3" style="font-weight: 600; color: #495057;">Inventory Cost</th>
+      <div class="col-lg-8">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover">
+            <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+              <tr>
+                <th>QTY</th>
+                <th>MODEL</th>
+                <th>COLOR</th>
+                <th>BRAND</th>
+                <th>ENGINE NUMBER</th>
+                <th>FRAME NUMBER</th>
+                <th class="text-end">Inventory Cost</th>
+                ${isRepoReport ? `
+                <th>CUSTOMER NAME</th>
+                <th>DATE SOLD</th>
+                ` : ''}
               </tr>
             </thead>
             <tbody>
-    `;
+  `;
 
-  if (!data || data.length === 0) {
-    html += `
-            <tr>
-                <td colspan="7" class="text-center py-5 text-muted" style="font-style: italic;">
-                    No inventory data found for this period
-                </td>
-            </tr>
-        `;
+if (!data || data.length === 0) {
+    const colspan = isRepoReport ? 9 : 7;
+    html += `<tr><td colspan="${colspan}" class="text-center py-5 text-muted">No inventory data found.</td></tr>`;
   } else {
-    data.forEach((item, index) => {
-      const rowClass = index % 2 === 0 ? "bg-white" : "bg-light";
+    data.forEach((item) => {
       html += `
-                <tr class="${rowClass}">
-                    <td class="text-center py-2" style="border-right: 1px solid #e9ecef;">1</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.model
-                    )}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.color
-                    )}</td>
-                    <td class="py-2" style="border-right: 1px solid #e9ecef;">${escapeHtml(
-                      item.brand
-                    )}</td>
-                    <td class="py-2">${escapeHtml(item.engine_number)}</td>
-                    <td class="py-2">${escapeHtml(item.frame_number)}</td>
-                    <td class="py-2 text-end">${formatCurrency(
-                      item.inventory_cost
-                    )}</td>
-                </tr>
-            `;
+        <tr>
+          <td class="text-center">1</td>
+          <td>${escapeHtml(item.model)}</td>
+          <td>${escapeHtml(item.color)}</td>
+          <td>${escapeHtml(item.brand)}</td>
+          <td><code>${escapeHtml(item.engine_number)}</code></td>
+          <td><code>${escapeHtml(item.frame_number)}</code></td>
+          <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+          ${isRepoReport ? `
+          <td>${escapeHtml(item.customer_name || '-')}</td>
+          <td>${item.sale_date ? formatDate(item.sale_date) : '-'}</td>
+          ` : ''}
+        </tr>
+      `;
     });
   }
 
