@@ -2559,19 +2559,18 @@ function getMonthlyInventory() {
     $costEndingCalculated  = $costBeginning  + $costIn  - $costOut;
 
    // === ACTUAL ENDING BALANCE & DETAILED DATA (as of endDate cutoff) ===
-
-    $repoSelects = '';
-    $repoJoins = '';
-    if ($category === 'repo') {
+// This is the corrected code
+$repoSelects = '';
+$repoJoins = '';
+if ($category === 'repo') {
     $repoSelects = ", 
-        COALESCE(c.customer_name, '-') AS customer_name,
+        COALESCE(ms_info.customer_name, '-') AS customer_name,
         COALESCE(ms_info.sale_date, '-') AS date_sold
     ";
     $repoJoins = "
         LEFT JOIN motorcycle_sales ms_info ON mi.id = ms_info.motorcycle_id
-        LEFT JOIN customers c ON ms_info.customer_id = c.id
     ";
-    }
+}
   if (strtoupper($branch) === 'ALL') {
     // MODIFIED: Prioritize date_received over date_delivered for accurate inventory timing.
     $sqlEndingActualData = "
@@ -2581,10 +2580,14 @@ function getMonthlyInventory() {
     $repoJoins
     WHERE mi.deleted_at IS NULL
           AND (COALESCE(mi.date_received, mi.date_delivered) <= ?) -- Use the true arrival date
-          AND NOT EXISTS (
-               SELECT 1 FROM motorcycle_sales s
-               WHERE s.motorcycle_id = mi.id
-                 AND s.sale_date <= ?
+         -- MODIFIED: Include units that are sold IF their category is 'repo'.
+          AND (
+               LOWER(mi.category) = 'repo' 
+               OR NOT EXISTS (
+                    SELECT 1 FROM motorcycle_sales s
+                    WHERE s.motorcycle_id = mi.id
+                      AND s.sale_date <= ?
+               )
           )
           AND NOT EXISTS (
               SELECT 1 FROM motorcycle_sales s
@@ -2626,10 +2629,13 @@ function getMonthlyInventory() {
     WHERE mi.deleted_at IS NULL
           AND mi.current_branch = ?
           AND (COALESCE(mi.date_received, mi.date_delivered) <= ?) -- Use the true arrival date
-          AND NOT EXISTS (
-              SELECT 1 FROM motorcycle_sales s
-              WHERE s.motorcycle_id = mi.id
-                AND s.sale_date <= ?
+         AND (
+               LOWER(mi.category) = 'repo' 
+               OR NOT EXISTS (
+                    SELECT 1 FROM motorcycle_sales s
+                    WHERE s.motorcycle_id = mi.id
+                      AND s.sale_date <= ?
+               )
           )
           $categoryCondition
            $brandCondition

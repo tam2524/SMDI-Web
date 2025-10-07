@@ -4361,9 +4361,9 @@ function generateMonthlyInventoryReport(
 }
 
 function renderMonthlyInventoryReport(response) {
-  // FIX: Destructure variables from the response object. 'data' is now correctly defined as the array.
-  const { data, month, branch, summary } = response;
- const isRepoReport = currentReportCategory === 'repo'; // Check if this is a REPO report
+  // Destructure variables from the response object.
+  const { data, summary } = response;
+  const isRepoReport = currentReportCategory === 'repo'; // Check if this is a REPO report
 
   let reportTitle = "Inventory Balance Report";
   let dateSubtitle = "";
@@ -4381,10 +4381,8 @@ function renderMonthlyInventoryReport(response) {
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   }
 
-  const branchName = branch === "all" ? "All Branches" : branch;
   $("#monthlyInventoryReportModalLabel").text(reportTitle);
 
-  // This line will now work because 'data' is the array from the response.
   if (Array.isArray(data)) {
     data.sort((a, b) => a.model.localeCompare(b.model));
   }
@@ -4397,17 +4395,13 @@ function renderMonthlyInventoryReport(response) {
   const transfersOut = summary?.transfers_out || 0;
   const soldDuringMonth = summary?.sold_during_month || 0;
   const totalOut = summary?.out || 0;
-  const endingCalculated = summary?.ending_calculated || 0;
   const endingActual = summary?.ending_actual || 0;
-
-  // Inventory cost values
   const costReceived = summary?.inventory_cost?.received_transfers || 0;
   const costNewDeliveries = summary?.inventory_cost?.new_deliveries || 0;
   const costTotalIn = summary?.inventory_cost?.in || 0;
   const costTransfersOut = summary?.inventory_cost?.transfers_out || 0;
   const costSoldDuringMonth = summary?.inventory_cost?.sold_during_month || 0;
   const costTotalOut = summary?.inventory_cost?.out || 0;
-  const costEndingCalculated = summary?.inventory_cost?.ending_calculated || 0;
   const costEndingActual = summary?.inventory_cost?.ending_actual || 0;
 
   let html = `
@@ -4444,7 +4438,7 @@ function renderMonthlyInventoryReport(response) {
             <tbody>
   `;
 
-if (!data || data.length === 0) {
+  if (!data || data.length === 0) {
     const colspan = isRepoReport ? 9 : 7;
     html += `<tr><td colspan="${colspan}" class="text-center py-5 text-muted">No inventory data found.</td></tr>`;
   } else {
@@ -4460,7 +4454,7 @@ if (!data || data.length === 0) {
           <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
           ${isRepoReport ? `
           <td>${escapeHtml(item.customer_name || '-')}</td>
-          <td>${item.sale_date ? formatDate(item.sale_date) : '-'}</td>
+          <td>${item.date_sold && item.date_sold !== '-' ? formatDate(item.date_sold) : '-'}</td>
           ` : ''}
         </tr>
       `;
@@ -4495,7 +4489,6 @@ if (!data || data.length === 0) {
                   </div>
               </div>
           </div>
-        <!-- IN Section -->
         <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
           <div class="card-header bg-transparent border-0 pt-3 pb-2">
             <h6 class="card-title text-center mb-0" style="color: #28a745; font-weight: 600; font-size: 0.9rem;">
@@ -4541,7 +4534,6 @@ if (!data || data.length === 0) {
           </div>
         </div>
 
-        <!-- OUT Section -->
         <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
           <div class="card-header bg-transparent border-0 pt-3 pb-2">
             <h6 class="card-title text-center mb-0" style="color: #dc3545; font-weight: 600; font-size: 0.9rem;">
@@ -4587,7 +4579,6 @@ if (!data || data.length === 0) {
           </div>
         </div>
 
-        <!-- Ending Balance Card -->
         <div class="card border-0 shadow-sm mb-3" style="border-radius: 8px;">
           <div class="card-header bg-transparent border-0 pt-3 pb-2">
             <h6 class="card-title text-center mb-0" style="color: #000f71; font-weight: 600; font-size: 0.9rem;">
@@ -4645,133 +4636,125 @@ if (!data || data.length === 0) {
     .appendTo("head");
 }
 
-// START: Replace this function
+
+// START: Corrected PDF Generation Function
 function generateInventoryReportPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+    orientation: 'landscape', // Use landscape for more horizontal space
+  });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
- const categoryFilter = $("#reportCategoryFilter").val() || "All Categories";
-  const branchName =
-    currentReportBranch === "all" ? "All Branches" : currentReportBranch;
+  // FIX: Check if it's a repo report to conditionally add columns
+  const isRepoReport = currentReportCategory === 'repo';
 
-  // --- DYNAMIC HEADER LOGIC ---
-  let reportTitle = "Inventory Balance Report";
-  let dateSubtitle = "";
-  let fileNameDate = new Date().toISOString().slice(0, 10);
+  // --- DYNAMIC HEADER LOGIC ---
+  let reportTitle = "Inventory Balance Report";
+  let dateSubtitle = "";
+  
+  if (currentReportDate) {
+    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
+  } else if (currentReportMonth) {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+      month: "long",
+    });
+    reportTitle = "Monthly Inventory Balance Report";
+    dateSubtitle = `For the Month of ${monthName} ${year}`;
+  }
+  // --- END DYNAMIC HEADER ---
 
-  if (currentReportDate) {
-    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
-    fileNameDate = currentReportDate;
-  } else if (currentReportMonth) {
-    const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
-      month: "long",
-    });
-    reportTitle = "Monthly Inventory Balance Report";
-    dateSubtitle = `For the Month of ${monthName} ${year}`;
-    fileNameDate = currentReportMonth;
-  }
-  // --- END DYNAMIC HEADER ---
-
-  const receivedTransfers = currentReportSummary?.received_transfers || 0;
-  const newDeliveries = currentReportSummary?.new_deliveries || 0;
   const totalIn = currentReportSummary?.in || 0;
+  const totalOut = currentReportSummary?.out || 0;
+  const endingActual = currentReportSummary?.ending_actual || 0;
+  const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
+  const costTotalOut = currentReportSummary?.inventory_cost?.out || 0;
+  const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
+  
+  // Details for summary cards
+  const receivedTransfers = currentReportSummary?.received_transfers || 0;
+  const newDeliveries = currentReportSummary?.new_deliveries || 0;
   const transfersOut = currentReportSummary?.transfers_out || 0;
   const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
-  const totalOut = currentReportSummary?.out || 0;
-  const endingCalculated = currentReportSummary?.ending_calculated || 0;
-  const endingActual = currentReportSummary?.ending_actual || 0;
-
-  const costReceived =
-    currentReportSummary?.inventory_cost?.received_transfers || 0;
-  const costNewDeliveries =
-    currentReportSummary?.inventory_cost?.new_deliveries || 0;
-  const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
-  const costTransfersOut =
-    currentReportSummary?.inventory_cost?.transfers_out || 0;
-  const costSoldDuringMonth =
-    currentReportSummary?.inventory_cost?.sold_during_month || 0;
-  const costTotalOut = currentReportSummary?.inventory_cost?.out || 0;
-  const costEndingCalculated =
-    currentReportSummary?.inventory_cost?.ending_calculated || 0;
-  const costEndingActual =
-    currentReportSummary?.inventory_cost?.ending_actual || 0;
 
   currentReportData.data.sort((a, b) => a.model.localeCompare(b.model));
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(0, 15, 113);
-  doc.text(
-    "SOLID MOTORCYCLE DISTRIBUTORS, INC.",
-    105,
-    15,
-    null,
-    null,
-    "center"
-  );
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, 15, { align: "center" });
 
   doc.setFontSize(12);
   doc.setTextColor(73, 80, 87);
- doc.text(reportTitle, 105, 25, null, null, "center");
+  doc.text(reportTitle, pageWidth / 2, 25, { align: "center" });
 
-  doc.setFontSize(10);
-  doc.setTextColor(0, 64, 133);
-  doc.text(dateSubtitle, 105, 33, null, null, "center");
+  doc.setFontSize(10);
+  doc.setTextColor(0, 64, 133);
+  doc.text(dateSubtitle, pageWidth / 2, 33, { align: "center" });
 
   let currentY = 38;
-  currentY = addFiltersToPdf(doc, currentY);
+  currentY = addFiltersToPdf(doc, currentY);
 
-  const columns = [
-    { header: "QTY", dataKey: "qty", width: 10 },
-    { header: "MODEL", dataKey: "model", width: 30 },
-    { header: "COLOR", dataKey: "color", width: 25 },
-    { header: "BRAND", dataKey: "brand", width: 25 },
-    { header: "ENGINE NUMBER", dataKey: "engine_number", width: 35 },
-    { header: "FRAME NUMBER", dataKey: "frame_number", width: 35 },
-    {
-      header: "Inventory Cost",
-      dataKey: "inventory_cost",
-      width: 25,
-      align: "right",
-    },
-  ];
+  // FIX: Define base columns first
+  const columns = [
+    { header: "QTY", dataKey: "qty" },
+    { header: "MODEL", dataKey: "model" },
+    { header: "COLOR", dataKey: "color" },
+    { header: "BRAND", dataKey: "brand" },
+    { header: "ENGINE NUMBER", dataKey: "engine_number" },
+    { header: "FRAME NUMBER", dataKey: "frame_number" },
+    { header: "Inventory Cost", dataKey: "inventory_cost" },
+  ];
+  
+  // FIX: Conditionally add repo columns
+  if (isRepoReport) {
+    columns.push({ header: "CUSTOMER NAME", dataKey: "customer_name" });
+    columns.push({ header: "DATE SOLD", dataKey: "date_sold" });
+  }
 
-  const rows =
-    !currentReportData.data || currentReportData.data.length === 0
-      ? [
-          {
-            qty: {
-              content: "No inventory data found for this period",
-              colSpan: 7,
-              styles: { halign: "center" },
-            },
-          },
-        ]
-      : currentReportData.data.map((item) => ({
-          qty: "1",
-          model: item.model,
-          color: item.color,
-          brand: item.brand,
-          engine_number: item.engine_number,
-          frame_number: item.frame_number,
-          inventory_cost: formatCurrency(item.inventory_cost),
-        }));
+  // FIX: Conditionally map row data and handle "no data" colspan
+  const rows =
+    !currentReportData.data || currentReportData.data.length === 0
+      ? [
+          {
+            qty: {
+              content: "No inventory data found for this period",
+              colSpan: isRepoReport ? 9 : 7, // Dynamic colspan
+              styles: { halign: "center" },
+            },
+          },
+        ]
+      : currentReportData.data.map((item) => {
+          const rowData = {
+            qty: "1",
+            model: item.model,
+            color: item.color,
+            brand: item.brand,
+            engine_number: item.engine_number,
+            frame_number: item.frame_number,
+            inventory_cost: formatCurrency(item.inventory_cost),
+          };
 
-  function formatCurrency(amount) {
-    if (amount == null || amount === "") return "N/A";
-    return Number(amount).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
+          if (isRepoReport) {
+            rowData.customer_name = item.customer_name || '-';
+            rowData.date_sold = item.date_sold && item.date_sold !== '-' ? formatDate(item.date_sold) : '-';
+          }
+          return rowData;
+        });
 
-  const tableOptions = {
-    startY: currentY, // FIX: Use currentY instead of the old variable
-headStyles: {
+  function formatCurrency(amount) {
+    if (amount == null || amount === "") return "N/A";
+    return Number(amount).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  doc.autoTable({
+    startY: currentY,
+    headStyles: {
       fillColor: [248, 249, 250],
       textColor: [73, 80, 87],
       fontStyle: "bold",
@@ -4781,11 +4764,10 @@ headStyles: {
       qty: { halign: "center" },
       inventory_cost: { halign: "right" },
     },
-    columns,
-    body: rows,
+    columns: columns.map(c => c.header), // Pass headers
+    body: rows.map(row => columns.map(c => row[c.dataKey])), // Pass data based on dataKey
     margin: { left: 10, right: 10 },
-  };
-  doc.autoTable(tableOptions);
+  });
 
   let finalTableY = doc.autoTable.previous.finalY;
 
@@ -4794,143 +4776,171 @@ headStyles: {
   }
 
   // --- Summary Cards ---
-
   const cardMargin = 8;
   const leftRightMargin = 10;
   const topMargin = 20;
   const bottomMargin = 20;
   const cardHeight = 45;
   const spaceAfterTable = 10;
-
   const cardWidth = (pageWidth - 2 * leftRightMargin - 2 * cardMargin) / 3;
-
   const summarySectionHeight = cardHeight + 10;
 
- currentY = finalTableY + spaceAfterTable;
+  currentY = finalTableY + spaceAfterTable;
 
   if (currentY + summarySectionHeight + bottomMargin > pageHeight) {
     doc.addPage();
     currentY = topMargin;
   }
 
-  function drawCard(
-    x,
-    y,
-    cardWidth,
-    cardHeight,
-    title,
-    mainValue,
-    subValue,
-    mainColor,
-    subColor,
-    extraText
-  ) {
+  function drawCard(x, y, cardWidth, cardHeight, title, mainValue, subValue, mainColor, subColor, extraText) {
     doc.setDrawColor(233, 236, 239);
     doc.setFillColor(248, 249, 250);
     doc.rect(x, y, cardWidth, cardHeight, "F");
-
-    doc
-      .setFontSize(9)
-      .setTextColor(73, 80, 87)
-      .setFont("helvetica", "bold")
-      .text(title, x + cardWidth / 2, y + 8, { align: "center" });
-
-    doc
-      .setFontSize(16)
-      .setTextColor(...mainColor)
-      .setFont("helvetica", "bold")
-      .text(String(mainValue), x + cardWidth / 2, y + 25, { align: "center" });
-
-    doc
-      .setFontSize(10)
-      .setTextColor(...subColor)
-      .setFont("helvetica", "normal");
-
+    
+    doc.setFontSize(9).setTextColor(73, 80, 87).setFont("helvetica", "bold").text(title, x + cardWidth / 2, y + 8, { align: "center" });
+    doc.setFontSize(16).setTextColor(...mainColor).setFont("helvetica", "bold").text(String(mainValue), x + cardWidth / 2, y + 25, { align: "center" });
+    doc.setFontSize(10).setTextColor(...subColor).setFont("helvetica", "normal");
+    
     const subValueLines = doc.splitTextToSize(String(subValue), cardWidth - 10);
     doc.text(subValueLines, x + cardWidth / 2, y + 33, { align: "center" });
-
+    
     if (extraText) {
       doc.setFontSize(7).setTextColor(73, 80, 87);
-
       const extraTextLines = doc.splitTextToSize(extraText, cardWidth - 10);
       doc.text(extraTextLines, x + cardWidth / 2, y + 40, { align: "center" });
     }
   }
 
-  drawCard(
-    leftRightMargin,
-    currentY,
-    cardWidth,
-    cardHeight,
-    "IN",
-    totalIn,
-    formatCurrency(costTotalIn),
-    [40, 167, 69],
-    [40, 167, 69],
-    `Received: ${receivedTransfers} | New: ${newDeliveries}`
-  );
+  drawCard(leftRightMargin, currentY, cardWidth, cardHeight, "IN", totalIn, formatCurrency(costTotalIn), [40, 167, 69], [40, 167, 69], `Received: ${receivedTransfers} | New: ${newDeliveries}`);
+  drawCard(leftRightMargin + (cardWidth + cardMargin), currentY, cardWidth, cardHeight, "OUT", totalOut, formatCurrency(costTotalOut), [220, 53, 69], [220, 53, 69], `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`);
+  drawCard(leftRightMargin + 2 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight, "ENDING BALANCE", endingActual, formatCurrency(costEndingActual), [0, 64, 133], [0, 86, 179], null);
 
-  drawCard(
-    leftRightMargin + (cardWidth + cardMargin),
-    currentY,
-    cardWidth,
-    cardHeight,
-    "OUT",
-    totalOut,
-    formatCurrency(costTotalOut),
-    [220, 53, 69],
-    [220, 53, 69],
-    `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`
-  );
-
-  drawCard(
-    leftRightMargin + 2 * (cardWidth + cardMargin),
-    currentY,
-    cardWidth,
-    cardHeight,
-    "ENDING BALANCE",
-    endingActual,
-    formatCurrency(costEndingActual),
-    [0, 64, 133],
-    [0, 86, 179],
-    null
-  );
-
-  // --- Global Page Numbering and Generated Date Footer ---
-// Move Y down after cards
-  currentY += cardHeight + 10;
-
-  // Add the brand summary table
-  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+  currentY += cardHeight + 10;
+  
+  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+  
   const now = new Date();
-  const generatedOn = now.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
+  const generatedOn = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const totalPages = doc.internal.getNumberOfPages();
+  
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(108, 117, 125);
-
     doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
-
-    doc.text(
-      `Page ${i} of ${totalPages}`,
-      pageWidth / 2,
-      pageHeight - 10,
-      null,
-      null,
-      "center"
-    );
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
 
-  doc.save(
-    `Monthly_Inventory_Report_${currentReportMonth}_${currentReportBranch}.pdf`
-  );
+  doc.save(`Monthly_Inventory_Report_${currentReportMonth || currentReportDate}_${currentReportBranch}.pdf`);
+}
+
+// START: Replace this function
+function generateInventoryReportPDF() {
+  const { jsPDF } = window.jspdf;
+  // FIX: Use landscape orientation for more horizontal space
+  const doc = new jsPDF({
+    orientation: 'landscape',
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // FIX: Check if it's a repo report to conditionally add columns
+  const isRepoReport = currentReportCategory === 'repo';
+
+  // --- DYNAMIC HEADER LOGIC ---
+  let reportTitle = "Inventory Balance Report";
+  let dateSubtitle = "";
+
+  if (currentReportDate) {
+    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
+  } else if (currentReportMonth) {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+      month: "long",
+    });
+    reportTitle = "Monthly Inventory Balance Report";
+    dateSubtitle = `For the Month of ${monthName} ${year}`;
+  }
+  // --- END DYNAMIC HEADER ---
+
+  const totalIn = currentReportSummary?.in || 0;
+  const totalOut = currentReportSummary?.out || 0;
+  const endingActual = currentReportSummary?.ending_actual || 0;
+  const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
+  const costTotalOut = currentReportSummary?.inventory_cost?.out || 0;
+  const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
+
+  // Details for summary cards
+  const receivedTransfers = currentReportSummary?.received_transfers || 0;
+  const newDeliveries = currentReportSummary?.new_deliveries || 0;
+  const transfersOut = currentReportSummary?.transfers_out || 0;
+  const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
+
+  currentReportData.data.sort((a, b) => a.model.localeCompare(b.model));
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, 15, { align: "center" });
+
+  doc.setFontSize(12);
+  doc.setTextColor(73, 80, 87);
+  doc.text(reportTitle, pageWidth / 2, 25, { align: "center" });
+
+  doc.setFontSize(10);
+  doc.setTextColor(0, 64, 133);
+  doc.text(dateSubtitle, pageWidth / 2, 33, { align: "center" });
+
+  let currentY = 38;
+  currentY = addFiltersToPdf(doc, currentY);
+
+  // FIX: Define base columns first
+  const columns = [
+    { header: "QTY", dataKey: "qty" },
+    { header: "MODEL", dataKey: "model" },
+    { header: "COLOR", dataKey: "color" },
+    { header: "BRAND", dataKey: "brand" },
+    { header: "ENGINE NUMBER", dataKey: "engine_number" },
+    { header: "FRAME NUMBER", dataKey: "frame_number" },
+    { header: "Inventory Cost", dataKey: "inventory_cost" },
+  ];
+
+  // FIX: Conditionally add repo columns
+  if (isRepoReport) {
+    columns.push({ header: "CUSTOMER NAME", dataKey: "customer_name" });
+    columns.push({ header: "DATE SOLD", dataKey: "date_sold" });
+  }
+
+  // FIX: Conditionally map row data and handle "no data" colspan
+  const rows =
+    !currentReportData.data || currentReportData.data.length === 0
+      ? [
+          {
+            qty: {
+              content: "No inventory data found for this period",
+              colSpan: isRepoReport ? 9 : 7, // Dynamic colspan
+              styles: { halign: "center" },
+            },
+          },
+        ]
+      : currentReportData.data.map((item) => {
+          const rowData = {
+            qty: "1",
+            model: item.model,
+            color: item.color,
+            brand: item.brand,
+            engine_number: item.engine_number,
+            frame_number: item.frame_number,
+            inventory_cost: formatCurrency(item.inventory_cost),
+          };
+
+          if (isRepoReport) {
+            rowData.customer_name = item.customer_name || '-';
+            rowData.date_sold = item.date_sold && item.date_sold !== '-' ? formatDate(item.date_sold) : '-';
+          }
+          return rowData;
+        });
 
   function formatCurrency(amount) {
     if (amount == null || amount === "") return "N/A";
@@ -4939,8 +4949,88 @@ headStyles: {
       maximumFractionDigits: 2,
     });
   }
-}
 
+  doc.autoTable({
+    startY: currentY,
+    headStyles: {
+      fillColor: [248, 249, 250],
+      textColor: [73, 80, 87],
+      fontStyle: "bold",
+    },
+    styles: { fontSize: 8, cellPadding: 2 },
+    columnStyles: {
+      qty: { halign: "center" },
+      inventory_cost: { halign: "right" },
+    },
+    columns: columns, // Pass the full column definition
+    body: rows,
+    margin: { left: 10, right: 10 },
+  });
+
+  let finalTableY = doc.autoTable.previous.finalY;
+
+  if (!finalTableY || isNaN(finalTableY)) {
+    finalTableY = 50;
+  }
+
+  // --- Summary Cards ---
+  const cardMargin = 8;
+  const leftRightMargin = 10;
+  const topMargin = 20;
+  const bottomMargin = 20;
+  const cardHeight = 45;
+  const spaceAfterTable = 10;
+  const cardWidth = (pageWidth - 2 * leftRightMargin - 2 * cardMargin) / 3;
+  const summarySectionHeight = cardHeight + 10;
+
+  currentY = finalTableY + spaceAfterTable;
+
+  if (currentY + summarySectionHeight + bottomMargin > pageHeight) {
+    doc.addPage();
+    currentY = topMargin;
+  }
+
+  function drawCard(x, y, cardWidth, cardHeight, title, mainValue, subValue, mainColor, subColor, extraText) {
+    doc.setDrawColor(233, 236, 239);
+    doc.setFillColor(248, 249, 250);
+    doc.rect(x, y, cardWidth, cardHeight, "F");
+
+    doc.setFontSize(9).setTextColor(73, 80, 87).setFont("helvetica", "bold").text(title, x + cardWidth / 2, y + 8, { align: "center" });
+    doc.setFontSize(16).setTextColor(...mainColor).setFont("helvetica", "bold").text(String(mainValue), x + cardWidth / 2, y + 25, { align: "center" });
+    doc.setFontSize(10).setTextColor(...subColor).setFont("helvetica", "normal");
+
+    const subValueLines = doc.splitTextToSize(String(subValue), cardWidth - 10);
+    doc.text(subValueLines, x + cardWidth / 2, y + 33, { align: "center" });
+
+    if (extraText) {
+      doc.setFontSize(7).setTextColor(73, 80, 87);
+      const extraTextLines = doc.splitTextToSize(extraText, cardWidth - 10);
+      doc.text(extraTextLines, x + cardWidth / 2, y + 40, { align: "center" });
+    }
+  }
+
+  drawCard(leftRightMargin, currentY, cardWidth, cardHeight, "IN", totalIn, formatCurrency(costTotalIn), [40, 167, 69], [40, 167, 69], `Received: ${receivedTransfers} | New: ${newDeliveries}`);
+  drawCard(leftRightMargin + (cardWidth + cardMargin), currentY, cardWidth, cardHeight, "OUT", totalOut, formatCurrency(costTotalOut), [220, 53, 69], [220, 53, 69], `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`);
+  drawCard(leftRightMargin + 2 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight, "ENDING BALANCE", endingActual, formatCurrency(costEndingActual), [0, 64, 133], [0, 86, 179], null);
+
+  currentY += cardHeight + 10;
+
+  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+
+  const now = new Date();
+  const generatedOn = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const totalPages = doc.internal.getNumberOfPages();
+
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(108, 117, 125);
+    doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  doc.save(`Monthly_Inventory_Report_${currentReportMonth || currentReportDate}_${currentReportBranch}.pdf`);
+}
 // ---B. Inventory Summary Report ---
 
 function toggleInventorySummaryDetails(element, brand, model, branch) {
