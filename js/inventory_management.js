@@ -4420,12 +4420,7 @@ function renderMonthlyInventoryReport(response) {
         </div>
        <h5 class="mb-2" style="color: #495057; font-weight: 500;">${reportTitle}</h5>
         <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-        ${
-          branch !== "all"
-            ? `<p class="mb-1"><span style="color: #6c757d;">Branch:</span> 
-            <span style="color: #000f71; font-weight: 500;">${branchName}</span></p>`
-            : ""
-        }
+          ${buildFilterDisplayHtml()}
       <p class="text-muted small mb-0" style="font-size: 0.85rem;">
         Generated on ${new Date().toLocaleDateString("en-US", {
           weekday: "long",
@@ -4742,78 +4737,56 @@ function generateInventoryReportPDF() {
   doc.setTextColor(0, 64, 133);
   doc.text(dateSubtitle, 105, 33, null, null, "center");
 
-  doc.setFontSize(10);
-  doc.setTextColor(108, 117, 125);
-  const infoTextY = 38;
-  if (currentReportBranch !== "all") {
-    doc.text(
-      `Branch: ${branchName} | Category: ${categoryFilter}`,
-      105,
-      infoTextY,
-      null,
-      null,
-      "center"
-    );
-  } else {
-    doc.text(
-      `Category: ${categoryFilter}`,
-      105,
-      infoTextY,
-      null,
-      null,
-      "center"
-    );
-  }
+  let currentY = 38;
+  currentY = addFiltersToPdf(doc, currentY);
 
-  const columns = [
-    { header: "QTY", dataKey: "qty", width: 10 },
-    { header: "MODEL", dataKey: "model", width: 30 },
-    { header: "COLOR", dataKey: "color", width: 25 },
-    { header: "BRAND", dataKey: "brand", width: 25 },
-    { header: "ENGINE NUMBER", dataKey: "engine_number", width: 35 },
-    { header: "FRAME NUMBER", dataKey: "frame_number", width: 35 },
-    {
-      header: "Inventory Cost",
-      dataKey: "inventory_cost",
-      width: 25,
-      align: "right",
-    },
-  ];
+  const columns = [
+    { header: "QTY", dataKey: "qty", width: 10 },
+    { header: "MODEL", dataKey: "model", width: 30 },
+    { header: "COLOR", dataKey: "color", width: 25 },
+    { header: "BRAND", dataKey: "brand", width: 25 },
+    { header: "ENGINE NUMBER", dataKey: "engine_number", width: 35 },
+    { header: "FRAME NUMBER", dataKey: "frame_number", width: 35 },
+    {
+      header: "Inventory Cost",
+      dataKey: "inventory_cost",
+      width: 25,
+      align: "right",
+    },
+  ];
 
-  const rows =
-    !currentReportData.data || currentReportData.data.length === 0
-      ? [
-          {
-            qty: {
-              content: "No inventory data found for this period",
-              colSpan: 7,
-              styles: { halign: "center" },
-            },
-          },
-        ]
-      : currentReportData.data.map((item) => ({
-          qty: "1",
-          model: item.model,
-          color: item.color,
-          brand: item.brand,
-          engine_number: item.engine_number,
-          frame_number: item.frame_number,
-          inventory_cost: formatCurrency(item.inventory_cost),
-        }));
+  const rows =
+    !currentReportData.data || currentReportData.data.length === 0
+      ? [
+          {
+            qty: {
+              content: "No inventory data found for this period",
+              colSpan: 7,
+              styles: { halign: "center" },
+            },
+          },
+        ]
+      : currentReportData.data.map((item) => ({
+          qty: "1",
+          model: item.model,
+          color: item.color,
+          brand: item.brand,
+          engine_number: item.engine_number,
+          frame_number: item.frame_number,
+          inventory_cost: formatCurrency(item.inventory_cost),
+        }));
 
-  function formatCurrency(amount) {
-    if (amount == null || amount === "") return "N/A";
-    return Number(amount).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
+  function formatCurrency(amount) {
+    if (amount == null || amount === "") return "N/A";
+    return Number(amount).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
 
-  const tableStartY = infoTextY + 7;
-
-  const tableOptions = {
-    startY: tableStartY,
-    headStyles: {
+  const tableOptions = {
+    startY: currentY, // FIX: Use currentY instead of the old variable
+headStyles: {
       fillColor: [248, 249, 250],
       textColor: [73, 80, 87],
       fontStyle: "bold",
@@ -4827,7 +4800,6 @@ function generateInventoryReportPDF() {
     body: rows,
     margin: { left: 10, right: 10 },
   };
-
   doc.autoTable(tableOptions);
 
   let finalTableY = doc.autoTable.previous.finalY;
@@ -4849,7 +4821,7 @@ function generateInventoryReportPDF() {
 
   const summarySectionHeight = cardHeight + 10;
 
-  let currentY = finalTableY + spaceAfterTable;
+ currentY = finalTableY + spaceAfterTable;
 
   if (currentY + summarySectionHeight + bottomMargin > pageHeight) {
     doc.addPage();
@@ -5833,7 +5805,7 @@ function renderSoldUnitsReport(response) {
       </div>
       <h5 class="mb-2" style="color: #495057; font-weight: 500;">Summary of Sold Units Report</h5>
       <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-      <p class="text-muted small">${saleTypeDisplay} | ${branchDisplay}</p>
+     ${buildFilterDisplayHtml()}
     </div>
 
     <div class="row mb-4">
@@ -5909,17 +5881,7 @@ function generateSoldUnitsReportPDF() {
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
 
-  const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all") filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all") filterParts.push(`Category: ${currentReportCategory.charAt(0).toUpperCase() + currentReportCategory.slice(1)}`);
-  if (currentReportBrand && currentReportBrand !== "all") filterParts.push(`Brand: ${currentReportBrand}`);
-  if (currentReportModel && currentReportModel !== "all" && currentReportModel !== "") filterParts.push(`Model: ${currentReportModel}`);
-  if (currentReportSaleType && currentReportSaleType !== "all") filterParts.push(`Sale Type: ${currentReportSaleType}`);
-  if (filterParts.length > 0) {
-    doc.setFontSize(9).setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, { align: "center" });
-    currentY += 7;
-  }
+ currentY = addFiltersToPdf(doc, currentY);
 
   // --- DATA TABLES ---
   const groupedData = {};
@@ -6176,7 +6138,7 @@ function renderTransferredSummaryReport(response) {
       </div>
       <h5 class="mb-2" style="color: #495057; font-weight: 500;">SUMMARY OF TRANSFERRED STOCKS</h5>
       <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-      <p class="mb-1"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
+    ${buildFilterDisplayHtml()}
     </div>
 
     <div class="row mb-4">
@@ -6261,8 +6223,7 @@ function generateTransferredReportPDF() {
   doc.setFontSize(10);
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
-  doc.text(`Branch: ${branchName} | Category: ${categoryFilter}`, pageWidth / 2, currentY, { align: "center" });
-  currentY += 8;
+  currentY = addFiltersToPdf(doc, currentY);
 
   // --- MAIN TABLE ---
   const tableColumns = [
@@ -6486,7 +6447,7 @@ function renderReceivedSummaryReport(response) {
         </div>
         <h5 class="mb-2" style="color: #495057; font-weight: 500;">SUMMARY OF RECEIVED STOCKS</h5>
         <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-        <p class="mb-1"><span style="color: #6c757d;">Branch:</span> <span style="color: #000f71; font-weight: 500;">${branch}</span></p>
+      ${buildFilterDisplayHtml()}
     </div>
 
     <div class="row mb-4">
@@ -6565,17 +6526,7 @@ function generateReceivedReportPDF() {
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
 
-  const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all") filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all") filterParts.push(`Category: ${currentReportCategory.charAt(0).toUpperCase() + currentReportCategory.slice(1)}`);
-  if (currentReportBrand && currentReportBrand !== "all") filterParts.push(`Brand: ${currentReportBrand}`);
-  if (currentReportModel && currentReportModel !== "all" && currentReportModel !== "") filterParts.push(`Model: ${currentReportModel}`);
-  if (filterParts.length > 0) {
-    doc.setFontSize(9).setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, { align: "center" });
-    currentY += 7;
-  }
-
+ currentY = addFiltersToPdf(doc, currentY);
   // --- MAIN TABLE ---
   const tableColumns = [
     { header: "#", dataKey: "index" }, { header: "Invoice Number", dataKey: "invoice_number" },
@@ -6754,14 +6705,7 @@ function renderScrappedReport(response) {
             </div>
             <h5 class="mb-2" style="color: #495057; font-weight: 500;">MONTHLY SUMMARY OF SCRAPPED UNITS</h5>
             <h6 class="mb-2 text-muted" style="font-weight: 400;">${monthName} ${year}</h6>
-            <p class="mb-1">
-                <span style="color: #6c757d;">Branch:</span> 
-                <span style="color: #000f71; font-weight: 500;">${branchName}</span> | 
-                <span style="color: #6c757d;">Brand:</span> 
-                <span style="color: #000f71; font-weight: 500;">${brandName}</span> | 
-                <span style="color: #6c757d;">Category:</span> 
-                <span style="color: #000f71; font-weight: 500;">${categoryName}</span>
-            </p>
+           ${buildFilterDisplayHtml()}
             <p class="text-muted small mb-0" style="font-size: 0.85rem;">
                 Generated on ${new Date().toLocaleDateString("en-US", {
                   weekday: "long",
@@ -7010,33 +6954,7 @@ function generateScrappedReportPDF() {
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6; // Filter Parameters Header
 
-  const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all")
-    filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all")
-    filterParts.push(
-      `Category: ${
-        currentReportCategory.charAt(0).toUpperCase() +
-        currentReportCategory.slice(1)
-      }`
-    );
-  if (currentReportBrand && currentReportBrand !== "all")
-    filterParts.push(`Brand: ${currentReportBrand}`);
-  if (
-    currentReportModel &&
-    currentReportModel !== "all" &&
-    currentReportModel !== ""
-  )
-    filterParts.push(`Model: ${currentReportModel}`);
-
-  if (filterParts.length > 0) {
-    doc.setFontSize(9);
-    doc.setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, {
-      align: "center",
-    });
-    currentY += 5;
-  }
+  currentY = addFiltersToPdf(doc, currentY);
   doc.setDrawColor(0, 15, 113);
   doc.setLineWidth(0.8);
   doc.line(marginLR, currentY, pageWidth - marginLR, currentY);
@@ -7292,10 +7210,7 @@ function renderMotorcycleReport(data, branch, brandFilter) {
       </div>
       <h5 class="mb-2" style="color: #495057; font-weight: 500;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
       <h6 class="mb-2 text-muted" style="font-weight: 400;">${dateSubtitle}</h6>
-      <p class="text-muted small">
-        ${brandFilter === "all" ? "ALL BRANDS" : brandFilter.toUpperCase()} | 
-        ${branch ? branch : "ALL BRANCHES"}
-      </p>
+      ${buildFilterDisplayHtml()}
     </div>
 
     <div class="row mb-4">
@@ -7380,17 +7295,7 @@ function generateMotorcycleReportPDF() {
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
 
-  const filterParts = [];
-  if (currentReportBranch && currentReportBranch !== "all") filterParts.push(`Branch: ${currentReportBranch}`);
-  if (currentReportCategory && currentReportCategory !== "all") filterParts.push(`Category: ${currentReportCategory.charAt(0).toUpperCase() + currentReportCategory.slice(1)}`);
-  if (currentReportBrand && currentReportBrand !== "all") filterParts.push(`Brand: ${currentReportBrand}`);
-  if (currentReportModel && currentReportModel !== "all" && currentReportModel !== "") filterParts.push(`Model: ${currentReportModel}`);
-  if (filterParts.length > 0) {
-    doc.setFontSize(9).setTextColor(108, 117, 125);
-    doc.text(filterParts.join(" | "), pageWidth / 2, currentY, { align: "center" });
-    currentY += 7;
-  }
-
+  currentY = addFiltersToPdf(doc, currentY);
   // --- DATA TABLES ---
   const columns = [
     { header: "QTY", dataKey: "qty" }, { header: "MODEL", dataKey: "model" },
@@ -7934,4 +7839,87 @@ function addBrandSummaryToPdf(doc, data, startY) {
     });
 
     return doc.autoTable.previous.finalY;
+}
+
+/**
+ * Generates an HTML string for displaying the current report filters.
+ * @returns {string} The formatted HTML string for the filters.
+ */
+function buildFilterDisplayHtml() {
+    const filters = [];
+    
+    // Branch
+    if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {
+        filters.push(`Branch: ${escapeHtml(currentReportBranch)}`);
+    }
+
+    // Category
+    if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
+        filters.push(`Category: ${escapeHtml(currentReportCategory)}`);
+    }
+
+    // Brand
+    if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
+        filters.push(`Brand: ${escapeHtml(currentReportBrand)}`);
+    }
+
+     // Model
+    if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
+        filters.push(`Model(s): ${escapeHtml(currentReportModel)}`);
+    }
+    
+    // Sale Type
+    if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
+        filters.push(`Sale Type: ${escapeHtml(currentReportSaleType)}`);
+    }
+
+    if (filters.length === 0) {
+        return '<p class="report-filters" style="color: red; text-transform: uppercase; font-weight: bold; font-size: 0.9rem;">FILTERS: ALL</p>';
+    }
+
+    return `<p class="report-filters" style="color: red; text-transform: uppercase; font-weight: bold; font-size: 0.9rem;">
+                ${filters.join(' | ')}
+            </p>`;
+}
+
+/**
+ * Draws a formatted filter string onto a jsPDF document.
+ * @param {jsPDF} doc The jsPDF document instance.
+ * @param {number} currentY The current Y position to start drawing from.
+ * @returns {number} The new Y position after drawing the text.
+ */
+function addFiltersToPdf(doc, currentY) {
+    const filters = [];
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Build the array of active filters
+    if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {
+        filters.push(`Branch: ${currentReportBranch}`);
+    }
+    if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
+        filters.push(`Category: ${currentReportCategory}`);
+    }
+    if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
+        filters.push(`Brand: ${currentReportBrand}`);
+    }
+    if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
+        filters.push(`Model(s): ${currentReportModel}`);
+    }
+    if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
+        filters.push(`Sale Type: ${currentReportSaleType}`);
+    }
+
+    let filterString = "FILTERS: ALL";
+    if (filters.length > 0) {
+        filterString = filters.join(' | ');
+    }
+
+    // Set styles and draw the text on the PDF
+    doc.setFontSize(9);
+    doc.setTextColor(220, 53, 69); // Red color (Bootstrap's btn-danger)
+    doc.setFont("helvetica", "bold");
+    doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, { align: "center" });
+
+    // Return the new Y position, adding some padding below the filter line
+    return currentY + 7;
 }
