@@ -891,6 +891,7 @@
                     <label for="reportType" class="form-label fw-bold">1. Select Report Type</label>
                     <select class="form-select form-select-lg" id="reportType">
                         <option value="inventory">Inventory Balance Report</option>
+                         <option value="inventory_summary">Summary of Inventory</option>
                         <option value="transferred">Summary of Transferred Stocks</option>
                         <option value="received">Summary of Received Stocks</option>
                         <option value="motorcycle">Available Motorcycle Units Report</option>
@@ -964,10 +965,18 @@
                                     <option value="Asiastar">ASIASTAR</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label for="reportModelFilter" class="form-label">Model</label>
-                                <input type="text" class="form-control" id="reportModelFilter" placeholder="All Models (type to filter)">
-                            </div>
+                           <div class="col-12">
+    <label for="reportModelSearch" class="form-label">Model(s)</label>
+    <div class="dropdown">
+        <div id="model-filter-container" class="form-control d-flex flex-wrap gap-1 align-items-center" style="min-height: 38px;" data-bs-toggle="dropdown" aria-expanded="false">
+            <span id="selected-models-tags" class="d-flex flex-wrap gap-1">
+                </span>
+            <input type="text" id="reportModelSearch" class="flex-grow-1 border-0 p-0" placeholder="Search to add models..." style="min-width: 150px; outline: none; box-shadow: none;">
+        </div>
+        <ul id="model-search-results" class="dropdown-menu w-100" aria-labelledby="model-filter-container" style="max-height: 200px; overflow-y: auto;">
+            </ul>
+    </div>
+    <input type="hidden" id="reportModelFilter"> </div>
                              <div class="col-md-6" id="soldSaleTypeContainer" style="display: none;">
                                 <label for="soldSaleTypeFilter" class="form-label">Type of Sale</label>
                                 <select class="form-select" id="soldSaleTypeFilter">
