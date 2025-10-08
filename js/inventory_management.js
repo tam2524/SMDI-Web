@@ -878,17 +878,20 @@ function renderInventoryTable(data) {
           <td>${item.current_branch}</td>
           <td>
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-primary edit-btn">
+              <button class="btn btn-outline-primary edit-btn" title="Edit Motorcycle">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-outline-danger sell-btn">
+              <button class="btn btn-outline-danger sell-btn" title="Mark as Sold">
                 <i class="bi"></i> ₱
               </button>
+              <button class="btn btn-outline-primary repo-btn" title="Mark as Repossessed">
+                <i class="bi bi-arrow-return-left"></i>
+             </button>
               ${
                 canAccessScrapFeature
                   ? `
-              <button class="btn btn-outline-warning scrap-btn">
-                <i class="bi bi-trash"></i> Scrap
+              <button class="btn btn-outline-warning scrap-btn" title="Mark as Scrapped">
+                <i class="bi bi-trash"></i>
               </button>`
                   : ""
               }
@@ -1083,6 +1086,40 @@ function setupTableActionButtons() {
       },
     });
   });
+
+  $(".repo-btn").click(function () {
+        const id = $(this).closest("tr").data("id");
+
+        // First, check the motorcycle's status
+        $.ajax({
+            url: "../api/inventory_management.php",
+            method: "GET",
+            data: { action: "get_motorcycle", id: id },
+            dataType: "json",
+            success: function (response) {
+                if (response.success) {
+                    const motorcycle = response.data;
+                    // Only allow marking as repo if the unit is 'sold'
+                    if (motorcycle.status === "sold") {
+                        openRepoModal(id);
+                    } else if (motorcycle.category === "repo") {
+                        showInfoModal("This unit is already marked as REPO.");
+                    } else if (motorcycle.status === "scrapped") {
+                        showErrorModal("A scrapped unit cannot be repossessed.");
+                    } else if (motorcycle.status === "available") {
+                        showErrorModal("An available unit cannot be repossessed. It must be sold first.");
+                    } else {
+                        showErrorModal(`This unit cannot be repossessed. Current status: ${motorcycle.status}`);
+                    }
+                } else {
+                    showErrorModal(response.message || "Could not retrieve motorcycle details.");
+                }
+            },
+            error: function () {
+                showErrorModal("An error occurred while checking the motorcycle's status.");
+            },
+        });
+    });
 }
 
 function showMonthlyInventoryOptions() {
@@ -2042,6 +2079,54 @@ function submitScrap() {
       showErrorModal("Error marking motorcycle as scrapped: " + error);
     },
   });
+}
+
+/**
+ * Opens the REPO modal and populates it with the motorcycle ID.
+ * @param {number} id The ID of the motorcycle to be marked as repo.
+ */
+function openRepoModal(id) {
+    $("#repoMotorcycleId").val(id);
+    $("#repoDate").val(new Date().toISOString().split("T")[0]); // Set today's date
+    $("#repoReason").val("");
+    $("#repoModal").modal("show");
+}
+
+/**
+ * Submits the form to mark a motorcycle as repossessed.
+ */
+function submitRepo() {
+    const formData = {
+        action: "mark_as_repo",
+        motorcycle_id: $("#repoMotorcycleId").val(),
+        repo_date: $("#repoDate").val(),
+        repo_reason: $("#repoReason").val(),
+    };
+
+    if (!formData.repo_date) {
+        showErrorModal("Please select a repossession date.");
+        return;
+    }
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "POST",
+        data: formData,
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                $("#repoModal").modal("hide");
+                showSuccessModal("Motorcycle successfully marked as REPO and returned to inventory.");
+                loadInventoryDashboard();
+                loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
+            } else {
+                showErrorModal(response.message || "Error marking motorcycle as REPO.");
+            }
+        },
+        error: function (xhr, status, error) {
+            showErrorModal("An error occurred: " + error);
+        },
+    });
 }
 
 // =============================================================================

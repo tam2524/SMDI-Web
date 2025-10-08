@@ -110,6 +110,10 @@ switch ($action) {
         scrapMotorcycle();
         break;
 
+     case 'mark_as_repo':
+        markAsRepo();
+        break;    
+
     // Sales & Invoicing
     case 'sell_motorcycle':
         sellMotorcycle();
@@ -3642,6 +3646,70 @@ function getCurrentBranch() {
     ] );
 }
 
+function markAsRepo() {
+    global $conn;
+
+    // 1. Validate input
+    $motorcycleId = isset($_POST['motorcycle_id']) ? intval($_POST['motorcycle_id']) : 0;
+    $repoDate = isset($_POST['repo_date']) ? sanitizeInput($_POST['repo_date']) : null;
+    $repoReason = isset($_POST['repo_reason']) ? sanitizeInput($_POST['repo_reason']) : '';
+    $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+
+    if ($motorcycleId <= 0 || empty($repoDate)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid data provided.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+
+    try {
+        // 2. Lock the row and check the current status
+        $stmt_check = $conn->prepare("SELECT status FROM motorcycle_inventory WHERE id = ? FOR UPDATE");
+        $stmt_check->bind_param('i', $motorcycleId);
+        $stmt_check->execute();
+        $result_check = $stmt_check->get_result();
+
+        if ($result_check->num_rows === 0) {
+            throw new Exception("Motorcycle not found.");
+        }
+
+        $currentStatus = $result_check->fetch_assoc()['status'];
+        if ($currentStatus !== 'sold') {
+            throw new Exception("This unit cannot be repossessed because it is not currently marked as sold.");
+        }
+
+        // 3. Update the motorcycle's status and category
+        $stmt_update = $conn->prepare("UPDATE motorcycle_inventory SET status = 'available', category = 'repo' WHERE id = ?");
+        $stmt_update->bind_param('i', $motorcycleId);
+        if (!$stmt_update->execute()) {
+            throw new Exception("Failed to update motorcycle status.");
+        }
+
+        // 4. Delete the corresponding sale record
+        $stmt_delete_sale = $conn->prepare("DELETE FROM motorcycle_sales WHERE motorcycle_id = ?");
+        $stmt_delete_sale->bind_param('i', $motorcycleId);
+        if (!$stmt_delete_sale->execute()) {
+            // This is not a critical failure, but good to log
+            error_log("Could not delete sale record for repossessed motorcycle ID: " . $motorcycleId);
+        }
+
+        // 5. Log the repossession event (assuming a 'motorcycle_repo_history' table exists)
+        // If this table doesn't exist, you should create it:
+        // CREATE TABLE motorcycle_repo_history (id INT AUTO_INCREMENT PRIMARY KEY, motorcycle_id INT, repo_date DATE, repo_reason TEXT, user_id INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+        $stmt_log = $conn->prepare("INSERT INTO motorcycle_repo_history (motorcycle_id, repo_date, repo_reason, user_id) VALUES (?, ?, ?, ?)");
+        $stmt_log->bind_param('issi', $motorcycleId, $repoDate, $repoReason, $userId);
+        if (!$stmt_log->execute()) {
+            throw new Exception("Failed to log the repossession event.");
+        }
+
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Motorcycle has been successfully marked as REPO.']);
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+    }
+}
 
 
 ?>
