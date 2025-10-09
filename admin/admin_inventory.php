@@ -120,6 +120,87 @@
                     </div>
                 </div>
 
+                <div class='tab-pane fade' id='management' role='tabpanel'>
+                    <div class='d-flex justify-content-between mb-4'>
+                        <div>
+                            <button class='btn btn-primary text-white me-2' data-bs-toggle='modal'
+                                data-bs-target='#addMotorcycleModal'>
+                                <i class='bi bi-plus-circle'></i> Add Motorcycle
+                            </button>
+
+                            <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
+                                <i class='bi bi-truck'></i> Transfer
+                            </button>
+
+                            <!-- Replace your current report buttons with this single button -->
+                            <button type='button' class='btn btn-primary text-white me-2' id='generateReportsButton'>
+                                <i class='bi bi-file-earmark-text'></i> Generate Reports
+                            </button>
+                            <button class='btn btn-primary text-white me-2' id='searchTransferReceiptBtn'>
+                                <i class='bi bi-receipt'></i> Print by MT
+                            </button>
+                            <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
+                                <i class='bi bi-receipt'></i> Print by Invoice
+                            </button>
+                        </div>
+
+                        <div class='input-group' style='max-width: 300px;'>
+                            <input type='text' id='searchInventory' class='form-control'
+                                placeholder='Search inventory...'>
+                            <button class='btn btn-primary text-white' type='button' id='searchInventoryBtn'>
+                                <i class='bi bi-search'></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class='table-responsive'>
+                        <table class='table table-striped' id='inventoryTable'>
+                            <thead>
+                                <tr>
+                                    <th><input type='checkbox' id='selectAllInventory'></th>
+                                    <th>Invoice No</th>
+                                    <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
+                                    <th class='sortable-header' data-sort='brand'>Brand</th>
+                                    <th class='sortable-header' data-sort='model'>Model</th>
+                                    <th class='sortable-header' data-sort='category'>Category</th>
+                                    <th>Engine No.</th>
+                                    <th>Frame No.</th>
+                                    <th>Color</th>
+                                    <th>Inventory Cost</th>
+                                    <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
+                                    <th class='no-print'>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id='inventoryTableBody'>
+                                <tr>
+                                    <td colspan='11' class='text-center py-5'>
+                                        <div class='spinner-border text-primary' role='status'>
+                                            <span class='visually-hidden'>Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <nav aria-label='Inventory pagination'>
+                        <ul id='paginationControls' class='pagination'>
+                            <li id='prevPage' class='page-item disabled'>
+                                <a class='page-link' href='#' tabindex='-1' aria-disabled='true'>
+                                    <i class='fas fa-chevron-left me-1'></i> Previous
+                                </a>
+                            </li>
+                            <li id='nextPage' class='page-item'>
+                                <a class='page-link' href='#'>
+                                    Next <i class='fas fa-chevron-right ms-1'></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+
+                
                 <div class='tab-pane fade' id='globalTransferHistory' role='tabpanel'
                     aria-labelledby='global-transfer-tab'>
 
@@ -220,86 +301,6 @@
                     </section>
 
                 </div>
-
-                <div class='tab-pane fade' id='management' role='tabpanel'>
-                    <div class='d-flex justify-content-between mb-4'>
-                        <div>
-                            <button class='btn btn-primary text-white me-2' data-bs-toggle='modal'
-                                data-bs-target='#addMotorcycleModal'>
-                                <i class='bi bi-plus-circle'></i> Add Motorcycle
-                            </button>
-
-                            <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
-                                <i class='bi bi-truck'></i> Transfer
-                            </button>
-
-                            <!-- Replace your current report buttons with this single button -->
-                            <button type='button' class='btn btn-primary text-white me-2' id='generateReportsButton'>
-                                <i class='bi bi-file-earmark-text'></i> Generate Reports
-                            </button>
-                            <button class='btn btn-primary text-white me-2' id='searchTransferReceiptBtn'>
-                                <i class='bi bi-receipt'></i> Print by MT
-                            </button>
-                            <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
-                                <i class='bi bi-receipt'></i> Print by Invoice
-                            </button>
-                        </div>
-
-                        <div class='input-group' style='max-width: 300px;'>
-                            <input type='text' id='searchInventory' class='form-control'
-                                placeholder='Search inventory...'>
-                            <button class='btn btn-primary text-white' type='button' id='searchInventoryBtn'>
-                                <i class='bi bi-search'></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class='table-responsive'>
-                        <table class='table table-striped' id='inventoryTable'>
-                            <thead>
-                                <tr>
-                                    <th><input type='checkbox' id='selectAllInventory'></th>
-                                    <th>Invoice No</th>
-                                    <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
-                                    <th class='sortable-header' data-sort='brand'>Brand</th>
-                                    <th class='sortable-header' data-sort='model'>Model</th>
-                                    <th class='sortable-header' data-sort='category'>Category</th>
-                                    <th>Engine No.</th>
-                                    <th>Frame No.</th>
-                                    <th>Color</th>
-                                    <th>Inventory Cost</th>
-                                    <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
-                                    <th class='no-print'>Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody id='inventoryTableBody'>
-                                <tr>
-                                    <td colspan='11' class='text-center py-5'>
-                                        <div class='spinner-border text-primary' role='status'>
-                                            <span class='visually-hidden'>Loading...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <nav aria-label='Inventory pagination'>
-                        <ul id='paginationControls' class='pagination'>
-                            <li id='prevPage' class='page-item disabled'>
-                                <a class='page-link' href='#' tabindex='-1' aria-disabled='true'>
-                                    <i class='fas fa-chevron-left me-1'></i> Previous
-                                </a>
-                            </li>
-                            <li id='nextPage' class='page-item'>
-                                <a class='page-link' href='#'>
-                                    Next <i class='fas fa-chevron-right ms-1'></i>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
             </div>
         </div>
         </div>
@@ -391,7 +392,7 @@
         </div>
     </div>
 
-    <div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
+ <div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
             <div class='modal-content'>
@@ -413,11 +414,12 @@
                             <div class='col-md-6 mb-3'>
                                 <label for='branch' class='form-label'>Branch</label>
                                 <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
-    ?>
+        ?>
                                 <select class='form-select' id='branch' required>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
                                     <option value='TANQUE'>TANQUE</option>
+                                    <option value='DFISHER'>DFISHER</option>
                                     <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
                                     <option value='MAMBUSAO'>MAMBUSAO</option>
                                     <option value='SIGMA'>SIGMA</option>
@@ -446,6 +448,7 @@
                                     <option value='INFINITY BACOLOD'>INFINITY BACOLOD</option>
                                     <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
+                                    <option value='MINDORO-MB'>MINDORO-MB</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
                                     <option value='3S MINDORO'>3S MINDORO</option>
                                     <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
@@ -456,7 +459,7 @@
 
                                 </select>
                                 <?php } else {
-        ?>
+                                                        ?>
                                 <input type='text' class='form-control' id='branch'
                                     value="<?php echo $_SESSION['user_branch']; ?>" readonly>
                                 <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
@@ -558,6 +561,7 @@
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
                                     <option value='TANQUE'>TANQUE</option>
+                                    <option value='DFISHER'>DFISHER</option>
                                     <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
                                     <option value='MAMBUSAO'>MAMBUSAO</option>
                                     <option value='SIGMA'>SIGMA</option>
@@ -586,6 +590,7 @@
                                     <option value='INFINITY BACOLOD'>INFINITY BACOLOD</option>
                                     <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
                                     <option value='AJUY'>AJUY</option>
+                                    <option value='MINDORO-MB'>MINDORO-MB</option>
                                     <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
                                     <option value='3S MINDORO'>3S MINDORO</option>
                                     <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
@@ -611,6 +616,8 @@
                                     <option value='available'>Available</option>
                                     <option value='sold'>Sold</option>
                                     <option value='transferred'>Transferred</option>
+                                    <option value='scrapped'>Scrapped</option>
+
                                 </select>
                             </div>
                             <!-- Sold Details Section -->
@@ -760,6 +767,69 @@
         </div>
     </div>
 
+    <div class='modal fade' id='scrapMotorcycleModal' tabindex='-1' aria-labelledby='scrapMotorcycleModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='scrapMotorcycleModalLabel'>Mark Motorcycle as Scrapped</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='scrapForm'>
+                        <input type='hidden' id='scrapMotorcycleId'>
+
+                        <div class='mb-3'>
+                            <label for='scrapDate' class='form-label'>Scrap Date <span
+                                    class='text-danger'>*</span></label>
+                            <input type='date' class='form-control' id='scrapDate' required>
+                        </div>
+
+                        <div class='mb-3'>
+                            <label for='scrapReason' class='form-label'>Reason for Scrapping</label>
+                            <textarea class='form-control' id='scrapReason' rows='3'
+                                placeholder='Optional reason for scrapping...'></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-warning' onclick='submitScrap()'>Mark as Scrapped</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class='modal fade' id='repoModal' tabindex='-1' aria-labelledby='repoModalLabel' aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='repoModalLabel'>Mark Motorcycle as Repossessed</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='repoForm'>
+                        <input type='hidden' id='repoMotorcycleId'>
+
+                        <div class='mb-3'>
+                            <label for='repoDate' class='form-label'>Repo Date <span
+                                    class='text-danger'>*</span></label>
+                            <input type='date' class='form-control' id='repoDate' required>
+                        </div>
+
+                        <div class='mb-3'>
+                            <label for='repoReason' class='form-label'>Reason for Repossession</label>
+                            <textarea class='form-control' id='repoReason' rows='3'
+                                placeholder='Enter reason (optional)'></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-success' onclick='submitRepo()'>Confirm REPO</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class='modal fade' id='viewDetailsModal' tabindex='-1' aria-labelledby='viewDetailsModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -862,6 +932,8 @@
                                             <input type='text' class='form-control form-control-sm'
                                                 id='multipleTransferInvoiceNumber' required
                                                 placeholder='Enter transfer invoice number'>
+                                            <div id='transferInvoiceInfo' class='form-text small mt-1'></div>
+
                                         </div>
 
                                         <div class='mb-3'>
@@ -1209,7 +1281,6 @@
             </div>
         </div>
     </div>
-
     <div class='modal fade' id='transferReceiptModal' tabindex='-1' aria-labelledby='transferReceiptModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-xl'>
@@ -1281,6 +1352,9 @@
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                    <!-- <button type = 'button' class = 'btn btn-warning' id = 'editTransferBtn'>
+            <i class = 'bi bi-pencil-square me-2'></i> Manage Items
+            </button> -->
                     <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
                         <i class='bi bi-printer me-2'></i>Print Receipt
                     </button>
@@ -1288,7 +1362,62 @@
             </div>
         </div>
     </div>
-
+    <div class='modal fade' id='manageTransferModal' tabindex='-1' aria-labelledby='manageTransferModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog modal-xl'>
+            <div class='modal-content'>
+                <div class='modal-header bg-warning text-dark'>
+                    <h5 class='modal-title' id='manageTransferModalLabel'><i class='bi bi-pencil-square me-2'></i>Manage
+                        Transfer Items</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <div class='row'>
+                        <div class='col-12 mb-3'>
+                            <div class='card'>
+                                <div class='card-body p-3'>
+                                    <h6 class='card-title'>Transfer Details</h6>
+                                    <p class='card-text mb-1'>
+                                        <strong>Invoice No:</strong> <span id='manageTransferInvoiceNo'></span>
+                                    </p>
+                                    <p class='card-text mb-0'>
+                                        <strong>From:</strong> <span id='manageTransferFromBranch'></span> &rarr;
+                                        <strong>To:</strong> <span id='manageTransferToBranch'></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class='col-md-6'>
+                            <h6>Currently in Transfer ( <span id='currentItemsCount'>0</span> )</h6>
+                            <div id='manageTransferCurrentList' class='list-container border rounded p-2'
+                                style='max-height: 400px; overflow-y: auto;'>
+                            </div>
+                        </div>
+                        <div class='col-md-6'>
+                            <h6>Add Available Motorcycles</h6>
+                            <div class='input-group mb-2'>
+                                <input type='text' id='manageTransferEngineSearch' class='form-control'
+                                    placeholder='Search by Engine No. from source branch...'>
+                                <button class='btn btn-primary text-white' type='button' id='manageTransferSearchBtn'><i
+                                        class='bi bi-search'></i></button>
+                            </div>
+                            <div id='manageTransferSearchResults' class='list-container border rounded p-2'
+                                style='max-height: 350px; overflow-y: auto;'>
+                                <div class='text-center text-muted p-4'>Search for motorcycles to add them to this
+                                    transfer.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-success' id='saveTransferChangesBtn'>
+                        <i class='bi bi-save me-2'></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
@@ -1302,12 +1431,11 @@
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' id='confirmActionBtn' class='btn btn-danger'>Delete</button>
+                    <button type='button' id='confirmDeleteBtn' class='btn btn-danger'>Delete</button>
                 </div>
             </div>
         </div>
     </div>
-
     <div class='modal fade' id='successModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -1325,7 +1453,6 @@
             </div>
         </div>
     </div>
-    <!-- Info Modal -->
     <div class='modal fade' id='infoModal' tabindex='-1'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -1342,7 +1469,6 @@
             </div>
         </div>
     </div>
-
     <div class='modal fade' id='errorModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
@@ -1360,7 +1486,6 @@
             </div>
         </div>
     </div>
-
     <div class='modal fade' id='warningModal' tabindex='-1' role='dialog' aria-labelledby='warningModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog' role='document'>

@@ -189,6 +189,9 @@ switch ($action) {
     case 'get_monthly_received_summary':
         getMonthlyReceivedSummary();
         break;
+        case 'get_delivered_stocks_summary':
+    getDeliveredStocksSummary();
+    break;
     case 'get_available_motorcycles_report':
         getAvailableMotorcyclesReport();
         break;
@@ -2275,7 +2278,6 @@ function getAllModels() {
         echo json_encode(['success' => false, 'message' => 'Error fetching models: ' . $conn->error]);
     }
 }
-
 function getMonthlyInventory() {
      global $conn;
 
@@ -2396,40 +2398,66 @@ function getMonthlyInventory() {
 
 
      // === NEW DELIVERIES ===
-    if (strtoupper($branch) === 'ALL') {
-        $sqlNewDeliveries = "
-            SELECT COUNT(*) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
-            FROM motorcycle_inventory mi
-            WHERE mi.date_delivered BETWEEN ? AND ?
-              AND mi.deleted_at IS NULL
-              AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
-              $categoryCondition
-              $brandCondition
-              $modelCondition
-        ";
+    // === NEW DELIVERIES ===
+if (strtoupper($branch) === 'ALL') {
+    // MODIFIED: Removed the NOT EXISTS clause to correctly count units that
+    // were delivered and then transferred in the same period.
+    $sqlNewDeliveries = "
+        SELECT COUNT(*) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
+        FROM motorcycle_inventory mi
+       WHERE mi.date_delivered BETWEEN ? AND ?
+  AND mi.deleted_at IS NULL
+     $categoryCondition
+          $brandCondition
+          $modelCondition
+    ";
+    // ...
         $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
         $types = 'ss' . $paramTypes;
         $paramsNewDeliveries = array_merge([$startDate, $endDate], $params);
         bindParams($stmtNewDeliveries, $types, $paramsNewDeliveries);
-    } else {
-        // --- THIS IS THE FIX ---
-        $sqlNewDeliveries = "
-            SELECT COUNT(*) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
-            FROM motorcycle_inventory mi
-            WHERE mi.date_delivered BETWEEN ? AND ?
-              AND mi.deleted_at IS NULL
-              AND mi.current_branch = ?
-              -- This new line prevents transferred items from being counted as new deliveries
-              AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
-              $categoryCondition
-              $brandCondition
-              $modelCondition
-        ";
-        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-        $types = 'sss' . $paramTypes;
-        $paramsNewDeliveries = array_merge([$startDate, $endDate, $branch], $params);
-        bindParams($stmtNewDeliveries, $types, $paramsNewDeliveries);
-    }
+   } else {
+    // --- FINAL CORRECTED LOGIC ---
+    $sqlNewDeliveries = "
+        SELECT COUNT(DISTINCT mi.id) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
+        FROM motorcycle_inventory mi
+        WHERE mi.date_delivered BETWEEN ? AND ?
+          AND mi.deleted_at IS NULL
+          AND (
+                -- Condition 1: The item was delivered, never transferred, and is at the selected branch.
+                (
+                    mi.current_branch = ?
+                    AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
+                )
+            OR
+                -- Condition 2: The item was delivered AND its first transfer FROM this branch
+                -- happened IN THE SAME PERIOD.
+                (
+                    EXISTS (
+                        SELECT 1 FROM inventory_transfers it
+                        WHERE it.motorcycle_id = mi.id
+                          AND it.from_branch = ?
+                          -- THIS DATE CHECK IS THE CRITICAL FIX:
+                          AND it.transfer_date BETWEEN ? AND ?
+                          AND it.transfer_date = (SELECT MIN(it2.transfer_date) FROM inventory_transfers it2 WHERE it2.motorcycle_id = mi.id)
+                    )
+                )
+          )
+          $categoryCondition $brandCondition $modelCondition
+    ";
+    $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
+    // Note: The parameters and types have changed due to the new date check
+    $types = 'ssssss' . $paramTypes;
+    $paramsNewDeliveries = array_merge([
+        $startDate,  // for date_delivered
+        $endDate,    // for date_delivered
+        $branch,     // for current_branch
+        $branch,     // for from_branch
+        $startDate,  // for transfer_date
+        $endDate     // for transfer_date
+    ], $params);
+    bindParams($stmtNewDeliveries, $types, $paramsNewDeliveries);
+}
     $stmtNewDeliveries->execute();
     $newDeliveriesResult = $stmtNewDeliveries->get_result()->fetch_assoc();
     $countNewDeliveries = (int)($newDeliveriesResult['count_new'] ?? 0);
@@ -3236,111 +3264,96 @@ function getMonthlyScrappedSummary() {
         'summary_by_reason' => [] // Populate if needed
     ]);
 }
-
 function getAvailableMotorcyclesReport() {
     global $conn;
 
-    // --- 1. Sanitize all input parameters ---
+    // --- 1. Get all date and filter parameters ---
     $period_type = isset($_GET['period_type']) ? sanitizeInput($_GET['period_type']) : 'as_of_date';
     $date = isset($_GET['date']) ? sanitizeInput($_GET['date']) : date('Y-m-d');
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null;
     $start_date_param = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : null;
     $end_date_param = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : null;
-    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
-    $category = isset($_GET['category']) ? sanitizeInput($_GET['category']) : 'all';
-    $brand = isset($_GET['brand']) ? sanitizeInput($_GET['brand']) : 'all';
-    $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
     
-    // --- 2. Determine the true Start and End Dates for the query ---
-    $startDate = date('Y-m-d');
-    $endDate = date('Y-m-d');
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+    $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
+
+    // --- 2. Determine the report's effective start and end dates ---
+    $reportStartDate = date('Y-m-01'); // Default
+    $reportEndDate = date('Y-m-d'); // Default
 
     switch ($period_type) {
         case 'daily':
         case 'as_of_date':
-            // For a single day or "as of", the start and end are the same.
-            $startDate = $date;
-            $endDate = $date;
+            if (!empty($date)) {
+                $reportStartDate = $date;
+                $reportEndDate = $date;
+            }
             break;
         case 'monthly':
-            if ($month) {
-                $startDate = date('Y-m-01', strtotime($month));
-                $endDate = date('Y-m-t', strtotime($month));
+            if (!empty($month)) {
+                $reportStartDate = date('Y-m-01', strtotime($month));
+                $reportEndDate = date('Y-m-t', strtotime($month));
             }
             break;
         case 'custom_range':
-            if ($start_date_param && $end_date_param) {
-                $startDate = $start_date_param;
-                $endDate = $end_date_param;
+            if (!empty($start_date_param) && !empty($end_date_param)) {
+                $reportStartDate = $start_date_param;
+                $reportEndDate = $end_date_param;
             }
             break;
     }
 
-    // --- 3. Build the SQL query with correct logic ---
+    // --- 3. Build and Execute the Time-Aware Query (Logic from previous step) ---
     $params = [];
     $types = '';
+    $filterConditions = "";
 
-    // The core logic:
-    // - A motorcycle is "available" in a period if its arrival was on/before the END of the period.
-    // - AND it was NOT sold, scrapped, or transferred out BEFORE the START of the period.
-    $sql = "SELECT mi.*, i.invoice_number
+    $sql = "SELECT mi.*, i.invoice_number,
+                COALESCE(
+                    (SELECT it_last.to_branch FROM inventory_transfers it_last WHERE it_last.motorcycle_id = mi.id AND it_last.transfer_status = 'completed' AND it_last.date_received <= ? ORDER BY it_last.date_received DESC, it_last.id DESC LIMIT 1),
+                    (SELECT it_first.from_branch FROM inventory_transfers it_first WHERE it_first.motorcycle_id = mi.id ORDER BY it_first.transfer_date ASC, it_first.id ASC LIMIT 1),
+                    mi.current_branch
+                ) AS branch_as_of_date
             FROM motorcycle_inventory mi
             LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE 
-                -- Use date_received if available, otherwise fall back to date_delivered
-                (COALESCE(mi.date_received, mi.date_delivered) <= ?) -- Arrived on or before the end date
-                AND mi.deleted_at IS NULL ";
+            WHERE
+                (COALESCE(mi.date_received, mi.date_delivered) <= ?)
+                AND mi.deleted_at IS NULL
+                AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date <= ?)
+                AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date <= ?)
+    ";
     
-    $params[] = $endDate;
-    $types .= 's';
+    array_push($params, $reportEndDate, $reportEndDate, $reportEndDate, $reportEndDate);
+    $types .= 'ssss';
 
-    // Subquery to check for 'exit' events (sold, scrapped, transferred out)
-    // The motorcycle is available if it has NO exit event date that is EARLIER than our start date.
-$sql .= " AND (
-                mi.id NOT IN (SELECT motorcycle_id FROM motorcycle_sales WHERE sale_date < ?) AND
-                mi.id NOT IN (SELECT motorcycle_id FROM motorcycle_scraps WHERE scrap_date < ?) AND
-                mi.id NOT IN (SELECT motorcycle_id FROM inventory_transfers WHERE transfer_status = 'completed' AND date_received < ?)
-             ) ";
-
-    $params[] = $startDate;
-    $params[] = $startDate;
-    $params[] = $startDate;
-    $types .= 'sss';
-
-    // --- 4. Append optional filters ---
-    if ($branch !== 'all') {
-        $sql .= " AND mi.current_branch = ?";
-        $params[] = $branch;
-        $types .= 's';
-    }
-    if ($category !== 'all') {
-        $sql .= " AND mi.category = ?";
-        $params[] = $category;
-        $types .= 's';
-    }
-    if ($brand !== 'all') {
-        $sql .= " AND mi.brand = ?";
-        $params[] = $brand;
-        $types .= 's';
-    }
+    if ($category !== 'all') { $filterConditions .= " AND mi.category = ?"; $params[] = $category; $types .= 's'; }
+    if ($brand !== 'all') { $filterConditions .= " AND mi.brand = ?"; $params[] = $brand; $types .= 's'; }
     if ($models_str !== 'all' && !empty($models_str)) {
         $models = array_map('trim', explode(',', $models_str));
         if (!empty($models)) {
             $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
-            $sql .= " AND mi.model IN ($modelPlaceholders)";
-            foreach ($models as $model) {
-                $params[] = $model;
-                $types .= 's';
-            }
+            $filterConditions .= " AND mi.model IN ($modelPlaceholders)";
+            foreach ($models as $model) { $params[] = $model; $types .= 's'; }
         }
+    }
+    
+    $sql .= $filterConditions;
+
+    if ($branch !== 'all') {
+        $sql .= " HAVING branch_as_of_date = ?";
+        $params[] = $branch;
+        $types .= 's';
     }
     
     $sql .= " ORDER BY mi.current_branch, mi.brand, mi.model";
 
-    // --- 5. Execute the query and return data ---
     $stmt = $conn->prepare($sql);
     if ($stmt) {
-        $stmt->bind_param($types, ...$params);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -3349,9 +3362,35 @@ $sql .= " AND (
             $data[] = $row;
         }
         $stmt->close();
-        echo json_encode(['success' => true, 'data' => $data, 'start_date' => $startDate, 'end_date' => $endDate]);
+        
+        // --- 4. Build a clean JSON response with only relevant date info ---
+        $response = [
+            'success' => true,
+            'data' => $data,
+            'date' => null,
+            'month' => null,
+            'start_date' => null,
+            'end_date' => null
+        ];
+
+        switch ($period_type) {
+            case 'daily':
+            case 'as_of_date':
+                $response['date'] = $reportEndDate;
+                break;
+            case 'monthly':
+                $response['month'] = date('Y-m', strtotime($reportEndDate));
+                break;
+            case 'custom_range':
+                $response['start_date'] = $reportStartDate;
+                $response['end_date'] = $reportEndDate;
+                break;
+        }
+        
+        echo json_encode($response);
+
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to prepare the SQL statement.']);
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare the SQL statement: ' . $conn->error]);
     }
 }
 function getSoldMotorcyclesReport() {
@@ -3711,5 +3750,123 @@ function markAsRepo() {
     }
 }
 
+function getDeliveredStocksSummary() {
+    global $conn;
+
+    // --- 1. Get date and filter parameters ---
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null;
+    $date = isset($_GET['date']) ? sanitizeInput($_GET['date']) : null;
+    $startDate = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : null;
+    $endDate = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : null;
+    
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+    $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
+
+    // --- 2. Determine date range ---
+    if ($date) {
+        $startDate = $date; $endDate = $date;
+    } elseif ($month) {
+        $startDate = date('Y-m-01', strtotime($month)); $endDate = date('Y-m-t', strtotime($month));
+    } elseif (!$startDate || !$endDate) {
+        echo json_encode(['success' => false, 'message' => 'A valid date range is required.']);
+        return;
+    }
+
+    // --- 3. Build base query and initial filters ---
+    $params = [];
+    $types = '';
+
+    // The main query is built first, with the primary date filter.
+    $sql = "
+        SELECT 
+            mi.*, i.invoice_number,
+            COALESCE(
+                (SELECT it_first.from_branch FROM inventory_transfers it_first WHERE it_first.motorcycle_id = mi.id ORDER BY it_first.transfer_date ASC, it_first.id ASC LIMIT 1),
+                mi.current_branch
+            ) AS initial_delivery_branch
+        FROM motorcycle_inventory mi
+        LEFT JOIN invoices i ON mi.invoice_id = i.id
+        WHERE mi.date_delivered BETWEEN ? AND ?
+    ";
+    $params[] = $startDate;
+    $params[] = $endDate;
+    $types .= 'ss';
+    
+    // --- 4. Append additional filters ---
+    if ($category !== 'all') { $sql .= " AND LOWER(mi.category) = ?"; $params[] = $category; $types .= 's'; }
+    if ($brand !== 'all') { $sql .= " AND LOWER(mi.brand) = ?"; $params[] = $brand; $types .= 's'; }
+    if ($models_str !== 'all' && !empty($models_str)) {
+        $models = array_map('trim', explode(',', $models_str));
+        if (!empty($models)) {
+            $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
+            $sql .= " AND mi.model IN ($modelPlaceholders)";
+            foreach ($models as $model) { $params[] = $model; $types .= 's'; }
+        }
+    }
+
+    // MODIFIED: Aligned the logic with getMonthlyInventory to ensure counts match.
+    // The critical change is adding a date constraint to the transfer check.
+    if ($branch !== 'all') {
+        $sql .= " AND (
+                    -- Condition 1: The item was delivered, never transferred, and is at the selected branch.
+                    (
+                        mi.current_branch = ?
+                        AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
+                    )
+                OR
+                    -- Condition 2: The item was delivered AND its first transfer FROM this branch
+                    -- happened IN THE SAME PERIOD.
+                    (
+                        EXISTS (
+                            SELECT 1 FROM inventory_transfers it
+                            WHERE it.motorcycle_id = mi.id
+                              AND it.from_branch = ?
+                              AND it.transfer_date BETWEEN ? AND ?
+                              AND it.transfer_date = (SELECT MIN(it2.transfer_date) FROM inventory_transfers it2 WHERE it2.motorcycle_id = mi.id)
+                        )
+                    )
+              )";
+        // Parameters for the new clause: current_branch, from_branch, startDate, endDate
+        $params[] = $branch;
+        $params[] = $branch;
+        $params[] = $startDate;
+        $params[] = $endDate;
+        $types .= 'ssss';
+    }
+
+    $sql .= " ORDER BY mi.date_delivered DESC, mi.model";
+
+    // --- 5. Execute Query ---
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        if (!empty($params)) { $stmt->bind_param($types, ...$params); }
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $data = [];
+        $totalDelivered = 0;
+        $totalInventoryCost = 0;
+
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+            $totalDelivered++;
+            $totalInventoryCost += (float)$row['inventory_cost'];
+        }
+
+        echo json_encode([
+            'success' => true, 'data' => $data,
+            'month' => $month, 'date' => $date, 'start_date' => $startDate, 'end_date' => $endDate,
+            'branch' => $branch,
+            'summary' => [
+                'total_delivered' => $totalDelivered,
+                'total_inventory_cost' => $totalInventoryCost
+            ]
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $conn->error]);
+    }
+}
 
 ?>

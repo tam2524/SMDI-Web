@@ -894,6 +894,7 @@
                          <option value="inventory_summary">Summary of Inventory</option>
                         <option value="transferred">Summary of Transferred Stocks</option>
                         <option value="received">Summary of Received Stocks</option>
+                        <option value="delivered_stocks">Summary of Delivered Stocks</option>
                         <option value="motorcycle">Available Motorcycle Units Report</option>
                         <option value="sold_units">Summary of Sold Units Report</option>
                         <option value="scrapped">Summary of Scrapped Units Report</option>

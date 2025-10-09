@@ -196,128 +196,138 @@
         </div>
     </main>
 
-<!-- START: Replace the existing 'monthlyReportOptionsModal' div with this new one -->
-<div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1" aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title text-white" id="monthlyReportOptionsModalLabel"><i class="bi bi-file-earmark-text me-2 text-white" ></i>Generate Reports</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+   
+    <div class='modal fade' id='monthlyReportOptionsModal' tabindex='-1'
+        aria-labelledby='monthlyReportOptionsModalLabel' aria-hidden='true'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header bg-primary text-white'>
+                    <h5 class='modal-title text-white' id='monthlyReportOptionsModalLabel'><i
+                            class='bi bi-file-earmark-text me-2 text-white'></i>Generate Reports</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
+                        aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <!-- Step 1: Report Type Selection -->
+                    <div class='mb-4'>
+                        <label for='reportType' class='form-label fw-bold'>1. Select Report Type</label>
+                        <select class='form-select form-select-lg' id='reportType'>
+                            <option value='inventory'>Inventory Balance Report</option>
+                            <option value='inventory_summary'>Summary of Inventory</option>
+                            <option value='transferred'>Summary of Transferred Stocks</option>
+                            <option value='received'>Summary of Received Stocks</option>
+                            <option value='delivered_stocks'>Summary of Delivered Stocks</option>
+                            <option value='motorcycle'>Available Motorcycle Units Report</option>
+                            <option value='sold_units'>Summary of Sold Units Report</option>
+                            <option value='scrapped'>Summary of Scrapped Units Report</option>
+                        </select>
+                    </div>
+
+                    <!-- Step 2: Date & Period Options ( Dynamic ) -->
+                    <div class='mb-4'>
+                        <label class='form-label fw-bold'>2. Select Period</label>
+                        <div id='periodOptionsContainer' class='p-3 bg-light border rounded'>
+                            <!-- Radio buttons will be dynamically inserted here by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Date Picker Containers ( Dynamic ) -->
+                    <div id='datePickerSection'>
+                        <div id='dailyDatePickerContainer' class='mb-3' style='display: none;'>
+                            <label for='dailyDate' class='form-label'>Select Date</label>
+                            <input type='date' class='form-control' id='dailyDate'>
+                        </div>
+                        <div id='monthPickerContainer' class='mb-3' style='display: none;'>
+                            <label for='reportMonth' class='form-label'>Select Month</label>
+                            <input type='month' class='form-control' id='reportMonth'>
+                        </div>
+                        <div id='asOfDatePickerContainer' class='mb-3' style='display: none;'>
+                            <label for='asOfDate' class='form-label'>Select As-of Date</label>
+                            <input type='date' class='form-control' id='asOfDate'>
+                        </div>
+                        <div id='customDateRangeContainer' class='row mb-3' style='display: none;'>
+                            <div class='col-md-6'>
+                                <label for='startDate' class='form-label'>Start Date</label>
+                                <input type='date' class='form-control' id='startDate'>
+                            </div>
+                            <div class='col-md-6'>
+                                <label for='endDate' class='form-label'>End Date</label>
+                                <input type='date' class='form-control' id='endDate'>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: General Filters -->
+                    <div>
+                        <label class='form-label fw-bold'>3. Apply Filters</label>
+                        <div class='p-3 border rounded'>
+                            <div class='row g-3'>
+                                <div class='col-md-6'>
+                                    <label for='reportBranch' class='form-label'>Branch</label>
+                                    <select class='form-select' id='reportBranch'>
+                                        <option value='ALL'>ALL BRANCHES</option>
+                                        <!-- Options populated by JS -->
+                                    </select>
+                                </div>
+                                <div class='col-md-6'>
+                                    <label for='reportCategoryFilter' class='form-label'>Category</label>
+                                    <select class='form-select' id='reportCategoryFilter'>
+                                        <option value='all'>All Categories</option>
+                                        <option value='brandnew'>Brand New</option>
+                                        <option value='repo'>Repo</option>
+                                    </select>
+                                </div>
+                                <div class='col-md-6'>
+                                    <label for='reportBrandFilter' class='form-label'>Brand</label>
+                                    <select class='form-select' id='reportBrandFilter'>
+                                        <option value='all'>ALL BRANDS</option>
+                                        <option value='Suzuki'>SUZUKI</option>
+                                        <option value='Honda'>HONDA</option>
+                                        <option value='Kawasaki'>KAWASAKI</option>
+                                        <option value='Yamaha'>YAMAHA</option>
+                                        <option value='Asiastar'>ASIASTAR</option>
+                                    </select>
+                                </div>
+                                <div class='col-12'>
+                                    <label for='reportModelSearch' class='form-label'>Model( s )</label>
+                                    <div class='dropdown'>
+                                        <div id='model-filter-container'
+                                            class='form-control d-flex flex-wrap gap-1 align-items-center'
+                                            style='min-height: 38px;' data-bs-toggle='dropdown' aria-expanded='false'>
+                                            <span id='selected-models-tags' class='d-flex flex-wrap gap-1'>
+                                            </span>
+                                            <input type='text' id='reportModelSearch' class='flex-grow-1 border-0 p-0'
+                                                placeholder='Search to add models...'
+                                                style='min-width: 150px; outline: none; box-shadow: none;'>
+                                        </div>
+                                        <ul id='model-search-results' class='dropdown-menu w-100'
+                                            aria-labelledby='model-filter-container'
+                                            style='max-height: 200px; overflow-y: auto;'>
+                                        </ul>
+                                    </div>
+                                    <input type='hidden' id='reportModelFilter'>
+                                </div>
+                                <div class='col-md-6' id='soldSaleTypeContainer' style='display: none;'>
+                                    <label for='soldSaleTypeFilter' class='form-label'>Type of Sale</label>
+                                    <select class='form-select' id='soldSaleTypeFilter'>
+                                        <option value='all'>All</option>
+                                        <option value='COD'>COD</option>
+                                        <option value='Installment'>Installment</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'><i
+                            class='bi bi-play-fill me-1'></i>Generate Report</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <!-- Step 1: Report Type Selection -->
-                <div class="mb-4">
-                    <label for="reportType" class="form-label fw-bold">1. Select Report Type</label>
-                    <select class="form-select form-select-lg" id="reportType">
-                        <option value="inventory">Inventory Balance Report</option>
-                         <option value="inventory_summary">Summary of Inventory</option>
-                        <option value="transferred">Summary of Transferred Stocks</option>
-                        <option value="received">Summary of Received Stocks</option>
-                        <option value="motorcycle">Available Motorcycle Units Report</option>
-                        <option value="sold_units">Summary of Sold Units Report</option>
-                        <option value="scrapped">Summary of Scrapped Units Report</option>
-                    </select>
-                </div>
-
-                <!-- Step 2: Date & Period Options (Dynamic) -->
-                <div class="mb-4">
-                    <label class="form-label fw-bold">2. Select Period</label>
-                    <div id="periodOptionsContainer" class="p-3 bg-light border rounded">
-                        <!-- Radio buttons will be dynamically inserted here by JS -->
-                    </div>
-                </div>
-                
-                <!-- Date Picker Containers (Dynamic) -->
-                <div id="datePickerSection">
-                    <div id="dailyDatePickerContainer" class="mb-3" style="display: none;">
-                        <label for="dailyDate" class="form-label">Select Date</label>
-                        <input type="date" class="form-control" id="dailyDate">
-                    </div>
-                    <div id="monthPickerContainer" class="mb-3" style="display: none;">
-                        <label for="reportMonth" class="form-label">Select Month</label>
-                        <input type="month" class="form-control" id="reportMonth">
-                    </div>
-                    <div id="asOfDatePickerContainer" class="mb-3" style="display: none;">
-                        <label for="asOfDate" class="form-label">Select As-of Date</label>
-                        <input type="date" class="form-control" id="asOfDate">
-                    </div>
-                    <div id="customDateRangeContainer" class="row mb-3" style="display: none;">
-                        <div class="col-md-6">
-                            <label for="startDate" class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="startDate">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="endDate" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="endDate">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 3: General Filters -->
-                <div>
-                     <label class="form-label fw-bold">3. Apply Filters</label>
-                     <div class="p-3 border rounded">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="reportBranch" class="form-label">Branch</label>
-                                <select class="form-select" id="reportBranch">
-                                    <option value="ALL">ALL BRANCHES</option>
-                                    <!-- Options populated by JS -->
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="reportCategoryFilter" class="form-label">Category</label>
-                                <select class="form-select" id="reportCategoryFilter">
-                                    <option value="all">All Categories</option>
-                                    <option value="brandnew">Brand New</option>
-                                    <option value="repo">Repo</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="reportBrandFilter" class="form-label">Brand</label>
-                                <select class="form-select" id="reportBrandFilter">
-                                    <option value="all">ALL BRANDS</option>
-                                    <option value="Suzuki">SUZUKI</option>
-                                    <option value="Honda">HONDA</option>
-                                    <option value="Kawasaki">KAWASAKI</option>
-                                    <option value="Yamaha">YAMAHA</option>
-                                    <option value="Asiastar">ASIASTAR</option>
-                                </select>
-                            </div>
-                          <div class="col-12">
-    <label for="reportModelSearch" class="form-label">Model(s)</label>
-    <div class="dropdown">
-        <div id="model-filter-container" class="form-control d-flex flex-wrap gap-1 align-items-center" style="min-height: 38px;" data-bs-toggle="dropdown" aria-expanded="false">
-            <span id="selected-models-tags" class="d-flex flex-wrap gap-1">
-                </span>
-            <input type="text" id="reportModelSearch" class="flex-grow-1 border-0 p-0" placeholder="Search to add models..." style="min-width: 150px; outline: none; box-shadow: none;">
         </div>
-        <ul id="model-search-results" class="dropdown-menu w-100" aria-labelledby="model-filter-container" style="max-height: 200px; overflow-y: auto;">
-            </ul>
     </div>
-    <input type="hidden" id="reportModelFilter"> </div>
-                             <div class="col-md-6" id="soldSaleTypeContainer" style="display: none;">
-                                <label for="soldSaleTypeFilter" class="form-label">Type of Sale</label>
-                                <select class="form-select" id="soldSaleTypeFilter">
-                                    <option value="all">All</option>
-                                    <option value="COD">COD</option>
-                                    <option value="Installment">Installment</option>
-                                </select>
-                            </div>
-                        </div>
-                     </div>
-                </div>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary text-white" id="generateReportBtn"><i class="bi bi-play-fill me-1"></i>Generate Report</button>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- END: Replacement block -->
-
 
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
@@ -370,7 +380,7 @@
                             <div class='col-md-6 mb-3'>
                                 <label for='branch' class='form-label'>Branch</label>
                                 <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
-    ?>
+        ?>
                                 <select class='form-select' id='branch' required>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
@@ -723,64 +733,69 @@
         </div>
     </div>
 
-    <div class='modal fade' id='scrapMotorcycleModal' tabindex='-1' aria-labelledby='scrapMotorcycleModalLabel' aria-hidden='true'>
-    <div class='modal-dialog'>
-        <div class='modal-content'>
-            <div class='modal-header'>
-                <h5 class='modal-title' id='scrapMotorcycleModalLabel'>Mark Motorcycle as Scrapped</h5>
-                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-            </div>
-            <div class='modal-body'>
-                <form id='scrapForm'>
-                    <input type='hidden' id='scrapMotorcycleId'>
-                    
-                    <div class='mb-3'>
-                        <label for='scrapDate' class='form-label'>Scrap Date <span class='text-danger'>*</span></label>
-                        <input type='date' class='form-control' id='scrapDate' required>
-                    </div>
-                    
-                    <div class='mb-3'>
-                        <label for='scrapReason' class='form-label'>Reason for Scrapping</label>
-                        <textarea class='form-control' id='scrapReason' rows='3' placeholder='Optional reason for scrapping...'></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class='modal-footer'>
-                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                <button type='button' class='btn btn-warning' onclick='submitScrap()'>Mark as Scrapped</button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="repoModal" tabindex="-1" aria-labelledby="repoModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="repoModalLabel">Mark Motorcycle as Repossessed</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="repoForm">
-                    <input type="hidden" id="repoMotorcycleId">
-                    
-                    <div class="mb-3">
-                        <label for="repoDate" class="form-label">Repo Date <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="repoDate" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="repoReason" class="form-label">Reason for Repossession</label>
-                        <textarea class="form-control" id="repoReason" rows="3" placeholder="Enter reason (optional)"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="submitRepo()">Confirm REPO</button>
+    <div class='modal fade' id='scrapMotorcycleModal' tabindex='-1' aria-labelledby='scrapMotorcycleModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='scrapMotorcycleModalLabel'>Mark Motorcycle as Scrapped</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='scrapForm'>
+                        <input type='hidden' id='scrapMotorcycleId'>
+
+                        <div class='mb-3'>
+                            <label for='scrapDate' class='form-label'>Scrap Date <span
+                                    class='text-danger'>*</span></label>
+                            <input type='date' class='form-control' id='scrapDate' required>
+                        </div>
+
+                        <div class='mb-3'>
+                            <label for='scrapReason' class='form-label'>Reason for Scrapping</label>
+                            <textarea class='form-control' id='scrapReason' rows='3'
+                                placeholder='Optional reason for scrapping...'></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-warning' onclick='submitScrap()'>Mark as Scrapped</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+    <div class='modal fade' id='repoModal' tabindex='-1' aria-labelledby='repoModalLabel' aria-hidden='true'>
+        <div class='modal-dialog'>
+            <div class='modal-content'>
+                <div class='modal-header'>
+                    <h5 class='modal-title' id='repoModalLabel'>Mark Motorcycle as Repossessed</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <form id='repoForm'>
+                        <input type='hidden' id='repoMotorcycleId'>
+
+                        <div class='mb-3'>
+                            <label for='repoDate' class='form-label'>Repo Date <span
+                                    class='text-danger'>*</span></label>
+                            <input type='date' class='form-control' id='repoDate' required>
+                        </div>
+
+                        <div class='mb-3'>
+                            <label for='repoReason' class='form-label'>Reason for Repossession</label>
+                            <textarea class='form-control' id='repoReason' rows='3'
+                                placeholder='Enter reason (optional)'></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-success' onclick='submitRepo()'>Confirm REPO</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class='modal fade' id='viewDetailsModal' tabindex='-1' aria-labelledby='viewDetailsModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -883,7 +898,7 @@
                                             <input type='text' class='form-control form-control-sm'
                                                 id='multipleTransferInvoiceNumber' required
                                                 placeholder='Enter transfer invoice number'>
-                                                <div id="transferInvoiceInfo" class="form-text small mt-1"></div>
+                                            <div id='transferInvoiceInfo' class='form-text small mt-1'></div>
 
                                         </div>
 
@@ -1303,67 +1318,74 @@
                     </div>
                 </div>
                 <div class='modal-footer'>
-    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-    <!-- <button type='button' class='btn btn-warning' id='editTransferBtn'>
-        <i class='bi bi-pencil-square me-2'></i> Manage Items
-    </button> -->
-    <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
-        <i class='bi bi-printer me-2'></i>Print Receipt
-    </button>
-</div>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                    <!-- <button type = 'button' class = 'btn btn-warning' id = 'editTransferBtn'>
+            <i class = 'bi bi-pencil-square me-2'></i> Manage Items
+            </button> -->
+                    <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
+                        <i class='bi bi-printer me-2'></i>Print Receipt
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class='modal fade' id='manageTransferModal' tabindex='-1' aria-labelledby='manageTransferModalLabel' aria-hidden='true'>
-    <div class='modal-dialog modal-xl'>
-        <div class='modal-content'>
-            <div class='modal-header bg-warning text-dark'>
-                <h5 class='modal-title' id='manageTransferModalLabel'><i class='bi bi-pencil-square me-2'></i>Manage Transfer Items</h5>
-                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-            </div>
-            <div class='modal-body'>
-                <div class="row">
-                    <div class="col-12 mb-3">
-                        <div class="card">
-                            <div class="card-body p-3">
-                                <h6 class="card-title">Transfer Details</h6>
-                                <p class="card-text mb-1">
-                                    <strong>Invoice No:</strong> <span id="manageTransferInvoiceNo"></span>
-                                </p>
-                                <p class="card-text mb-0">
-                                    <strong>From:</strong> <span id="manageTransferFromBranch"></span> &rarr;
-                                    <strong>To:</strong> <span id="manageTransferToBranch"></span>
-                                </p>
+    <div class='modal fade' id='manageTransferModal' tabindex='-1' aria-labelledby='manageTransferModalLabel'
+        aria-hidden='true'>
+        <div class='modal-dialog modal-xl'>
+            <div class='modal-content'>
+                <div class='modal-header bg-warning text-dark'>
+                    <h5 class='modal-title' id='manageTransferModalLabel'><i class='bi bi-pencil-square me-2'></i>Manage
+                        Transfer Items</h5>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <div class='row'>
+                        <div class='col-12 mb-3'>
+                            <div class='card'>
+                                <div class='card-body p-3'>
+                                    <h6 class='card-title'>Transfer Details</h6>
+                                    <p class='card-text mb-1'>
+                                        <strong>Invoice No:</strong> <span id='manageTransferInvoiceNo'></span>
+                                    </p>
+                                    <p class='card-text mb-0'>
+                                        <strong>From:</strong> <span id='manageTransferFromBranch'></span> &rarr;
+                                        <strong>To:</strong> <span id='manageTransferToBranch'></span>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Currently in Transfer (<span id="currentItemsCount">0</span>)</h6>
-                        <div id="manageTransferCurrentList" class="list-container border rounded p-2" style="max-height: 400px; overflow-y: auto;">
+                        <div class='col-md-6'>
+                            <h6>Currently in Transfer ( <span id='currentItemsCount'>0</span> )</h6>
+                            <div id='manageTransferCurrentList' class='list-container border rounded p-2'
+                                style='max-height: 400px; overflow-y: auto;'>
                             </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Add Available Motorcycles</h6>
-                        <div class="input-group mb-2">
-                            <input type="text" id="manageTransferEngineSearch" class="form-control" placeholder="Search by Engine No. from source branch...">
-                            <button class="btn btn-primary text-white" type="button" id="manageTransferSearchBtn"><i class="bi bi-search"></i></button>
                         </div>
-                        <div id="manageTransferSearchResults" class="list-container border rounded p-2" style="max-height: 350px; overflow-y: auto;">
-                           <div class="text-center text-muted p-4">Search for motorcycles to add them to this transfer.</div>
+                        <div class='col-md-6'>
+                            <h6>Add Available Motorcycles</h6>
+                            <div class='input-group mb-2'>
+                                <input type='text' id='manageTransferEngineSearch' class='form-control'
+                                    placeholder='Search by Engine No. from source branch...'>
+                                <button class='btn btn-primary text-white' type='button' id='manageTransferSearchBtn'><i
+                                        class='bi bi-search'></i></button>
+                            </div>
+                            <div id='manageTransferSearchResults' class='list-container border rounded p-2'
+                                style='max-height: 350px; overflow-y: auto;'>
+                                <div class='text-center text-muted p-4'>Search for motorcycles to add them to this
+                                    transfer.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class='modal-footer'>
-                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                <button type='button' class='btn btn-success' id='saveTransferChangesBtn'>
-                    <i class='bi bi-save me-2'></i>Save Changes
-                </button>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-success' id='saveTransferChangesBtn'>
+                        <i class='bi bi-save me-2'></i>Save Changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>
@@ -1401,7 +1423,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class='modal fade' id='infoModal' tabindex='-1'>
         <div class='modal-dialog'>
             <div class='modal-content'>
