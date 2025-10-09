@@ -1387,6 +1387,7 @@ function loadMotorcycleForEdit(id) {
         const data = response.data;
         $("#editId").val(data.id);
         $("#editDateDelivered").val(data.date_delivered);
+        $("#editDateReceived").val(data.date_received || "");
         $("#editBrand").val(data.brand);
         $("#editModel").val(data.model);
         $("#editCategory").val(data.category);
@@ -1416,6 +1417,7 @@ function updateMotorcycle() {
   const formData = {
     action: "update_motorcycle",
     id: $("#editId").val(),
+    date_received: $("#editDateReceived").val(),
     date_delivered: $("#editDateDelivered").val(),
     brand: $("#editBrand").val(),
     model: $("#editModel").val(),

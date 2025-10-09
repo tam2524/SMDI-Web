@@ -469,6 +469,10 @@
                                 <label for='editDateDelivered' class='form-label'>Date Delivered</label>
                                 <input type='date' class='form-control' id='editDateDelivered' required>
                             </div>
+                             <div class='col-md-6 mb-3'>
+                                <label for='editDateReceived' class='form-label'>Date Received</label>
+                                <input type='date' class='form-control' id='editDateReceived' required>
+                            </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
                                 <input type='text' class='form-control' id='editInvoiceNumber' required>

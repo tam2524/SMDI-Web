@@ -628,7 +628,7 @@ function addMotorcycle() {
 function updateMotorcycle() {
     global $conn;
 
-    $required = [ 'id', 'date_delivered', 'brand', 'model', 'category', 'engine_number', 'frame_number', 'color', 'current_branch', 'status' ];
+    $required = [ 'id', 'date_delivered', 'date_received', 'brand', 'model', 'category', 'engine_number', 'frame_number', 'color', 'current_branch', 'status' ];
     foreach ( $required as $field ) {
         if ( empty( $_POST[ $field ] ) ) {
             echo json_encode( [ 'success' => false, 'message' => "Missing required field: $field" ] );
@@ -637,6 +637,7 @@ function updateMotorcycle() {
     }
 
     $id = intval( $_POST[ 'id' ] );
+     $dateReceived = sanitizeInput( $_POST[ 'date_received' ] );
     $dateDelivered = sanitizeInput( $_POST[ 'date_delivered' ] );
     $brand = sanitizeInput( $_POST[ 'brand' ] );
     $model = sanitizeInput( $_POST[ 'model' ] );
@@ -713,17 +714,17 @@ function updateMotorcycle() {
         // Update motorcycle_inventory
         if ($invoiceId) {
             $stmt = $conn->prepare( "UPDATE motorcycle_inventory 
-                                   SET date_delivered = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
+                                   SET date_delivered = ?, date_received = ?,brand = ?, model = ?, category = ?, engine_number = ?, 
                                        frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?, invoice_id = ?
                                    WHERE id = ?" );
-            $stmt->bind_param( 'sssssssdssii', $dateDelivered, $brand, $model, $category, $engineNumber,
+            $stmt->bind_param( 'ssssssssdssii', $dateDelivered, $dateReceived, $brand, $model, $category, $engineNumber,
                               $frameNumber, $color, $inventory_cost, $currentBranch, $status, $invoiceId, $id );
         } else {
             $stmt = $conn->prepare( "UPDATE motorcycle_inventory 
-                                   SET date_delivered = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
+                                   SET date_delivered = ?, date_received = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
                                        frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?
                                    WHERE id = ?" );
-            $stmt->bind_param( 'sssssssdssi', $dateDelivered, $brand, $model, $category, $engineNumber,
+            $stmt->bind_param( 'sssssssdsssi', $dateDelivered, $brand, $model, $category, $engineNumber,
                               $frameNumber, $color, $inventory_cost, $currentBranch, $status, $id );
         }
 
