@@ -422,7 +422,7 @@
                             </div>
                               <div class='col-md-4 mb-3'>
                                 <label for='editDateReceived' class='form-label'>Date Received</label>
-                                <input type='date' class='form-control' id='editDateReceived' required>
+                                <input type='date' class='form-control' id='editDateReceived' >
                             </div>
                             <div class='col-md-4 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
