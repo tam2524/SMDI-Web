@@ -3293,76 +3293,93 @@ function getAvailableMotorcyclesReport() {
     $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
     $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
 
-    // --- 2. Determine the report's effective start and end dates ---
-    $reportStartDate = date('Y-m-01'); // Default
+    // --- 2. Determine the report's effective end date ---
     $reportEndDate = date('Y-m-d'); // Default
-
     switch ($period_type) {
         case 'daily':
         case 'as_of_date':
-            if (!empty($date)) {
-                $reportStartDate = $date;
-                $reportEndDate = $date;
-            }
+            if (!empty($date)) { $reportEndDate = $date; }
             break;
         case 'monthly':
-            if (!empty($month)) {
-                $reportStartDate = date('Y-m-01', strtotime($month));
-                $reportEndDate = date('Y-m-t', strtotime($month));
-            }
+            if (!empty($month)) { $reportEndDate = date('Y-m-t', strtotime($month)); }
             break;
         case 'custom_range':
-            if (!empty($start_date_param) && !empty($end_date_param)) {
-                $reportStartDate = $start_date_param;
-                $reportEndDate = $end_date_param;
-            }
+            if (!empty($end_date_param)) { $reportEndDate = $end_date_param; }
             break;
     }
 
-    // --- 3. Build and Execute the Time-Aware Query (Logic from previous step) ---
+    // --- 3. Build Query based on Branch Selection ---
+    $sql = "";
     $params = [];
     $types = '';
+
+    // Prepare filter conditions that are common to both queries
     $filterConditions = "";
+    $filterParams = [];
+    $filterTypes = '';
 
-    $sql = "SELECT mi.*, i.invoice_number,
-                COALESCE(
-                    (SELECT it_last.to_branch FROM inventory_transfers it_last WHERE it_last.motorcycle_id = mi.id AND it_last.transfer_status = 'completed' AND it_last.date_received <= ? ORDER BY it_last.date_received DESC, it_last.id DESC LIMIT 1),
-                    (SELECT it_first.from_branch FROM inventory_transfers it_first WHERE it_first.motorcycle_id = mi.id ORDER BY it_first.transfer_date ASC, it_first.id ASC LIMIT 1),
-                    mi.current_branch
-                ) AS branch_as_of_date
-            FROM motorcycle_inventory mi
-            LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE
-                (COALESCE(mi.date_received, mi.date_delivered) <= ?)
-                AND mi.deleted_at IS NULL
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date <= ?)
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date <= ?)
-    ";
-    
-    array_push($params, $reportEndDate, $reportEndDate, $reportEndDate, $reportEndDate);
-    $types .= 'ssss';
-
-    if ($category !== 'all') { $filterConditions .= " AND mi.category = ?"; $params[] = $category; $types .= 's'; }
-    if ($brand !== 'all') { $filterConditions .= " AND mi.brand = ?"; $params[] = $brand; $types .= 's'; }
+    if ($category !== 'all') { 
+        $filterConditions .= " AND LOWER(mi.category) = ?"; 
+        $filterParams[] = $category; 
+        $filterTypes .= 's'; 
+    }
+    if ($brand !== 'all') { 
+        $filterConditions .= " AND LOWER(mi.brand) = ?"; 
+        $filterParams[] = $brand; 
+        $filterTypes .= 's'; 
+    }
     if ($models_str !== 'all' && !empty($models_str)) {
         $models = array_map('trim', explode(',', $models_str));
         if (!empty($models)) {
             $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
             $filterConditions .= " AND mi.model IN ($modelPlaceholders)";
-            foreach ($models as $model) { $params[] = $model; $types .= 's'; }
+            foreach ($models as $model) { 
+                $filterParams[] = $model; 
+                $filterTypes .= 's'; 
+            }
         }
     }
-    
-    $sql .= $filterConditions;
 
-    if ($branch !== 'all') {
-        $sql .= " HAVING branch_as_of_date = ?";
-        $params[] = $branch;
-        $types .= 's';
+    // This is the logic you requested to be copied
+    if (strtoupper($branch) === 'ALL') {
+        // Query for ALL branches
+        $sql = "
+            SELECT mi.*, i.invoice_number
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            WHERE
+                mi.deleted_at IS NULL
+                AND (COALESCE(mi.date_received, mi.date_delivered) <= ?)
+                AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date <= ?)
+                AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date <= ?)
+                $filterConditions
+            ORDER BY mi.current_branch, mi.brand, mi.model
+        ";
+        
+        $params = array_merge([$reportEndDate, $reportEndDate, $reportEndDate], $filterParams);
+        $types = 'sss' . $filterTypes;
+
+    } else {
+        // Query for a SPECIFIC branch
+        $sql = "
+            SELECT mi.*, i.invoice_number
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            WHERE
+                mi.deleted_at IS NULL
+                AND mi.current_branch = ?
+                AND (COALESCE(mi.date_received, mi.date_delivered) <= ?)
+                AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date <= ?)
+                AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date <= ?)
+                $filterConditions
+            ORDER BY mi.brand, mi.model
+        ";
+        
+        $params = array_merge([$branch, $reportEndDate, $reportEndDate, $reportEndDate], $filterParams);
+        $types = 'ssss' . $filterTypes;
     }
     
-    $sql .= " ORDER BY mi.current_branch, mi.brand, mi.model";
-
+    // --- 4. Execute Query and Build Response ---
     $stmt = $conn->prepare($sql);
     if ($stmt) {
         if (!empty($params)) {
@@ -3377,29 +3394,14 @@ function getAvailableMotorcyclesReport() {
         }
         $stmt->close();
         
-        // --- 4. Build a clean JSON response with only relevant date info ---
         $response = [
             'success' => true,
             'data' => $data,
-            'date' => null,
-            'month' => null,
-            'start_date' => null,
-            'end_date' => null
+            'date' => ($period_type === 'daily' || $period_type === 'as_of_date') ? $reportEndDate : null,
+            'month' => ($period_type === 'monthly') ? date('Y-m', strtotime($reportEndDate)) : null,
+            'start_date' => ($period_type === 'custom_range') ? $start_date_param : null,
+            'end_date' => ($period_type === 'custom_range') ? $end_date_param : null
         ];
-
-        switch ($period_type) {
-            case 'daily':
-            case 'as_of_date':
-                $response['date'] = $reportEndDate;
-                break;
-            case 'monthly':
-                $response['month'] = date('Y-m', strtotime($reportEndDate));
-                break;
-            case 'custom_range':
-                $response['start_date'] = $reportStartDate;
-                $response['end_date'] = $reportEndDate;
-                break;
-        }
         
         echo json_encode($response);
 
