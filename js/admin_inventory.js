@@ -66,8 +66,6 @@ $(document).ready(function () {
   loadInventoryDashboard();
   loadInventoryTable();
   setupEventListeners();
-  // setInterval(checkIncomingTransfers, 1000);
-  addModelForm();
   setTimeout(() => {
     if ($("#branchMap").length) {
       map = initMap(currentBranch);
@@ -442,6 +440,27 @@ $(document).off('click', '#rejectSelectedBtn').on('click', '#rejectSelectedBtn',
   // Monthly Inventory Modal
   $("#generateMonthlyInventory").click(showMonthlyInventoryOptions);
   $("#reportPeriod").change(toggleReportOptions);
+
+  $('#sold-units-tab').on('shown.bs.tab', function () {
+        loadSoldUnits(1);
+    });
+    $('#repossessed-units-tab').on('shown.bs.tab', function () {
+        loadRepossessedUnits(1);
+    });
+    $('#scrapped-units-tab').on('shown.bs.tab', function () {
+        loadScrappedUnits(1);
+    });
+
+    // ADD EVENT LISTENER FOR REVERTING A TRANSACTION
+    $(document).on('click', '.revert-btn', function() {
+        const id = $(this).data('id');
+        const status = $(this).data('status');
+        showConfirmationModal(
+            `Are you sure you want to revert this transaction? The unit will be marked as 'available'.`,
+            'Confirm Revert',
+            function() { revertTransaction(id, status); }
+        );
+    });
 }
 
 function searchTransferReceipt() {
@@ -1439,235 +1458,11 @@ function deleteMotorcycles(ids) {
         }
     });
 }
-// =======================
-// Model Management
-// =======================
-function addModelForm() {
-  modelCount++;
-  const template = document.getElementById("modelFormTemplate");
-  const clone = template.content.cloneNode(true);
 
-  clone.querySelector(".model-number").textContent = `Model #${modelCount}`;
-
-  clone
-    .querySelector(".remove-model-btn")
-    .addEventListener("click", function () {
-      if ($(".model-form").length > 1) {
-        $(this).closest(".model-form").remove();
-        updateModelNumbers();
-      } else {
-        showErrorModal("You must have at least one model");
-      }
-    });
-
-  const quantityInput = clone.querySelector(".model-quantity");
-  quantityInput.addEventListener("change", function () {
-    updateSpecificDetailsFields(this);
-  });
-
-  const branchInput = document.createElement("input");
-  branchInput.type = "hidden";
-  branchInput.className = "model-branch";
-  branchInput.value = currentBranch;
-  clone.querySelector(".card-body").appendChild(branchInput);
-
-  setTimeout(() => {
-    updateSpecificDetailsFields(quantityInput);
-  }, 100);
-
-  $("#modelFormsContainer").append(clone);
-}
-
-function updateSpecificDetailsFields(quantityInput) {
-  const quantity = parseInt(quantityInput.value) || 1;
-  const container = $(quantityInput)
-    .closest(".model-form")
-    .find(".specific-details-container");
-  const detailsRows = container.find(".specific-details-row");
-  const existingRows = detailsRows.length;
-
-  const color = $(quantityInput)
-    .closest(".model-form")
-    .find(".model-color")
-    .val();
-
-  if (quantity > 0) {
-    container.show();
-  } else {
-    container.hide();
-    return;
-  }
-
-  const rowsContainer = container.find(".specific-details-rows");
-
-  if (quantity > existingRows) {
-    for (let i = existingRows; i < quantity; i++) {
-      const rowHtml = `
-                <div class="specific-details-row row g-3 align-items-end mb-3 border-bottom pb-3">
-                    <div class="col-md-6">
-                        <label class="form-label mb-1">Engine Number <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control engine-number" placeholder="Engine Number" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label mb-1">Frame Number <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control frame-number" placeholder="Frame Number" required>
-                    </div>
-                </div>
-            `;
-      rowsContainer.append(rowHtml);
-    }
-  } else if (quantity < existingRows) {
-    const rowsToRemove = existingRows - quantity;
-    for (let i = 0; i < rowsToRemove; i++) {
-      rowsContainer.find(".specific-details-row").last().remove();
-    }
-  }
-}
-
-function updateModelNumbers() {
-  $(".model-form").each(function (index) {
-    $(this)
-      .find(".model-number")
-      .text(`Model #${index + 1}`);
-  });
-}
 // =======================
 // Motorcycle CRUD
 // =======================
-function addMotorcycle() {
-  const formData = {
-    action: "add_motorcycle",
-    invoice_number: $("#invoiceNumber").val(),
-    date_delivered: $("#dateDelivered").val(),
-    branch: $("#branch").val(),
-    models: [],
-  };
 
-  if (
-    !formData.invoice_number ||
-    !formData.date_delivered ||
-    !formData.branch
-  ) {
-    showErrorModal("Please fill in invoice number, date delivered, and branch");
-    return;
-  }
-
-  let hasErrors = false;
-  $(".model-form").each(function () {
-    const modelData = {
-      brand: $(this).find(".model-brand").val(),
-      model: $(this).find(".model-name").val(),
-      category: $(this).find(".model-category").val(),
-      color: $(this).find(".model-color").val(),
-      inventory_cost: $(this).find(".model-inventoryCost").val(),
-      quantity: $(this).find(".model-quantity").val(),
-      details: [],
-    };
-
-    if (
-      !modelData.brand ||
-      !modelData.model ||
-      !modelData.category ||
-      !modelData.quantity ||
-      !modelData.color
-    ) {
-      showErrorModal("Please fill in all required fields for each model");
-      hasErrors = true;
-      return false;
-    }
-    
-    $(this)
-      .find(".specific-details-row")
-      .each(function () {
-        const detail = {
-          engine_number: $(this).find(".engine-number").val(),
-          frame_number: $(this).find(".frame-number").val(),
-        };
-
-        if (!detail.engine_number || !detail.frame_number) {
-          showErrorModal(
-            "Please fill in all engine number and frame number fields"
-          );
-          hasErrors = true;
-          return false;
-        }
-
-        modelData.details.push(detail);
-      });
-
-    if (hasErrors) return false;
-
-    formData.models.push(modelData);
-  });
-
-  if (hasErrors) return;
-
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "POST",
-    data: formData,
-    dataType: "json",
-    success: function (response) {
-      // Log response to console for debugging
-      console.log("Add Motorcycle Response:", response);
-      
-      if (response.console_message) {
-        console.log("Backend Info:", response.console_message);
-      }
-
-      if (response.success) {
-        $("#addMotorcycleModal").modal("hide");
-        $(".modal-backdrop").remove();
-        $("body").removeClass("modal-open");
-
-        $("#addMotorcycleForm")[0].reset();
-        $("#modelFormsContainer").empty();
-        modelCount = 0;
-
-        // Show different modals based on response type
-        if (response.type === 'existing_invoice') {
-          console.log("Using existing invoice:", response.message);
-          showSuccessModal(response.message); // Show as success, not info
-        } else {
-          console.log("Created new invoice:", response.message);
-          showSuccessModal(response.message);
-        }
-
-        loadInventoryDashboard();
-        loadInventoryTable(
-          currentInventoryPage,
-          currentInventorySort,
-          currentInventoryQuery
-        );
-      } else {
-        // Log error to console
-        console.error("Add Motorcycle Error:", response.message);
-        
-        // Only show error modal for critical errors that user needs to fix
-        if (response.message.includes("DUPLICATE_ENGINE_NUMBER") || 
-            response.message.includes("DUPLICATE_FRAME_NUMBER") ||
-            response.message.includes("Missing required field")) {
-          // showErrorModal(response.message);
-        } else {
-          // For other errors, just log to console and show generic message
-          console.error("Technical Error:", response.message);
-          showSuccessModal("Operation completed. Check console for details.");
-        }
-      }
-    },
-    error: function (xhr, status, error) {
-      // Log AJAX errors to console
-      console.error("AJAX Error:", {
-        status: status,
-        error: error,
-        response: xhr.responseText
-      });
-      
-      // Show generic error message to user
-      showErrorModal("Connection error. Please try again.");
-    },
-  });
-}
 
 function showInfoModal(message) {
   $("#infoMessage").text(message);
@@ -5304,6 +5099,160 @@ $(document).ready(function() {
     loadTransfers(status);
   });
 });
+
+function loadSoldUnits(page = 1) {
+    $('#soldUnitsTableBody').html('<tr><td colspan="8" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>');
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: { action: 'get_sold_units', page: page, per_page: 15 },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                renderSoldUnitsTable(response.data);
+                renderPagination('#soldUnitsPagination', response.pagination.total_pages, page, 'sold');
+            }
+        }
+    });
+}
+
+function renderSoldUnitsTable(data) {
+    let html = '';
+    if (data.length === 0) {
+        html = '<tr><td colspan="8" class="text-center text-muted">No sold units found.</td></tr>';
+    } else {
+        data.forEach(item => {
+            html += `
+                <tr>
+                    <td>${formatDate(item.sale_date)}</td>
+                    <td>${escapeHtml(item.customer_name)}</td>
+                    <td>${escapeHtml(item.model)}</td>
+                    <td><code>${escapeHtml(item.engine_number)}</code></td>
+                    <td><code>${escapeHtml(item.frame_number)}</code></td>
+                    <td>${escapeHtml(item.current_branch)}</td>
+                    <td><span class="badge bg-info">${escapeHtml(item.payment_type)}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-warning revert-btn" data-id="${item.id}" data-status="sold" title="Revert to Available">
+                            <i class="bi bi-arrow-counterclockwise"></i> Revert
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    $('#soldUnitsTableBody').html(html);
+}
+
+
+// --- REPOSSESSED UNITS ---
+function loadRepossessedUnits(page = 1) {
+    $('#repossessedUnitsTableBody').html('<tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>');
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: { action: 'get_repo_units', page: page, per_page: 15 },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                renderRepossessedUnitsTable(response.data);
+                renderPagination('#repossessedUnitsPagination', response.pagination.total_pages, page, 'repo');
+            }
+        }
+    });
+}
+
+function renderRepossessedUnitsTable(data) {
+    let html = '';
+    if (data.length === 0) {
+        html = '<tr><td colspan="7" class="text-center text-muted">No repossessed units found.</td></tr>';
+    } else {
+        data.forEach(item => {
+            html += `
+                <tr>
+                    <td>${formatDate(item.repo_date)}</td>
+                    <td>${escapeHtml(item.model)}</td>
+                    <td><code>${escapeHtml(item.engine_number)}</code></td>
+                    <td><code>${escapeHtml(item.frame_number)}</code></td>
+                    <td>${escapeHtml(item.current_branch)}</td>
+                    <td>${escapeHtml(item.repo_reason)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-warning revert-btn" data-id="${item.id}" data-status="repo" title="Revert to Available">
+                            <i class="bi bi-arrow-counterclockwise"></i> Revert
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    $('#repossessedUnitsTableBody').html(html);
+}
+
+
+// --- SCRAPPED UNITS ---
+function loadScrappedUnits(page = 1) {
+    $('#scrappedUnitsTableBody').html('<tr><td colspan="7" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></td></tr>');
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: { action: 'get_scrapped_units', page: page, per_page: 15 },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                renderScrappedUnitsTable(response.data);
+                renderPagination('#scrappedUnitsPagination', response.pagination.total_pages, page, 'scrapped');
+            }
+        }
+    });
+}
+
+function renderScrappedUnitsTable(data) {
+    let html = '';
+    if (data.length === 0) {
+        html = '<tr><td colspan="7" class="text-center text-muted">No scrapped units found.</td></tr>';
+    } else {
+        data.forEach(item => {
+            html += `
+                <tr>
+                    <td>${formatDate(item.scrap_date)}</td>
+                    <td>${escapeHtml(item.model)}</td>
+                    <td><code>${escapeHtml(item.engine_number)}</code></td>
+                    <td><code>${escapeHtml(item.frame_number)}</code></td>
+                    <td>${escapeHtml(item.current_branch)}</td>
+                    <td>${escapeHtml(item.scrap_reason)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-warning revert-btn" data-id="${item.id}" data-status="scrapped" title="Revert to Available">
+                            <i class="bi bi-arrow-counterclockwise"></i> Revert
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    $('#scrappedUnitsTableBody').html(html);
+}
+
+// --- REVERT TRANSACTION LOGIC ---
+function revertTransaction(id, status) {
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'POST',
+        data: { action: 'revert_status', motorcycle_id: id, original_status: status },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showSuccessModal(response.message);
+                // Reload the data in the currently active tab
+                if (status === 'sold') loadSoldUnits(1);
+                if (status === 'repo') loadRepossessedUnits(1);
+                if (status === 'scrapped') loadScrappedUnits(1);
+                // Also reload the main inventory table in case the user switches back
+                loadInventoryTable(1);
+            } else {
+                showErrorModal(response.message);
+            }
+        }
+    });
+}
 
 // =======================
 // Helper Functions

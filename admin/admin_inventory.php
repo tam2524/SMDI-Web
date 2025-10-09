@@ -91,6 +91,18 @@
                             data-bs-target='#globalTransferHistory' type='button' role='tab'>Global Transfer
                             History</button>
                     </li>
+                    <li class='nav-item' role='presentation'>
+                        <button class='nav-link' id='sold-units-tab' data-bs-toggle='tab' data-bs-target='#soldUnits'
+                            type='button' role='tab'>Sold Units</button>
+                    </li>
+                    <li class='nav-item' role='presentation'>
+                        <button class='nav-link' id='repossessed-units-tab' data-bs-toggle='tab'
+                            data-bs-target='#repossessedUnits' type='button' role='tab'>Repossessed Units</button>
+                    </li>
+                    <li class='nav-item' role='presentation'>
+                        <button class='nav-link' id='scrapped-units-tab' data-bs-toggle='tab'
+                            data-bs-target='#scrappedUnits' type='button' role='tab'>Scrapped Units</button>
+                    </li>
                 </ul>
 
                 <div class='tab-content' id='inventoryTabContent'>
@@ -118,19 +130,11 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
+                    
                 <div class='tab-pane fade' id='management' role='tabpanel'>
                     <div class='d-flex justify-content-between mb-4'>
                         <div>
-                            <button class='btn btn-primary text-white me-2' data-bs-toggle='modal'
-                                data-bs-target='#addMotorcycleModal'>
-                                <i class='bi bi-plus-circle'></i> Add Motorcycle
-                            </button>
-
-                            <button id='transferSelectedBtn' class='btn btn-primary text-white' disabled>
-                                <i class='bi bi-truck'></i> Transfer
-                            </button>
 
                             <!-- Replace your current report buttons with this single button -->
                             <button type='button' class='btn btn-primary text-white me-2' id='generateReportsButton'>
@@ -200,7 +204,6 @@
                     </nav>
                 </div>
 
-                
                 <div class='tab-pane fade' id='globalTransferHistory' role='tabpanel'
                     aria-labelledby='global-transfer-tab'>
 
@@ -301,6 +304,78 @@
                     </section>
 
                 </div>
+
+                <div class='tab-pane fade' id='soldUnits' role='tabpanel'>
+                    <div class='table-responsive'>
+                        <table class='table table-striped' id='soldUnitsTable'>
+                            <thead>
+                                <tr>
+                                    <th>Sale Date</th>
+                                    <th>Customer Name</th>
+                                    <th>Model</th>
+                                    <th>Engine No.</th>
+                                    <th>Frame No.</th>
+                                    <th>Branch</th>
+                                    <th>Payment Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id='soldUnitsTableBody'>
+                            </tbody>
+                        </table>
+                    </div>
+                    <nav>
+                        <ul class='pagination justify-content-center' id='soldUnitsPagination'></ul>
+                    </nav>
+                </div>
+
+                <div class='tab-pane fade' id='repossessedUnits' role='tabpanel'>
+                    <div class='table-responsive'>
+                        <table class='table table-striped' id='repossessedUnitsTable'>
+                            <thead>
+                                <tr>
+                                    <th>Repo Date</th>
+                                    <th>Model</th>
+                                    <th>Engine No.</th>
+                                    <th>Frame No.</th>
+                                    <th>Branch</th>
+                                    <th>Reason</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id='repossessedUnitsTableBody'>
+                            </tbody>
+                        </table>
+                    </div>
+                    <nav>
+                        <ul class='pagination justify-content-center' id='repossessedUnitsPagination'></ul>
+                    </nav>
+                </div>
+
+                <div class='tab-pane fade' id='scrappedUnits' role='tabpanel'>
+                    <div class='table-responsive'>
+                        <table class='table table-striped' id='scrappedUnitsTable'>
+                            <thead>
+                                <tr>
+                                    <th>Scrap Date</th>
+                                    <th>Model</th>
+                                    <th>Engine No.</th>
+                                    <th>Frame No.</th>
+                                    <th>Branch</th>
+                                    <th>Reason</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id='scrappedUnitsTableBody'>
+                            </tbody>
+                        </table>
+                    </div>
+                    <nav>
+                        <ul class='pagination justify-content-center' id='scrappedUnitsPagination'></ul>
+                    </nav>
+                </div>
+                </div>
+
             </div>
         </div>
         </div>
@@ -392,101 +467,6 @@
         </div>
     </div>
 
- <div class='modal fade' id='addMotorcycleModal' tabindex='-1' aria-labelledby='addMotorcycleModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='addMotorcycleModalLabel'>Add Motorcycle to Inventory</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <form id='addMotorcycleForm'>
-                        <div class='row mb-4'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='invoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='invoiceNumber' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='dateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='dateDelivered' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='branch' class='form-label'>Branch</label>
-                                <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
-        ?>
-                                <select class='form-select' id='branch' required>
-                                    <option value='HEADOFFICE'>HEADOFFICE</option>
-                                    <option value='KINGDOM'>KINGDOM</option>
-                                    <option value='TANQUE'>TANQUE</option>
-                                    <option value='DFISHER'>DFISHER</option>
-                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
-                                    <option value='MAMBUSAO'>MAMBUSAO</option>
-                                    <option value='SIGMA'>SIGMA</option>
-                                    <option value='PRC'>PRC</option>
-                                    <option value='BAILAN'>BAILAN</option>
-                                    <option value='CUARTERO'>CUARTERO</option>
-                                    <option value='JAMINDAN'>JAMINDAN</option>
-                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
-                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
-                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
-                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
-                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
-                                    <option value='JARO-1'>JARO-1</option>
-                                    <option value='JARO-2'>JARO-2</option>
-                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
-                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
-                                    <option value='ALTAVAS'>ALTAVAS</option>
-                                    <option value='EMAP'>EMAP</option>
-                                    <option value='CULASI'>CULASI</option>
-                                    <option value='BACOLOD'>BACOLOD</option>
-                                    <option value='PASSI-1'>PASSI-1</option>
-                                    <option value='PASSI-2'>PASSI-2</option>
-                                    <option value='BALASAN'>BALASAN</option>
-                                    <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI BACOLOD'>PEMDI BACOLOD</option>
-                                    <option value='INFINITY BACOLOD'>INFINITY BACOLOD</option>
-                                    <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
-                                    <option value='AJUY'>AJUY</option>
-                                    <option value='MINDORO-MB'>MINDORO-MB</option>
-                                    <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
-                                    <option value='3S MINDORO'>3S MINDORO</option>
-                                    <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
-                                    <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
-                                    <option value='IBAJAY'>IBAJAY</option>
-                                    <option value='NUMANCIA'>NUMANCIA</option>
-                                    <option value='CFCIPRC'>CFCIPRC</option>
-
-                                </select>
-                                <?php } else {
-                                                        ?>
-                                <input type='text' class='form-control' id='branch'
-                                    value="<?php echo $_SESSION['user_branch']; ?>" readonly>
-                                <input type='hidden' id='branch' value="<?php echo $_SESSION['user_branch']; ?>">
-                                <?php }
-        ?>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <h5 class='mb-3'>Motorcycle Models</h5>
-                        <div id='modelFormsContainer'>
-                        </div>
-
-                        <button type='button' id='addModelBtn' class='btn btn-secondary mt-3'>
-                            <i class='bi bi-plus-circle'></i> Add Another Model
-                        </button>
-
-                        <div class='d-grid mt-4'>
-                            <button type='submit' class='btn btn-primary text-white'>Add Motorcycles</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -555,7 +535,7 @@
                             <div class='col-md-6 mb-3'>
                                 <label for='editCurrentBranch' class='form-label'>Branch</label>
                                 <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
-            ?>
+    ?>
                                 <!-- Admin can select any branch -->
                                 <select class='form-select' id='editCurrentBranch' required>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
@@ -601,14 +581,14 @@
 
                                 </select>
                                 <?php } else {
-                ?>
+        ?>
                                 <!-- Regular users can only add to their own branch -->
                                 <input type='text' class='form-control' id='editCurrentBranch'
                                     value="<?php echo $_SESSION['user_branch']; ?>" readonly>
                                 <input type='hidden' id='editCurrentBranchHidden'
                                     value="<?php echo $_SESSION['user_branch']; ?>">
                                 <?php }
-                ?>
+        ?>
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editStatus' class='form-label'>Status</label>
@@ -1353,8 +1333,8 @@
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
                     <!-- <button type = 'button' class = 'btn btn-warning' id = 'editTransferBtn'>
-            <i class = 'bi bi-pencil-square me-2'></i> Manage Items
-            </button> -->
+    <i class = 'bi bi-pencil-square me-2'></i> Manage Items
+    </button> -->
                     <button type='button' class='btn btn-primary text-white' id='printReceiptBtn'>
                         <i class='bi bi-printer me-2'></i>Print Receipt
                     </button>

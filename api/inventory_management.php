@@ -157,6 +157,19 @@ switch ($action) {
         updateTransferItems();
         break;
 
+case 'get_sold_units':
+    getSoldUnits();
+    break;
+case 'get_repo_units':
+    getRepossessedUnits();
+    break;
+case 'get_scrapped_units':
+    getScrappedUnits();
+    break;
+case 'revert_status':
+    revertStatus();
+    break;
+
 
     // Branch & Searching
     case 'get_branch_inventory':
@@ -3869,4 +3882,157 @@ function getDeliveredStocksSummary() {
     }
 }
 
+function getSoldUnits() {
+    global $conn;
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $perPage = isset($_GET['per_page']) ? intval($_GET['per_page']) : 15;
+    $offset = ($page - 1) * $perPage;
+
+    $countSql = "SELECT COUNT(*) as total FROM motorcycle_inventory WHERE status = 'sold'";
+    $totalRecords = $conn->query($countSql)->fetch_assoc()['total'];
+    $totalPages = ceil($totalRecords / $perPage);
+
+    $sql = "SELECT mi.id, mi.model, mi.engine_number, mi.frame_number, mi.current_branch,
+                   ms.sale_date, ms.customer_name, ms.payment_type
+            FROM motorcycle_inventory mi
+            JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
+            WHERE mi.status = 'sold'
+            ORDER BY ms.sale_date DESC
+            LIMIT ? OFFSET ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('ii', $perPage, $offset);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'pagination' => ['currentPage' => $page, 'totalPages' => $totalPages]
+    ]);
+}
+
+function getRepossessedUnits() {
+    global $conn;
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $perPage = isset($_GET['per_page']) ? intval($_GET['per_page']) : 15;
+    $offset = ($page - 1) * $perPage;
+
+    $countSql = "SELECT COUNT(*) as total FROM motorcycle_inventory WHERE category = 'repo'";
+    $totalRecords = $conn->query($countSql)->fetch_assoc()['total'];
+    $totalPages = ceil($totalRecords / $perPage);
+
+    $sql = "SELECT mi.id, mi.model, mi.engine_number, mi.frame_number, mi.current_branch,
+                   mrh.repo_date, mrh.repo_reason
+            FROM motorcycle_inventory mi
+            JOIN motorcycle_repo_history mrh ON mi.id = mrh.motorcycle_id
+            WHERE mi.category = 'repo'
+            ORDER BY mrh.repo_date DESC
+            LIMIT ? OFFSET ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('ii', $perPage, $offset);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'pagination' => ['currentPage' => $page, 'totalPages' => $totalPages]
+    ]);
+}
+
+function getScrappedUnits() {
+    global $conn;
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $perPage = isset($_GET['per_page']) ? intval($_GET['per_page']) : 15;
+    $offset = ($page - 1) * $perPage;
+
+    $countSql = "SELECT COUNT(*) as total FROM motorcycle_inventory WHERE status = 'scrapped'";
+    $totalRecords = $conn->query($countSql)->fetch_assoc()['total'];
+    $totalPages = ceil($totalRecords / $perPage);
+
+    $sql = "SELECT mi.id, mi.model, mi.engine_number, mi.frame_number, mi.current_branch,
+                   ms.scrap_date, ms.scrap_reason
+            FROM motorcycle_inventory mi
+            JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id
+            WHERE mi.status = 'scrapped'
+            ORDER BY ms.scrap_date DESC
+            LIMIT ? OFFSET ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('ii', $perPage, $offset);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'pagination' => ['currentPage' => $page, 'totalPages' => $totalPages]
+    ]);
+}
+
+function revertStatus() {
+    global $conn;
+
+    $id = isset($_POST['motorcycle_id']) ? intval($_POST['motorcycle_id']) : 0;
+    $original_status = isset($_POST['original_status']) ? sanitizeInput($_POST['original_status']) : '';
+
+    if ($id <= 0 || empty($original_status)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid data provided.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+
+    try {
+        if ($original_status === 'sold') {
+            $stmt = $conn->prepare("DELETE FROM motorcycle_sales WHERE motorcycle_id = ?");
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            $update_stmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'available' WHERE id = ?");
+            $update_stmt->bind_param('i', $id);
+            $update_stmt->execute();
+        } elseif ($original_status === 'repo') {
+            $stmt = $conn->prepare("DELETE FROM motorcycle_repo_history WHERE motorcycle_id = ?");
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            // When reverting a REPO, it should go back to being a 'brandnew' unit
+            $update_stmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'available', category = 'brandnew' WHERE id = ?");
+            $update_stmt->bind_param('i', $id);
+            $update_stmt->execute();
+        } elseif ($original_status === 'scrapped') {
+            $stmt = $conn->prepare("DELETE FROM motorcycle_scraps WHERE motorcycle_id = ?");
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            $update_stmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'available' WHERE id = ?");
+            $update_stmt->bind_param('i', $id);
+            $update_stmt->execute();
+        } else {
+            throw new Exception("Invalid status to revert.");
+        }
+        
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Transaction successfully reverted.']);
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Error reverting transaction: ' . $e->getMessage()]);
+    }
+}
 ?>
