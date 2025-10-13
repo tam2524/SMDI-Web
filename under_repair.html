@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMDI | Under Construction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles for the page */
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Custom animation keyframes */
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        /* Applying the animation */
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-800 flex flex-col min-h-screen">
+
+    <header class="w-full bg-white shadow-sm">
+        <nav class="container mx-auto flex justify-between items-center p-6">
+            <a href="#">
+                <img src="assets/img/smdi_logo.jpg" alt="SMDI Logo" class="h-12 w-auto">
+            </a>
+           
+        </nav>
+    </header>
+
+    <main class="flex-grow container mx-auto px-6 py-12 flex items-center">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-8 items-center">
+            
+            <div class="text-center md:text-left md:col-span-2">
+                <h1 class="text-5xl md:text-6xl font-extrabold text-indigo-900 leading-tight">
+                    Oops! Our site is
+                </h1>
+                <h2 class="text-4xl md:text-5xl font-bold text-amber-500 mt-2">
+                    Under Construction
+                </h2>
+                <p class="mt-6 text-lg text-gray-600 max-w-lg mx-auto md:mx-0">
+                    We're working hard behind the scenes to bring you a new and improved experience. Please check back soon!
+                </p>
+                
+               
+            </div>
+
+            <div class="md:col-span-3">
+                <img src="assets/img/under.png" alt="Website under construction illustration" class="w-full h-auto animate-float">
+            </div>
+            
+        </div>
+    </main>
+
+    <footer class="w-full bg-white text-center py-4">
+        <p class="text-gray-500 text-sm">Copyright © 2024 Solid Motorcycle Distributors Incorporated.</p>
+    </footer>
+
+</body>
+</html>
