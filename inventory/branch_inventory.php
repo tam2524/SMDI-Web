@@ -18,7 +18,7 @@
     <link href='../css/bootstrap.min.css' rel='stylesheet'>
     <link href='../css/style.css' rel='stylesheet'>
     <link href='../css/inventory_style.css' rel='stylesheet'>
-
+<script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
 
@@ -262,7 +262,7 @@
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='dateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='dateDelivered' required>
+                                <input type='text' class='form-control datepicker' id='dateDelivered' required placeholder="mm/dd/yyyy">
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='branch' class='form-label'>Branch</label>
@@ -418,11 +418,11 @@
                         <div class='row'>
                             <div class='col-md-4 mb-3'>
                                 <label for='editDateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='editDateDelivered' required>
+                                <input type='text' class='form-control datepicker' id='editDateDelivered' required placeholder="mm/dd/yyyy">
                             </div>
                               <div class='col-md-4 mb-3'>
                                 <label for='editDateReceived' class='form-label'>Date Received</label>
-                                <input type='date' class='form-control' id='editDateReceived' >
+                                <input type='text' class='form-control datepicker' id='editDateReceived' placeholder="mm/dd/yyyy">
                             </div>
                             <div class='col-md-4 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
@@ -881,128 +881,138 @@
         </div>
     </div>
 
-<!-- START: Replace the existing 'monthlyReportOptionsModal' div with this new one -->
-<div class="modal fade" id="monthlyReportOptionsModal" tabindex="-1" aria-labelledby="monthlyReportOptionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title text-white" id="monthlyReportOptionsModalLabel"><i class="bi bi-file-earmark-text me-2 text-white"></i>Generate Reports</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class='modal fade' id='monthlyReportOptionsModal' tabindex='-1'
+        aria-labelledby='monthlyReportOptionsModalLabel' aria-hidden='true'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header bg-primary text-white'>
+                    <h5 class='modal-title text-white' id='monthlyReportOptionsModalLabel'><i
+                            class='bi bi-file-earmark-text me-2 text-white'></i>Generate Reports</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
+                        aria-label='Close'></button>
+                </div>
+                <div class='modal-body'>
+                    <!-- Step 1: Report Type Selection -->
+                    <div class='mb-4'>
+                        <label for='reportType' class='form-label fw-bold'>1. Select Report Type</label>
+                        <select class='form-select form-select-lg' id='reportType'>
+                            <option value='inventory'>Inventory Balance Report</option>
+                            <option value='inventory_summary'>Summary of Inventory</option>
+                            <option value='transferred'>Summary of Transferred Stocks</option>
+                            <option value='received'>Summary of Received Stocks</option>
+                            <option value='delivered_stocks'>Summary of Delivered Stocks</option>
+                            <option value='motorcycle'>Available Motorcycle Units Report</option>
+                            <option value='sold_units'>Summary of Sold Units Report</option>
+                            <option value='scrapped'>Summary of Scrapped Units Report</option>
+                        </select>
+                    </div>
+
+                    <!-- Step 2: Date & Period Options ( Dynamic ) -->
+                    <div class='mb-4'>
+                        <label class='form-label fw-bold'>2. Select Period</label>
+                        <div id='periodOptionsContainer' class='p-3 bg-light border rounded'>
+                            <!-- Radio buttons will be dynamically inserted here by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Date Picker Containers ( Dynamic ) -->
+                    <div id='datePickerSection'>
+                        <div id='dailyDatePickerContainer' class='mb-3' style='display: none;'>
+                            <label for='dailyDate' class='form-label'>Select Date</label>
+                            <input type='text' class='form-control datepicker' id='dailyDate'>
+                        </div>
+                        <div id='monthPickerContainer' class='mb-3' style='display: none;'>
+                            <label for='reportMonth' class='form-label'>Select Month</label>
+                            <input type='month' class='form-control' id='reportMonth'>
+                        </div>
+                        <div id='asOfDatePickerContainer' class='mb-3' style='display: none;'>
+                            <label for='asOfDate' class='form-label'>Select As-of Date</label>
+                            <input type='text' class='form-control datepicker' id='asOfDate'>
+                        </div>
+                        <div id='customDateRangeContainer' class='row mb-3' style='display: none;'>
+                            <div class='col-md-6'>
+                                <label for='startDate' class='form-label'>Start Date</label>
+                                <input type='text' class='form-control datepicker' id='startDate'>
+                            </div>
+                            <div class='col-md-6'>
+                                <label for='endDate' class='form-label'>End Date</label>
+                                <input type='text' class='form-control datepicker' id='endDate'>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: General Filters -->
+                    <div>
+                        <label class='form-label fw-bold'>3. Apply Filters</label>
+                        <div class='p-3 border rounded'>
+                            <div class='row g-3'>
+                                <div class='col-md-6'>
+                                    <label for='reportBranch' class='form-label'>Branch</label>
+                                    <select class='form-select' id='reportBranch'>
+                                        <option value='ALL'>ALL BRANCHES</option>
+                                        <!-- Options populated by JS -->
+                                    </select>
+                                </div>
+                                <div class='col-md-6'>
+                                    <label for='reportCategoryFilter' class='form-label'>Category</label>
+                                    <select class='form-select' id='reportCategoryFilter'>
+                                        <option value='all'>All Categories</option>
+                                        <option value='brandnew'>Brand New</option>
+                                        <option value='repo'>Repo</option>
+                                    </select>
+                                </div>
+                                <div class='col-md-6'>
+                                    <label for='reportBrandFilter' class='form-label'>Brand</label>
+                                    <select class='form-select' id='reportBrandFilter'>
+                                        <option value='all'>ALL BRANDS</option>
+                                        <option value='Suzuki'>SUZUKI</option>
+                                        <option value='Honda'>HONDA</option>
+                                        <option value='Kawasaki'>KAWASAKI</option>
+                                        <option value='Yamaha'>YAMAHA</option>
+                                        <option value='Asiastar'>ASIASTAR</option>
+                                    </select>
+                                </div>
+                                <div class='col-12'>
+                                    <label for='reportModelSearch' class='form-label'>Model( s )</label>
+                                    <div class='dropdown'>
+                                        <div id='model-filter-container'
+                                            class='form-control d-flex flex-wrap gap-1 align-items-center'
+                                            style='min-height: 38px;' data-bs-toggle='dropdown' aria-expanded='false'>
+                                            <span id='selected-models-tags' class='d-flex flex-wrap gap-1'>
+                                            </span>
+                                            <input type='text' id='reportModelSearch' class='flex-grow-1 border-0 p-0'
+                                                placeholder='Search to add models...'
+                                                style='min-width: 150px; outline: none; box-shadow: none;'>
+                                        </div>
+                                        <ul id='model-search-results' class='dropdown-menu w-100'
+                                            aria-labelledby='model-filter-container'
+                                            style='max-height: 200px; overflow-y: auto;'>
+                                        </ul>
+                                    </div>
+                                    <input type='hidden' id='reportModelFilter'>
+                                </div>
+                                <div class='col-md-6' id='soldSaleTypeContainer' style='display: none;'>
+                                    <label for='soldSaleTypeFilter' class='form-label'>Type of Sale</label>
+                                    <select class='form-select' id='soldSaleTypeFilter'>
+                                        <option value='all'>All</option>
+                                        <option value='COD'>COD</option>
+                                        <option value='Installment'>Installment</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'><i
+                            class='bi bi-play-fill me-1'></i>Generate Report</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <!-- Step 1: Report Type Selection -->
-                <div class="mb-4">
-                    <label for="reportType" class="form-label fw-bold">1. Select Report Type</label>
-                    <select class="form-select form-select-lg" id="reportType">
-                        <option value="inventory">Inventory Balance Report</option>
-                         <option value="inventory_summary">Summary of Inventory</option>
-                        <option value="transferred">Summary of Transferred Stocks</option>
-                        <option value="received">Summary of Received Stocks</option>
-                        <option value="delivered_stocks">Summary of Delivered Stocks</option>
-                        <option value="motorcycle">Available Motorcycle Units Report</option>
-                        <option value="sold_units">Summary of Sold Units Report</option>
-                        <option value="scrapped">Summary of Scrapped Units Report</option>
-                    </select>
-                </div>
-
-                <!-- Step 2: Date & Period Options (Dynamic) -->
-                <div class="mb-4">
-                    <label class="form-label fw-bold">2. Select Period</label>
-                    <div id="periodOptionsContainer" class="p-3 bg-light border rounded">
-                        <!-- Radio buttons will be dynamically inserted here by JS -->
-                    </div>
-                </div>
-                
-                <!-- Date Picker Containers (Dynamic) -->
-                <div id="datePickerSection">
-                    <div id="dailyDatePickerContainer" class="mb-3" style="display: none;">
-                        <label for="dailyDate" class="form-label">Select Date</label>
-                        <input type="date" class="form-control" id="dailyDate">
-                    </div>
-                    <div id="monthPickerContainer" class="mb-3" style="display: none;">
-                        <label for="reportMonth" class="form-label">Select Month</label>
-                        <input type="month" class="form-control" id="reportMonth">
-                    </div>
-                    <div id="asOfDatePickerContainer" class="mb-3" style="display: none;">
-                        <label for="asOfDate" class="form-label">Select As-of Date</label>
-                        <input type="date" class="form-control" id="asOfDate">
-                    </div>
-                    <div id="customDateRangeContainer" class="row mb-3" style="display: none;">
-                        <div class="col-md-6">
-                            <label for="startDate" class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="startDate">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="endDate" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="endDate">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 3: General Filters -->
-                <div>
-                     <label class="form-label fw-bold">3. Apply Filters</label>
-                     <div class="p-3 border rounded">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="reportBranch" class="form-label">Branch</label>
-                                <select class="form-select" id="reportBranch">
-                                    <option value="ALL">ALL BRANCHES</option>
-                                    <!-- Options populated by JS -->
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="reportCategoryFilter" class="form-label">Category</label>
-                                <select class="form-select" id="reportCategoryFilter">
-                                    <option value="all">All Categories</option>
-                                    <option value="brandnew">Brand New</option>
-                                    <option value="repo">Repo</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="reportBrandFilter" class="form-label">Brand</label>
-                                <select class="form-select" id="reportBrandFilter">
-                                    <option value="all">ALL BRANDS</option>
-                                    <option value="Suzuki">SUZUKI</option>
-                                    <option value="Honda">HONDA</option>
-                                    <option value="Kawasaki">KAWASAKI</option>
-                                    <option value="Yamaha">YAMAHA</option>
-                                    <option value="Asiastar">ASIASTAR</option>
-                                </select>
-                            </div>
-                           <div class="col-12">
-    <label for="reportModelSearch" class="form-label">Model(s)</label>
-    <div class="dropdown">
-        <div id="model-filter-container" class="form-control d-flex flex-wrap gap-1 align-items-center" style="min-height: 38px;" data-bs-toggle="dropdown" aria-expanded="false">
-            <span id="selected-models-tags" class="d-flex flex-wrap gap-1">
-                </span>
-            <input type="text" id="reportModelSearch" class="flex-grow-1 border-0 p-0" placeholder="Search to add models..." style="min-width: 150px; outline: none; box-shadow: none;">
         </div>
-        <ul id="model-search-results" class="dropdown-menu w-100" aria-labelledby="model-filter-container" style="max-height: 200px; overflow-y: auto;">
-            </ul>
     </div>
-    <input type="hidden" id="reportModelFilter"> </div>
-                             <div class="col-md-6" id="soldSaleTypeContainer" style="display: none;">
-                                <label for="soldSaleTypeFilter" class="form-label">Type of Sale</label>
-                                <select class="form-select" id="soldSaleTypeFilter">
-                                    <option value="all">All</option>
-                                    <option value="COD">COD</option>
-                                    <option value="Installment">Installment</option>
-                                </select>
-                            </div>
-                        </div>
-                     </div>
-                </div>
 
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary text-white" id="generateReportBtn"><i class="bi bi-play-fill me-1"></i>Generate Report</button>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- END: Replacement block -->
 
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
@@ -1048,7 +1058,7 @@
                         <div class='mb-3'>
                             <label for='saleDate' class='form-label'>Sale Date <span
                                     class='text-danger'>*</span></label>
-                            <input type='date' class='form-control' id='saleDate' required>
+                            <input type='text' class='form-control datepicker' id='saleDate' required placeholder="mm/dd/yyyy">
                         </div>
 
                         <div class='mb-3'>

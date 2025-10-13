@@ -44,7 +44,8 @@ function getDateRangeForReport($period_type, $date, $month, $start_date, $end_da
             }
             $startDate = $date;
             $endDate = $date;
-            $reportContext = date('F j, Y', strtotime($date));
+            // UPDATED FORMAT
+            $reportContext = date('m/d/Y', strtotime($date));
             break;
         case 'monthly':
             if (!$month) {
@@ -52,6 +53,7 @@ function getDateRangeForReport($period_type, $date, $month, $start_date, $end_da
             }
             $startDate = date('Y-m-01', strtotime($month));
             $endDate = date('Y-m-t', strtotime($month));
+            // NOTE: Left as 'F Y' (e.g., October 2025) as it's a month-long period.
             $reportContext = date('F Y', strtotime($month));
             break;
         case 'as_of_date':
@@ -60,7 +62,8 @@ function getDateRangeForReport($period_type, $date, $month, $start_date, $end_da
             }
             $startDate = date('Y-m-01', strtotime($date));
             $endDate = $date;
-            $reportContext = "For the period ending " . date('F j, Y', strtotime($date));
+            // UPDATED FORMAT
+            $reportContext = "For the period ending " . date('m/d/Y', strtotime($date));
             break;
         case 'custom':
             if (!$start_date || !$end_date) {
@@ -68,7 +71,8 @@ function getDateRangeForReport($period_type, $date, $month, $start_date, $end_da
             }
             $startDate = $start_date;
             $endDate = $end_date;
-            $reportContext = date('F j, Y', strtotime($start_date)) . " to " . date('F j, Y', strtotime($end_date));
+            // UPDATED FORMAT
+            $reportContext = date('m/d/Y', strtotime($start_date)) . " to " . date('m/d/Y', strtotime($end_date));
             break;
         default:
             return [null, 'Invalid report period type.', null];

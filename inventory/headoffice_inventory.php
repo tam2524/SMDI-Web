@@ -17,6 +17,7 @@
     <link href='../css/bootstrap.min.css' rel='stylesheet'>
     <link href='../css/style.css' rel='stylesheet'>
     <link href='../css/inventory_style.css' rel='stylesheet'>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'></script>
@@ -235,7 +236,7 @@
                     <div id='datePickerSection'>
                         <div id='dailyDatePickerContainer' class='mb-3' style='display: none;'>
                             <label for='dailyDate' class='form-label'>Select Date</label>
-                            <input type='date' class='form-control' id='dailyDate'>
+                            <input type='text' class='form-control datepicker' id='dailyDate'>
                         </div>
                         <div id='monthPickerContainer' class='mb-3' style='display: none;'>
                             <label for='reportMonth' class='form-label'>Select Month</label>
@@ -243,16 +244,16 @@
                         </div>
                         <div id='asOfDatePickerContainer' class='mb-3' style='display: none;'>
                             <label for='asOfDate' class='form-label'>Select As-of Date</label>
-                            <input type='date' class='form-control' id='asOfDate'>
+                            <input type='text' class='form-control datepicker' id='asOfDate'>
                         </div>
                         <div id='customDateRangeContainer' class='row mb-3' style='display: none;'>
                             <div class='col-md-6'>
                                 <label for='startDate' class='form-label'>Start Date</label>
-                                <input type='date' class='form-control' id='startDate'>
+                                <input type='text' class='form-control datepicker' id='startDate'>
                             </div>
                             <div class='col-md-6'>
                                 <label for='endDate' class='form-label'>End Date</label>
-                                <input type='date' class='form-control' id='endDate'>
+                                <input type='text' class='form-control datepicker' id='endDate'>
                             </div>
                         </div>
                     </div>
@@ -375,7 +376,7 @@
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='dateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='dateDelivered' required>
+                                <input type='text' class='form-control datepicker' id='dateDelivered' required placeholder="mm/dd/yyyy">
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='branch' class='form-label'>Branch</label>
@@ -467,11 +468,11 @@
                         <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editDateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='editDateDelivered' required>
+                                <input type='text' class='form-control datepicker' id='editDateDelivered' required placeholder="mm/dd/yyyy">
                             </div>
                              <div class='col-md-6 mb-3'>
                                 <label for='editDateReceived' class='form-label'>Date Received</label>
-                                <input type='date' class='form-control' id='editDateReceived' >
+                                <input type='text' class='form-control datepicker' id='editDateReceived' placeholder="mm/dd/yyyy">
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
@@ -597,7 +598,7 @@
                                 <div class='row'>
                                     <div class='col-md-6 mb-2'>
                                         <label for='editSaleDate' class='form-label'><strong>Sale Date:</strong></label>
-                                        <input type='date' class='form-control' id='editSaleDate' name='sale_date'>
+                                        <input type='text' class='form-control datepicker' id='editSaleDate' name='sale_date' placeholder="mm/dd/yyyy">
                                     </div>
                                     <div class='col-md-6 mb-2'>
                                         <label for='editCustomerName' class='form-label'><strong>Customer
@@ -680,7 +681,7 @@
                         <div class='mb-3'>
                             <label for='saleDate' class='form-label'>Sale Date <span
                                     class='text-danger'>*</span></label>
-                            <input type='date' class='form-control' id='saleDate' required>
+                            <input type='text' class='form-control datepicker' id='saleDate' required placeholder="mm/dd/yyyy">
                         </div>
 
                         <div class='mb-3'>
@@ -752,7 +753,7 @@
                         <div class='mb-3'>
                             <label for='scrapDate' class='form-label'>Scrap Date <span
                                     class='text-danger'>*</span></label>
-                            <input type='date' class='form-control' id='scrapDate' required>
+                            <input type='text' class='form-control datepicker' id='scrapDate' required placeholder="mm/dd/yyyy">
                         </div>
 
                         <div class='mb-3'>
@@ -783,7 +784,7 @@
                         <div class='mb-3'>
                             <label for='repoDate' class='form-label'>Repo Date <span
                                     class='text-danger'>*</span></label>
-                            <input type='date' class='form-control' id='repoDate' required>
+                            <input type='text' class='form-control datepicker' id='repoDate' required placeholder="mm/dd/yyyy">
                         </div>
 
                         <div class='mb-3'>

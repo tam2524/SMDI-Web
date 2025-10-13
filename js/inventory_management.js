@@ -143,6 +143,7 @@ $(document).ready(function () {
   styleSheetManage.textContent = manageTransferStyles;
   document.head.appendChild(styleSheetManage);
 
+  
   // Initial Load
   shownTransferIds = [];
   loadInventoryDashboard();
@@ -423,6 +424,13 @@ function setupEventListeners() {
   });
 
   // --- New Motorcycle Form Listeners ---
+
+  $('#addMotorcycleModal').on('shown.bs.modal', function () {
+    // Set default date to today when the modal opens
+    if (!$('#dateDelivered').val()) {
+        $('#dateDelivered').val(new Date().toISOString().split("T")[0]);
+    }
+});
   $("#addModelBtn").click(() => addModelForm());
   $("#addMotorcycleForm").submit((e) => {
     e.preventDefault();
@@ -1248,7 +1256,7 @@ function addMotorcycle() {
   const formData = {
     action: "add_motorcycle",
     invoice_number: $("#invoiceNumber").val(),
-    date_delivered: $("#dateDelivered").val(),
+    date_delivered: formatDateForAPI($("#dateDelivered").val()),
     branch: $("#branch").val(),
     models: [],
   };
@@ -1386,8 +1394,8 @@ function loadMotorcycleForEdit(id) {
       if (response.success) {
         const data = response.data;
         $("#editId").val(data.id);
-        $("#editDateDelivered").val(data.date_delivered);
-        $("#editDateReceived").val(data.date_received || "");
+       $("#editDateDelivered").val(formatDate(data.date_delivered));
+$("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
         $("#editBrand").val(data.brand);
         $("#editModel").val(data.model);
         $("#editCategory").val(data.category);
@@ -1417,7 +1425,7 @@ function updateMotorcycle() {
   const formData = {
     action: "update_motorcycle",
     id: $("#editId").val(),
-    date_received: $("#editDateReceived").val(),
+    date_delivered: formatDateForAPI($("#editDateDelivered").val()),
     date_delivered: $("#editDateDelivered").val(),
     brand: $("#editBrand").val(),
     model: $("#editModel").val(),
@@ -1431,7 +1439,7 @@ function updateMotorcycle() {
     status: status,
   };
   if (status === "sold") {
-    formData.sale_date = $("#editSaleDate").val();
+    formData.sale_date = formatDateForAPI($("#editSaleDate").val());
     formData.customer_name = $("#editCustomerName").val();
     formData.payment_type = $("#editPaymentType").val();
     formData.dr_number = $("#editDrNumber").val();
@@ -1534,7 +1542,7 @@ function toggleSoldDetails(status, saleDetails) {
           ? saleDetails.monthly_amortization
           : "";
 
-      $("#editSaleDate").val(saleDate);
+      $("#editSaleDate").val(formatDate(saleDate));
       $("#editCustomerName").val(customerName);
       $("#editPaymentType").val(paymentType);
       $("#editDrNumber").val(drNumber);
@@ -1931,6 +1939,7 @@ function viewModelDetails(id) {
 
 // Functions for handling the sale and scrapping of motorcycles.
 function sellMotorcycle(id) {
+  $("#saleDate").datepicker('setDate', new Date());
   $("#sellMotorcycleId").val(id);
 
   $("#saleForm")[0].reset();
@@ -1957,7 +1966,7 @@ function submitSale() {
   const formData = {
     action: "sell_motorcycle",
     motorcycle_id: $("#sellMotorcycleId").val(),
-    sale_date: $("#saleDate").val(),
+    sale_date: formatDateForAPI($("#saleDate").val()),
     customer_name: $("#customerName").val(),
     payment_type: $("#paymentType").val(),
   };
@@ -2041,7 +2050,7 @@ function submitSale() {
 
 function scrapMotorcycle(id) {
   $("#scrapMotorcycleId").val(id);
-  $("#scrapDate").val(new Date().toISOString().split("T")[0]);
+  $("#scrapDate").datepicker('setDate', new Date());
   $("#scrapReason").val("");
   $("#scrapMotorcycleModal").modal("show");
 }
@@ -2051,7 +2060,7 @@ function submitScrap() {
   const formData = {
     action: "scrap_motorcycle",
     motorcycle_id: $("#scrapMotorcycleId").val(),
-    scrap_date: $("#scrapDate").val(),
+    scrap_date: formatDateForAPI($("#scrapDate").val()),
     scrap_reason: $("#scrapReason").val(),
   };
 
@@ -2093,7 +2102,7 @@ function submitScrap() {
  */
 function openRepoModal(id) {
     $("#repoMotorcycleId").val(id);
-    $("#repoDate").val(new Date().toISOString().split("T")[0]); // Set today's date
+    $("#repoDate").datepicker('setDate', new Date()); // Set today's date
     $("#repoReason").val("");
     $("#repoModal").modal("show");
 }
@@ -2105,7 +2114,7 @@ function submitRepo() {
     const formData = {
         action: "mark_as_repo",
         motorcycle_id: $("#repoMotorcycleId").val(),
-        repo_date: $("#repoDate").val(),
+        repo_date: formatDateForAPI($("#repoDate").val()),
         repo_reason: $("#repoReason").val(),
     };
 
@@ -4250,7 +4259,7 @@ function generateReport() {
 
   switch (periodType) {
     case "daily":
-      apiData.date = $("#dailyDate").val();
+      apiData.date = formatDateForAPI($("#dailyDate").val());
       if (!apiData.date) {
         showErrorModal("Please select a date.");
         return;
@@ -4264,15 +4273,15 @@ function generateReport() {
       }
       break;
     case "as_of_date":
-      apiData.date = $("#asOfDate").val();
+      apiData.date = formatDateForAPI($("#asOfDate").val());
       if (!apiData.date) {
         showErrorModal('Please select an "as of" date.');
         return;
       }
       break;
     case "custom_range":
-      apiData.start_date = $("#startDate").val();
-      apiData.end_date = $("#endDate").val();
+      apiData.start_date = formatDateForAPI($("#startDate").val());
+      apiData.end_date = formatDateForAPI($("#endDate").val());
       if (!apiData.start_date || !apiData.end_date) {
         showErrorModal("Please select a start and end date.");
         return;
@@ -7860,13 +7869,16 @@ function populateBranchesDropdown() {
   });
 }
 function formatDate(dateString) {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-PH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+    if (!dateString || dateString === '0000-00-00') return "N/A";
+    const date = new Date(dateString);
+    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+    const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+    
+    return adjustedDate.toLocaleDateString("en-US", {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
 }
 function formatCurrency(amount) {
   if (amount === null || amount === undefined) return "0.00";
@@ -8256,4 +8268,18 @@ function addFiltersToPdf(doc, currentY) {
 
     // Return the new Y position, adding some padding below the filter line
     return currentY + 7;
+}
+
+/**
+ * Converts a date string from "mm/dd/yyyy" to "yyyy-mm-dd" for API submission.
+ * @param {string} dateString The date in "mm/dd/yyyy" format.
+ * @returns {string} The date in "yyyy-mm-dd" format or an empty string.
+ */
+function formatDateForAPI(dateString) {
+    if (!dateString || !dateString.includes('/')) return dateString; // Return if empty or not in the expected format
+    const [month, day, year] = dateString.split('/');
+    if (month && day && year) {
+         return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    return '';
 }
