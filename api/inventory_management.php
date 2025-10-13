@@ -117,7 +117,9 @@ switch ($action) {
      case 'mark_as_repo':
         markAsRepo();
         break;    
-
+          case 'mark_as_redeem':
+        markAsRedeem();
+        break;
     // Sales & Invoicing
     case 'sell_motorcycle':
         sellMotorcycle();
@@ -221,7 +223,9 @@ case 'revert_status':
     case 'get_monthly_scrapped_summary':
         getMonthlyScrappedSummary();
         break;
-
+    case 'get_redeemed_units_report':
+        getRedeemedUnitsReport();
+        break;    
     // Validation Checks
     case 'check_invoice_number':
         checkInvoiceNumber();
@@ -378,7 +382,6 @@ function getInventoryTable() {
 }
 
 
-
 function getMotorcycle() {
     global $conn;
 
@@ -391,9 +394,9 @@ function getMotorcycle() {
     $includeSaleDetails = isset($_GET['include_sale_details']) && $_GET['include_sale_details'] ? true : false;
 
     $stmt = $conn->prepare("SELECT mi.*, i.invoice_number 
-                           FROM motorcycle_inventory mi 
-                           LEFT JOIN invoices i ON mi.invoice_id = i.id 
-                           WHERE mi.id = ?");
+                            FROM motorcycle_inventory mi 
+                            LEFT JOIN invoices i ON mi.invoice_id = i.id 
+                            WHERE mi.id = ?");
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
         return;
@@ -409,8 +412,8 @@ function getMotorcycle() {
         // Include sale details if requested and motorcycle is sold
         if ($includeSaleDetails && isset($data['status']) && $data['status'] === 'sold') {
             $saleStmt = $conn->prepare("SELECT * FROM motorcycle_sales 
-                                      WHERE motorcycle_id = ? 
-                                      ORDER BY sale_date DESC LIMIT 1");
+                                        WHERE motorcycle_id = ? 
+                                        ORDER BY sale_date DESC LIMIT 1");
             if ($saleStmt) {
                 $saleStmt->bind_param('i', $id);
                 $saleStmt->execute();
@@ -425,13 +428,33 @@ function getMotorcycle() {
             } else {
                 $data['sale_details'] = null;
             }
+        } 
+        else if ($includeSaleDetails && isset($data['category']) && $data['category'] === 'repo') {
+            // For repo units, check the history table for the last sale record before it was repo'd
+            $saleStmt = $conn->prepare("SELECT * FROM motorcycle_sales_history 
+                                        WHERE motorcycle_id = ? 
+                                        ORDER BY archived_at DESC LIMIT 1");
+            if ($saleStmt) {
+                $saleStmt->bind_param('i', $id);
+                $saleStmt->execute();
+                $saleResult = $saleStmt->get_result();
+
+                if ($saleResult && $saleResult->num_rows > 0) {
+                    $data['sale_details'] = $saleResult->fetch_assoc();
+                } else {
+                    $data['sale_details'] = null; // No previous sale record found
+                }
+                $saleStmt->close();
+            } else {
+                $data['sale_details'] = null;
+            }
         }
 
         // Include transfer history if motorcycle is transferred
         if (isset($data['status']) && $data['status'] === 'transferred') {
             $transferStmt = $conn->prepare("SELECT * FROM inventory_transfers 
-                                          WHERE motorcycle_id = ? 
-                                          ORDER BY transfer_date DESC");
+                                             WHERE motorcycle_id = ? 
+                                             ORDER BY transfer_date DESC");
             if ($transferStmt) {
                 $transferStmt->bind_param('i', $id);
                 $transferStmt->execute();
@@ -449,6 +472,27 @@ function getMotorcycle() {
                 $data['transfer_history'] = [];
             }
         }
+
+        /* --- START: ADD THIS NEW BLOCK --- */
+        // Include redemption details if the motorcycle has been redeemed.
+        // This check is independent of the sale details check.
+        if ($includeSaleDetails) {
+            $redeemStmt = $conn->prepare("SELECT * FROM motorcycle_redeems 
+                                          WHERE motorcycle_id = ? 
+                                          ORDER BY redeem_date DESC LIMIT 1");
+            if ($redeemStmt) {
+                $redeemStmt->bind_param('i', $id);
+                $redeemStmt->execute();
+                $redeemResult = $redeemStmt->get_result();
+                if ($redeemResult && $redeemResult->num_rows > 0) {
+                    $data['redeem_details'] = $redeemResult->fetch_assoc();
+                } else {
+                    $data['redeem_details'] = null;
+                }
+                $redeemStmt->close();
+            }
+        }
+        /* --- END: ADD THIS BLOCK --- */
 
         echo json_encode(['success' => true, 'data' => $data]);
     } else {
@@ -2070,14 +2114,18 @@ function searchInventory() {
     $field = isset($_GET['field']) ? trim($_GET['field']) : 'all';
     $includeInventoryCost = isset($_GET['include_inventory_cost']) ? true : false;
 
-   $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
-               mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number,
-               ms.sale_date, ms.customer_name, ms.payment_type, ms.dr_number, ms.cod_amount, ms.terms, ms.monthly_amortization
-        FROM motorcycle_inventory mi
-        LEFT JOIN invoices i ON mi.invoice_id = i.id
-        LEFT JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
-        WHERE mi.status IN ('available', 'sold')";
-
+    // --- FIX 1: MODIFIED SQL QUERY ---
+    // Added a LEFT JOIN to motorcycle_redeems and selected the relevant columns.
+    $sql = "SELECT 
+                mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
+                mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number,
+                ms.sale_date, ms.customer_name, ms.payment_type, ms.dr_number, ms.cod_amount, ms.terms, ms.monthly_amortization,
+                mr.redeem_date, mr.amount_paid 
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            LEFT JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
+            LEFT JOIN motorcycle_redeems mr ON mi.id = mr.motorcycle_id
+            WHERE mi.status IN ('available', 'sold')";
 
     $params = [];
     $types = '';
@@ -2090,8 +2138,7 @@ function searchInventory() {
             $types .= 's';
         } else {
             $sql .= " AND (mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? 
-                        OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
-            // Add the same search term 5 times for the 5 LIKE conditions
+                         OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
             for ($i = 0; $i < 5; $i++) {
                 $params[] = $searchTerm;
                 $types .= 's';
@@ -2108,12 +2155,11 @@ function searchInventory() {
     }
 
     if (!empty($params)) {
-        // Use call_user_func_array to bind params dynamically
         $bind_names[] = $types;
         for ($i=0; $i<count($params); $i++) {
             $bind_name = 'bind' . $i;
             $$bind_name = $params[$i];
-            $bind_names[] = &$$bind_name; // Note the reference
+            $bind_names[] = &$$bind_name;
         }
         call_user_func_array([$stmt, 'bind_param'], $bind_names);
     }
@@ -2125,8 +2171,25 @@ function searchInventory() {
 
     $result = $stmt->get_result();
 
+    // --- FIX 2: MODIFIED DATA PROCESSING LOOP ---
+    // This loop now structures the data to include a 'redeem_details' object,
+    // matching what your JavaScript function expects.
     $data = [];
     while ($row = $result->fetch_assoc()) {
+        // Check if redemption details exist from the JOIN
+        if (isset($row['redeem_date']) && $row['redeem_date'] !== null) {
+            $row['redeem_details'] = [
+                'redeem_date' => $row['redeem_date'],
+                'amount_paid' => $row['amount_paid']
+            ];
+        } else {
+            $row['redeem_details'] = null;
+        }
+
+        // Unset the original flat columns to keep the final JSON clean
+        unset($row['redeem_date']);
+        unset($row['amount_paid']);
+
         $data[] = $row;
     }
 
@@ -3711,12 +3774,14 @@ function markAsRepo() {
         }
 
         // 4. Delete the corresponding sale record
-        $stmt_delete_sale = $conn->prepare("DELETE FROM motorcycle_sales WHERE motorcycle_id = ?");
-        $stmt_delete_sale->bind_param('i', $motorcycleId);
-        if (!$stmt_delete_sale->execute()) {
-            // This is not a critical failure, but good to log
-            error_log("Could not delete sale record for repossessed motorcycle ID: " . $motorcycleId);
-        }
+        $conn->query("INSERT INTO motorcycle_sales_history (id, motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization, created_at) SELECT id, motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization, created_at FROM motorcycle_sales WHERE motorcycle_id = $motorcycleId");
+
+      $stmt_delete_sale = $conn->prepare("DELETE FROM motorcycle_sales WHERE motorcycle_id = ?");
+      $stmt_delete_sale->bind_param('i', $motorcycleId);
+      if (!$stmt_delete_sale->execute()) {
+          // This is not a critical failure, but good to log
+          error_log("Could not delete sale record for repossessed motorcycle ID: " . $motorcycleId);
+      }
 
         // 5. Log the repossession event (assuming a 'motorcycle_repo_history' table exists)
         // If this table doesn't exist, you should create it:
@@ -3729,6 +3794,91 @@ function markAsRepo() {
 
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'Motorcycle has been successfully marked as REPO.']);
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+    }
+}
+
+function markAsRedeem() {
+    global $conn;
+
+    // 1. Validate required fields
+    $required = ['motorcycle_id', 'redeem_date', 'amount_paid', 'sale_date', 'customer_name', 'payment_type'];
+    foreach ($required as $field) {
+        if (empty($_POST[$field])) {
+            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
+            return;
+        }
+    }
+
+    // 2. Sanitize all inputs
+    $motorcycleId = intval($_POST['motorcycle_id']);
+    $redeemDate = sanitizeInput($_POST['redeem_date']);
+    $amountPaid = floatval($_POST['amount_paid']);
+    $saleDate = sanitizeInput($_POST['sale_date']);
+    $customerName = sanitizeInput($_POST['customer_name']);
+    $paymentType = sanitizeInput($_POST['payment_type']);
+    $drNumber = isset($_POST['dr_number']) ? sanitizeInput($_POST['dr_number']) : null;
+    $codAmount = isset($_POST['cod_amount']) ? floatval($_POST['cod_amount']) : null;
+    $terms = isset($_POST['terms']) ? intval($_POST['terms']) : null;
+    $monthlyAmortization = isset($_POST['monthly_amortization']) ? floatval($_POST['monthly_amortization']) : null;
+    $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+
+    // Validate payment-specific fields
+    if ($paymentType === 'COD') {
+        if (empty($drNumber) || $codAmount === null) {
+            echo json_encode(['success' => false, 'message' => 'DR Number and COD Amount are required for COD payment']);
+            return;
+        }
+    } else if ($paymentType === 'Installment') {
+        if ($terms === null || $monthlyAmortization === null) {
+            echo json_encode(['success' => false, 'message' => 'Terms and Monthly Amortization are required for Installment payment']);
+            return;
+        }
+    }
+
+    $conn->begin_transaction();
+    try {
+        // 3. Check the motorcycle's current status
+        $stmt_check = $conn->prepare("SELECT status, category FROM motorcycle_inventory WHERE id = ? FOR UPDATE");
+        $stmt_check->bind_param('i', $motorcycleId);
+        $stmt_check->execute();
+        $result_check = $stmt_check->get_result();
+
+        if ($result_check->num_rows === 0) {
+            throw new Exception("Motorcycle not found.");
+        }
+
+        $motorcycle = $result_check->fetch_assoc();
+        if ($motorcycle['category'] !== 'repo' || $motorcycle['status'] !== 'available') {
+            throw new Exception("This unit is not a repossessed unit and cannot be redeemed.");
+        }
+
+        // 4. Update the motorcycle's status back to 'sold' and category to 'brandnew'
+        $stmt_update = $conn->prepare("UPDATE motorcycle_inventory SET status = 'sold', category = 'brandnew' WHERE id = ?");
+        $stmt_update->bind_param('i', $motorcycleId);
+        if (!$stmt_update->execute()) {
+            throw new Exception("Failed to update motorcycle status.");
+        }
+
+        // 5. Insert a new sale record
+        $stmt_sale = $conn->prepare("INSERT INTO motorcycle_sales (motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt_sale->bind_param('issssdid', $motorcycleId, $saleDate, $customerName, $paymentType, $drNumber, $codAmount, $terms, $monthlyAmortization);
+        if (!$stmt_sale->execute()) {
+            throw new Exception("Failed to create new sale record.");
+        }
+        
+        // 6. Log the redemption event
+        $stmt_log = $conn->prepare("INSERT INTO motorcycle_redeems (motorcycle_id, redeem_date, amount_paid, redeemed_by_customer, user_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt_log->bind_param('isdsi', $motorcycleId, $redeemDate, $amountPaid, $customerName, $userId);
+        if (!$stmt_log->execute()) {
+            throw new Exception("Failed to log the redemption event.");
+        }
+
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Motorcycle has been successfully redeemed and marked as sold.']);
 
     } catch (Exception $e) {
         $conn->rollback();
@@ -4007,5 +4157,99 @@ function revertStatus() {
         $conn->rollback();
         echo json_encode(['success' => false, 'message' => 'Error reverting transaction: ' . $e->getMessage()]);
     }
+}
+
+// --- ADD THIS ENTIRE FUNCTION ---
+function getRedeemedUnitsReport() {
+    global $conn;
+
+    // --- 1. Get all date and filter parameters ---
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null;
+    $date = isset($_GET['date']) ? sanitizeInput($_GET['date']) : null;
+    $startDate = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : null;
+    $endDate = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : null;
+    
+    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
+    // $category is received but will be ignored for this specific report's logic
+    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
+    $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
+
+    // --- 2. Determine date range ---
+    if ($date) {
+        $startDate = $date; $endDate = $date;
+    } elseif ($month) {
+        $startDate = date('Y-m-01', strtotime($month)); $endDate = date('Y-m-t', strtotime($month));
+    } elseif (!$startDate || !$endDate) {
+        echo json_encode(['success' => false, 'message' => 'A valid date range is required.']);
+        return;
+    }
+
+    // --- 3. Build WHERE clauses and parameters ---
+    $conditions = [];
+    $params = [];
+    $types = '';
+    
+    if ($branch !== 'all') { $conditions[] = "mi.current_branch = ?"; $params[] = $branch; $types .= 's'; }
+    
+    // --- FIX: REMOVED THIS LINE ---
+    // if ($category !== 'all') { $conditions[] = "LOWER(mi.category) = ?"; $params[] = $category; $types .= 's'; }
+    // A redeemed unit's category is changed back to 'brandnew', so filtering by category is not logical here.
+    
+    if ($brand !== 'all') { $conditions[] = "LOWER(mi.brand) = ?"; $params[] = $brand; $types .= 's'; }
+
+    if ($models_str !== 'all' && !empty($models_str)) {
+        $models = array_map('trim', explode(',', $models_str));
+        if (!empty($models)) {
+            $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
+            $conditions[] = "mi.model IN ($modelPlaceholders)";
+            foreach ($models as $model) { $params[] = $model; $types .= 's'; }
+        }
+    }
+    
+    $conditions[] = "mr.redeem_date BETWEEN ? AND ?";
+    $params[] = $startDate;
+    $params[] = $endDate;
+    $types .= 'ss';
+
+    $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+
+    // --- 4. Construct and Execute SQL Query ---
+    $sql = "SELECT 
+                mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, mi.current_branch,
+                mi.inventory_cost, mi.category, 
+                mr.redeem_date, mr.amount_paid, mr.redeemed_by_customer,
+                i.invoice_number
+            FROM motorcycle_inventory mi
+            INNER JOIN motorcycle_redeems mr ON mi.id = mr.motorcycle_id
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            $whereClause
+            ORDER BY mr.redeem_date DESC, mi.brand, mi.model";
+
+    $stmt = $conn->prepare($sql);
+    if (!empty($params)) { $stmt->bind_param($types, ...$params); }
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    $totalRedeemed = 0;
+    $totalAmountPaid = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+        $totalRedeemed++;
+        $totalAmountPaid += (float)$row['amount_paid'];
+    }
+    
+    // --- 5. Return JSON response ---
+    echo json_encode([
+        'success' => true,
+        'month' => $month, 'date' => $date, 'start_date' => $startDate, 'end_date' => $endDate,
+        'branch' => $branch, 'category' => 'all', 'brand' => $brand, // Always report category as 'all'
+        'data' => $data,
+        'summary' => [
+            'total_redeemed' => $totalRedeemed,
+            'total_amount_paid' => $totalAmountPaid
+        ]
+    ]);
 }
 ?>

@@ -94,6 +94,10 @@ const reportOptionsConfig = {
     periods: ["daily", "monthly", "custom_range"],
     filters: ["branch", "category", "brand", "model"],
   },
+   redeemed: {
+        periods: ["daily", "monthly", "custom_range"],
+        filters: ["branch", "category", "brand", "model"],
+    },
 };
 
 const pdfStyles = `
@@ -531,6 +535,10 @@ function setupEventListeners() {
   });
 
   // --- Validation Listeners ---
+
+  $('#redeemPaymentType').change(handleRedeemPaymentTypeChange);
+$('#submitRedeemBtn').click(submitRedeem);
+
   $(document).on("blur", ".engine-number", function () {
     checkEngineNumber($(this).val(), $(this));
   });
@@ -899,6 +907,9 @@ function renderInventoryTable(data) {
               <button class="btn btn-outline-primary repo-btn" title="Mark as Repossessed">
                 <i class="bi bi-arrow-return-left"></i>
              </button>
+             <button class="btn btn-outline-success redeem-btn" title="Redeem Motorcycle">
+                        <i class="bi bi-award"></i>
+                   </button>
               ${
                 canAccessScrapFeature
                   ? `
@@ -1131,6 +1142,11 @@ function setupTableActionButtons() {
                 showErrorModal("An error occurred while checking the motorcycle's status.");
             },
         });
+    });
+
+    $('.redeem-btn').click(function () {
+        const id = $(this).closest('tr').data('id');
+        openRedeemModal(id);
     });
 }
 
@@ -1408,6 +1424,14 @@ $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) :
         $("#editStatus").val(data.status);
 
         toggleSoldDetails(data.status, data.sale_details);
+        const redeemContainer = $('#redeemInfoContainer');
+                if (data.redeem_details) {
+                    $('#redeemInfoDate').text(formatDate(data.redeem_details.redeem_date));
+                    $('#redeemInfoAmount').text('₱' + formatCurrency(data.redeem_details.amount_paid));
+                    redeemContainer.show();
+                } else {
+                    redeemContainer.hide();
+                }
 
         $("#editMotorcycleModal").modal("show");
       } else {
@@ -1426,7 +1450,7 @@ function updateMotorcycle() {
     action: "update_motorcycle",
     id: $("#editId").val(),
     date_delivered: formatDateForAPI($("#editDateDelivered").val()),
-    date_delivered: $("#editDateDelivered").val(),
+    date_received: formatDateForAPI($("#editDateReceived").val()),
     brand: $("#editBrand").val(),
     model: $("#editModel").val(),
     category: $("#editCategory").val(),
@@ -1779,159 +1803,115 @@ $("#addMotorcycleModal").on("hidden.bs.modal", function () {
   }
 });
 
-function viewModelDetails(id) {
-  $("#motorcycleDetails").html(
-    '<div class="text-center py-4"><div class="spinner-border text-black" role="status"></div></div>'
-  );
+// --- START: REPLACEMENT FUNCTION ---
+function viewModelDetails(units) {
+    let html = "";
 
-  $.get(
-    "../api/inventory_management.php",
-    {
-      action: "get_motorcycle",
-      id: id,
-    },
-    function (response) {
-      if (response.success) {
-        const item = response.data;
-        let detailsHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-black">Basic Information</h6>
-                        <hr>
-                        <p><strong>Invoice Number/MT:</strong> ${
-                          item.invoice_number || "N/A"
-                        }</p>
-                        <p><strong>Brand:</strong> ${item.brand}</p>
-                        <p><strong>Model:</strong> ${item.model}</p>
-                        <p><strong>Color:</strong> ${item.color}</p>
-                        <p><strong>Current Branch:</strong> ${
-                          item.current_branch
-                        }</p>
-                        <p><strong>Status:</strong> <span class="badge ${getStatusClass(
-                          item.status
-                        )}">
-                            ${
-                              item.status.charAt(0).toUpperCase() +
-                              item.status.slice(1)
-                            }
-                        </span></p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-black">Identification & Pricing</h6>
-                        <hr>
-                        <p><strong>Engine #:</strong> ${item.engine_number}</p>
-                        <p><strong>Frame #:</strong> ${item.frame_number}</p>
-                        <p><strong>Date Delivered:</strong> ${formatDate(
-                          item.date_delivered
-                        )}</p>
-                        <p><strong>Inventory Cost:</strong> ${
-                          item.inventory_cost
-                            ? formatCurrency(item.inventory_cost)
-                            : "N/A"
-                        }</p>
-                    </div>
+    // The 'units' array already contains all the data we need.
+    // We just loop through it and build the HTML.
+    units.forEach((data, index) => {
+        const isSold = data.status.toLowerCase() === "sold";
+
+        /* --- ADD THIS NEW BLOCK --- */
+        // This part builds the redemption information block if the unit was redeemed.
+        const redeemInfoHtml = data.redeem_details
+            ? `
+            <hr>
+            <h6 class='text-success'>Redemption Information</h6>
+            <div class='row'>
+                <div class='col-md-6 mb-2'>
+                    <p><strong>Redeemed On:</strong> ${formatDate(data.redeem_details.redeem_date)}</p>
                 </div>
-            `;
+                <div class='col-md-6 mb-2'>
+                    <p><strong>Amount Paid:</strong> ${formatCurrency(data.redeem_details.amount_paid)}</p>
+                </div>
+            </div>`
+            : "";
+        /* --- END NEW BLOCK --- */
 
-        if (item.transfer_history && item.transfer_history.length > 0) {
-          detailsHTML += `
-                    <hr>
-                    <div class="row">
-                        <div class="col-12">
-                            <h6 class="text-black">Transfer History</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>From Branch</th>
-                                            <th>To Branch</th>
-                                            <th>Notes</th>
-                                            <th>Transferred By</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                `;
+        // This part builds the sales information block if the unit is sold.
+        const saleInfoHtml = isSold
+            ? `
+            <hr>
+            <h6 class='text-black'>Sale Information</h6>
+            <div class='row'>
+                <div class='col-md-6 mb-2'>
+                    <p><strong>Sale Date:</strong> ${data.sale_date ? formatDate(data.sale_date) : "N/A"}</p>
+                </div>
+                <div class='col-md-6 mb-2'>
+                    <p><strong>Customer Name:</strong> ${data.customer_name || "N/A"}</p>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-md-6 mb-2'>
+                    <p><strong>Payment Type:</strong> ${data.payment_type || "N/A"}</p>
+                </div>
+            </div>
 
-          item.transfer_history.forEach((transfer) => {
-            detailsHTML += `
-                        <tr>
-                            <td>${formatDate(transfer.transfer_date)}</td>
-                            <td>${transfer.from_branch}</td>
-                            <td>${transfer.to_branch}</td>
-                            <td>${transfer.notes || "N/A"}</td>
-                            <td>${transfer.transferred_by_name || "N/A"}</td>
-                        </tr>
-                    `;
-          });
-
-          detailsHTML += `
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+            ${data.payment_type === "COD" ? `
+                <div class='row'>
+                    <div class='col-md-6 mb-2'>
+                        <p><strong>DR Number:</strong> ${data.dr_number || "N/A"}</p>
                     </div>
-                `;
-        }
-
-        if (item.latitude && item.longitude) {
-          detailsHTML += `
-                    <hr>
-                    <div class="row">
-                        <div class="col-12">
-                            <h6 class="text-black">Location</h6>
-                            <div id="mapid" style="height: 300px;"></div>
-                        </div>
+                    <div class='col-md-6 mb-2'>
+                        <p><strong>COD Amount:</strong> ${data.cod_amount ? formatCurrency(data.cod_amount) : "N/A"}</p>
                     </div>
-                `;
-        }
-
-        $("#motorcycleDetails").html(detailsHTML);
-
-        if (item.latitude && item.longitude) {
-          setTimeout(() => {
-            const container = document.getElementById("mapid");
-            if (container) {
-              if (container._leaflet_id) {
-                container._leaflet_id = null;
-              }
-
-              const map = L.map("mapid").setView(
-                [item.latitude, item.longitude],
-                14
-              );
-              L.tileLayer(
-                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                {
-                  maxZoom: 19,
-                }
-              ).addTo(map);
-
-              L.marker([item.latitude, item.longitude])
-                .addTo(map)
-                .bindPopup(
-                  `${item.brand} ${item.model}<br>${item.engine_number}`
-                )
-                .openPopup();
+                </div>` : ""
             }
-          }, 100);
-        }
-        $("#detailsModal").modal("show");
-      } else {
-        $("#motorcycleDetails").html(
-          '<div class="alert alert-danger">Error loading motorcycle details</div>'
-        );
-        $("#detailsModal").modal("show");
-      }
-    },
-    "json"
-  ).fail(function () {
-    $("#motorcycleDetails").html(
-      '<div class="alert alert-danger">Error loading motorcycle details</div>'
-    );
+
+            ${data.payment_type === "Installment" ? `
+                <div class='row'>
+                    <div class='col-md-6 mb-2'>
+                        <p><strong>Terms (months):</strong> ${data.terms || "N/A"}</p>
+                    </div>
+                    <div class='col-md-6 mb-2'>
+                        <p><strong>Monthly Amortization:</strong> ${data.monthly_amortization ? formatCurrency(data.monthly_amortization) : "N/A"}</p>
+                    </div>
+                </div>` : ""
+            }`
+            : "";
+
+        // This part builds the main details for each unit.
+        html += `
+            <div class="card mb-3">
+                <div class="card-header">
+                    Unit ${index + 1} of ${units.length}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-black">Basic Information</h6>
+                            <hr>
+                            <p><strong>Invoice Number/MT:</strong> ${data.invoice_number || "N/A"}</p>
+                            <p><strong>Brand:</strong> ${data.brand}</p>
+                            <p><strong>Model:</strong> ${data.model}</p>
+                            <p><strong>Color:</strong> ${data.color}</p>
+                            <p><strong>Current Branch:</strong> ${data.current_branch}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge ${getStatusClass(data.status)}">
+                                    ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-black">Identification & Pricing</h6>
+                            <hr>
+                            <p><strong>Engine #:</strong> ${data.engine_number}</p>
+                            <p><strong>Frame #:</strong> ${data.frame_number}</p>
+                            <p><strong>Inventory Cost:</strong> ${data.inventory_cost ? formatCurrency(data.inventory_cost) : "N/A"}</p>
+                        </div>
+                    </div>
+                    ${redeemInfoHtml} 
+                    ${saleInfoHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    $("#detailsModal .modal-body").html(html);
     $("#detailsModal").modal("show");
-  });
 }
+// --- END: REPLACEMENT FUNCTION ---
 
 // =============================================================================
 // VI. SALES & SCRAPPING
@@ -2096,17 +2076,165 @@ function submitScrap() {
   });
 }
 
+function handleRedeemPaymentTypeChange() {
+    const paymentType = $('#redeemPaymentType').val();
+    $('#redeemCodFields').hide();
+    $('#redeemInstallmentFields').hide();
+
+    if (paymentType === 'COD') {
+        $('#redeemCodFields').show();
+    } else if (paymentType === 'Installment') {
+        $('#redeemInstallmentFields').show();
+    }
+}
+
+/**
+ * Opens the Redeem modal after checking if the unit is a valid repo unit.
+ * It fetches historical sales data if available and pre-fills the form.
+ * @param {number} id The ID of the motorcycle to be redeemed.
+ */
+function openRedeemModal(id) {
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'GET',
+        data: {
+            action: 'get_motorcycle',
+            id: id,
+            include_sale_details: true // This tells the backend to fetch sales data
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                const motorcycle = response.data;
+                // A unit can only be redeemed if its category is 'repo' and it is 'available'
+                if (motorcycle.category === 'repo' && motorcycle.status === 'available') {
+                    $('#redeemMotorcycleId').val(id);
+                    $('#redeemForm')[0].reset();
+                    $('#redeemDate').val(new Date().toISOString().split('T')[0]);
+                    
+                    const saleDetails = motorcycle.sale_details;
+
+                    // Define all fields to easily manage them
+                    const fields = {
+                        saleDate: $('#redeemSaleDate'),
+                        customerName: $('#redeemCustomerName'),
+                        paymentType: $('#redeemPaymentType'),
+                        drNumber: $('#redeemDrNumber'),
+                        codAmount: $('#redeemCodAmount'),
+                        terms: $('#redeemTerms'),
+                        monthlyAmortization: $('#redeemMonthlyAmortization')
+                    };
+
+                    if (saleDetails) {
+                        // DATA FOUND: Pre-fill the form and make fields read-only
+                        fields.saleDate.val(saleDetails.sale_date).prop('readonly', true);
+                        fields.customerName.val(saleDetails.customer_name).prop('readonly', true);
+                        fields.paymentType.val(saleDetails.payment_type).prop('disabled', true); 
+                        
+                        if (saleDetails.payment_type === 'COD') {
+                            fields.drNumber.val(saleDetails.dr_number).prop('readonly', true);
+                            fields.codAmount.val(saleDetails.cod_amount).prop('readonly', true);
+                        } else if (saleDetails.payment_type === 'Installment') {
+                            fields.terms.val(saleDetails.terms).prop('readonly', true);
+                            fields.monthlyAmortization.val(saleDetails.monthly_amortization).prop('readonly', true);
+                        }
+                    } else {
+                        // NO DATA FOUND: Ensure all fields are empty and editable
+                        Object.values(fields).forEach($field => {
+                            $field.val('').prop('readonly', false).prop('disabled', false);
+                        });
+                    }
+                    
+                    handleRedeemPaymentTypeChange(); // This will correctly show/hide the COD/Installment sections
+                    $('#redeemModalLabel').text('Redeem Motorcycle');
+                    $('#redeemModal').modal('show');
+
+                } else {
+                    showErrorModal("This unit cannot be redeemed. It must be an 'available' unit with a 'repo' category.");
+                }
+            } else {
+                showErrorModal(response.message || 'Could not retrieve motorcycle details.');
+            }
+        },
+        error: function() {
+            showErrorModal("An error occurred while checking the motorcycle's status.");
+        }
+    });
+}
+
+/**
+ * Gathers data from the redeem modal and submits it to the backend via AJAX.
+ */
+function submitRedeem() {
+    const formData = {
+        action: 'mark_as_redeem',
+        motorcycle_id: $('#redeemMotorcycleId').val(),
+        redeem_date: $('#redeemDate').val(),
+        amount_paid: $('#redeemAmountPaid').val(),
+        sale_date: $('#redeemSaleDate').val(),
+        customer_name: $('#redeemCustomerName').val(),
+        payment_type: $('#redeemPaymentType').val()
+    };
+
+    // --- Validation ---
+    if (!formData.redeem_date || !formData.amount_paid || !formData.sale_date || !formData.customer_name || !formData.payment_type) {
+        showErrorModal('Please fill in all required fields (*).');
+        return;
+    }
+    
+    if (formData.payment_type === 'COD') {
+        formData.dr_number = $('#redeemDrNumber').val();
+        formData.cod_amount = $('#redeemCodAmount').val();
+        if (!formData.dr_number || !formData.cod_amount) {
+            showErrorModal('DR Number and COD Amount are required for COD payment.');
+            return;
+        }
+    } else if (formData.payment_type === 'Installment') {
+        formData.terms = $('#redeemTerms').val();
+        formData.monthly_amortization = $('#redeemMonthlyAmortization').val();
+        if (!formData.terms || !formData.monthly_amortization) {
+            showErrorModal('Terms and Monthly Amortization are required for Installment payment.');
+            return;
+        }
+    }
+
+    $('#submitRedeemBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Submitting...');
+
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'POST',
+        data: formData,
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                $('#redeemModal').modal('hide');
+                showSuccessModal(response.message || 'Motorcycle redeemed successfully!');
+                loadInventoryDashboard();
+                loadInventoryTable(currentInventoryPage, currentInventorySort, currentInventoryQuery);
+            } else {
+                showErrorModal(response.message || 'Error redeeming motorcycle.');
+            }
+        },
+        error: function(xhr, status, error) {
+            showErrorModal('An error occurred: ' + error);
+        },
+        complete: function() {
+            $('#submitRedeemBtn').prop('disabled', false).text('Confirm Redemption');
+        }
+    });
+}
 /**
  * Opens the REPO modal and populates it with the motorcycle ID.
  * @param {number} id The ID of the motorcycle to be marked as repo.
  */
+// --- REPLACE WITH THIS ---
 function openRepoModal(id) {
     $("#repoMotorcycleId").val(id);
-    $("#repoDate").datepicker('setDate', new Date()); // Set today's date
+    // This is the correct way to set the value for an <input type="date">
+    $("#repoDate").val(new Date().toISOString().split("T")[0]); 
     $("#repoReason").val("");
     $("#repoModal").modal("show");
 }
-
 /**
  * Submits the form to mark a motorcycle as repossessed.
  */
@@ -4326,6 +4454,10 @@ function generateReport() {
       apiData.action = "get_monthly_scrapped_summary";
       callReportAPI(apiData, renderScrappedReport, reportType);
       break;
+     case "redeemed":
+            apiData.action = "get_redeemed_units_report";
+            callReportAPI(apiData, renderRedeemedReport, reportType);
+            break;  
     case "motorcycle":
       apiData.action = "get_available_motorcycles_report"; // FIX: This line now correctly passes the filter values (apiData.branch, apiData.brand)
       // instead of trying to read them from the API response (res.branch, res.brand), where they don't exist.
@@ -4393,7 +4525,9 @@ function generateReportPDF() {
     generateDailySoldUnitsReportPDF();
   } else if (currentReportType === "scrapped") {
     generateScrappedReportPDF();
-  } else if (currentReportType === "received") {
+   } else if (currentReportType === "redeemed") {
+        generateRedeemedReportPDF();
+    } else if (currentReportType === "received") {
     generateReceivedReportPDF();
   } else if (currentReportType === "delivered_stocks") {
     generateDeliveredReportPDF();
@@ -7453,6 +7587,237 @@ let finalY = doc.autoTable.previous.finalY;
 }
 // END: Replace this function
 
+// --- ADD THESE TWO NEW FUNCTIONS TO YOUR JAVASCRIPT FILE ---
+
+/**
+ * Renders the HTML for the Redeemed Units report modal.
+ * @param {object} response The API response containing report data.
+ */
+function renderRedeemedReport(response) {
+    const { data, summary, month, date, start_date, end_date } = response;
+
+    let dateSubtitle = "";
+    if (date) {
+        dateSubtitle = `For ${formatDate(date)}`;
+    } else if (month) {
+        const [year, monthNum] = month.split("-");
+        const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+        dateSubtitle = `For the Month of ${monthName} ${year}`;
+    } else if (start_date && end_date) {
+        dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
+    }
+
+    const totalRedeemed = summary?.total_redeemed || 0;
+    const totalAmountPaid = summary?.total_amount_paid || 0;
+
+    let tableHtml = "";
+    if (!data || data.length === 0) {
+        tableHtml = `<div class="alert alert-info text-center mt-4">No redeemed units found for the selected criteria.</div>`;
+    } else {
+        tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                    <tr>
+                        <th>#</th><th>Invoice #</th><th>Model</th><th>Brand</th><th>Color</th>
+                        <th>Engine #</th><th>Frame #</th><th>Redeem Date</th>
+                        <th>Customer</th><th class="text-end">Amount Paid</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        data.forEach((item, index) => {
+            tableHtml += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(item.invoice_number || "N/A")}</td>
+                    <td>${escapeHtml(item.model)}</td>
+                    <td class="fw-bold">${escapeHtml(item.brand)}</td>
+                    <td>${escapeHtml(item.color)}</td>
+                    <td><code>${escapeHtml(item.engine_number)}</code></td>
+                    <td><code>${escapeHtml(item.frame_number)}</code></td>
+                    <td>${formatDate(item.redeem_date)}</td>
+                    <td>${escapeHtml(item.redeemed_by_customer)}</td>
+                    <td class="text-end fw-bold">${formatCurrency(item.amount_paid)}</td>
+                </tr>`;
+        });
+        tableHtml += `
+                </tbody>
+                <tfoot class="table-group-divider">
+                    <tr class="table-active">
+                        <td colspan="9" class="text-end fw-bold">Total:</td>
+                        <td class="text-end fw-bold">${formatCurrency(totalAmountPaid)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>`;
+    }
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <h4 class="mb-1" style="color: #000f71;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+            <h5 class="mb-2" style="color: #495057;">Summary of Redeemed Units</h5>
+            <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
+            ${buildFilterDisplayHtml()}
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #198754, #157347); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50">TOTAL REDEEMED UNITS</h6>
+                        <h3 class="mb-0 text-white">${totalRedeemed}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50">TOTAL AMOUNT PAID</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalAmountPaid)}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ${tableHtml}
+        ${generateBrandSummaryHtml(data)}
+    `;
+
+    $("#monthlyReportContent").html(html);
+}
+
+/**
+ * Generates and saves a PDF for the Redeemed Units report.
+ */
+/**
+ * Generates and saves a PDF for the Redeemed Units report, styled like the other reports.
+ */
+function generateRedeemedReportPDF() {
+    const { jsPDF } = window.jspdf;
+    if (!currentReportData || currentReportType !== "redeemed") {
+        showErrorModal("Please generate a redeemed units report first before exporting to PDF.");
+        return;
+    }
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+    // --- 1. DYNAMIC HEADER AND FILTERS ---
+    let dateSubtitle = "";
+    let fileNameDate = new Date().toISOString().slice(0, 10);
+
+    if (currentReportDate) {
+        dateSubtitle = `For ${formatDate(currentReportDate)}`;
+        fileNameDate = currentReportDate;
+    } else if (currentReportMonth) {
+        const [year, monthNum] = currentReportMonth.split("-");
+        const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+        dateSubtitle = `For the Month of ${monthName} ${year}`;
+        fileNameDate = currentReportMonth;
+    } else if (currentReportStartDate && currentReportEndDate) {
+        dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
+        fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
+    }
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginLR = 10;
+    const marginBottom = 20;
+    let currentY = 15;
+
+    doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
+    doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
+    currentY += 10;
+    doc.setFontSize(12).setTextColor(73, 80, 87);
+    doc.text("Summary of Redeemed Units", pageWidth / 2, currentY, { align: "center" });
+    currentY += 6;
+    doc.setFontSize(10).setTextColor(0, 64, 133);
+    doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
+    currentY += 6;
+    currentY = addFiltersToPdf(doc, currentY);
+
+    // --- 2. DATA GROUPING & TABLE GENERATION ---
+    const groupedData = {};
+    currentReportData.data.forEach((item) => {
+        const branchName = item.current_branch || "Unknown Branch";
+        if (!groupedData[branchName]) groupedData[branchName] = [];
+        groupedData[branchName].push(item);
+    });
+
+    const columns = [
+        { header: "#", dataKey: "index" }, { header: "Model", dataKey: "model" },
+        { header: "Color", dataKey: "color" }, { header: "Brand", dataKey: "brand" },
+        { header: "Engine #", dataKey: "engine_number" }, { header: "Frame #", dataKey: "frame_number" },
+        { header: "Redeem Date", dataKey: "redeem_date" }, { header: "Customer", dataKey: "redeemed_by_customer" },
+        { header: "Amount Paid", dataKey: "amount_paid" },
+    ];
+
+    function addBranchSection(branchName, items) {
+        if (currentY + 15 > pageHeight - marginBottom) {
+            doc.addPage();
+            currentY = 20;
+        }
+        doc.setFontSize(11).setTextColor(0, 64, 133).setFont("helvetica", "bold");
+        doc.text(`${branchName} - ${items.length} unit/s redeemed`, marginLR, currentY);
+        currentY += 6;
+
+        const rows = items.map((item, index) => ({
+            index: index + 1,
+            model: item.model,
+            color: item.color,
+            brand: item.brand,
+            engine_number: item.engine_number,
+            frame_number: item.frame_number,
+            redeem_date: formatDate(item.redeem_date),
+            redeemed_by_customer: item.redeemed_by_customer,
+            amount_paid: formatCurrency(item.amount_paid),
+        }));
+
+        doc.autoTable({
+            startY: currentY,
+            head: [columns.map((c) => c.header)],
+            body: rows.map((r) => columns.map((c) => r[c.dataKey])),
+            styles: { fontSize: 8, cellPadding: 2, valign: 'middle' },
+            headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold", halign: "center" },
+            columnStyles: { 0: { halign: 'center' }, 9: { halign: 'right' } },
+            margin: { left: marginLR, right: marginLR },
+            theme: "striped",
+            didDrawPage: (data) => { currentY = data.cursor.y; }
+        });
+        currentY = doc.autoTable.previous.finalY + 10;
+    }
+
+    Object.keys(groupedData).sort().forEach((branchName) => {
+        addBranchSection(branchName, groupedData[branchName]);
+    });
+
+    // --- 3. SUMMARY SECTION ---
+    const totalRedeemed = currentReportSummary?.total_redeemed || 0;
+    const totalAmountPaid = currentReportSummary?.total_amount_paid || 0;
+    const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+    const cardHeight = 20;
+
+    if (currentY + cardHeight > pageHeight - marginBottom) {
+        doc.addPage();
+        currentY = 20;
+    }
+
+    function drawCard(x, y, width, height, title, mainValue, bgColor, textColor) {
+        doc.setFillColor(...bgColor);
+        doc.roundedRect(x, y, width, height, 3, 3, "F");
+        doc.setFontSize(8).setTextColor(...textColor).setFont("helvetica", "bold");
+        doc.text(title, x + width / 2, y + 7, { align: "center" });
+        doc.setFontSize(12).setTextColor(255, 255, 255);
+        doc.text(String(mainValue), x + width / 2, y + 15, { align: "center" });
+    }
+
+    drawCard(marginLR, currentY, cardWidth, cardHeight, "TOTAL REDEEMED UNITS", totalRedeemed, [25, 135, 84], [200, 255, 220]);
+    drawCard(marginLR + cardWidth + 10, currentY, cardWidth, cardHeight, "TOTAL AMOUNT PAID", formatCurrency(totalAmountPaid), [13, 110, 253], [200, 225, 255]);
+    
+    currentY += cardHeight;
+    currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+
+    // --- 4. FOOTER AND SAVE ---
+    addFootersToPdf(doc, "Redeemed Units Report");
+    const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
+    doc.save(`Redeemed_Units_Report_${fileNameDate}_${safeBranch}.pdf`);
+}
 // --- D. Motorcycle List Report ---
 function generateMotorcycleReport(branch, brandFilter) {
   $("#monthlyReportOptionsModal").modal("hide");
@@ -8282,4 +8647,29 @@ function formatDateForAPI(dateString) {
          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
     return '';
+}
+
+/**
+ * Adds a standardized footer with a timestamp and page numbers to each page of a jsPDF document.
+ * @param {jsPDF} doc The jsPDF document instance.
+ * @param {string} reportTitle A short title for the report to be included in the footer.
+ */
+function addFootersToPdf(doc, reportTitle) {
+    const pageCount = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const genTime = new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
+
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i); // Switch to the page
+        doc.setFontSize(8);
+        doc.setTextColor(108, 117, 125); // A muted gray color
+
+        // Generated on text on the left
+        doc.text(`Generated on: ${genTime}`, 10, pageHeight - 10);
+        
+        // Report title and page number in the center
+        const centerText = `Page ${i} of ${pageCount} | ${reportTitle}`;
+        doc.text(centerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
 }
