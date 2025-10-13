@@ -1446,11 +1446,18 @@ $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) :
 
 function updateMotorcycle() {
   const status = $("#editStatus").val();
+
+  // Handle nullable date_received
+  const dateReceivedValue = $("#editDateReceived").val();
+  const formattedDateReceived = dateReceivedValue
+    ? formatDateForAPI(dateReceivedValue)
+    : null; // <-- Allow null
+
   const formData = {
     action: "update_motorcycle",
     id: $("#editId").val(),
     date_delivered: formatDateForAPI($("#editDateDelivered").val()),
-    date_received: formatDateForAPI($("#editDateReceived").val()),
+    date_received: formattedDateReceived, // <-- updated
     brand: $("#editBrand").val(),
     model: $("#editModel").val(),
     category: $("#editCategory").val(),
@@ -1462,6 +1469,7 @@ function updateMotorcycle() {
     current_branch: $("#editCurrentBranch").val(),
     status: status,
   };
+
   if (status === "sold") {
     formData.sale_date = formatDateForAPI($("#editSaleDate").val());
     formData.customer_name = $("#editCustomerName").val();
@@ -1472,6 +1480,7 @@ function updateMotorcycle() {
     formData.monthly_amortization = $("#editMonthlyAmortization").val();
   }
 
+  // Validation (keep date_received optional)
   if (
     !formData.id ||
     !formData.date_delivered ||
@@ -1502,16 +1511,15 @@ function updateMotorcycle() {
         $("#editMotorcycleModal").modal("hide");
 
         if (response.type === "existing_invoice") {
-          console.log("Using existing invoice:", response.message);
           showSuccessModal(response.message);
         } else if (response.type === "new_invoice") {
-          console.log("Created new invoice:", response.message);
           showSuccessModal(response.message);
         } else {
           showSuccessModal(
             response.message || "Motorcycle updated successfully!"
           );
         }
+
         loadInventoryDashboard();
         loadInventoryTable(
           currentInventoryPage,
@@ -1528,7 +1536,6 @@ function updateMotorcycle() {
         ) {
           showErrorModal(response.message);
         } else {
-          console.error("Technical Error:", response.message);
           showSuccessModal("Update completed. Check console for details.");
         }
       }
@@ -1543,6 +1550,7 @@ function updateMotorcycle() {
     },
   });
 }
+
 
 function toggleSoldDetails(status, saleDetails) {
   const soldDetailsContainer = $("#soldDetailsContainer");

@@ -100,9 +100,11 @@
                             data-bs-target='#repossessedUnits' type='button' role='tab'>Repossessed Units</button>
                     </li>
                     <li class='nav-item' role='presentation'>
-                        <button class='nav-link' id='scrapped-units-tab' data-bs-toggle='tab'
-                            data-bs-target='#scrappedUnits' type='button' role='tab'>Scrapped Units</button>
-                    </li>
+    <button class='nav-link' id='scrapped-units-tab' data-bs-toggle='tab' data-bs-target='#scrappedUnits' type='button' role='tab'>Scrapped Units</button>
+</li>
+<li class='nav-item' role='presentation'>
+    <button class='nav-link' id='redeemed-units-tab' data-bs-toggle='tab' data-bs-target='#redeemedUnits' type='button' role='tab'>Redeemed Units</button>
+</li>
                 </ul>
 
                 <div class='tab-content' id='inventoryTabContent'>
@@ -131,249 +133,293 @@
                         </div>
                     </div>
 
-                    
-                <div class='tab-pane fade' id='management' role='tabpanel'>
-                    <div class='d-flex justify-content-between mb-4'>
-                        <div>
 
-                            <!-- Replace your current report buttons with this single button -->
-                            <button type='button' class='btn btn-primary text-white me-2' id='generateReportsButton'>
-                                <i class='bi bi-file-earmark-text'></i> Generate Reports
-                            </button>
-                            <button class='btn btn-primary text-white me-2' id='searchTransferReceiptBtn'>
-                                <i class='bi bi-receipt'></i> Print by MT
-                            </button>
-                            <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
-                                <i class='bi bi-receipt'></i> Print by Invoice
-                            </button>
+                    <div class='tab-pane fade' id='management' role='tabpanel'>
+                        <div class='d-flex justify-content-between mb-4'>
+                            <div>
+
+                                <!-- Replace your current report buttons with this single button -->
+                                <button type='button' class='btn btn-primary text-white me-2'
+                                    id='generateReportsButton'>
+                                    <i class='bi bi-file-earmark-text'></i> Generate Reports
+                                </button>
+                                <button class='btn btn-primary text-white me-2' id='searchTransferReceiptBtn'>
+                                    <i class='bi bi-receipt'></i> Print by MT
+                                </button>
+                                <button class='btn btn-primary text-white me-2' id='searchInvoiceNumberBtn'>
+                                    <i class='bi bi-receipt'></i> Print by Invoice
+                                </button>
+                            </div>
+
+                            <div class='input-group' style='max-width: 300px;'>
+                                <input type='text' id='searchInventory' class='form-control'
+                                    placeholder='Search inventory...'>
+                                <button class='btn btn-primary text-white' type='button' id='searchInventoryBtn'>
+                                    <i class='bi bi-search'></i>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class='input-group' style='max-width: 300px;'>
-                            <input type='text' id='searchInventory' class='form-control'
-                                placeholder='Search inventory...'>
-                            <button class='btn btn-primary text-white' type='button' id='searchInventoryBtn'>
-                                <i class='bi bi-search'></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class='table-responsive'>
-                        <table class='table table-striped' id='inventoryTable'>
-                            <thead>
-                                <tr>
-                                    <th><input type='checkbox' id='selectAllInventory'></th>
-                                    <th>Invoice No</th>
-                                    <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
-                                    <th class='sortable-header' data-sort='brand'>Brand</th>
-                                    <th class='sortable-header' data-sort='model'>Model</th>
-                                    <th class='sortable-header' data-sort='category'>Category</th>
-                                    <th>Engine No.</th>
-                                    <th>Frame No.</th>
-                                    <th>Color</th>
-                                    <th>Inventory Cost</th>
-                                    <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
-                                    <th class='no-print'>Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody id='inventoryTableBody'>
-                                <tr>
-                                    <td colspan='11' class='text-center py-5'>
-                                        <div class='spinner-border text-primary' role='status'>
-                                            <span class='visually-hidden'>Loading...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <nav aria-label='Inventory pagination'>
-                        <ul id='paginationControls' class='pagination'>
-                            <li id='prevPage' class='page-item disabled'>
-                                <a class='page-link' href='#' tabindex='-1' aria-disabled='true'>
-                                    <i class='fas fa-chevron-left me-1'></i> Previous
-                                </a>
-                            </li>
-                            <li id='nextPage' class='page-item'>
-                                <a class='page-link' href='#'>
-                                    Next <i class='fas fa-chevron-right ms-1'></i>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-
-                <div class='tab-pane fade' id='globalTransferHistory' role='tabpanel'
-                    aria-labelledby='global-transfer-tab'>
-
-                    <!-- In-transit Transfers Section -->
-                    <section class='mb-5'>
-                        <h5>In-transit Transfers</h5>
-                        <input type='text' id='searchIn-transit' class='form-control mb-2'
-                            placeholder='Search in-transit transfers...'>
-                        <div class='table-responsive table-scrollable' style='max-height: 300px; overflow-y: auto;'>
-                            <table class='table table-sm table-bordered' id='in-transitTransfersTable'>
-                                <thead class='table-light sticky-top'>
+                        <div class='table-responsive'>
+                            <table class='table table-striped' id='inventoryTable'>
+                                <thead>
                                     <tr>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                        <th>From Branch</th>
-                                        <th>To Branch</th>
-                                        <th>Brand</th>
-                                        <th>Model</th>
-                                        <th>Engine Number</th>
-                                        <th>Frame Number</th>
-                                        <th>Invoice Number</th>
-                                        <th>Transfer Invoice</th>
-                                        <th>Notes</th>
+                                        <th>Invoice No</th>
+                                        <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
+                                        <th class='sortable-header' data-sort='brand'>Brand</th>
+                                        <th class='sortable-header' data-sort='model'>Model</th>
+                                        <th class='sortable-header' data-sort='category'>Category</th>
+                                        <th>Engine No.</th>
+                                        <th>Frame No.</th>
+                                        <th>Color</th>
+                                        <th>Inventory Cost</th>
+                                        <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
+                                        <th class='no-print'>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id='in-transitTransfersBody'>
-                                    <!-- In-transit data loaded dynamically -->
+
+                                <tbody id='inventoryTableBody'>
+                                    <tr>
+                                        <td colspan='11' class='text-center py-5'>
+                                            <div class='spinner-border text-primary' role='status'>
+                                                <span class='visually-hidden'>Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <nav>
-                            <ul class='pagination justify-content-center' id='in-transitTransfersPagination'></ul>
-                        </nav>
-                    </section>
 
-                    <!-- Completed Transfers Section -->
-                    <section class='mb-5'>
-                        <h5>Completed Transfers</h5>
-                        <input type='text' id='searchCompleted' class='form-control mb-2'
-                            placeholder='Search completed transfers...'>
-                        <div class='table-responsive table-scrollable' style='max-height: 300px; overflow-y: auto;'>
-                            <table class='table table-sm table-bordered' id='completedTransfersTable'>
-                                <thead class='table-light sticky-top'>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                        <th>From Branch</th>
-                                        <th>To Branch</th>
-                                        <th>Brand</th>
-                                        <th>Model</th>
-                                        <th>Engine Number</th>
-                                        <th>Frame Number</th>
-                                        <th>Invoice Number</th>
-                                        <th>Transfer Invoice</th>
-                                        <th>Notes</th>
-                                    </tr>
-                                </thead>
-                                <tbody id='completedTransfersBody'>
-                                    <!-- Completed data loaded dynamically -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <nav>
-                            <ul class='pagination justify-content-center' id='completedTransfersPagination'></ul>
+                        <nav aria-label='Inventory pagination'>
+                            <ul id='paginationControls' class='pagination'>
+                                <li id='prevPage' class='page-item disabled'>
+                                    <a class='page-link' href='#' tabindex='-1' aria-disabled='true'>
+                                        <i class='fas fa-chevron-left me-1'></i> Previous
+                                    </a>
+                                </li>
+                                <li id='nextPage' class='page-item'>
+                                    <a class='page-link' href='#'>
+                                        Next <i class='fas fa-chevron-right ms-1'></i>
+                                    </a>
+                                </li>
+                            </ul>
                         </nav>
-                    </section>
+                    </div>
 
-                    <!-- Rejected Transfers Section -->
-                    <section>
-                        <h5>Rejected Transfers</h5>
-                        <input type='text' id='searchRejected' class='form-control mb-2'
-                            placeholder='Search rejected transfers...'>
-                        <div class='table-responsive table-scrollable' style='max-height: 300px; overflow-y: auto;'>
-                            <table class='table table-sm table-bordered' id='rejectedTransfersTable'>
-                                <thead class='table-light sticky-top'>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                        <th>From Branch</th>
-                                        <th>To Branch</th>
-                                        <th>Brand</th>
-                                        <th>Model</th>
-                                        <th>Engine Number</th>
-                                        <th>Frame Number</th>
-                                        <th>Invoice Number</th>
-                                        <th>Transfer Invoice</th>
-                                        <th>Notes</th>
-                                    </tr>
-                                </thead>
-                                <tbody id='rejectedTransfersBody'>
-                                    <!-- Rejected data loaded dynamically -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <nav>
-                            <ul class='pagination justify-content-center' id='rejectedTransfersPagination'></ul>
-                        </nav>
-                    </section>
+                    <div class='tab-pane fade' id='globalTransferHistory' role='tabpanel' aria-labelledby='global-transfer-tab'>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Global Transfer Overview</h4>
+        <div class="input-group" style="max-width: 400px;">
+            <input type="text" id="globalTransferSearch" class="form-control" placeholder="Search Invoice, Model, Engine, Branch...">
+            <button class="btn btn-primary text-white" type="button" id="globalTransferSearchBtn">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+    </div>
 
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-warning d-flex align-items-center">
+                    <i class="bi bi-truck me-2 fs-5"></i>
+                    <h6 class="mb-0 fw-bold">In-Transit</h6>
+                    <span class="badge bg-dark ms-auto" id="inTransitCount">0</span>
                 </div>
-
-                <div class='tab-pane fade' id='soldUnits' role='tabpanel'>
-                    <div class='table-responsive'>
-                        <table class='table table-striped' id='soldUnitsTable'>
-                            <thead>
-                                <tr>
-                                    <th>Sale Date</th>
-                                    <th>Customer Name</th>
-                                    <th>Model</th>
-                                    <th>Engine No.</th>
-                                    <th>Frame No.</th>
-                                    <th>Branch</th>
-                                    <th>Payment Type</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id='soldUnitsTableBody'>
-                            </tbody>
+                <div class="card-body p-2">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <tbody id="in-transitTransfersBody"></tbody>
                         </table>
                     </div>
-                    <nav>
-                        <ul class='pagination justify-content-center' id='soldUnitsPagination'></ul>
-                    </nav>
                 </div>
+                <div class="card-footer bg-white border-0 pt-0">
+                    <nav><ul class="pagination pagination-sm justify-content-center mb-0 transfer-pagination" id="in-transitTransfersPagination" data-status="in-transit"></ul></nav>
+                </div>
+            </div>
+        </div>
 
-                <div class='tab-pane fade' id='repossessedUnits' role='tabpanel'>
-                    <div class='table-responsive'>
-                        <table class='table table-striped' id='repossessedUnitsTable'>
-                            <thead>
-                                <tr>
-                                    <th>Repo Date</th>
-                                    <th>Model</th>
-                                    <th>Engine No.</th>
-                                    <th>Frame No.</th>
-                                    <th>Branch</th>
-                                    <th>Reason</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id='repossessedUnitsTableBody'>
-                            </tbody>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                    <h6 class="mb-0 fw-bold">Completed</h6>
+                    <span class="badge bg-light text-dark ms-auto" id="completedCount">0</span>
+                </div>
+                <div class="card-body p-2">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <tbody id="completedTransfersBody"></tbody>
                         </table>
                     </div>
-                    <nav>
-                        <ul class='pagination justify-content-center' id='repossessedUnitsPagination'></ul>
-                    </nav>
                 </div>
+                <div class="card-footer bg-white border-0 pt-0">
+                    <nav><ul class="pagination pagination-sm justify-content-center mb-0 transfer-pagination" id="completedTransfersPagination" data-status="completed"></ul></nav>
+                </div>
+            </div>
+        </div>
 
-                <div class='tab-pane fade' id='scrappedUnits' role='tabpanel'>
-                    <div class='table-responsive'>
-                        <table class='table table-striped' id='scrappedUnitsTable'>
-                            <thead>
-                                <tr>
-                                    <th>Scrap Date</th>
-                                    <th>Model</th>
-                                    <th>Engine No.</th>
-                                    <th>Frame No.</th>
-                                    <th>Branch</th>
-                                    <th>Reason</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id='scrappedUnitsTableBody'>
-                            </tbody>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-danger text-white d-flex align-items-center">
+                    <i class="bi bi-x-circle-fill me-2 fs-5"></i>
+                    <h6 class="mb-0 fw-bold">Rejected</h6>
+                    <span class="badge bg-light text-dark ms-auto" id="rejectedCount">0</span>
+                </div>
+                <div class="card-body p-2">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <tbody id="rejectedTransfersBody"></tbody>
                         </table>
                     </div>
-                    <nav>
-                        <ul class='pagination justify-content-center' id='scrappedUnitsPagination'></ul>
-                    </nav>
                 </div>
+                <div class="card-footer bg-white border-0 pt-0">
+                    <nav><ul class="pagination pagination-sm justify-content-center mb-0 transfer-pagination" id="rejectedTransfersPagination" data-status="rejected"></ul></nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="deleteTransferConfirmationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to permanently delete this entire transfer group? This action will revert the status of all involved motorcycles and cannot be undone.
+                <input type="hidden" id="transferToDeleteId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmDeleteTransferBtn" class="btn btn-danger">Yes, Delete Transfer</button>
+            </div>
+        </div>
+    </div>
+</div>
+                    <div class='tab-pane fade' id='soldUnits' role='tabpanel'>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Sold Units Log</h5>
+        <div class="input-group" style="max-width: 300px;">
+            <input type="text" id="soldUnitsSearch" class="form-control" placeholder="Search...">
+            <button class="btn btn-primary text-white" type="button" id="soldUnitsSearchBtn"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+    <div class='table-responsive'>
+        <table class='table table-striped table-hover' id='soldUnitsTable'>
+            <thead>
+                <tr>
+                    <th>Sale Date</th>
+                    <th>Customer Name</th>
+                    <th>Model</th>
+                    <th>Engine No.</th>
+                    <th>Branch</th>
+                    <th>Payment Type</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody id='soldUnitsTableBody'>
+                </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class='pagination pagination-sm justify-content-center' id='soldUnitsPagination'></ul>
+    </nav>
+</div>
+
+<div class='tab-pane fade' id='repossessedUnits' role='tabpanel'>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Repossessed Units Log</h5>
+        <div class="input-group" style="max-width: 300px;">
+            <input type="text" id="repoUnitsSearch" class="form-control" placeholder="Search...">
+            <button class="btn btn-primary text-white" type="button" id="repoUnitsSearchBtn"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+    <div class='table-responsive'>
+        <table class='table table-striped table-hover' id='repossessedUnitsTable'>
+            <thead>
+                <tr>
+                    <th>Repo Date</th>
+                    <th>Original Sale Date</th>
+                    <th>Model</th>
+                    <th>Engine No.</th>
+                    <th>Current Branch</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody id='repossessedUnitsTableBody'>
+                </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class='pagination pagination-sm justify-content-center' id='repossessedUnitsPagination'></ul>
+    </nav>
+</div>
+
+<div class='tab-pane fade' id='scrappedUnits' role='tabpanel'>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Scrapped Units Log</h5>
+        <div class="input-group" style="max-width: 300px;">
+            <input type="text" id="scrappedUnitsSearch" class="form-control" placeholder="Search...">
+            <button class="btn btn-primary text-white" type="button" id="scrappedUnitsSearchBtn"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+    <div class='table-responsive'>
+        <table class='table table-striped table-hover' id='scrappedUnitsTable'>
+            <thead>
+                <tr>
+                    <th>Scrap Date</th>
+                    <th>Model</th>
+                    <th>Engine No.</th>
+                    <th>Branch</th>
+                    <th class="text-end">Inventory Cost</th>
+                    <th>Reason</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody id='scrappedUnitsTableBody'>
+                </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class='pagination pagination-sm justify-content-center' id='scrappedUnitsPagination'></ul>
+    </nav>
+</div>
+
+<div class='tab-pane fade' id='redeemedUnits' role='tabpanel'>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Redeemed Units Log</h5>
+        <div class="input-group" style="max-width: 300px;">
+            <input type="text" id="redeemedUnitsSearch" class="form-control" placeholder="Search...">
+            <button class="btn btn-primary text-white" type="button" id="redeemedUnitsSearchBtn"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+    <div class='table-responsive'>
+        <table class='table table-striped table-hover' id='redeemedUnitsTable'>
+            <thead>
+                <tr>
+                    <th>Redeem Date</th>
+                    <th>Original Repo Date</th>
+                    <th>Customer</th>
+                    <th>Model</th>
+                    <th>Engine No.</th>
+                    <th>Branch</th>
+                    <th class="text-end">Amount Paid</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody id='redeemedUnitsTableBody'>
+                </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class='pagination pagination-sm justify-content-center' id='redeemedUnitsPagination'></ul>
+    </nav>
+</div>
                 </div>
 
             </div>
@@ -383,61 +429,137 @@
 
     <div class='modal fade' id='monthlyReportOptionsModal' tabindex='-1'
         aria-labelledby='monthlyReportOptionsModalLabel' aria-hidden='true'>
-        <div class='modal-dialog'>
+        <div class='modal-dialog modal-lg'>
             <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='monthlyReportOptionsModalLabel'>Generate Reports</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+                <div class='modal-header bg-primary text-white'>
+                    <h5 class='modal-title text-white' id='monthlyReportOptionsModalLabel'><i
+                            class='bi bi-file-earmark-text me-2 text-white'></i>Generate Reports</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
+                        aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
-                    <div class='mb-3'>
-                        <label class='form-label'>Select Month</label>
-                        <input type='month' class='form-control' id='reportMonth' required>
-                    </div>
-                    <div class='mb-3'>
-                        <label class='form-label'>Select Branch</label>
-                        <select class='form-select' id='reportBranch'>
-                            <option value='ALL'>ALL BRANCHES</option>
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <div class='mb-3'>
-                        <label class='form-label'>Category</label>
-                        <select class='form-select' id='reportCategoryFilter'>
-                            <option value='all'>All</option>
-                            <option value='brandnew'>Brand New</option>
-                            <option value='repo'>Repo</option>
+                    <!-- Step 1: Report Type Selection -->
+                    <div class='mb-4'>
+                        <label for='reportType' class='form-label fw-bold'>1. Select Report Type</label>
+                        <select class='form-select form-select-lg' id='reportType'>
+                            <option value='inventory'>Inventory Balance Report</option>
+                            <option value='inventory_summary'>Summary of Inventory</option>
+                            <option value='transferred'>Summary of Transferred Stocks</option>
+                            <option value='received'>Summary of Received Stocks</option>
+                            <option value='delivered_stocks'>Summary of Delivered Stocks</option>
+                            <option value='motorcycle'>Available Motorcycle Units Report</option>
+                            <option value='sold_units'>Summary of Sold Units Report</option>
+                            <option value='scrapped'>Summary of Scrapped Units Report</option>
+                            <option value='redeemed'>Summary of Redeemed Units</option>
                         </select>
                     </div>
 
-                    <div class='mb-3'>
-                        <label class='form-label'>Select Report Type</label>
-                        <select class='form-select' id='reportType' required>
-                            <option value='inventory'>Monthly Inventory Balance Report</option>
-                            <option value='transferred'>Monthly Summary of Transferred Stocks</option>
-                            <option value='motorcycle'>Available Motorcycle Units Report</option>
-                        </select>
+                    <!-- Step 2: Date & Period Options ( Dynamic ) -->
+                    <div class='mb-4'>
+                        <label class='form-label fw-bold'>2. Select Period</label>
+                        <div id='periodOptionsContainer' class='p-3 bg-light border rounded'>
+                            <!-- Radio buttons will be dynamically inserted here by JS -->
+                        </div>
                     </div>
-                    <div class='mb-3' id='brandFilterContainer' style='display: none;'>
-                        <label class='form-label'>Filter by Brand</label>
-                        <select class='form-select' id='reportBrandFilter'>
-                            <option value='all'>ALL BRANDS</option>
-                            <option value='Suzuki'>SUZUKI</option>
-                            <option value='Honda'>HONDA</option>
-                            <option value='Kawasaki'>KAWASAKI</option>
-                            <option value='Yamaha'>YAMAHA</option>
-                            <option value='Asiastar'>ASIASTAR</option>
-                        </select>
+
+                    <!-- Date Picker Containers ( Dynamic ) -->
+                    <div id='datePickerSection'>
+                        <div id='dailyDatePickerContainer' class='mb-3' style='display: none;'>
+                            <label for='dailyDate' class='form-label'>Select Date</label>
+                            <input type='text' class='form-control datepicker' id='dailyDate'>
+                        </div>
+                        <div id='monthPickerContainer' class='mb-3' style='display: none;'>
+                            <label for='reportMonth' class='form-label'>Select Month</label>
+                            <input type='month' class='form-control' id='reportMonth'>
+                        </div>
+                        <div id='asOfDatePickerContainer' class='mb-3' style='display: none;'>
+                            <label for='asOfDate' class='form-label'>Select As-of Date</label>
+                            <input type='text' class='form-control datepicker' id='asOfDate'>
+                        </div>
+                        <div id='customDateRangeContainer' class='row mb-3' style='display: none;'>
+                            <div class='col-md-6'>
+                                <label for='startDate' class='form-label'>Start Date</label>
+                                <input type='text' class='form-control datepicker' id='startDate'>
+                            </div>
+                            <div class='col-md-6'>
+                                <label for='endDate' class='form-label'>End Date</label>
+                                <input type='text' class='form-control datepicker' id='endDate'>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Step 3: General Filters -->
+                    <div>
+                        <label class='form-label fw-bold'>3. Apply Filters</label>
+                        <div class='p-3 border rounded'>
+                            <div class='row g-3'>
+                                <div class='col-md-6'>
+                                    <label for='reportBranch' class='form-label'>Branch</label>
+                                    <select class='form-select' id='reportBranch'>
+                                        <option value='ALL'>ALL BRANCHES</option>
+                                        <!-- Options populated by JS -->
+                                    </select>
+                                </div>
+                                <div class='col-md-6'>
+                                    <label for='reportCategoryFilter' class='form-label'>Category</label>
+                                    <select class='form-select' id='reportCategoryFilter'>
+                                        <option value='all'>All Categories</option>
+                                        <option value='brandnew'>Brand New</option>
+                                        <option value='repo'>Repo</option>
+                                    </select>
+                                </div>
+                                <div class='col-md-6'>
+                                    <label for='reportBrandFilter' class='form-label'>Brand</label>
+                                    <select class='form-select' id='reportBrandFilter'>
+                                        <option value='all'>ALL BRANDS</option>
+                                        <option value='Suzuki'>SUZUKI</option>
+                                        <option value='Honda'>HONDA</option>
+                                        <option value='Kawasaki'>KAWASAKI</option>
+                                        <option value='Yamaha'>YAMAHA</option>
+                                        <option value='Asiastar'>ASIASTAR</option>
+                                    </select>
+                                </div>
+                                <div class='col-12'>
+                                    <label for='reportModelSearch' class='form-label'>Model( s )</label>
+                                    <div class='dropdown'>
+                                        <div id='model-filter-container'
+                                            class='form-control d-flex flex-wrap gap-1 align-items-center'
+                                            style='min-height: 38px;' data-bs-toggle='dropdown' aria-expanded='false'>
+                                            <span id='selected-models-tags' class='d-flex flex-wrap gap-1'>
+                                            </span>
+                                            <input type='text' id='reportModelSearch' class='flex-grow-1 border-0 p-0'
+                                                placeholder='Search to add models...'
+                                                style='min-width: 150px; outline: none; box-shadow: none;'>
+                                        </div>
+                                        <ul id='model-search-results' class='dropdown-menu w-100'
+                                            aria-labelledby='model-filter-container'
+                                            style='max-height: 200px; overflow-y: auto;'>
+                                        </ul>
+                                    </div>
+                                    <input type='hidden' id='reportModelFilter'>
+                                </div>
+                                <div class='col-md-6' id='soldSaleTypeContainer' style='display: none;'>
+                                    <label for='soldSaleTypeFilter' class='form-label'>Type of Sale</label>
+                                    <select class='form-select' id='soldSaleTypeFilter'>
+                                        <option value='all'>All</option>
+                                        <option value='COD'>COD</option>
+                                        <option value='Installment'>Installment</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'>Generate
-                        Report</button>
+                    <button type='button' class='btn btn-primary text-white' id='generateReportBtn'><i
+                            class='bi bi-play-fill me-1'></i>Generate Report</button>
                 </div>
             </div>
         </div>
     </div>
+
     <div id='monthlyReportPrintContainer' style='display: none;'></div>
 
     <div class='modal fade' id='monthlyInventoryReportModal' tabindex='-1'
@@ -481,7 +603,13 @@
                         <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editDateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='date' class='form-control' id='editDateDelivered' required>
+                                <input type='text' class='form-control datepicker' id='editDateDelivered'
+                                    placeholder="mm/dd/yyyy">
+                            </div>
+                            <div class='col-md-6 mb-3'>
+                                <label for='editDateReceived' class='form-label'>Date Received</label>
+                                <input type='text' class='form-control datepicker' id='editDateReceived'
+                                    placeholder="mm/dd/yyyy">
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
@@ -534,9 +662,7 @@
                         <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editCurrentBranch' class='form-label'>Branch</label>
-                                <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) {
-    ?>
-                                <!-- Admin can select any branch -->
+
                                 <select class='form-select' id='editCurrentBranch' required>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
@@ -580,15 +706,7 @@
                                     <option value='CFCIPRC'>CFCIPRC</option>
 
                                 </select>
-                                <?php } else {
-        ?>
-                                <!-- Regular users can only add to their own branch -->
-                                <input type='text' class='form-control' id='editCurrentBranch'
-                                    value="<?php echo $_SESSION['user_branch']; ?>" readonly>
-                                <input type='hidden' id='editCurrentBranchHidden'
-                                    value="<?php echo $_SESSION['user_branch']; ?>">
-                                <?php }
-        ?>
+
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editStatus' class='form-label'>Status</label>
@@ -600,31 +718,44 @@
 
                                 </select>
                             </div>
+
+                            <div id="redeemInfoContainer" class="col-12" style="display: none;">
+                                <div class="alert alert-success small p-2">
+                                    <h6 class="alert-heading small mb-1"><i class="bi bi-award-fill me-1"></i>Redemption
+                                        Information</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Redeemed On:</strong> <span id="redeemInfoDate"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Amount Paid:</strong> <span id="redeemInfoAmount"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Sold Details Section -->
                             <div id='soldDetailsContainer' style='display: none;'>
                                 <hr>
                                 <h6 class='text-primary'>Sale Information</h6>
-                                <div class='row'>
-                                    <div class='col-md-6 mb-2'>
+                                <div class="row">
+                                    <div class='col-md-4 mb-2'>
                                         <label for='editSaleDate' class='form-label'><strong>Sale Date:</strong></label>
-                                        <input type='date' class='form-control' id='editSaleDate' name='sale_date'>
+                                        <input type='text' class='form-control datepicker' id='editSaleDate'
+                                            name='sale_date' placeholder="mm/dd/yyyy">
                                     </div>
-                                    <div class='col-md-6 mb-2'>
-                                        <label for='editCustomerName' class='form-label'><strong>Customer
+                                    <div class="col-md-4 mb-2">
+                                        <label for="editCustomerName" class="form-label"><strong>Customer
                                                 Name:</strong></label>
-                                        <input type='text' class='form-control' id='editCustomerName'
-                                            name='customer_name'>
+                                        <input type="text" class="form-control" id="editCustomerName"
+                                            name="customer_name">
                                     </div>
-                                </div>
-                                <div class='row'>
-                                    <div class='col-md-6 mb-2'>
-                                        <label for='editPaymentType' class='form-label'><strong>Payment
+                                    <div class="col-md-4 mb-2">
+                                        <label for="editPaymentType" class="form-label"><strong>Payment
                                                 Type:</strong></label>
-                                        <select class='form-select' id='editPaymentType' name='payment_type'>
-                                            <option value=''>Select Payment Type</option>
-                                            <option value='COD'>COD</option>
-                                            <option value='Installment'>Installment</option>
-                                            <option value='Full Payment'>Full Payment</option>
+                                        <select class="form-select" id="editPaymentType" name="payment_type">
+                                            <option value="">Select Payment Type</option>
+                                            <option value="COD">COD</option>
+                                            <option value="Installment">Installment</option>
                                         </select>
                                     </div>
                                 </div>
@@ -664,6 +795,8 @@
                                     </div>
                                 </div>
                             </div>
+
+
 
                         </div>
                         <div class='d-grid'>
@@ -881,254 +1014,9 @@
         </div>
     </div>
 
-    <div class='modal fade' id='multipleTransferModal' tabindex='-1' aria-labelledby='multipleTransferModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header bg-primary text-white'>
-                    <h5 class='modal-title text-white' id='multipleTransferModalLabel'>
-                        <i class='bi bi-truck me-2 text-white'></i>Transfer Multiple Motorcycles
-                    </h5>
-                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
-                        aria-label='Close'></button>
-                </div>
-                <div class='modal-body p-0'>
-                    <form id='multipleTransferForm'>
-                        <div class='row g-0'>
-                            <div class='col-md-4 border-end bg-light'>
-                                <div class='p-4'>
-                                    <fieldset>
-                                        <legend class='fs-6 fw-semibold text-black mb-4'>
-                                            <i class='bi bi-geo-alt me-2'></i>Transfer Information
-                                        </legend>
 
-                                        <!-- Transfer Invoice Number Input -->
-                                        <div class='mb-3'>
-                                            <label for='multipleTransferInvoiceNumber'
-                                                class='form-label small fw-semibold'>
-                                                <i class='bi bi-receipt me-1'></i>Transfer Invoice No. <span
-                                                    class='text-danger'>*</span>
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm'
-                                                id='multipleTransferInvoiceNumber' required
-                                                placeholder='Enter transfer invoice number'>
-                                            <div id='transferInvoiceInfo' class='form-text small mt-1'></div>
 
-                                        </div>
 
-                                        <div class='mb-3'>
-                                            <label for='multipleFromBranch' class='form-label small fw-semibold'>
-                                                <i class='bi bi-geo-alt me-1'></i>From Branch
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm'
-                                                id='multipleFromBranch' readonly>
-                                        </div>
-
-                                        <div class='mb-3'>
-                                            <label for='multipleToBranch' class='form-label small fw-semibold'>
-                                                <i class='bi bi-geo-alt-fill me-1'></i>To Branch <span
-                                                    class='text-danger'>*</span>
-                                            </label>
-                                            <select class='form-select form-select-sm' id='multipleToBranch' required>
-                                                <option value=''>Select Destination Branch</option>
-                                                <!-- Options will be populated dynamically -->
-                                            </select>
-                                        </div>
-
-                                        <div class='mb-3'>
-                                            <label for='multipleTransferDate' class='form-label small fw-semibold'>
-                                                <i class='bi bi-calendar me-1'></i>Transfer Date <span
-                                                    class='text-danger'>*</span>
-                                            </label>
-                                            <input type='date' class='form-control form-control-sm'
-                                                id='multipleTransferDate' required>
-                                        </div>
-
-                                        <div class='mb-4'>
-                                            <label for='multipleTransferNotes' class='form-label small fw-semibold'>
-                                                <i class='bi bi-chat-text me-1'></i>Transfer Notes
-                                            </label>
-                                            <textarea class='form-control form-control-sm' id='multipleTransferNotes'
-                                                rows='3' placeholder='Optional notes about this transfer...'></textarea>
-                                        </div>
-                                    </fieldset>
-
-                                    <hr>
-
-                                    <fieldset>
-                                        <legend class='fs-6 fw-semibold text-black mb-3'>
-                                            <i class='bi bi-calculator me-2'></i>Transfer Summary
-                                        </legend>
-
-                                        <div class='summary-card p-3 mb-3'
-                                            style='background: white; border-radius: 8px; border: 1px solid #e9ecef;'>
-                                            <div class='d-flex justify-content-between align-items-center mb-2'>
-                                                <span class='small fw-semibold'>Total Units:</span>
-                                                <span class='badge bg-primary' id='selectedCount'>0</span>
-                                            </div>
-                                            <div class='d-flex justify-content-between align-items-center'>
-                                                <span class='small fw-semibold'>Total Inventory Cost Value:</span>
-                                                <span class='fw-bold text-success'
-                                                    id='totalInventoryCostValue'>₱0.00</span>
-                                            </div>
-                                        </div>
-
-                                        <div class='progress mb-4' style='height: 6px;'>
-                                            <div class='progress-bar' id='selectionProgress' style='width: 0%'></div>
-                                        </div>
-
-                                        <div class='d-grid'>
-                                            <button type='submit' class='btn btn-success btn-sm'>
-                                                <i class='bi bi-truck me-2'></i>Transfer Selected Motorcycles
-                                            </button>
-                                        </div>
-                                    </fieldset>
-                                </div>
-                            </div>
-
-                            <div class='col-md-8'>
-                                <div class='p-4'>
-                                    <h6 class='fw-semibold text-primary mb-4'>
-                                        <i class='bi bi-search me-2'></i>Motorcycle Selection
-                                    </h6>
-                                    <div class='row g-2 mb-3 align-items-end'>
-                                        <div class='col-md-8'>
-                                            <label class='form-label small fw-semibold'>
-                                                <i class='bi bi-upc-scan me-1'></i>Search by Engine Number
-                                            </label>
-                                            <input type='text' class='form-control form-control-sm' id='engineSearch'
-                                                placeholder='Enter engine number...'>
-                                        </div>
-                                        <div class='col-md-4'>
-                                            <div class='d-flex gap-2'>
-                                                <button class='btn btn-primary btn-sm w-100 text-white' type='button'
-                                                    id='searchEngineBtn'>
-                                                    <i class='bi bi-search me-1'></i>Search
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class='form-text small text-muted mb-4'>You can search using full or partial
-                                        engine numbers.</div>
-
-                                    <div class='row g-3'>
-                                        <div class='col-md-6'>
-                                            <div class='card h-100 shadow-sm'>
-                                                <div
-                                                    class='card-header py-2 bg-light d-flex justify-content-between align-items-center'>
-                                                    <span class='fw-semibold small'>
-                                                        <i class='bi bi-list-check me-1'></i>Search Results
-                                                    </span>
-                                                    <span class='badge bg-secondary' id='searchResultsCount'>0</span>
-                                                </div>
-                                                <div class='card-body p-0'>
-                                                    <div class='search-results-container'
-                                                        style='max-height: 300px; overflow-y: auto;' id='searchResults'>
-                                                        <div class='text-center text-muted py-5'>
-                                                            <i class='bi bi-search display-6 mb-2'></i>
-                                                            <p class='small'>Search for motorcycles to display results
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class='col-md-6'>
-                                            <div class='card h-100 shadow-sm'>
-                                                <div
-                                                    class='card-header py-2 bg-light d-flex justify-content-between align-items-center'>
-                                                    <span class='fw-semibold small'>
-                                                        <i class='bi bi-check-circle me-1'></i>Selected Items
-                                                    </span>
-                                                    <button type='button'
-                                                        class='btn btn-outline-danger btn-sm py-0 px-2'
-                                                        id='clearSelectionBtn' title='Clear All'>
-                                                        <i class='bi bi-trash'></i>
-                                                    </button>
-                                                </div>
-                                                <div class='card-body p-0'>
-                                                    <div class='selected-items-container'
-                                                        style='max-height: 300px; overflow-y: auto;'
-                                                        id='selectedMotorcyclesList'>
-                                                        <div class='text-center text-muted py-5'>
-                                                            <i class='bi bi-inbox display-6 mb-2'></i>
-                                                            <p class='small'>No motorcycles selected</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <template id='modelFormTemplate'>
-        <div class='model-form card mb-3'>
-            <div class='card-header d-flex justify-content-between align-items-center'>
-                <span class='model-number'>Model #1</span>
-                <button type='button' class='btn btn-sm btn-danger remove-model-btn'>
-                    <i class='bi bi-trash'></i> Remove
-                </button>
-            </div>
-            <div class='card-body'>
-                <!-- First Row -->
-                <div class='row'>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Brand</label>
-                        <select class='form-select model-brand' required>
-                            <option value=''>Select Brand</option>
-                            <option value='Suzuki'>Suzuki</option>
-                            <option value='Honda'>Honda</option>
-                            <option value='Kawasaki'>Kawasaki</option>
-                            <option value='Yamaha'>Yamaha</option>
-                            <option value='Asiastar'>Asiastar</option>
-                        </select>
-                    </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Model Name</label>
-                        <input type='text' class='form-control model-name' required>
-                    </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Category</label>
-                        <select class='form-select model-category' required>
-                            <option value=''>Select Category</option>
-                            <option value='brandnew'>Brand New</option>
-                            <option value='repo'>Repo</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Second Row -->
-                <div class='row'>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Quantity</label>
-                        <input type='number' class='form-control model-quantity' min='1' value='1' required>
-                    </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Color</label>
-                        <input type='text' class='form-control model-color' required>
-                    </div>
-                    <div class='col-md-4 mb-3'>
-                        <label class='form-label'>Inventory Cost</label>
-                        <input type='number' step='0.01' class='form-control model-inventoryCost'>
-                    </div>
-                </div>
-
-                <!-- Specific Details Section -->
-                <div class='specific-details-container mt-3' style='display: none;'>
-                    <h6 class='fw-semibold mb-3'>Specific Model Details</h6>
-                    <div class='specific-details-rows'>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
 
     <div class='modal fade' id='searchTransferReceiptModal' tabindex='-1'
         aria-labelledby='searchTransferReceiptModalLabel' aria-hidden='true'>
@@ -1182,6 +1070,26 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="revertConfirmationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="bi bi-arrow-counterclockwise me-2"></i>Confirm Revert Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="revertMessage"></p>
+                <input type="hidden" id="revertId">
+                <input type="hidden" id="revertType">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmRevertBtn" class="btn btn-warning">Confirm Revert</button>
+            </div>
+        </div>
+    </div>
+</div>
     <div class='modal fade' id='incomingTransfersModal' tabindex='-1' aria-labelledby='incomingTransfersModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-xl'>
@@ -1342,76 +1250,65 @@
             </div>
         </div>
     </div>
-    <div class='modal fade' id='manageTransferModal' tabindex='-1' aria-labelledby='manageTransferModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-xl'>
-            <div class='modal-content'>
-                <div class='modal-header bg-warning text-dark'>
-                    <h5 class='modal-title' id='manageTransferModalLabel'><i class='bi bi-pencil-square me-2'></i>Manage
-                        Transfer Items</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <div class='row'>
-                        <div class='col-12 mb-3'>
-                            <div class='card'>
-                                <div class='card-body p-3'>
-                                    <h6 class='card-title'>Transfer Details</h6>
-                                    <p class='card-text mb-1'>
-                                        <strong>Invoice No:</strong> <span id='manageTransferInvoiceNo'></span>
-                                    </p>
-                                    <p class='card-text mb-0'>
-                                        <strong>From:</strong> <span id='manageTransferFromBranch'></span> &rarr;
-                                        <strong>To:</strong> <span id='manageTransferToBranch'></span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class='col-md-6'>
-                            <h6>Currently in Transfer ( <span id='currentItemsCount'>0</span> )</h6>
-                            <div id='manageTransferCurrentList' class='list-container border rounded p-2'
-                                style='max-height: 400px; overflow-y: auto;'>
-                            </div>
-                        </div>
-                        <div class='col-md-6'>
-                            <h6>Add Available Motorcycles</h6>
-                            <div class='input-group mb-2'>
-                                <input type='text' id='manageTransferEngineSearch' class='form-control'
-                                    placeholder='Search by Engine No. from source branch...'>
-                                <button class='btn btn-primary text-white' type='button' id='manageTransferSearchBtn'><i
-                                        class='bi bi-search'></i></button>
-                            </div>
-                            <div id='manageTransferSearchResults' class='list-container border rounded p-2'
-                                style='max-height: 350px; overflow-y: auto;'>
-                                <div class='text-center text-muted p-4'>Search for motorcycles to add them to this
-                                    transfer.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class='modal-footer'>
-                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' class='btn btn-success' id='saveTransferChangesBtn'>
-                        <i class='bi bi-save me-2'></i>Save Changes
-                    </button>
-                </div>
-            </div>
+
+<!-- Unit Movement History Modal -->
+<div class="modal fade" id="unitMovementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title text-white">Unit Movement History</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3">
+          <h6 id="movementUnitTitle" class="mb-1 fw-bold"></h6>
+          <small id="movementUnitDetails" class="text-muted"></small>
         </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Event</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Status</th>
+                <th>Invoice #</th>
+              </tr>
+            </thead>
+            <tbody id="movementHistoryBody">
+              <tr>
+                <td colspan="6" class="text-center text-muted">No movement history found for this unit.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
     </div>
+  </div>
+</div>
+
+
     <div class='modal fade' id='confirmationModal' tabindex='-1' aria-labelledby='confirmationModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
             <div class='modal-content'>
                 <div class='modal-header'>
-                    <h5 class='modal-title' id='confirmationModalLabel'>Confirm Deletion</h5>
+                    <h5 class='modal-title' id='confirmationModalLabel'>Confirm Action</h5>
                     <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
                 </div>
-                <div class='modal-body'>
-                    Are you sure you want to delete this motorcycle from inventory?
+                <div class='modal-body' id='confirmationMessage'>
+                    Are you sure you want to proceed?
                 </div>
                 <div class='modal-footer'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='button' id='confirmDeleteBtn' class='btn btn-danger'>Delete</button>
+                    <button type='button' id='confirmActionBtn' class='btn btn-danger'>Confirm</button>
                 </div>
             </div>
         </div>
@@ -1481,8 +1378,113 @@
         </div>
     </div>
 
+    <div class.modal.fade id="manageTransferModal" tabindex="-1" aria-labelledby="manageTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="manageTransferModalLabel">Manage Transfer Items</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="manageTransferLoading" class="text-center py-5">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-2">Loading transfer details...</p>
+                </div>
+
+                <div id="manageTransferContent" style="display: none;">
+                    <div class="row g-3 mb-4 p-3 border rounded bg-light">
+                        <div class="col-md-3">
+                            <label for="manageTransferDate" class="form-label">Transfer Date</label>
+                            <input type="date" class="form-control" id="manageTransferDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="manageTransferInvoice" class="form-label">MT / Invoice #</label>
+                            <input type="text" class="form-control" id="manageTransferInvoice">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="manageTransferFromBranch" class="form-label">From Branch</label>
+                            <select id="manageTransferFromBranch" class="form-select" disabled>
+                                </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="manageTransferToBranch" class="form-label">To Branch</label>
+                            <select id="manageTransferToBranch" class="form-select">
+                                </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="manageTransferNotes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="manageTransferNotes" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between">
+                                    <span>Items in Transfer</span>
+                                    <div>
+                                        <span class="badge bg-primary">Total: <span id="manageTransferTotal">0</span></span>
+                                        <span class="badge bg-success">Added: <span id="manageTransferAdded">0</span></span>
+                                        <span class="badge bg-danger">Removed: <span id="manageTransferRemoved">0</span></span>
+                                    </div>
+                                </div>
+                                <div class="card-body list-container" id="managingTransferInitialList">
+                                    </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    Add Available Units from <strong id="manageTransferFrom"></strong>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small">Search for available units from the 'From' branch to add to this transfer.</p>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="manageTransferSearch" placeholder="Search by Engine # or Model...">
+                                        <button class="btn btn-primary text-white" type="button" id="manageTransferSearchBtn"><i class="bi bi-search"></i></button>
+                                    </div>
+                                    <div class="list-group" id="manageTransferSearchResults" style="max-height: 300px; overflow-y: auto;">
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary text-white" id="saveTransferChangesBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+    <div class="modal fade" id="deleteTransferConfirmationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to permanently delete this transfer record? This action will remove the entire
+                    transfer history associated with this invoice number and cannot be undone.
+                    <input type="hidden" id="transferToDeleteId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmDeleteTransferBtn" class="btn btn-danger">Yes, Delete
+                        Transfer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <script src='https://unpkg.com/leaflet@1.9.3/dist/leaflet.js'></script>
     <script>
     const currentBranch = '<?php echo $_SESSION['user_branch'] ?? 'RXS-S'; ?>';
