@@ -2365,7 +2365,6 @@ function transferSelectedMotorcycles() {
 
 function searchMotorcyclesByEngine() {
   const searchTerm = $("#engineSearch").val().trim();
-
   if (!searchTerm) {
     showErrorModal("Please enter an engine number to search");
     return;
@@ -2380,20 +2379,12 @@ function searchMotorcyclesByEngine() {
       field: "engine_number",
       include_inventory_cost: true,
       fuzzy_search: true,
+      status: "available", 
     },
     dataType: "json",
     success: function (response) {
       if (response.success) {
-        if (response.data.length === 0) {
-          $("#searchResults").html(`
-                        <div class='text-center text-muted py-4'>
-                            <i class='bi bi-search display-6 text-muted mb-2'></i>
-                            <p>No matching motorcycles found in ${currentBranch} branch</p>
-                        </div>
-                    `);
-        } else {
-          displaySearchResults(response.data);
-        }
+        displaySearchResults(response.data);
       } else {
         showErrorModal(response.message || "Error searching motorcycles");
       }
@@ -2911,47 +2902,31 @@ function searchAvailableForTransfer() {
       action: "search_inventory_by_engine",
       query: searchTerm,
       branch: managingTransfer.fromBranch,
-      status: "available", // Explicitly search for available units
+      status: "available",  // Explicitly filter for available items
     },
     dataType: "json",
     success: function (response) {
       if (response.success && response.data.length > 0) {
         let resultsHtml = "";
         response.data.forEach((item) => {
-          const isAlreadyInTransfer =
-            managingTransfer.initialItems.some((i) => i.id === item.id) &&
-            !managingTransfer.itemsToRemove.some((r) => r.id === item.id);
-          const isPendingAdd = managingTransfer.itemsToAdd.some(
-            (a) => a.id === item.id
-          );
-
-          if (isAlreadyInTransfer || isPendingAdd) return; // Skip if already included
+          const isAlreadyInTransfer = managingTransfer.initialItems.some(i => i.id === item.id) && !managingTransfer.itemsToRemove.some(r => r.id === item.id);
+          const isPendingAdd = managingTransfer.itemsToAdd.some(a => a.id === item.id);
+          if (isAlreadyInTransfer || isPendingAdd) return;  // Skip if already in transfer
 
           resultsHtml += `
-                        <div class="transfer-item">
-                            <div>
-                                <strong>${escapeHtml(
-                                  item.engine_number
-                                )}</strong>
-                                <small class="text-muted d-block">${escapeHtml(
-                                  item.brand
-                                )} ${escapeHtml(item.model)}</small>
-                            </div>
-                            <button class="btn btn-sm btn-outline-success" onclick='addItemToAddList(${JSON.stringify(
-                              item
-                            )})'>
-                                <i class="bi bi-plus-circle"></i> Add
-                            </button>
-                        </div>`;
+            <div class="transfer-item">
+              <div>
+                <strong>${escapeHtml(item.engine_number)}</strong>
+                <small class="text-muted d-block">${escapeHtml(item.brand)} ${escapeHtml(item.model)}</small>
+              </div>
+              <button class="btn btn-sm btn-outline-success" onclick='addItemToAddList(${JSON.stringify(item)})'">
+                <i class="bi bi-plus-circle"></i> Add
+              </button>
+            </div>`;
         });
-        $("#manageTransferSearchResults").html(
-          resultsHtml ||
-            '<div class="text-center text-muted p-3">No available matches found.</div>'
-        );
+        $("#manageTransferSearchResults").html(resultsHtml || '<div class="text-center text-muted p-3">No available matches found.</div>');
       } else {
-        $("#manageTransferSearchResults").html(
-          '<div class="text-center text-muted p-3">No available motorcycles found.</div>'
-        );
+        $("#manageTransferSearchResults").html('<div class="text-center text-muted p-3">No available motorcycles found.</div>');
       }
     },
   });
@@ -4478,6 +4453,7 @@ function generateReport() {
   }
 }
 function callReportAPI(apiData, renderFunction, reportType) {
+  apiData.sort = 'date_asc';
   $.ajax({
     url: "../api/inventory_management.php",
     method: "GET",

@@ -287,7 +287,7 @@ function getInventoryDashboard() {
         $sql .= " AND (model LIKE '%$search%' OR brand LIKE '%$search%' OR color LIKE '%$search%')";
     }
 
-    $sql .= ' GROUP BY model, brand, color ORDER BY total_quantity DESC';
+    $sql .= ' GROUP BY model, brand, color ORDER BY total_quantity ASC';
 
     $result = $conn->query( $sql );
 
@@ -316,7 +316,7 @@ function getInventoryTable() {
 
     $sort = isset( $_GET[ 'sort' ] ) ? sanitizeInput( $_GET[ 'sort' ] ) : '';
     $sortField = 'mi.date_delivered';
-    $sortOrder = 'DESC';
+    $sortOrder = 'ASC';
 
     if ( !empty( $sort ) ) {
         $parts = explode( '_', $sort );
@@ -324,7 +324,7 @@ function getInventoryTable() {
 
         if ( in_array( $parts[ 0 ], $validFields ) ) {
             $sortField = 'mi.' . $parts[ 0 ];
-            $sortOrder = strtoupper( $parts[ 1 ] ) === 'ASC' ? 'ASC' : 'DESC';
+            $sortOrder = strtoupper( $parts[ 1 ] ) === 'ASC' ? 'ASC' : 'ASC';
         }
     }
 
@@ -434,7 +434,7 @@ function getMotorcycle() {
         if ($includeSaleDetails && isset($data['status']) && $data['status'] === 'sold') {
             $saleStmt = $conn->prepare("SELECT * FROM motorcycle_sales 
                                         WHERE motorcycle_id = ? 
-                                        ORDER BY sale_date DESC LIMIT 1");
+                                        ORDER BY sale_date ASC LIMIT 1");
             if ($saleStmt) {
                 $saleStmt->bind_param('i', $id);
                 $saleStmt->execute();
@@ -454,7 +454,7 @@ function getMotorcycle() {
             // For repo units, check the history table for the last sale record before it was repo'd
             $saleStmt = $conn->prepare("SELECT * FROM motorcycle_sales_history 
                                         WHERE motorcycle_id = ? 
-                                        ORDER BY archived_at DESC LIMIT 1");
+                                        ORDER BY archived_at ASC LIMIT 1");
             if ($saleStmt) {
                 $saleStmt->bind_param('i', $id);
                 $saleStmt->execute();
@@ -475,7 +475,7 @@ function getMotorcycle() {
         if (isset($data['status']) && $data['status'] === 'transferred') {
             $transferStmt = $conn->prepare("SELECT * FROM inventory_transfers 
                                              WHERE motorcycle_id = ? 
-                                             ORDER BY transfer_date DESC");
+                                             ORDER BY transfer_date ASC");
             if ($transferStmt) {
                 $transferStmt->bind_param('i', $id);
                 $transferStmt->execute();
@@ -500,7 +500,7 @@ function getMotorcycle() {
         if ($includeSaleDetails) {
             $redeemStmt = $conn->prepare("SELECT * FROM motorcycle_redeems 
                                           WHERE motorcycle_id = ? 
-                                          ORDER BY redeem_date DESC LIMIT 1");
+                                          ORDER BY redeem_date ASC LIMIT 1");
             if ($redeemStmt) {
                 $redeemStmt->bind_param('i', $id);
                 $redeemStmt->execute();
@@ -807,7 +807,7 @@ function updateMotorcycle() {
         // Handle sale details if status is 'sold'
         if ($status === 'sold') {
             // Check if sale record exists
-            $checkSaleStmt = $conn->prepare("SELECT id FROM motorcycle_sales WHERE motorcycle_id = ? ORDER BY sale_date DESC LIMIT 1");
+            $checkSaleStmt = $conn->prepare("SELECT id FROM motorcycle_sales WHERE motorcycle_id = ? ORDER BY sale_date ASC LIMIT 1");
             $checkSaleStmt->bind_param('i', $id);
             $checkSaleStmt->execute();
             $saleResult = $checkSaleStmt->get_result();
@@ -1252,7 +1252,7 @@ function searchInvoiceNumber() {
             LEFT JOIN motorcycle_inventory mi ON i.id = mi.invoice_id
             WHERE i.invoice_number LIKE ?
             GROUP BY i.id
-            ORDER BY i.date_delivered DESC
+            ORDER BY i.date_delivered ASC
             LIMIT 10";
     
     $stmt = $conn->prepare($sql);
@@ -1281,7 +1281,7 @@ function getMotorcycleTransfers() {
                           FROM inventory_transfers it
                           LEFT JOIN users u ON it.transferred_by = u.id
                           WHERE motorcycle_id = ? 
-                          ORDER BY transfer_date DESC" );
+                          ORDER BY transfer_date ASC" );
     $stmt->bind_param( 'i', $id );
     $stmt->execute();
     $result = $stmt->get_result();
@@ -1304,7 +1304,7 @@ function getTransferHistory() {
                            FROM inventory_transfers it
                            LEFT JOIN users u ON it.transferred_by = u.id
                            WHERE motorcycle_id = ? 
-                           ORDER BY transfer_date DESC" );
+                           ORDER BY transfer_date ASC" );
     $stmt->bind_param( 'i', $motorcycleId );
     $stmt->execute();
     $result = $stmt->get_result();
@@ -1375,7 +1375,7 @@ function getAllTransferHistories() {
         $sql .= " WHERE " . implode(" AND ", $whereClauses);
     }
 
-    $sql .= " ORDER BY it.transfer_date DESC LIMIT ? OFFSET ?";
+    $sql .= " ORDER BY it.transfer_date ASC LIMIT ? OFFSET ?";
 
     $params[] = $perPage;
     $params[] = $offset;
@@ -1519,15 +1519,21 @@ function transferMultipleMotorcycles() {
                                       (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
                                       VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)" );
 
-        foreach ( $motorcycleIds as $id ) {
-            $transferStmt->bind_param( 'isssiss', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $transferInvoiceNumber );
-            $transferStmt->execute();
-            $transferIds[] = $conn->insert_id;
+       foreach ( $motorcycleIds as $id ) {
+    $transferStmt->bind_param( 'isssiss', $id, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $transferInvoiceNumber );
+    $transferStmt->execute();
+    
+    // 1. Get the new ID and store it in a variable
+    $current_transfer_id = $conn->insert_id; 
+    
+    // 2. Add the new ID to your array
+    $transferIds[] = $current_transfer_id;
 
-             $log_details = "Initiated transfer of Motorcycle ID {$id} from {$fromBranch} to {$toBranch}. Transfer Invoice#: {$transferInvoiceNumber}.";
-    log_action($conn, 'TRANSFER_INITIATE', 'inventory_transfers', $transfer_id, $log_details);
-
-        }
+    $log_details = "Initiated transfer of Motorcycle ID {$id} from {$fromBranch} to {$toBranch}. Transfer Invoice#: {$transferInvoiceNumber}.";
+    
+    // 3. Use the correct variable for logging
+    log_action($conn, 'TRANSFER_INITIATE', 'inventory_transfers', $current_transfer_id, $log_details);
+}
 
         $conn->commit();
         
@@ -1929,7 +1935,7 @@ function getBranchInventory() {
     }
 
     $sortField = isset( $_GET[ 'sort' ] ) ? sanitizeInput( $_GET[ 'sort' ] ) : 'brand';
-    $sortOrder = isset( $_GET[ 'order' ] ) && strtoupper( $_GET[ 'order' ] ) === 'DESC' ? 'DESC' : 'ASC';
+    $sortOrder = isset( $_GET[ 'order' ] ) && strtoupper( $_GET[ 'order' ] ) === 'ASC' ? 'ASC' : 'ASC';
 
     $validSortFields = [ 'brand', 'model', 'color', 'engine_number', 'frame_number', 'date_delivered', 'status', 'invoice_number' ];
     if ( !in_array( $sortField, $validSortFields ) ) {
@@ -1984,7 +1990,7 @@ function getBranchInventory() {
         if ( $row[ 'status' ] === 'transferred' ) {
             $transferStmt = $conn->prepare( "SELECT * FROM inventory_transfers 
                                           WHERE motorcycle_id = ? 
-                                          ORDER BY transfer_date DESC LIMIT 1" );
+                                          ORDER BY transfer_date ASC LIMIT 1" );
             $transferStmt->bind_param( 'i', $row[ 'id' ] );
             $transferStmt->execute();
             $transferResult = $transferStmt->get_result();
@@ -2132,70 +2138,78 @@ function searchInventory() {
 function searchInventoryByEngine() {
     global $conn;
 
-    if ( !isset( $_SESSION[ 'user_branch' ] ) ) {
-        echo json_encode( [ 'success' => false, 'message' => 'User branch not set' ] );
+    if (!isset($_SESSION['user_branch'])) {
+        echo json_encode(['success' => false, 'message' => 'User branch not set']);
         return;
     }
 
-    $userBranch = $_SESSION[ 'user_branch' ];
-    $query = isset( $_GET[ 'query' ] ) ? sanitizeInput( $_GET[ 'query' ] ) : '';
-    $field = isset( $_GET[ 'field' ] ) ? sanitizeInput( $_GET[ 'field' ] ) : 'all';
-    $includeInventoryCost = isset( $_GET[ 'include_inventory_cost' ] ) ? true : false;
-    $fuzzySearch = isset( $_GET[ 'fuzzy_search' ] ) ? true : false;
+    error_log("searchInventoryByEngine called with params: " . print_r($_GET, true));
 
-   $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
-               mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number,
-               ms.sale_date
-        FROM motorcycle_inventory mi
-        LEFT JOIN invoices i ON mi.invoice_id = i.id
-        LEFT JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
-        WHERE mi.status IN ('available', 'transferred', 'sold') AND mi.current_branch = '$userBranch'";
+    $userBranch = $_SESSION['user_branch'];
+    $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
+    $field = isset($_GET['field']) ? sanitizeInput($_GET['field']) : 'all';
+    $includeInventoryCost = isset($_GET['include_inventory_cost']) && $_GET['include_inventory_cost'] === 'true';
+    $fuzzySearch = isset($_GET['fuzzy_search']) && $_GET['fuzzy_search'] === 'true';
+    $statusFilter = isset($_GET['status']) ? sanitizeInput($_GET['status']) : 'available';
 
-    $params = [];
-    $types = '';
+    $sql = "SELECT mi.id, mi.brand, mi.model, mi.color, mi.engine_number, mi.frame_number, 
+                   mi.inventory_cost, mi.current_branch, mi.status, i.invoice_number,
+                   ms.sale_date
+            FROM motorcycle_inventory mi
+            LEFT JOIN invoices i ON mi.invoice_id = i.id
+            LEFT JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id
+            WHERE mi.current_branch = ? AND mi.status = ?";
 
-    if ( !empty( $query ) ) {
-        if ( $field === 'engine_number' ) {
-            if ( $fuzzySearch ) {
+    $params = [$userBranch, $statusFilter];
+    $types = 'ss';
+
+    if (!empty($query)) {
+        if ($field === 'engine_number') {
+            if ($fuzzySearch) {
                 $sql .= ' AND (mi.engine_number LIKE ? OR mi.engine_number LIKE ? OR mi.engine_number LIKE ?)';
                 $searchTerm1 = "%$query%";
                 $searchTerm2 = "$query%";
                 $searchTerm3 = "%$query";
-                $params = [ $searchTerm1, $searchTerm2, $searchTerm3 ];
-                $types = str_repeat( 's', count( $params ) );
+                $params = array_merge($params, [$searchTerm1, $searchTerm2, $searchTerm3]);
+                $types .= 'sss';
             } else {
                 $sql .= ' AND mi.engine_number LIKE ?';
                 $searchTerm = "%$query%";
                 $params[] = $searchTerm;
-                $types = 's';
+                $types .= 's';
             }
         } else {
             $sql .= " AND (mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? 
-                      OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
+                           OR mi.frame_number LIKE ? OR i.invoice_number LIKE ?)";
             $searchTerm = "%$query%";
-            $params = array_fill( 0, 5, $searchTerm );
-            $types = str_repeat( 's', count( $params ) );
+            $additionalParams = array_fill(0, 5, $searchTerm);
+            $params = array_merge($params, $additionalParams);
+            $types .= 'sssss';
         }
     }
 
     $sql .= ' ORDER BY mi.brand, mi.model LIMIT 20';
 
-    $stmt = $conn->prepare( $sql );
+    error_log("Final SQL: " . $sql);
+    error_log("Params: " . print_r($params, true));
+    error_log("Types: " . $types);
 
-    if ( !empty( $params ) ) {
-        $stmt->bind_param( $types, ...$params );
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        echo json_encode(['success' => true, 'data' => $data]);
+    } else {
+        error_log("Query preparation failed: " . $conn->error);
+        echo json_encode(['success' => false, 'message' => 'Query preparation failed: ' . $conn->error]);
     }
-
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $data = [];
-    while ( $row = $result->fetch_assoc() ) {
-        $data[] = $row;
-    }
-
-    echo json_encode( [ 'success' => true, 'data' => $data ] );
 }
+
 
 function searchTransferReceipt() {
     global $conn;
@@ -2221,7 +2235,7 @@ function searchTransferReceipt() {
                 it.from_branch,
                 it.to_branch,
                 it.transfer_date
-            ORDER BY it.transfer_date DESC
+            ORDER BY it.transfer_date ASC
             LIMIT 10";
     
     $stmt = $conn->prepare($sql);
@@ -2722,7 +2736,7 @@ if ($category === 'repo') {
               $categoryCondition
                $brandCondition
                $modelCondition
-            ORDER BY it.transfer_date DESC
+            ORDER BY it.transfer_date ASC
         ";
         $stmtTransferDetails = $conn->prepare($sqlTransferDetails);
         $types = 'ss' . $paramTypes;
@@ -2744,7 +2758,7 @@ if ($category === 'repo') {
               $categoryCondition
                $brandCondition
                $modelCondition
-            ORDER BY it.transfer_date DESC
+            ORDER BY it.transfer_date ASC
         ";
         $stmtTransferDetails = $conn->prepare($sqlTransferDetails);
         $types = 'ssssss' . $paramTypes;
@@ -2986,7 +3000,7 @@ $sql = "SELECT
         INNER JOIN inventory_transfers it ON mi.id = it.motorcycle_id
         LEFT JOIN invoices i ON mi.invoice_id = i.id
         WHERE $whereClause
-        ORDER BY it.transfer_date DESC, mi.model";
+        ORDER BY it.transfer_date ASC, mi.model";
 
    $stmt = $conn->prepare($sql);
 if (!empty($params)) {
@@ -3098,7 +3112,7 @@ function getMonthlyReceivedSummary() {
             JOIN inventory_transfers it ON mi.id = it.motorcycle_id
             LEFT JOIN invoices i ON mi.invoice_id = i.id
             WHERE $whereClause
-            ORDER BY it.date_received DESC, mi.model";
+            ORDER BY it.date_received ASC, mi.model";
 
     $stmt = $conn->prepare($sql);
     if ($stmt === false) {
@@ -3202,7 +3216,7 @@ function getMonthlyScrappedSummary() {
             INNER JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id
             LEFT JOIN invoices i ON mi.invoice_id = i.id
             $whereClause
-            ORDER BY ms.scrap_date DESC, mi.brand, mi.model";
+            ORDER BY ms.scrap_date ASC, mi.brand, mi.model";
 
     $stmt = $conn->prepare($sql);
     if (!empty($params)) { $stmt->bind_param($types, ...$params); }
@@ -3445,7 +3459,7 @@ function getSoldMotorcyclesReport() {
         }
     }
 
-    $sqlBase .= " ORDER BY ms.sale_date DESC";
+    $sqlBase .= " ORDER BY ms.sale_date ASC";
 
     // --- 5. Prepare and execute the query ---
     $stmt = $conn->prepare($sqlBase);
@@ -3544,7 +3558,7 @@ function getDailySoldMotorcyclesReport() {
     }
 }
 
-    $sqlBase .= " ORDER BY ms.sale_date DESC";
+    $sqlBase .= " ORDER BY ms.sale_date ASC";
 
     $stmt = $conn->prepare($sqlBase);
     if ($stmt === false) {
@@ -3904,7 +3918,7 @@ function getDeliveredStocksSummary() {
         $types .= 'ssss';
     }
 
-    $sql .= " ORDER BY mi.date_delivered DESC, mi.model";
+    $sql .= " ORDER BY mi.date_delivered ASC, mi.model";
 
     // --- 5. Execute Query ---
     $stmt = $conn->prepare($sql);
@@ -4002,7 +4016,7 @@ function getRedeemedUnitsReport() {
             INNER JOIN motorcycle_redeems mr ON mi.id = mr.motorcycle_id
             LEFT JOIN invoices i ON mi.invoice_id = i.id
             $whereClause
-            ORDER BY mr.redeem_date DESC, mi.brand, mi.model";
+            ORDER BY mr.redeem_date ASC, mi.brand, mi.model";
 
     $stmt = $conn->prepare($sql);
     if (!empty($params)) { $stmt->bind_param($types, ...$params); }
@@ -4105,7 +4119,7 @@ function getTransfersByStatus() {
             it.to_branch, 
             it.transfer_date,
             it.transfer_status
-        ORDER BY it.transfer_date DESC, MIN(it.id) DESC
+        ORDER BY it.transfer_date ASC, MIN(it.id) ASC
         LIMIT ? OFFSET ?
     ";
 
@@ -4312,7 +4326,7 @@ function getSoldUnits() {
 
     $sql = "SELECT mi.id, mi.model, mi.engine_number, mi.current_branch, ms.sale_date, ms.customer_name, ms.payment_type 
             FROM motorcycle_inventory mi JOIN motorcycle_sales ms ON mi.id = ms.motorcycle_id $where 
-            ORDER BY ms.sale_date DESC LIMIT $limit OFFSET $offset";
+            ORDER BY ms.sale_date ASC LIMIT $limit OFFSET $offset";
 
     $result = $conn->query($sql);
     $data = [];
@@ -4338,9 +4352,9 @@ function getRepossessedUnits() {
     $totalPages = ceil($totalRecords / $limit);
 
     $sql = "SELECT mi.id, mi.model, mi.engine_number, mi.current_branch, mi.status, mrh.repo_date, mrh.repo_reason, 
-                   (SELECT msh.sale_date FROM motorcycle_sales_history msh WHERE msh.motorcycle_id = mi.id ORDER BY msh.archived_at DESC LIMIT 1) as original_sale_date
+                   (SELECT msh.sale_date FROM motorcycle_sales_history msh WHERE msh.motorcycle_id = mi.id ORDER BY msh.archived_at ASC LIMIT 1) as original_sale_date
             FROM motorcycle_inventory mi LEFT JOIN motorcycle_repo_history mrh ON mi.id = mrh.motorcycle_id $where 
-            ORDER BY mrh.repo_date DESC LIMIT $limit OFFSET $offset";
+            ORDER BY mrh.repo_date ASC LIMIT $limit OFFSET $offset";
 
     $result = $conn->query($sql);
     $data = [];
@@ -4368,7 +4382,7 @@ function getScrappedUnits() {
 
     $sql = "SELECT mi.id, mi.model, mi.engine_number, mi.current_branch, mi.inventory_cost, ms.scrap_date, ms.scrap_reason 
             FROM motorcycle_inventory mi JOIN motorcycle_scraps ms ON mi.id = ms.motorcycle_id $where 
-            ORDER BY ms.scrap_date DESC LIMIT $limit OFFSET $offset";
+            ORDER BY ms.scrap_date ASC LIMIT $limit OFFSET $offset";
 
     $result = $conn->query($sql);
     $data = [];
@@ -4396,9 +4410,9 @@ function getRedeemedUnits() {
 
     $sql = "SELECT mi.id, mi.model, mi.engine_number, mi.current_branch, 
                    mr.redeem_date, mr.redeemed_by_customer, mr.amount_paid,
-                   (SELECT mrh.repo_date FROM motorcycle_repo_history mrh WHERE mrh.motorcycle_id = mi.id ORDER BY mrh.repo_date DESC LIMIT 1) as original_repo_date
+                   (SELECT mrh.repo_date FROM motorcycle_repo_history mrh WHERE mrh.motorcycle_id = mi.id ORDER BY mrh.repo_date ASC LIMIT 1) as original_repo_date
             FROM motorcycle_redeems mr JOIN motorcycle_inventory mi ON mr.motorcycle_id = mi.id $where
-            ORDER BY mr.redeem_date DESC LIMIT $limit OFFSET $offset";
+            ORDER BY mr.redeem_date ASC LIMIT $limit OFFSET $offset";
 
     $result = $conn->query($sql);
     $data = [];
@@ -4432,7 +4446,7 @@ function revertTransaction() {
 
             case 'repo':
                 // Restore last sale from history and revert category/status
-                $last_sale_query = $conn->query("SELECT * FROM motorcycle_sales_history WHERE motorcycle_id = $id ORDER BY archived_at DESC LIMIT 1");
+                $last_sale_query = $conn->query("SELECT * FROM motorcycle_sales_history WHERE motorcycle_id = $id ORDER BY archived_at ASC LIMIT 1");
                 if ($last_sale_query->num_rows > 0) {
                     $last_sale = $last_sale_query->fetch_assoc();
                     $sale_id = $last_sale['id'];
@@ -4684,7 +4698,7 @@ function getActivityLog() {
             FROM audit_log al
             LEFT JOIN users u ON al.user_id = u.id
             $where
-            ORDER BY al.action_timestamp DESC
+            ORDER BY al.action_timestamp ASC
             LIMIT ? OFFSET ?";
     
     // Add pagination params
