@@ -183,6 +183,10 @@ switch ($action) {
     case 'revert_transaction':
         revertTransaction();
         break;
+    case 'get_activity_log':
+        getActivityLog();
+        break;
+            
     case 'get_transfer_details_by_invoice':
         getTransferDetailsByInvoice();
         break;
@@ -4056,8 +4060,19 @@ function getTransfersByStatus() {
         $param_types .= "sssss";
     }
 
-    // --- Get Total Count for Pagination ---
-    $sqlCount = "SELECT COUNT(DISTINCT it.id) as total " . $sqlBase . $whereClause;
+    // --- Get Total Count for Pagination (MODIFIED to count groups) ---
+    $sqlCount = "SELECT COUNT(*) as total FROM (
+                    SELECT 1
+                    $sqlBase 
+                    $whereClause
+                    GROUP BY 
+                        it.transfer_invoice_number, 
+                        it.from_branch, 
+                        it.to_branch, 
+                        it.transfer_date,
+                        it.transfer_status
+                ) as grouped_transfers";
+    
     $stmtCount = $conn->prepare($sqlCount);
     if ($stmtCount) {
         if (!empty($params)) {
@@ -4068,18 +4083,29 @@ function getTransfersByStatus() {
         $totalPages = ceil($totalRecords / $limit);
         $stmtCount->close();
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to prepare count query.']);
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare count query: ' . $conn->error]);
         return;
     }
 
-    // --- Get Paginated Data ---
+    // --- Get Paginated Data (MODIFIED to group results) ---
     $sqlData = "
         SELECT
-            it.id as header_id, 
-            it.transfer_invoice_number, it.from_branch, it.to_branch, it.transfer_date,
-            mi.model, mi.brand, mi.engine_number
+            it.transfer_invoice_number, 
+            it.from_branch, 
+            it.to_branch, 
+            it.transfer_date,
+            it.transfer_status,
+            COUNT(it.id) as total_units,
+            MIN(it.id) as header_id,
+            GROUP_CONCAT(DISTINCT mi.model SEPARATOR ', ') as models
         " . $sqlBase . $whereClause . "
-        ORDER BY it.transfer_date DESC, it.id DESC
+        GROUP BY 
+            it.transfer_invoice_number, 
+            it.from_branch, 
+            it.to_branch, 
+            it.transfer_date,
+            it.transfer_status
+        ORDER BY it.transfer_date DESC, MIN(it.id) DESC
         LIMIT ? OFFSET ?
     ";
 
@@ -4112,7 +4138,7 @@ function getTransfersByStatus() {
             ]
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to prepare data query.']);
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare data query: ' . $conn->error]);
     }
 }
 
@@ -4503,17 +4529,17 @@ function getTransferDetailsByInvoice() {
 function update_transfer_group() {
     global $conn;
 
-    // --- 1. Sanitize all incoming data ---
+    // --- 1. Sanitize incoming data ---
     $originalInvoiceNumber = isset($_POST['original_invoice_number']) ? sanitizeInput($_POST['original_invoice_number']) : '';
-    $newInvoiceNumber = isset($_POST['transfer_invoice_number']) ? sanitizeInput($_POST['transfer_invoice_number']) : '';
-    $fromBranch = isset($_POST['from_branch']) ? sanitizeInput($_POST['from_branch']) : '';
-    $toBranch = isset($_POST['to_branch']) ? sanitizeInput($_POST['to_branch']) : '';
-    $transferDate = isset($_POST['transfer_date']) ? sanitizeInput($_POST['transfer_date']) : '';
-    $notes = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : '';
-    $transferredBy = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
-    
-    $itemsToAdd = isset($_POST['motorcycles_to_add']) ? $_POST['motorcycles_to_add'] : [];
-    $itemsToRemove = isset($_POST['motorcycles_to_remove']) ? $_POST['motorcycles_to_remove'] : [];
+    $newInvoiceNumber      = isset($_POST['transfer_invoice_number']) ? sanitizeInput($_POST['transfer_invoice_number']) : '';
+    $fromBranch            = isset($_POST['from_branch']) ? sanitizeInput($_POST['from_branch']) : '';
+    $toBranch              = isset($_POST['to_branch']) ? sanitizeInput($_POST['to_branch']) : '';
+    $transferDate          = isset($_POST['transfer_date']) ? sanitizeInput($_POST['transfer_date']) : '';
+    $notes                 = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : '';
+    $transferredBy         = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
+
+    $itemsToAdd            = isset($_POST['motorcycles_to_add']) ? $_POST['motorcycles_to_add'] : [];
+    $itemsToRemove         = isset($_POST['motorcycles_to_remove']) ? $_POST['motorcycles_to_remove'] : [];
 
     // --- 2. Validation ---
     if (empty($originalInvoiceNumber) || empty($newInvoiceNumber) || empty($toBranch) || empty($transferDate)) {
@@ -4525,56 +4551,167 @@ function update_transfer_group() {
         return;
     }
 
+    // --- 3. Convert date format (MM/DD/YYYY → YYYY-MM-DD) ---
+    $dateObj = DateTime::createFromFormat('m/d/Y', $transferDate);
+    if ($dateObj) {
+        $transferDate = $dateObj->format('Y-m-d');
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid date format.']);
+        return;
+    }
+
     $conn->begin_transaction();
+
     try {
-        // --- 3. Handle Items to Remove ---
+        // --- 4. Handle Items to Remove ---
         if (!empty($itemsToRemove)) {
             $removeIds = array_map('intval', $itemsToRemove);
             $placeholders = implode(',', array_fill(0, count($removeIds), '?'));
             $types = str_repeat('i', count($removeIds));
 
-            // Revert motorcycle status back to 'available' at the original 'from' branch
-            $updateMotorcycleStmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'available', current_branch = ? WHERE id IN ($placeholders)");
+            // Revert motorcycles to available and restore branch
+            $sqlUpdate = "UPDATE motorcycle_inventory 
+                          SET status = 'available', current_branch = ? 
+                          WHERE id IN ($placeholders)";
+            $updateMotorcycleStmt = $conn->prepare($sqlUpdate);
             $updateMotorcycleStmt->bind_param('s' . $types, $fromBranch, ...$removeIds);
             $updateMotorcycleStmt->execute();
 
-            // Delete records from the transfers table
-            $deleteTransferStmt = $conn->prepare("DELETE FROM inventory_transfers WHERE motorcycle_id IN ($placeholders) AND transfer_invoice_number = ?");
-            $deleteTransferStmt->bind_param($types . 's', ...array_merge($removeIds, [$originalInvoiceNumber]));
+            // Delete transfer entries
+            $sqlDelete = "DELETE FROM inventory_transfers 
+                          WHERE transfer_invoice_number = ? 
+                          AND motorcycle_id IN ($placeholders)";
+            $deleteTransferStmt = $conn->prepare($sqlDelete);
+            $deleteTransferStmt->bind_param('s' . $types, $originalInvoiceNumber, ...$removeIds);
             $deleteTransferStmt->execute();
         }
 
-        // --- 4. Handle Items to Add ---
+        // --- 5. Handle Items to Add ---
         if (!empty($itemsToAdd)) {
-            $addTransferStmt = $conn->prepare("INSERT INTO inventory_transfers (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number) VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)");
-            $addMotorcycleStmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'transferred', inventory_cost = ? WHERE id = ?");
+            $addTransferStmt = $conn->prepare("
+                INSERT INTO inventory_transfers 
+                    (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
+                VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)
+            ");
+
+            $updateMotorcycleStmt = $conn->prepare("
+                UPDATE motorcycle_inventory 
+                SET status = 'transferred', current_branch = ?, inventory_cost = ? 
+                WHERE id = ?
+            ");
 
             foreach ($itemsToAdd as $item) {
-                $motorcycleId = intval($item['id']);
+                $motorcycleId  = intval($item['id']);
                 $inventoryCost = floatval($item['inventory_cost']);
 
-                // Update motorcycle status and cost
-                $addMotorcycleStmt->bind_param('di', $inventoryCost, $motorcycleId);
-                $addMotorcycleStmt->execute();
+                // Update motorcycle record
+                $updateMotorcycleStmt->bind_param('sdi', $toBranch, $inventoryCost, $motorcycleId);
+                $updateMotorcycleStmt->execute();
 
-                // Create new transfer record with potentially new details
+                // Insert new transfer
                 $addTransferStmt->bind_param('isssiss', $motorcycleId, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $newInvoiceNumber);
                 $addTransferStmt->execute();
             }
         }
 
-        // --- 5. Update the main details for all remaining records in the group ---
-        $updateGroupStmt = $conn->prepare("UPDATE inventory_transfers SET to_branch = ?, transfer_date = ?, notes = ?, transfer_invoice_number = ? WHERE transfer_invoice_number = ?");
+        // --- 6. Update existing group ---
+        $updateGroupStmt = $conn->prepare("
+            UPDATE inventory_transfers
+            SET to_branch = ?, transfer_date = ?, notes = ?, transfer_invoice_number = ?
+            WHERE transfer_invoice_number = ?
+        ");
         $updateGroupStmt->bind_param('sssss', $toBranch, $transferDate, $notes, $newInvoiceNumber, $originalInvoiceNumber);
         $updateGroupStmt->execute();
-        
+
+        // --- 7. Commit and log ---
         $conn->commit();
-        log_action($conn, 'UPDATE', 'inventory_transfers', 0, "Updated transfer group with invoice #{$originalInvoiceNumber}.");
-        echo json_encode(['success' => true, 'message' => 'Transfer has been successfully updated.']);
+        log_action($conn, 'UPDATE', 'inventory_transfers', 0, "Updated transfer group #{$originalInvoiceNumber} → {$newInvoiceNumber}");
+        echo json_encode(['success' => true, 'message' => 'Transfer group successfully updated.']);
 
     } catch (Exception $e) {
         $conn->rollback();
-        echo json_encode(['success' => false, 'message' => 'An error occurred during the update: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Error updating transfer group: ' . $e->getMessage()]);
     }
 }
+
+// =============================================================================
+// XIII. ACTIVITY LOG
+// =============================================================================
+
+/**
+ * Fetches paginated and searchable data from the audit_log.
+ */
+function getActivityLog() {
+    global $conn;
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
+    $limit = 25; // Show more logs per page
+    $offset = ($page - 1) * $limit;
+
+    $where = "";
+    $params = [];
+    $types = "";
+
+    if (!empty($query)) {
+        $searchTerm = "%$query%";
+        // Search against details, username, action, and table
+        $where = "WHERE al.action_details LIKE ? OR u.username LIKE ? OR al.action_type LIKE ? OR al.table_name LIKE ?";
+        $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
+        $types = "ssss";
+    }
+
+    // Get total count
+    $countSql = "SELECT COUNT(al.id) as total 
+                 FROM audit_log al 
+                 LEFT JOIN users u ON al.user_id = u.id 
+                 $where";
+    
+    $countStmt = $conn->prepare($countSql);
+    if (!$countStmt) {
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare count query: ' . $conn->error]);
+        return;
+    }
+    if (!empty($params)) {
+        $countStmt->bind_param($types, ...$params);
+    }
+    $countStmt->execute();
+    $totalRecords = $countStmt->get_result()->fetch_assoc()['total'];
+    $totalPages = ceil($totalRecords / $limit);
+    $countStmt->close();
+
+    // Get paginated data
+    $sql = "SELECT al.id, al.action_timestamp, al.action_type, al.table_name, al.record_id, al.action_details, COALESCE(u.username, 'System') as username
+            FROM audit_log al
+            LEFT JOIN users u ON al.user_id = u.id
+            $where
+            ORDER BY al.action_timestamp DESC
+            LIMIT ? OFFSET ?";
+    
+    // Add pagination params
+    $params[] = $limit;
+    $params[] = $offset;
+    $types .= "ii";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Failed to prepare data query: ' . $conn->error]);
+        return;
+    }
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+    $stmt->close();
+
+    echo json_encode([
+        'success' => true, 
+        'data' => $data, 
+        'pagination' => ['currentPage' => $page, 'totalPages' => $totalPages]
+    ]);
+}
+
 ?>

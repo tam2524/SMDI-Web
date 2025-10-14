@@ -17,14 +17,11 @@
     <link href='../css/bootstrap.min.css' rel='stylesheet'>
     <link href='../css/style.css' rel='stylesheet'>
     <link href='../css/inventory_style.css' rel='stylesheet'>
-    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <link rel='stylesheet' href='https://printjs-4de6.kxcdn.com/print.min.css'>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js'></script>
 
-    <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
-    <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
 
 </head>
 
@@ -1575,6 +1572,7 @@
     <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
     <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
     <script src='https://unpkg.com/leaflet@1.9.3/dist/leaflet.js'></script>
+    <script src='https://printjs-4de6.kxcdn.com/print.min.js'></script>
     <script>
     const currentBranch = '<?php echo $_SESSION['user_branch'] ?? 'RXS-S'; ?>';
     const currentUserBranch = "<?php echo isset($_SESSION['user_branch']) ? $_SESSION['user_branch'] : ''; ?>";

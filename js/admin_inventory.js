@@ -161,15 +161,31 @@ $(document).ready(function () {
     loadTransfers('completed', '#completedTransfersBody', '#completedTransfersPagination', '#completedCount');
     loadTransfers('rejected', '#rejectedTransfersBody', '#rejectedTransfersPagination', '#rejectedCount');
 
-  // Initialize Map
-  setTimeout(() => {
-    if ($("#branchMap").length) {
-      map = initMap(currentBranch);
-    }
-  }, 300);
+// Load data when a tab is shown
+    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+        const target = $(e.target).data('bs-target');
+        switch (target) {
+            case '#soldUnits': loadSoldUnits(1); break;
+            case '#repossessedUnits': loadRepossessedUnits(1); break;
+            case '#scrappedUnits': loadScrappedUnits(1); break;
+            case '#redeemedUnits': loadRedeemedUnits(1); break;
+            
+            // ==================================================
+            // START: ADD THIS NEW CASE
+            // ==================================================
+            case '#activityLog': loadActivityLog(1); break;
+            // ==================================================
+            // END: ADD THIS NEW CASE
+            // ==================================================
+        }
+    });
 
-  // Set up recurring checks
-  setInterval(checkIncomingTransfers, 1000);
+      // Search button clicks
+    $('#soldUnitsSearchBtn').on('click', () => loadSoldUnits(1, $('#soldUnitsSearch').val()));
+    $('#repoUnitsSearchBtn').on('click', () => loadRepossessedUnits(1, $('#repoUnitsSearch').val()));
+    $('#scrappedUnitsSearchBtn').on('click', () => loadScrappedUnits(1, $('#scrappedUnitsSearch').val()));
+    $('#redeemedUnitsSearchBtn').on('click', () => loadRedeemedUnits(1, $('#redeemedUnitsSearch').val()));
+    
 
   // Modal Stacking Handler
   $(document).on("show.bs.modal", ".modal", function () {
@@ -247,6 +263,72 @@ function setupEventListeners() {
     }
   );
 
+  // When a tab is shown, if it's the global history tab, load the data
+    $('button[data-bs-target="#globalTransferHistory"]').on('shown.bs.tab', function () {
+        $('#globalTransferSearchBtn').click(); // Trigger search to load all tables
+    });
+
+     $('#manageTransferSearch').on('keyup', function(e) {
+        if (e.which === 13) { // Enter key
+            searchAvailableForTransfer();
+        }
+    });
+    $('#manageTransferSearchBtn').on('click', searchAvailableForTransfer);
+    $('#saveTransferChangesBtn').on('click', submitTransferUpdate);
+
+
+    // Global search button and enter key
+    $('#globalTransferSearchBtn').on('click', function() {
+        const searchTerm = $('#globalTransferSearch').val();
+        loadTransfers('in-transit', '#in-transitTransfersBody', '#in-transitTransfersPagination', '#inTransitCount', searchTerm, 1);
+        loadTransfers('completed', '#completedTransfersBody', '#completedTransfersPagination', '#completedCount', searchTerm, 1);
+        loadTransfers('rejected', '#rejectedTransfersBody', '#rejectedTransfersPagination', '#rejectedCount', searchTerm, 1);
+    });
+    $('#globalTransferSearch').on('keypress', function(e) {
+        if (e.which === 13) {
+            $('#globalTransferSearchBtn').click();
+        }
+    });
+
+     $('#activityLogSearchBtn').on('click', () => loadActivityLog(1, $('#activityLogSearch').val()));
+ $('#soldUnitsSearch, #repoUnitsSearch, #scrappedUnitsSearch, #redeemedUnitsSearch').on('keypress', function(e) {
+        if (e.which === 13) $(this).next('button').click();
+    });
+  $('#activityLogSearch').on('keypress', function(e) {
+        if (e.which === 13) $(this).next('button').click();
+    });
+    // Handle clicks on pagination links for all three tables
+    $(document).on('click', '.transfer-pagination .page-link', function(e) {
+        e.preventDefault();
+        if ($(this).parent().hasClass('disabled')) return;
+        const page = $(this).data('page');
+        const status = $(this).closest('ul').data('status');
+        const searchTerm = $('#globalTransferSearch').val();
+
+        if (status === 'in-transit') {
+            loadTransfers('in-transit', '#in-transitTransfersBody', '#in-transitTransfersPagination', '#inTransitCount', searchTerm, page);
+        } else if (status === 'completed') {
+            loadTransfers('completed', '#completedTransfersBody', '#completedTransfersPagination', '#completedCount', searchTerm, page);
+        } else if (status === 'rejected') {
+            loadTransfers('rejected', '#rejectedTransfersBody', '#rejectedTransfersPagination', '#rejectedCount', searchTerm, page);
+        }
+    });
+
+    // Handle the delete confirmation
+    $('#deleteTransferConfirmationModal').on('show.bs.modal', function(event) {
+        const button = $(event.relatedTarget);
+        const transferId = button.data('transfer-id');
+        $(this).find('#transferToDeleteId').val(transferId);
+    });
+
+    $('#confirmDeleteTransferBtn').on('click', function() {
+        const transferId = $('#transferToDeleteId').val();
+        if (transferId) {
+            deleteTransfer(transferId);
+        }
+    });
+  // Add this line to setupEventListeners() or $(document).ready()
+$('#manageTransferDate').datepicker({ dateFormat: 'mm/dd/yy' });
   // Add these lines inside your setupEventListeners function
   $("#reportType").on("change", updateReportFilterOptions);
 
@@ -627,19 +709,7 @@ function setupEventListeners() {
         }
     });
 
-    // Handle the delete confirmation
-    $('#deleteTransferConfirmationModal').on('show.bs.modal', function(event) {
-        const button = $(event.relatedTarget);
-        const transferId = button.data('transfer-id');
-        $(this).find('#transferToDeleteId').val(transferId);
-    });
-
-    $('#confirmDeleteTransferBtn').on('click', function() {
-        const transferId = $('#transferToDeleteId').val();
-        if (transferId) {
-            deleteTransfer(transferId);
-        }
-    });
+    
 }
 
 // =============================================================================
@@ -730,24 +800,24 @@ function loadInventoryDashboard(
       if (response.success) {
         let sortedData = response.data;
 
-        sortedData.sort((a, b) => {
-          let valueA, valueB;
+       sortedData.sort((a, b) => {
+          let valueA, valueB;
 
-          if (sortBy === "model") {
-            valueA = a.model.toLowerCase();
-            valueB = b.model.toLowerCase();
-          } else if (sortBy === "brand") {
-            valueA = a.brand.toLowerCase();
-            valueB = b.brand.toLowerCase();
-          } else {
-            valueA = a.model.toLowerCase();
-            valueB = b.model.toLowerCase();
-          }
+          if (sortBy === "model") {
+            valueA = (a.model || "").toLowerCase(); // <-- FIX
+            valueB = (b.model || "").toLowerCase(); // <-- FIX
+          } else if (sortBy === "brand") {
+            valueA = (a.brand || "").toLowerCase(); // <-- FIX
+            valueB = (b.brand || "").toLowerCase(); // <-- FIX
+          } else {
+            valueA = (a.model || "").toLowerCase(); // <-- FIX
+            valueB = (b.model || "").toLowerCase(); // <-- FIX
+          }
 
-          if (valueA < valueB) return sortOrder === "asc" ? -1 : 1;
-          if (valueA > valueB) return sortOrder === "asc" ? 1 : -1;
-          return 0;
-        });
+          if (valueA < valueB) return sortOrder === "asc" ? -1 : 1;
+          if (valueA > valueB) return sortOrder === "asc" ? 1 : -1;
+          return 0;
+        });
 
         renderInventoryCards(sortedData);
       } else {
@@ -2048,22 +2118,19 @@ function submitRepo() {
 // =============================================================================
 
 function loadSoldUnits(page = 1, query = '') {
-    loadGenericLogData('get_sold_units', '#soldUnitsTableBody', '#soldUnitsPagination', renderSoldUnitsTable, page, query);
+    loadGenericLogData('get_sold_units', '#soldUnitsTableBody', '#soldUnitsPagination', renderSoldUnitsTable, 'loadSoldUnits', page, query);
 }
-
 function loadRepossessedUnits(page = 1, query = '') {
-    loadGenericLogData('get_repossessed_units', '#repossessedUnitsTableBody', '#repossessedUnitsPagination', renderRepossessedUnitsTable, page, query);
+    loadGenericLogData('get_repossessed_units', '#repossessedUnitsTableBody', '#repossessedUnitsPagination', renderRepossessedUnitsTable, 'loadRepossessedUnits', page, query);
 }
 
 function loadScrappedUnits(page = 1, query = '') {
-    loadGenericLogData('get_scrapped_units', '#scrappedUnitsTableBody', '#scrappedUnitsPagination', renderScrappedUnitsTable, page, query);
+    loadGenericLogData('get_scrapped_units', '#scrappedUnitsTableBody', '#scrappedUnitsPagination', renderScrappedUnitsTable, 'loadScrappedUnits', page, query);
 }
-
 function loadRedeemedUnits(page = 1, query = '') {
-    loadGenericLogData('get_redeemed_units', '#redeemedUnitsTableBody', '#redeemedUnitsPagination', renderRedeemedUnitsTable, page, query);
+    loadGenericLogData('get_redeemed_units', '#redeemedUnitsTableBody', '#redeemedUnitsPagination', renderRedeemedUnitsTable, 'loadRedeemedUnits', page, query);
 }
-
-function loadGenericLogData(action, bodySelector, paginationSelector, renderFunction, page, query) {
+function loadGenericLogData(action, bodySelector, paginationSelector, renderFunction, paginationCallback, page, query) {
     $(bodySelector).html(`<tr><td colspan="8" class="text-center py-5"><div class="spinner-border spinner-border-sm"></div></td></tr>`);
     $.ajax({
         url: '../api/inventory_management.php',
@@ -2073,7 +2140,7 @@ function loadGenericLogData(action, bodySelector, paginationSelector, renderFunc
         success: function(response) {
             if (response.success) {
                 renderFunction(response.data);
-                renderGenericPagination(paginationSelector, page, response.pagination.totalPages, action.replace('get_', 'load'));
+                renderGenericPagination(paginationSelector, page, response.pagination.totalPages, paginationCallback);
             } else {
                 $(bodySelector).html(`<tr><td colspan="8" class="text-center text-danger py-4">${response.message}</td></tr>`);
             }
@@ -2253,27 +2320,31 @@ function renderGenericPagination(selector, currentPage, totalPages, callbackFunc
     paginationEl.append(createPageItem(currentPage + 1, '&raquo;', currentPage === totalPages));
 }
 function revertTransaction() {
-    const revertId = $('#revertId').val();
-    const revertType = $('#revertType').val();
+    const revertId = $('#revertId').val();
+    const revertType = $('#revertType').val();
 
-    $.ajax({
-        url: '../api/inventory_management.php',
-        method: 'POST',
-        data: { action: 'revert_transaction', id: revertId, type: revertType },
-        dataType: 'json',
-        success: function(response) {
-            $('#revertConfirmationModal').modal('hide');
-            if (response.success) {
-                showSuccessModal(response.message);
-                // Reload data for the currently active tab
-                $('.nav-tabs .nav-link.active').trigger('click');
-            } else {
-                showErrorModal(response.message);
-            }
-        }
-    });
+    $.ajax({
+        url: '../api/inventory_management.php',
+        method: 'POST',
+        data: { action: 'revert_transaction', id: revertId, type: revertType },
+        dataType: 'json',
+        success: function(response) {
+            $('#revertConfirmationModal').modal('hide');
+            if (response.success) {
+                // Show the success message
+                showSuccessModal(response.message);
+                
+                // Reload the entire page after 1.5 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 1500); 
+
+            } else {
+                showErrorModal(response.message);
+            }
+        }
+    });
 }
-
 function getStatusBadge(status) {
     if (!status) return '';
     switch (status.toLowerCase()) {
@@ -2283,6 +2354,44 @@ function getStatusBadge(status) {
         case 'scrapped': return '<span class="badge bg-dark">Scrapped</span>';
         default: return `<span class="badge bg-secondary">${escapeHtml(status)}</span>`;
     }
+}
+
+// =============================================================================
+// XIII. ACTIVITY LOG
+// =============================================================================
+
+/**
+ * Loads the system-wide activity log with pagination and search.
+ * @param {number} [page=1] - The page number to load.
+ * @param {string} [query=''] - The search term.
+ */
+function loadActivityLog(page = 1, query = '') {
+    loadGenericLogData('get_activity_log', '#activityLogTableBody', '#activityLogPagination', renderActivityLogTable, 'loadActivityLog', page, query);
+}
+
+/**
+ * Renders the HTML for the activity log table.
+ * @param {Array<object>} data - The log data from the API.
+ */
+function renderActivityLogTable(data) {
+    let html = '';
+    if (!data || data.length === 0) {
+        $('#activityLogTableBody').html('<tr><td colspan="5" class="text-center py-4">No activity found.</td></tr>');
+        return;
+    }
+    data.forEach(item => {
+        html += `<tr>
+            <td>${formatDateTime(item.action_timestamp)}</td>
+            <td>${escapeHtml(item.username)}</td>
+            <td>
+                <span class="badge bg-secondary">${escapeHtml(item.action_type)}</span>
+                <small class="d-block text-muted">${escapeHtml(item.table_name)}</small>
+            </td>
+            <td class="text-center"><code>${escapeHtml(item.record_id)}</code></td>
+            <td class="small">${escapeHtml(item.action_details)}</td>
+        </tr>`;
+    });
+    $('#activityLogTableBody').html(html);
 }
 // =============================================================================
 // VII-A. GLOBAL TRANSFER HISTORY
@@ -2318,31 +2427,37 @@ function loadTransfers(status, tableBodyId, paginationId, countId, searchTerm = 
             let html = '';
             if (response.success && response.data.length > 0) {
                 response.data.forEach(item => {
-                    // This HTML block creates each row with the necessary buttons and data attributes.
-                   html += `
-    <tr>
-        <td class="w-100">
-            <div class="fw-bold">${escapeHtml(item.brand)} ${escapeHtml(item.model)}</div>
-            <div class="small text-muted"><i class="bi bi-arrow-right-short"></i> From: <strong>${escapeHtml(item.from_branch)}</strong></div>
-            <div class="small text-muted"><i class="bi bi-arrow-left-short"></i> To: <strong>${escapeHtml(item.to_branch)}</strong></div>
-            <div class="small text-muted"><i class="bi bi-upc-scan"></i> ${escapeHtml(item.engine_number)}</div>
-            <div class="small text-muted"><i class="bi bi-receipt"></i> ${escapeHtml(item.transfer_invoice_number)} on ${formatDate(item.transfer_date)}</div>
-        </td>
-        <td class="align-middle">
-            <div class="btn-group-vertical btn-group-sm">
-                <button class="btn btn-outline-primary" title="View & Print" onclick="loadTransferReceipt(${item.header_id})">
-                    <i class="bi bi-printer"></i>
-                </button>
-              <button class="btn btn-outline-secondary" title="Edit Transfer" onclick="openManageTransferModalById('${item.transfer_invoice_number}')">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                <button class="btn btn-outline-danger" title="Delete Transfer" data-bs-toggle="modal" data-bs-target="#deleteTransferConfirmationModal" data-transfer-id="${item.header_id}">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        </td>
-    </tr>
-`;
+                    // NEW HTML RERNDERING FOR GROUPED DATA
+                    const modelsPreview = item.models ? item.models.split(',').slice(0, 2).join(', ') : 'N/A';
+                    const modelsEllipsis = (item.models && item.models.split(',').length > 2) ? '...' : '';
+                    
+                    html += `
+                        <tr>
+                            <td class="w-100">
+                                <div class="fw-bold"><i class="bi bi-receipt"></i> ${escapeHtml(item.transfer_invoice_number)}</div>
+                                <div class="small text-muted"><i class="bi bi-arrow-right-short"></i> From: <strong>${escapeHtml(item.from_branch)}</strong></div>
+                                <div class="small text-muted"><i class="bi bi-arrow-left-short"></i> To: <strong>${escapeHtml(item.to_branch)}</strong></div>
+                                <div class="small text-muted"><i class="bi bi-calendar-event"></i> ${formatDate(item.transfer_date)}</div>
+                                <div class="small text-muted" title="${escapeHtml(item.models)}">
+                                    <i class="bi bi-stack"></i> ${item.total_units} units (${escapeHtml(modelsPreview)}${modelsEllipsis})
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <button class="btn btn-outline-primary" title="View & Print" onclick="loadTransferReceipt(${item.header_id})">
+                                        <i class="bi bi-printer"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" title="View/Edit Units" 
+                                            onclick="openManageTransferModalById('${item.transfer_invoice_number}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" title="Delete Transfer" data-bs-toggle="modal" data-bs-target="#deleteTransferConfirmationModal" data-transfer-id="${item.header_id}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
                 });
             } else {
                 html = `<tr><td colspan="2" class="text-center text-muted py-4 small">No ${status} transfers found.</td></tr>`;
@@ -2356,76 +2471,73 @@ function loadTransfers(status, tableBodyId, paginationId, countId, searchTerm = 
         }
     });
 }
-
-/**
- * Opens the 'Manage Transfer' modal by fetching all items associated with an invoice number.
- * This function powers the "Edit" button.
- */
 function openManageTransferModalById(invoiceNumber) {
-    if (!invoiceNumber) {
-        showErrorModal('Cannot edit transfer without an invoice number.');
-        return;
-    }
+  if (!invoiceNumber) {
+    showErrorModal("Cannot edit transfer without an invoice number.");
+    return;
+  }
 
-    // Show a temporary loading state
-    $('#manageTransferModalLabel').text(`Loading Transfer: ${invoiceNumber}...`);
-    $('#manageTransferContent').hide();
-    $('#manageTransferLoading').show();
-    $('#manageTransferModal').modal('show');
-    
-    // Ensure branch dropdowns are populated
-    populateBranchesDropdowns(['#manageTransferFromBranch', '#manageTransferToBranch']);
+  // Show loading
+  $("#manageTransferLoading").show();
+  $("#manageTransferContent").hide();
 
+  // Step 1. Populate branch dropdowns first, then fetch data AFTER
+  populateBranchesDropdowns(["#manageTransferFromBranch", "#manageTransferToBranch"], function () {
+    // Step 2. Once branches loaded, fetch transfer details
     $.ajax({
-        url: '../api/inventory_management.php',
-        method: 'GET',
-        data: {
-            action: 'get_transfer_details_by_invoice',
-            transfer_invoice_number: invoiceNumber
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                // Reset and populate the managingTransfer object
-                managingTransfer = {
-                    originalInvoiceNumber: response.header.transfer_invoice_number, // Keep track of the original
-                    fromBranch: response.header.from_branch,
-                    initialItems: response.motorcycles,
-                    itemsToAdd: [],
-                    itemsToRemove: []
-                };
+      url: "../api/inventory_management.php",
+      method: "GET",
+      data: {
+        action: "get_transfer_details_by_invoice",
+        transfer_invoice_number: invoiceNumber, // <-- make sure backend expects this
+      },
+      dataType: "json",
+      success: function (response) {
+        if (response.success) {
+          const header = response.header;
+          const motorcycles = response.motorcycles || [];
 
-                // Update modal UI with fetched data
-                $('#manageTransferModalLabel').text(`Manage Transfer: ${managingTransfer.originalInvoiceNumber}`);
-                $('#manageTransferFrom').text(managingTransfer.fromBranch);
-                $('#manageTransferDate').val(response.header.transfer_date);
-                $('#manageTransferInvoice').val(response.header.transfer_invoice_number);
-                $('#manageTransferFromBranch').val(response.header.from_branch);
-                $('#manageTransferToBranch').val(response.header.to_branch);
-                $('#manageTransferNotes').val(response.header.notes);
-                $('#manageTransferSearch').val('');
-                $('#manageTransferSearchResults').empty();
+          // Step 3. Populate global state
+          managingTransfer = {
+            originalInvoiceNumber: header.transfer_invoice_number,
+            fromBranch: header.from_branch,
+            initialItems: motorcycles,
+            itemsToAdd: [],
+            itemsToRemove: [],
+          };
 
-                renderManagingTransferLists();
+          // Step 4. Fill out form fields
+          $("#manageTransferModalLabel").text(
+            `Manage Transfer: ${managingTransfer.originalInvoiceNumber}`
+          );
+          $("#manageTransferFrom").text(header.from_branch);
 
-                $('#manageTransferLoading').hide();
-                $('#manageTransferContent').show();
-            } else {
-                showErrorModal('Could not load transfer details for editing.');
-                $('#manageTransferModal').modal('hide');
-            }
-        },
-        error: () => {
-            showErrorModal('An error occurred while fetching transfer details.');
-            $('#manageTransferModal').modal('hide');
+          $("#manageTransferDate").val(formatDate(header.transfer_date));
+          $("#manageTransferInvoice").val(header.transfer_invoice_number);
+          $("#manageTransferFromBranch").val(header.from_branch);
+          $("#manageTransferToBranch").val(header.to_branch);
+          $("#manageTransferNotes").val(header.notes || "");
+
+          // Step 5. Render motorcycle list
+          renderManagingTransferLists();
+
+          // Step 6. Show the modal
+          $("#manageTransferModal").modal("show");
+
+          // Show content, hide loading
+          $("#manageTransferLoading").hide();
+          $("#manageTransferContent").show();
+        } else {
+          showErrorModal(response.message || "Error loading transfer data.");
         }
+      },
+      error: function (xhr, status, error) {
+        showErrorModal("Error fetching transfer details: " + error);
+      },
     });
+  });
 }
 
-
-/**
- * Renders the lists of current, added, and removed items in the manage transfer modal.
- */
 function renderManagingTransferLists() {
     const initialList = $('#managingTransferInitialList');
     initialList.empty();
@@ -2438,10 +2550,14 @@ function renderManagingTransferLists() {
         if (!managingTransfer.itemsToRemove.includes(item.id)) {
             totalInitial++;
             initialList.append(`
-                <div class="transfer-item d-flex justify-content-between align-items-center">
-                    <span>${escapeHtml(item.brand)} ${escapeHtml(item.model)} <small class="text-muted">(${escapeHtml(item.engine_number)})</small></span>
-                    <button class="btn btn-sm btn-outline-danger" onclick="removeItemFromTransfer(${item.id})"><i class="bi bi-x-lg"></i></button>
-                </div>
+               <div class="transfer-item d-flex justify-content-between align-items-center">
+        <span>${escapeHtml(item.brand)} ${escapeHtml(item.model)} 
+            <small class="text-muted">(${escapeHtml(item.engine_number)})</small>
+        </span>
+        <button class="btn btn-sm btn-outline-danger" onclick="removeItemFromTransfer(${item.id})">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
             `);
         }
     });
@@ -2620,66 +2736,70 @@ function renderTransferPagination(paginationId, currentPage, totalPages) {
     paginationEl.append(`<li class="page-item ${nextDisabled}"><a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`);
 }
 
-/**
- * Opens the 'Manage Transfer' modal by fetching all items associated with an invoice number.
- * This function powers the "Edit" button.
- */
 function openManageTransferModalById(invoiceNumber) {
-    if (!invoiceNumber) {
-        showErrorModal('Cannot edit transfer without an invoice number.');
-        return;
-    }
+  if (!invoiceNumber) {
+    showErrorModal("Cannot edit transfer without an invoice number.");
+    return;
+  }
 
-    $('#manageTransferModalLabel').text(`Loading Transfer: ${invoiceNumber}...`);
-    $('#manageTransferContent').hide();
-    $('#manageTransferLoading').show();
-    $('#manageTransferModal').modal('show');
+  // Show loading animation or overlay
+  $("#manageTransferLoading").show();
+  $("#manageTransferContent").hide();
 
+  // ✅ Step 1: Populate branch dropdowns FIRST, then fetch data
+  populateBranchesDropdowns(["#manageTransferFromBranch", "#manageTransferToBranch"], function () {
+    // ✅ Step 2: Once dropdowns are ready, fetch transfer details
     $.ajax({
-        url: '../api/inventory_management.php',
-        method: 'GET',
-        data: {
-            action: 'get_transfer_details_by_invoice',
-            // FIX: The parameter name must match what the PHP API expects.
-            transfer_invoice_number: invoiceNumber 
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                // Reset and populate the managingTransfer object
-                managingTransfer = {
-                    invoiceNumber: response.header.transfer_invoice_number,
-                    fromBranch: response.header.from_branch,
-                    toBranch: response.header.to_branch,
-                    transferDate: response.header.transfer_date,
-                    notes: response.header.notes,
-                    initialItems: response.motorcycles,
-                    itemsToAdd: [],
-                    itemsToRemove: []
-                };
+      url: "../api/inventory_management.php",
+      method: "GET",
+      data: {
+        action: "get_transfer_details_by_invoice",
+        transfer_invoice_number: invoiceNumber,
+      },
+      dataType: "json",
+      success: function (response) {
+        if (response.success) {
+          const header = response.header;
+          const motorcycles = response.motorcycles || [];
 
-                // Update modal UI
-                $('#manageTransferModalLabel').text(`Manage Transfer: ${managingTransfer.invoiceNumber}`);
-                $('#manageTransferFrom').text(managingTransfer.fromBranch);
-                $('#manageTransferTo').text(managingTransfer.toBranch);
-                $('#manageTransferSearch').val('');
-                $('#manageTransferSearchResults').empty();
+          managingTransfer = {
+            originalInvoiceNumber: header.transfer_invoice_number,
+            fromBranch: header.from_branch,
+            initialItems: motorcycles,
+            itemsToAdd: [],
+            itemsToRemove: [],
+          };
 
-                renderManagingTransferLists();
+          // ✅ Step 3: Populate header fields
+          $("#manageTransferModalLabel").text(`Manage Transfer: ${header.transfer_invoice_number}`);
+          $("#manageTransferDate").val(formatDate(header.transfer_date));
+          $("#manageTransferInvoice").val(header.transfer_invoice_number);
+          $("#manageTransferNotes").val(header.notes || "");
 
-                $('#manageTransferLoading').hide();
-                $('#manageTransferContent').show();
-            } else {
-                showErrorModal('Could not load transfer details for editing.');
-                $('#manageTransferModal').modal('hide');
-            }
-        },
-        error: () => {
-            showErrorModal('An error occurred while fetching transfer details.');
-            $('#manageTransferModal').modal('hide');
+          // ✅ Step 4: Select branches (after options exist)
+          $("#manageTransferFromBranch").val(header.from_branch).trigger("change");
+          $("#manageTransferToBranch").val(header.to_branch).trigger("change");
+
+          // ✅ Step 5: Render motorcycles list
+          renderManagingTransferLists();
+
+          // ✅ Step 6: Show modal
+          $("#manageTransferModal").modal("show");
+
+          // ✅ Step 7: Hide loader
+          $("#manageTransferLoading").hide();
+          $("#manageTransferContent").show();
+        } else {
+          showErrorModal(response.message || "Error loading transfer data.");
         }
+      },
+      error: function (xhr, status, error) {
+        showErrorModal("Error fetching transfer details: " + error);
+      },
     });
+  });
 }
+
 
 /**
  * Handles the AJAX call to delete a transfer record after confirmation.
@@ -2710,69 +2830,7 @@ function deleteTransfer(transferId) {
     });
 }
 
-// Add these event listeners to your setupEventListeners() function
-function setupEventListeners() {
 
-    // When a tab is shown, if it's the global history tab, load the data
-    $('button[data-bs-target="#globalTransferHistory"]').on('shown.bs.tab', function () {
-        $('#globalTransferSearchBtn').click(); // Trigger search to load all tables
-    });
-
-     $('#manageTransferSearch').on('keyup', function(e) {
-        if (e.which === 13) { // Enter key
-            searchAvailableForTransfer();
-        }
-    });
-    $('#manageTransferSearchBtn').on('click', searchAvailableForTransfer);
-    $('#saveTransferChangesBtn').on('click', submitTransferUpdate);
-
-
-    // Global search button and enter key
-    $('#globalTransferSearchBtn').on('click', function() {
-        const searchTerm = $('#globalTransferSearch').val();
-        loadTransfers('in-transit', '#in-transitTransfersBody', '#in-transitTransfersPagination', '#inTransitCount', searchTerm, 1);
-        loadTransfers('completed', '#completedTransfersBody', '#completedTransfersPagination', '#completedCount', searchTerm, 1);
-        loadTransfers('rejected', '#rejectedTransfersBody', '#rejectedTransfersPagination', '#rejectedCount', searchTerm, 1);
-    });
-    $('#globalTransferSearch').on('keypress', function(e) {
-        if (e.which === 13) {
-            $('#globalTransferSearchBtn').click();
-        }
-    });
-
-    // Handle clicks on pagination links for all three tables
-    $(document).on('click', '.transfer-pagination .page-link', function(e) {
-        e.preventDefault();
-        if ($(this).parent().hasClass('disabled')) return;
-        const page = $(this).data('page');
-        const status = $(this).closest('ul').data('status');
-        const searchTerm = $('#globalTransferSearch').val();
-
-        if (status === 'in-transit') {
-            loadTransfers('in-transit', '#in-transitTransfersBody', '#in-transitTransfersPagination', '#inTransitCount', searchTerm, page);
-        } else if (status === 'completed') {
-            loadTransfers('completed', '#completedTransfersBody', '#completedTransfersPagination', '#completedCount', searchTerm, page);
-        } else if (status === 'rejected') {
-            loadTransfers('rejected', '#rejectedTransfersBody', '#rejectedTransfersPagination', '#rejectedCount', searchTerm, page);
-        }
-    });
-
-    // Handle the delete confirmation
-    $('#deleteTransferConfirmationModal').on('show.bs.modal', function(event) {
-        const button = $(event.relatedTarget);
-        const transferId = button.data('transfer-id');
-        $(this).find('#transferToDeleteId').val(transferId);
-    });
-
-    $('#confirmDeleteTransferBtn').on('click', function() {
-        const transferId = $('#transferToDeleteId').val();
-        if (transferId) {
-            deleteTransfer(transferId);
-        }
-    });
-
-    // ... your other listeners ...
-}
 // =============================================================================
 // VII. TRANSFER MANAGEMENT
 // =============================================================================
@@ -8060,6 +8118,23 @@ function getTransferStatusBadge(status) {
         default: return '<span class="badge bg-secondary">Unknown</span>';
     }
 }
+
+/**
+ * Formats a full timestamp string (YYYY-MM-DD HH:MM:SS) into a readable format.
+ * @param {string} timestampString - The timestamp from the database.
+ * @returns {string} - Formatted date and time (e.g., "10/14/2025, 09:52 AM").
+ */
+function formatDateTime(timestampString) {
+    if (!timestampString || timestampString === '0000-00-00 00:00:00') return "N/A";
+    const date = new Date(timestampString);
+    // This adjustment prevents timezone issues
+    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+    const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+    return adjustedDate.toLocaleString("en-US", {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: true
+    });
+}
 function formatCurrency(amount) {
   if (amount === null || amount === undefined) return "0.00";
 
@@ -8466,4 +8541,148 @@ function addFootersToPdf(doc, reportTitle) {
         const centerText = `Page ${i} of ${pageCount} | ${reportTitle}`;
         doc.text(centerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
     }
+}
+function populateBranchesDropdowns(selectors, callback) {
+  const branches = [
+ "ALL",
+    "HEADOFFICE",
+    "KINGDOM",
+    "TANQUE",
+    "DFISHER",
+    "ROXAS SUZUKI",
+    "MAMBUSAO",
+    "SIGMA",
+    "PRC",
+    "BAILAN",
+    "CUARTERO",
+    "JAMINDAN",
+    "ROXAS HONDA",
+    "ANTIQUE-1",
+    "ANTIQUE-2",
+    "DELGADO HONDA",
+    "DELGADO SUZUKI",
+    "JARO-1",
+    "JARO-2",
+    "KALIBO MABINI",
+    "KALIBO SUZUKI",
+    "ALTAVAS",
+    "EMAP",
+    "CULASI",
+    "BACOLOD",
+    "PASSI-1",
+    "PASSI-2",
+    "BALASAN",
+    "GUIMARAS",
+    "PEMDI BACOLOD",
+    "EEMSI-GUIMARAS",
+    "INFINITY BACOLOD",
+    "AJUY",
+    "MINDORO ROXAS",
+    "3S MINDORO",
+    "MINDORO-MB",
+    "MINDORO MANSALAY",
+    "K-RIDERS ROXAS",
+    "IBAJAY",
+    "NUMANCIA",
+    "CFCIPRC",
+  ];
+
+  selectors.forEach(sel => {
+    const select = $(sel);
+    select.empty();
+    branches.forEach(branch => {
+      select.append(`<option value="${branch}">${branch}</option>`);
+    });
+  });
+
+  if (typeof callback === "function") callback();
+}
+
+/**
+ * Renders the lists of current, added, and removed items in the manage transfer modal.
+ */
+function renderManagingTransferLists() {
+    const initialList = $('#managingTransferInitialList');
+    initialList.empty();
+    let totalInitial = 0;
+    let itemsAddedCount = managingTransfer.itemsToAdd.length;
+    let itemsRemovedCount = managingTransfer.itemsToRemove.length;
+
+    // Render initial items that are NOT marked for removal
+    managingTransfer.initialItems.forEach(item => {
+        if (!managingTransfer.itemsToRemove.includes(item.id)) {
+            totalInitial++;
+            initialList.append(`
+                <div class="transfer-item d-flex justify-content-between align-items-center">
+                    <span>${escapeHtml(item.brand)} ${escapeHtml(item.model)} <small class="text-muted">(${escapeHtml(item.engine_number)})</small></span>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeItemFromTransfer(${item.id})"><i class="bi bi-x-lg"></i></button>
+                </div>
+            `);
+        }
+    });
+
+    // Render items that are marked for removal (with an undo button)
+    managingTransfer.itemsToRemove.forEach(itemId => {
+        const item = managingTransfer.initialItems.find(i => i.id === itemId);
+        if (item) {
+            initialList.append(`
+                <div class="transfer-item to-be-removed d-flex justify-content-between align-items-center">
+                    <span>${escapeHtml(item.brand)} ${escapeHtml(item.model)} <small>(${escapeHtml(item.engine_number)})</small></span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="undoRemoveFromTransfer(${item.id})"><i class="bi bi-arrow-counterclockwise"></i></button>
+                </div>
+            `);
+        }
+    });
+
+    // Render newly added items
+    managingTransfer.itemsToAdd.forEach(item => {
+        initialList.append(`
+            <div class="transfer-item to-be-added d-flex justify-content-between align-items-center">
+                <span>${escapeHtml(item.brand)} ${escapeHtml(item.model)} <small class="text-muted">(${escapeHtml(item.engine_number)})</small></span>
+                <button class="btn btn-sm btn-outline-danger" onclick="undoAddToTransfer(${item.id})"><i class="bi bi-x-lg"></i></button>
+            </div>
+        `);
+    });
+
+    if (totalInitial === 0 && itemsAddedCount === 0) {
+        initialList.html('<p class="text-muted text-center small p-3">No items in this transfer.</p>');
+    }
+
+    // Update summary
+    $('#manageTransferTotal').text(totalInitial + itemsAddedCount);
+    $('#manageTransferAdded').text(itemsAddedCount);
+    $('#manageTransferRemoved').text(itemsRemovedCount);
+}
+
+// Functions to manipulate the items in the managingTransfer object
+function removeItemFromTransfer(motorcycleId) {
+    if (!managingTransfer.itemsToRemove.includes(motorcycleId)) {
+        managingTransfer.itemsToRemove.push(motorcycleId);
+    }
+    renderManagingTransferLists();
+}
+
+function undoRemoveFromTransfer(motorcycleId) {
+    managingTransfer.itemsToRemove = managingTransfer.itemsToRemove.filter(id => id !== motorcycleId);
+    renderManagingTransferLists();
+}
+
+function addItemToTransfer(id, brand, model, engine, cost) {
+    const isAlreadyInitial = managingTransfer.initialItems.some(item => item.id === id);
+    const isAlreadyAdded = managingTransfer.itemsToAdd.some(item => item.id === id);
+
+    if(isAlreadyInitial || isAlreadyAdded) {
+        showErrorModal('This motorcycle is already in the transfer list.');
+        return;
+    }
+    
+    managingTransfer.itemsToAdd.push({ id, brand, model, engine_number: engine, inventory_cost: cost });
+    renderManagingTransferLists();
+    $('#manageTransferSearch').val('').focus();
+    $('#manageTransferSearchResults').empty();
+}
+
+function undoAddToTransfer(motorcycleId) {
+    managingTransfer.itemsToAdd = managingTransfer.itemsToAdd.filter(item => item.id !== motorcycleId);
+    renderManagingTransferLists();
 }

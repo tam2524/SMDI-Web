@@ -705,24 +705,24 @@ function loadInventoryDashboard(
       if (response.success) {
         let sortedData = response.data;
 
-        sortedData.sort((a, b) => {
-          let valueA, valueB;
+ sortedData.sort((a, b) => {
+          let valueA, valueB;
 
-          if (sortBy === "model") {
-            valueA = a.model.toLowerCase();
-            valueB = b.model.toLowerCase();
-          } else if (sortBy === "brand") {
-            valueA = a.brand.toLowerCase();
-            valueB = b.brand.toLowerCase();
-          } else {
-            valueA = a.model.toLowerCase();
-            valueB = b.model.toLowerCase();
-          }
+          if (sortBy === "model") {
+            valueA = (a.model || "").toLowerCase(); // <-- FIX
+            valueB = (b.model || "").toLowerCase(); // <-- FIX
+          } else if (sortBy === "brand") {
+            valueA = (a.brand || "").toLowerCase(); // <-- FIX
+            valueB = (b.brand || "").toLowerCase(); // <-- FIX
+          } else {
+            valueA = (a.model || "").toLowerCase(); // <-- FIX
+            valueB = (b.model || "").toLowerCase(); // <-- FIX
+          }
 
-          if (valueA < valueB) return sortOrder === "asc" ? -1 : 1;
-          if (valueA > valueB) return sortOrder === "asc" ? 1 : -1;
-          return 0;
-        });
+          if (valueA < valueB) return sortOrder === "asc" ? -1 : 1;
+          if (valueA > valueB) return sortOrder === "asc" ? 1 : -1;
+          return 0;
+        });
 
         renderInventoryCards(sortedData);
       } else {
