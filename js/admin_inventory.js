@@ -1,6 +1,6 @@
-// =============================================================================
-// I. GLOBAL VARIABLES & CONSTANTS
-// =============================================================================
+
+
+
 let selectedReportModels = [];
 let allModelsCache = [];
 let currentReportModel = null;
@@ -28,16 +28,16 @@ let currentReportBrand = null;
 let modelCount = 0;
 let currentUserRole = "USER";
 const canAccessScrapFeature = isHeadOffice || isAdminUser;
-// NEW: Object to manage the state of an active transfer edit
+
 let managingTransfer = {
   invoiceNumber: null,
   fromBranch: null,
   toBranch: null,
   transferDate: null,
   notes: null,
-  initialItems: [], // Motorcycles originally in the transfer
-  itemsToAdd: [], // New motorcycles to be added
-  itemsToRemove: [], // IDs of original motorcycles to be removed
+  initialItems: [], 
+  itemsToAdd: [], 
+  itemsToRemove: [], 
 };
 
 /**
@@ -164,12 +164,12 @@ const manageTransferStyles = `
     .transfer-item.to-be-added { background-color: #e5f5e5; }
 `;
 
-// =============================================================================
-// II. INITIALIZATION & EVENT LISTENERS
-// =============================================================================
+
+
+
 
 $(document).ready(function () {
-  // Inject Styles
+  
   const styleSheet = document.createElement("style");
   styleSheet.textContent = pdfStyles;
   document.head.appendChild(styleSheet);
@@ -177,7 +177,7 @@ $(document).ready(function () {
   styleSheetManage.textContent = manageTransferStyles;
   document.head.appendChild(styleSheetManage);
 
-  // Initial Load
+  
   shownTransferIds = [];
   loadInventoryDashboard();
   loadInventoryTable();
@@ -203,7 +203,7 @@ $(document).ready(function () {
     "#rejectedCount"
   );
 
-  // Load data when a tab is shown
+  
   $('button[data-bs-toggle="tab"]').on("shown.bs.tab", function (e) {
     const target = $(e.target).data("bs-target");
     switch (target) {
@@ -220,19 +220,19 @@ $(document).ready(function () {
         loadRedeemedUnits(1);
         break;
 
-      // ==================================================
-      // START: ADD THIS NEW CASE
-      // ==================================================
+      
+      
+      
       case "#activityLog":
         loadActivityLog(1);
         break;
-      // ==================================================
-      // END: ADD THIS NEW CASE
-      // ==================================================
+      
+      
+      
     }
   });
 
-  // Search button clicks
+  
   $("#soldUnitsSearchBtn").on("click", () =>
     loadSoldUnits(1, $("#soldUnitsSearch").val())
   );
@@ -246,7 +246,7 @@ $(document).ready(function () {
     loadRedeemedUnits(1, $("#redeemedUnitsSearch").val())
   );
 
-  // Modal Stacking Handler
+  
   $(document).on("show.bs.modal", ".modal", function () {
     const zIndex = 1050 + 10 * $(".modal:visible").length;
     $(this).css("z-index", zIndex);
@@ -271,11 +271,11 @@ $(document).ready(function () {
     }
   });
 
-  // And ensure this line is in your $(document).ready() function
+  
   $("#reportType").trigger("change");
 });
 
-// Load data when a tab is shown
+
 $('button[data-bs-toggle="tab"]').on("shown.bs.tab", function (e) {
   const target = $(e.target).data("bs-target");
   switch (target) {
@@ -294,7 +294,7 @@ $('button[data-bs-toggle="tab"]').on("shown.bs.tab", function (e) {
   }
 });
 
-// Search button clicks
+
 $("#soldUnitsSearchBtn").on("click", () =>
   loadSoldUnits(1, $("#soldUnitsSearch").val())
 );
@@ -308,14 +308,14 @@ $("#redeemedUnitsSearchBtn").on("click", () =>
   loadRedeemedUnits(1, $("#redeemedUnitsSearch").val())
 );
 
-// Search on Enter key press
+
 $(
   "#soldUnitsSearch, #repoUnitsSearch, #scrappedUnitsSearch, #redeemedUnitsSearch"
 ).on("keypress", function (e) {
   if (e.which === 13) $(this).next("button").click();
 });
 
-// Event delegation for revert buttons
+
 $(document).on("click", ".revert-btn", function () {
   const id = $(this).data("id");
   const type = $(this).data("type");
@@ -327,13 +327,13 @@ $(document).on("click", ".revert-btn", function () {
   $("#revertConfirmationModal").modal("show");
 });
 
-// Confirmation for revert action
+
 $("#confirmRevertBtn").on("click", revertTransaction);
 /**
  * Central function to set up all event listeners for the page.
  */
 function setupEventListeners() {
-  // --- General Input Listeners ---
+  
   $("body").on(
     "input",
     ".engine-number, #editEngineNumber, .frame-number, #editFrameNumber",
@@ -342,24 +342,24 @@ function setupEventListeners() {
     }
   );
 
-  // When a tab is shown, if it's the global history tab, load the data
+  
   $('button[data-bs-target="#globalTransferHistory"]').on(
     "shown.bs.tab",
     function () {
-      $("#globalTransferSearchBtn").click(); // Trigger search to load all tables
+      $("#globalTransferSearchBtn").click(); 
     }
   );
 
   $("#manageTransferSearch").on("keyup", function (e) {
     if (e.which === 13) {
-      // Enter key
+      
       searchAvailableForTransfer();
     }
   });
   $("#manageTransferSearchBtn").on("click", searchAvailableForTransfer);
   $("#saveTransferChangesBtn").on("click", submitTransferUpdate);
 
-  // Global search button and enter key
+  
   $("#globalTransferSearchBtn").on("click", function () {
     const searchTerm = $("#globalTransferSearch").val();
     loadTransfers(
@@ -404,7 +404,7 @@ function setupEventListeners() {
   $("#activityLogSearch").on("keypress", function (e) {
     if (e.which === 13) $(this).next("button").click();
   });
-  // Handle clicks on pagination links for all three tables
+  
   $(document).on("click", ".transfer-pagination .page-link", function (e) {
     e.preventDefault();
     if ($(this).parent().hasClass("disabled")) return;
@@ -442,7 +442,7 @@ function setupEventListeners() {
     }
   });
 
-  // Handle the delete confirmation
+  
   $("#deleteTransferConfirmationModal").on("show.bs.modal", function (event) {
     const button = $(event.relatedTarget);
     const transferId = button.data("transfer-id");
@@ -456,10 +456,10 @@ function setupEventListeners() {
     }
   });
 
-  // Add these lines inside your setupEventListeners function
+  
   $("#reportType").on("change", updateReportFilterOptions);
 
-  // Set default dates for a better user experience
+  
   const today = new Date().toISOString().slice(0, 10);
   $("#dailyDate").val(today);
   $("#asOfDate").val(today);
@@ -476,7 +476,7 @@ function setupEventListeners() {
     const status = $(this).val();
     toggleSoldDetails(status, null);
   });
-  // --- Search Listeners ---
+  
   $("#searchModelBtn").click(searchModels);
   $("#searchModel").keypress((e) => {
     if (e.which === 13) searchModels();
@@ -533,7 +533,7 @@ function setupEventListeners() {
     if (e.which == 13) loadInventoryDashboard($(this).val());
   });
 
-  // --- Invoice & Transfer Receipt Search ---
+  
   $("#searchInvoiceNumberBtn").click(() =>
     $("#searchInvoiceNumberModal").modal("show")
   );
@@ -556,7 +556,7 @@ function setupEventListeners() {
     }
   });
 
-  // --- Incoming Transfers Listeners ---
+  
   $("#selectAllTransfers, #selectAllTransfersHeader").change(function () {
     const isChecked = $(this).prop("checked");
     $("#selectAllTransfers, #selectAllTransfersHeader").prop(
@@ -627,7 +627,7 @@ function setupEventListeners() {
       );
     });
 
-  // --- Inventory Table Pagination & Sorting ---
+  
   $(document).on("click", ".page-link", function (e) {
     e.preventDefault();
     if ($(this).parent().hasClass("disabled")) return;
@@ -664,15 +664,15 @@ function setupEventListeners() {
     );
   });
 
-  // --- New Motorcycle Form Listeners ---
+  
 
-  // --- Edit Motorcycle Form Listeners ---
+  
   $("#editMotorcycleForm").submit((e) => {
     e.preventDefault();
     updateMotorcycle();
   });
 
-  // --- Sales Form Listeners ---
+  
   $("#paymentType").change(handlePaymentTypeChange);
   $("#editPaymentType").change(function () {
     togglePaymentTypeDetails($(this).val());
@@ -681,7 +681,7 @@ function setupEventListeners() {
     toggleSoldDetails($(this).val(), null);
   });
 
-  // --- Reporting Listeners ---
+  
   $("#generateReportsButton").click(showMonthlyReportOptions);
   $("#generateReportBtn").off("click").on("click", generateReport);
   $(document).on("click", "#exportMonthlyReportToPDF", () =>
@@ -692,18 +692,18 @@ function setupEventListeners() {
       $("#monthPickerContainer").hide();
       $("#datePickerContainer").show();
     } else {
-      // 'monthly'
+      
       $("#monthPickerContainer").show();
       $("#datePickerContainer").hide();
     }
   });
 
-  // --- Report Model Filter Listeners ---
+  
   $("#reportModelSearch").on("keyup", function () {
     updateModelSearchResults($(this).val());
   });
 
-  // Prevent dropdown from closing when clicking inside, allowing selection
+  
   $("#model-search-results").on("click", ".dropdown-item", function (e) {
     e.stopPropagation();
   });
@@ -711,7 +711,7 @@ function setupEventListeners() {
     e.stopPropagation();
   });
 
-  // --- Validation Listeners ---
+  
 
   $("#redeemPaymentType").change(handleRedeemPaymentTypeChange);
   $("#submitRedeemBtn").click(submitRedeem);
@@ -732,34 +732,34 @@ function setupEventListeners() {
   $("#reportType").on("change", function () {
     const selectedReport = $(this).val();
 
-    // Reset all conditional fields to their default state
+    
     $(
       "#reportPeriodContainer, #datePickerContainer, #soldSaleTypeContainer, #brandFilterContainer, #dailyReportDateContainer"
     ).hide();
-    $("#monthPickerContainer").show(); // Show month by default
-    $("#periodMonthly").prop("checked", true); // Default to monthly
+    $("#monthPickerContainer").show(); 
+    $("#periodMonthly").prop("checked", true); 
 
-    // Logic for Inventory Report
+    
     if (selectedReport === "inventory") {
       $("#reportPeriodContainer").show();
       $("#brandFilterContainer").show();
-      $('input[name="reportPeriod"]:checked').trigger("change"); // Set correct date picker
+      $('input[name="reportPeriod"]:checked').trigger("change"); 
     }
-    // Logic for Sold Units Report
+    
     else if (selectedReport === "sold_units") {
       $("#reportPeriodContainer").show();
       $("#brandFilterContainer").show();
       $("#soldSaleTypeContainer").show();
-      $('input[name="reportPeriod"]:checked').trigger("change"); // Set correct date picker
+      $('input[name="reportPeriod"]:checked').trigger("change"); 
     }
-    // Logic for Daily Sold Report
+    
     else if (selectedReport === "daily_sold_units") {
       $("#monthPickerContainer").hide();
-      $("#datePickerContainer").show(); // This report always uses a single date
+      $("#datePickerContainer").show(); 
       $("#soldSaleTypeContainer").show();
       $("#brandFilterContainer").show();
     }
-    // Logic for other reports that only need brand/month filters
+    
     else if (
       ["transferred", "received", "scrapped", "motorcycle"].includes(
         selectedReport
@@ -768,15 +768,15 @@ function setupEventListeners() {
       $("#brandFilterContainer").show();
     }
   });
-  // 2. ADD this new event listener inside your setupEventListeners() function.
+  
   $('input[name="reportPeriod"]').on("change", function () {
-    // Hide all date picker containers first
+    
     $("#datePickerDailyContainer").hide();
     $("#monthPickerContainer").hide();
     $("#datePickerAsOfContainer").hide();
     $("#dateRangeContainer").hide();
 
-    // Show the one that corresponds to the selected radio button
+    
     const selectedPeriod = $(this).val();
     if (selectedPeriod === "daily") {
       $("#datePickerDailyContainer").show();
@@ -793,7 +793,7 @@ function setupEventListeners() {
     $("#reportType").trigger("change");
   });
 
-  // When a tab is shown, if it's the global history tab, load the data
+  
   $('button[data-bs-target="#globalTransferHistory"]').on(
     "shown.bs.tab",
     function () {
@@ -822,7 +822,7 @@ function setupEventListeners() {
     }
   );
 
-  // Global search button and enter key
+  
   $("#globalTransferSearchBtn").on("click", function () {
     const searchTerm = $("#globalTransferSearch").val();
     loadTransfers(
@@ -856,7 +856,7 @@ function setupEventListeners() {
     }
   });
 
-  // Handle clicks on pagination links for all three tables
+  
   $(document).on("click", ".transfer-pagination .page-link", function (e) {
     e.preventDefault();
     if ($(this).parent().hasClass("disabled")) return;
@@ -864,7 +864,7 @@ function setupEventListeners() {
     const status = $(this).closest("ul").data("status");
     const searchTerm = $("#globalTransferSearch").val();
 
-    // Determine which table to reload based on the status
+    
     if (status === "in-transit") {
       loadTransfers(
         "in-transit",
@@ -896,9 +896,9 @@ function setupEventListeners() {
   });
 }
 
-// =============================================================================
-// III. MODAL & UI HELPERS
-// =============================================================================
+
+
+
 
 function showSuccessModal(message) {
   $("#successMessage").text(message);
@@ -925,7 +925,7 @@ function showConfirmationModal(
   btnClass = "primary",
   btnText = "Confirm"
 ) {
-  $("#confirmationMessage").html(message); // Use .html() to allow for simple formatting
+  $("#confirmationMessage").html(message); 
   $("#confirmationModalLabel").text(title);
   const confirmBtn = $("#confirmActionBtn");
   confirmBtn
@@ -956,12 +956,12 @@ function ensureModalScrollable(modalId) {
   }
 }
 
-// =============================================================================
-// IV. DASHBOARD & INVENTORY TABLE
-// =============================================================================
 
-// Functions related to the main dashboard cards and the inventory management table.
-// Includes loading, rendering, pagination, and action button setup.
+
+
+
+
+
 function loadInventoryDashboard(
   searchTerm = "",
   sortBy = "model",
@@ -988,14 +988,14 @@ function loadInventoryDashboard(
           let valueA, valueB;
 
           if (sortBy === "model") {
-            valueA = (a.model || "").toLowerCase(); // <-- FIX
-            valueB = (b.model || "").toLowerCase(); // <-- FIX
+            valueA = (a.model || "").toLowerCase(); 
+            valueB = (b.model || "").toLowerCase(); 
           } else if (sortBy === "brand") {
-            valueA = (a.brand || "").toLowerCase(); // <-- FIX
-            valueB = (b.brand || "").toLowerCase(); // <-- FIX
+            valueA = (a.brand || "").toLowerCase(); 
+            valueB = (b.brand || "").toLowerCase(); 
           } else {
-            valueA = (a.model || "").toLowerCase(); // <-- FIX
-            valueB = (b.model || "").toLowerCase(); // <-- FIX
+            valueA = (a.model || "").toLowerCase(); 
+            valueB = (b.model || "").toLowerCase(); 
           }
 
           if (valueA < valueB) return sortOrder === "asc" ? -1 : 1;
@@ -1274,8 +1274,8 @@ function updateInventoryPaginationControls(totalPages) {
 }
 
 function setupTableActionButtons() {
-  // Use event delegation to handle clicks on buttons inside the table body
-  // This is more efficient and avoids issues with re-binding after AJAX refreshes.
+  
+  
   $("#inventoryTableBody")
     .off("click")
     .on("click", "button", function () {
@@ -1334,9 +1334,9 @@ function toggleReportOptions() {
   }
 }
 
-// =============================================================================
-// V. MOTORCYCLE CRUD (Create, Read, Update)
-// =============================================================================
+
+
+
 function loadUnitMovement(id) {
   $.ajax({
     url: "../api/inventory_management.php",
@@ -1346,9 +1346,9 @@ function loadUnitMovement(id) {
     success: function (response) {
       if (response.success) {
         const details = response.details;
-        const history = response.history || []; // <-- fixed here
+        const history = response.history || []; 
 
-        // Unit title and details
+        
         $("#movementUnitTitle").text(`${details.brand} ${details.model}`);
         $("#movementUnitDetails").text(
           `Engine #: ${details.engine_number} | Frame #: ${details.frame_number}`
@@ -1473,17 +1473,17 @@ function loadMotorcycleForEdit(id) {
 function updateMotorcycle() {
   const status = $("#editStatus").val();
 
-  // Handle nullable date_received
+  
   const dateReceivedValue = $("#editDateReceived").val();
   const formattedDateReceived = dateReceivedValue
     ? formatDateForAPI(dateReceivedValue)
-    : null; // <-- Allow null
+    : null; 
 
   const formData = {
     action: "update_motorcycle",
     id: $("#editId").val(),
     date_delivered: formatDateForAPI($("#editDateDelivered").val()),
-    date_received: formattedDateReceived, // <-- updated
+    date_received: formattedDateReceived, 
     brand: $("#editBrand").val(),
     model: $("#editModel").val(),
     category: $("#editCategory").val(),
@@ -1506,7 +1506,7 @@ function updateMotorcycle() {
     formData.monthly_amortization = $("#editMonthlyAmortization").val();
   }
 
-  // Validation (keep date_received optional)
+  
   if (
     !formData.id ||
     !formData.date_delivered ||
@@ -1629,9 +1629,9 @@ function togglePaymentTypeDetails(paymentType) {
     $("#installmentDetails").hide();
   }
 }
-// =======================
-// Search Models
-// =======================
+
+
+
 
 function searchModels() {
   const query = $("#searchModel").val().trim();
@@ -1836,17 +1836,17 @@ $("#addMotorcycleModal").on("hidden.bs.modal", function () {
   }
 });
 
-// --- START: REPLACEMENT FUNCTION ---
+
 function viewModelDetails(units) {
   let html = "";
 
-  // The 'units' array already contains all the data we need.
-  // We just loop through it and build the HTML.
+  
+  
   units.forEach((data, index) => {
     const isSold = data.status.toLowerCase() === "sold";
 
-    /* --- ADD THIS NEW BLOCK --- */
-    // This part builds the redemption information block if the unit was redeemed.
+   
+    
     const redeemInfoHtml = data.redeem_details
       ? `
             <hr>
@@ -1864,9 +1864,9 @@ function viewModelDetails(units) {
                 </div>
             </div>`
       : "";
-    /* --- END NEW BLOCK --- */
+   
 
-    // This part builds the sales information block if the unit is sold.
+    
     const saleInfoHtml = isSold
       ? `
             <hr>
@@ -1932,7 +1932,7 @@ function viewModelDetails(units) {
             }`
       : "";
 
-    // This part builds the main details for each unit.
+    
     html += `
             <div class="card mb-3">
                 <div class="card-header">
@@ -1989,13 +1989,13 @@ function viewModelDetails(units) {
   $("#detailsModal .modal-body").html(html);
   $("#detailsModal").modal("show");
 }
-// --- END: REPLACEMENT FUNCTION ---
 
-// =============================================================================
-// VI. SALES & SCRAPPING
-// =============================================================================
 
-// Functions for handling the sale and scrapping of motorcycles.
+
+
+
+
+
 function sellMotorcycle(id) {
   $("#saleDate").datepicker("setDate", new Date());
   $("#sellMotorcycleId").val(id);
@@ -2034,7 +2034,7 @@ function submitSale() {
     const saleDate = new Date(saleDateInput);
     const today = new Date();
 
-    // Reset time to compare dates only
+    
     saleDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
 
@@ -2042,7 +2042,7 @@ function submitSale() {
       showErrorModal(
         "Future dates are not allowed. Please select a valid sale date."
       );
-      return; // Stop the function from proceeding
+      return; 
     }
   }
 
@@ -2113,7 +2113,7 @@ function scrapMotorcycle(id) {
   $("#scrapMotorcycleModal").modal("show");
 }
 
-// Submit scrap function
+
 function submitScrap() {
   const formData = {
     action: "scrap_motorcycle",
@@ -2178,13 +2178,13 @@ function openRedeemModal(id) {
     data: {
       action: "get_motorcycle",
       id: id,
-      include_sale_details: true, // This tells the backend to fetch sales data
+      include_sale_details: true, 
     },
     dataType: "json",
     success: function (response) {
       if (response.success) {
         const motorcycle = response.data;
-        // A unit can only be redeemed if its category is 'repo' and it is 'available'
+        
         if (
           motorcycle.category === "repo" &&
           motorcycle.status === "available"
@@ -2195,7 +2195,7 @@ function openRedeemModal(id) {
 
           const saleDetails = motorcycle.sale_details;
 
-          // Define all fields to easily manage them
+          
           const fields = {
             saleDate: $("#redeemSaleDate"),
             customerName: $("#redeemCustomerName"),
@@ -2207,7 +2207,7 @@ function openRedeemModal(id) {
           };
 
           if (saleDetails) {
-            // DATA FOUND: Pre-fill the form and make fields read-only
+            
             fields.saleDate.val(saleDetails.sale_date).prop("readonly", true);
             fields.customerName
               .val(saleDetails.customer_name)
@@ -2228,13 +2228,13 @@ function openRedeemModal(id) {
                 .prop("readonly", true);
             }
           } else {
-            // NO DATA FOUND: Ensure all fields are empty and editable
+            
             Object.values(fields).forEach(($field) => {
               $field.val("").prop("readonly", false).prop("disabled", false);
             });
           }
 
-          handleRedeemPaymentTypeChange(); // This will correctly show/hide the COD/Installment sections
+          handleRedeemPaymentTypeChange(); 
           $("#redeemModalLabel").text("Redeem Motorcycle");
           $("#redeemModal").modal("show");
         } else {
@@ -2270,7 +2270,7 @@ function submitRedeem() {
     payment_type: $("#redeemPaymentType").val(),
   };
 
-  // --- Validation ---
+  
   if (
     !formData.redeem_date ||
     !formData.amount_paid ||
@@ -2339,10 +2339,10 @@ function submitRedeem() {
  * Opens the REPO modal and populates it with the motorcycle ID.
  * @param {number} id The ID of the motorcycle to be marked as repo.
  */
-// --- REPLACE WITH THIS ---
+
 function openRepoModal(id) {
   $("#repoMotorcycleId").val(id);
-  // This is the correct way to set the value for an <input type="date">
+  
   $("#repoDate").val(new Date().toISOString().split("T")[0]);
   $("#repoReason").val("");
   $("#repoModal").modal("show");
@@ -2390,9 +2390,9 @@ function submitRepo() {
   });
 }
 
-// =============================================================================
-// XII. DETAILED LOG TABS (SOLD, REPO, SCRAPPED, REDEEMED)
-// =============================================================================
+
+
+
 
 function loadSoldUnits(page = 1, query = "") {
   loadGenericLogData(
@@ -2588,7 +2588,7 @@ function renderRedeemedUnitsTable(data) {
   $("#redeemedUnitsTableBody").html(html);
 }
 
-// DELETE your old renderGenericPagination function and REPLACE it with this one.
+
 
 /**
  * Renders a smart, truncated pagination control.
@@ -2607,10 +2607,10 @@ function renderGenericPagination(
   const paginationEl = $(selector);
   paginationEl.empty();
   if (totalPages <= 1) {
-    return; // No pagination needed if there's only one page or none.
+    return; 
   }
 
-  const maxVisiblePages = 7; // Max number of page links to show (e.g., 1 ... 4 5 6 ... 10) - must be odd.
+  const maxVisiblePages = 7; 
   const sidePages = Math.floor((maxVisiblePages - 1) / 2);
 
   const createPageItem = (page, text, isDisabled = false, isActive = false) => {
@@ -2622,7 +2622,7 @@ function renderGenericPagination(
     const query =
       searchInput.length > 0 ? `'${escapeHtml(searchInput.val())}'` : "''";
 
-    // The onclick now correctly passes the page number and the current search query
+    
     const clickHandler = isDisabled
       ? ""
       : `onclick="${callbackFunctionName}(${page}, ${query})"`;
@@ -2630,7 +2630,7 @@ function renderGenericPagination(
     return `<li class="page-item ${disabledClass} ${activeClass}"><a class="page-link" href="#" ${clickHandler}>${text}</a></li>`;
   };
 
-  // "Previous" button
+  
   paginationEl.append(
     createPageItem(currentPage - 1, "&laquo;", currentPage === 1)
   );
@@ -2638,11 +2638,11 @@ function renderGenericPagination(
   let startPage, endPage;
 
   if (totalPages <= maxVisiblePages) {
-    // Show all pages if total is less than max visible
+    
     startPage = 1;
     endPage = totalPages;
   } else {
-    // Calculate start and end pages for truncated view
+    
     if (currentPage <= sidePages + 1) {
       startPage = 1;
       endPage = maxVisiblePages - 1;
@@ -2655,7 +2655,7 @@ function renderGenericPagination(
     }
   }
 
-  // Always show page 1
+  
   if (startPage > 1) {
     paginationEl.append(createPageItem(1, "1"));
     if (startPage > 2) {
@@ -2665,12 +2665,12 @@ function renderGenericPagination(
     }
   }
 
-  // Main page numbers
+  
   for (let i = startPage; i <= endPage; i++) {
     paginationEl.append(createPageItem(i, i, false, i === currentPage));
   }
 
-  // Always show last page
+  
   if (endPage < totalPages) {
     if (endPage < totalPages - 1) {
       paginationEl.append(
@@ -2680,7 +2680,7 @@ function renderGenericPagination(
     paginationEl.append(createPageItem(totalPages, totalPages));
   }
 
-  // "Next" button
+  
   paginationEl.append(
     createPageItem(currentPage + 1, "&raquo;", currentPage === totalPages)
   );
@@ -2697,8 +2697,8 @@ function revertTransaction() {
     success: function (response) {
       $("#revertConfirmationModal").modal("hide");
       if (response.success) {
-        // Show the success message
-        showSuccessModal(response.message); // Reload the entire page after 1.5 seconds
+        
+        showSuccessModal(response.message); 
         setTimeout(() => {
           location.reload();
         }, 1500);
@@ -2724,9 +2724,9 @@ function getStatusBadge(status) {
   }
 }
 
-// =============================================================================
-// XIII. ACTIVITY LOG
-// =============================================================================
+
+
+
 
 /**
  * Loads the system-wide activity log with pagination and search.
@@ -2777,9 +2777,9 @@ function renderActivityLogTable(data) {
   });
   $("#activityLogTableBody").html(html);
 }
-// =============================================================================
-// VII-A. GLOBAL TRANSFER HISTORY
-// =============================================================================
+
+
+
 
 /**
  * Loads transfers for a specific status (in-transit, completed, rejected) into the UI.
@@ -2810,7 +2810,7 @@ function loadTransfers(
       status: status,
       query: searchTerm,
       page: page,
-      limit: 10, // Show 10 items per page
+      limit: 10, 
     },
     dataType: "json",
     success: function (response) {
@@ -2818,7 +2818,7 @@ function loadTransfers(
       let html = "";
       if (response.success && response.data.length > 0) {
         response.data.forEach((item) => {
-          // NEW HTML RERNDERING FOR GROUPED DATA
+          
           const modelsPreview = item.models
             ? item.models.split(",").slice(0, 2).join(", ")
             : "N/A";
@@ -2897,21 +2897,21 @@ function openManageTransferModalById(invoiceNumber) {
     return;
   }
 
-  // Show loading
+  
   $("#manageTransferLoading").show();
   $("#manageTransferContent").hide();
 
-  // Step 1. Populate branch dropdowns first, then fetch data AFTER
+  
   populateBranchesDropdowns(
     ["#manageTransferFromBranch", "#manageTransferToBranch"],
     function () {
-      // Step 2. Once branches loaded, fetch transfer details
+      
       $.ajax({
         url: "../api/inventory_management.php",
         method: "GET",
         data: {
           action: "get_transfer_details_by_invoice",
-          transfer_invoice_number: invoiceNumber, // <-- make sure backend expects this
+          transfer_invoice_number: invoiceNumber, 
         },
         dataType: "json",
         success: function (response) {
@@ -2919,7 +2919,7 @@ function openManageTransferModalById(invoiceNumber) {
             const header = response.header;
             const motorcycles = response.motorcycles || [];
 
-            // Step 3. Populate global state
+            
             managingTransfer = {
               originalInvoiceNumber: header.transfer_invoice_number,
               fromBranch: header.from_branch,
@@ -2928,7 +2928,7 @@ function openManageTransferModalById(invoiceNumber) {
               itemsToRemove: [],
             };
 
-            // Step 4. Fill out form fields
+            
             $("#manageTransferModalLabel").text(
               `Manage Transfer: ${managingTransfer.originalInvoiceNumber}`
             );
@@ -2942,13 +2942,13 @@ function openManageTransferModalById(invoiceNumber) {
             $("#manageTransferToBranch").val(header.to_branch);
             $("#manageTransferNotes").val(header.notes || "");
 
-            // Step 5. Render motorcycle list
+            
             renderManagingTransferLists();
 
-            // Step 6. Show the modal
+            
             $("#manageTransferModal").modal("show");
 
-            // Show content, hide loading
+            
             $("#manageTransferLoading").hide();
             $("#manageTransferContent").show();
           } else {
@@ -2980,7 +2980,7 @@ function renderManagingTransferLists() {
   let itemsAddedCount = managingTransfer.itemsToAdd.length;
   let itemsRemovedCount = managingTransfer.itemsToRemove.length;
 
-  // Render initial items that are NOT marked for removal
+  
   managingTransfer.initialItems.forEach((item) => {
     if (!managingTransfer.itemsToRemove.includes(item.id)) {
       totalInitial++;
@@ -3001,7 +3001,7 @@ function renderManagingTransferLists() {
     }
   });
 
-  // Render items that are marked for removal (with an undo button)
+  
   managingTransfer.itemsToRemove.forEach((itemId) => {
     const item = managingTransfer.initialItems.find((i) => i.id === itemId);
     if (item) {
@@ -3018,7 +3018,7 @@ function renderManagingTransferLists() {
     }
   });
 
-  // Render newly added items
+  
   managingTransfer.itemsToAdd.forEach((item) => {
     initialList.append(`
             <div class="transfer-item to-be-added d-flex justify-content-between align-items-center">
@@ -3040,13 +3040,13 @@ function renderManagingTransferLists() {
     );
   }
 
-  // Update summary
+  
   $("#manageTransferTotal").text(totalInitial + itemsAddedCount);
   $("#manageTransferAdded").text(itemsAddedCount);
   $("#manageTransferRemoved").text(itemsRemovedCount);
 }
 
-// Functions to manipulate the items in the managingTransfer object
+
 function removeItemFromTransfer(motorcycleId) {
   if (!managingTransfer.itemsToRemove.includes(motorcycleId)) {
     managingTransfer.itemsToRemove.push(motorcycleId);
@@ -3109,7 +3109,7 @@ function searchAvailableForTransfer() {
     method: "GET",
     data: {
       action: "search_inventory_by_engine",
-      branch: managingTransfer.fromBranch, // Critical: Only search in the 'from' branch
+      branch: managingTransfer.fromBranch, 
       query: query,
     },
     dataType: "json",
@@ -3148,11 +3148,11 @@ function searchAvailableForTransfer() {
  * Submits all updated transfer details (including date, branches, etc.) to the backend.
  */
 function submitTransferUpdate() {
-  // Collect all data from the form
+  
   const dataToSend = {
-    action: "update_transfer_group", // Use a new, more descriptive action name
-    original_invoice_number: managingTransfer.originalInvoiceNumber, // Send the original invoice to find the records
-    transfer_invoice_number: $("#manageTransferInvoice").val(), // Send the new invoice number
+    action: "update_transfer_group", 
+    original_invoice_number: managingTransfer.originalInvoiceNumber, 
+    transfer_invoice_number: $("#manageTransferInvoice").val(), 
     from_branch: $("#manageTransferFromBranch").val(),
     to_branch: $("#manageTransferToBranch").val(),
     transfer_date: $("#manageTransferDate").val(),
@@ -3162,7 +3162,7 @@ function submitTransferUpdate() {
     motorcycles_to_remove: managingTransfer.itemsToRemove,
   };
 
-  // Basic validation
+  
   if (
     !dataToSend.transfer_invoice_number ||
     !dataToSend.to_branch ||
@@ -3187,7 +3187,7 @@ function submitTransferUpdate() {
       if (response.success) {
         showSuccessModal(response.message);
         $("#manageTransferModal").modal("hide");
-        // Refresh the global history tab to show changes
+        
         $("#globalTransferSearchBtn").click();
       } else {
         showErrorModal(response.message || "Failed to update transfer.");
@@ -3234,15 +3234,15 @@ function openManageTransferModalById(invoiceNumber) {
     return;
   }
 
-  // Show loading animation or overlay
+  
   $("#manageTransferLoading").show();
   $("#manageTransferContent").hide();
 
-  // ✅ Step 1: Populate branch dropdowns FIRST, then fetch data
+  
   populateBranchesDropdowns(
     ["#manageTransferFromBranch", "#manageTransferToBranch"],
     function () {
-      // ✅ Step 2: Once dropdowns are ready, fetch transfer details
+      
       $.ajax({
         url: "../api/inventory_management.php",
         method: "GET",
@@ -3264,7 +3264,7 @@ function openManageTransferModalById(invoiceNumber) {
               itemsToRemove: [],
             };
 
-            // ✅ Step 3: Populate header fields
+            
             $("#manageTransferModalLabel")
               .text(`Manage Transfer: ${header.transfer_invoice_number}`)
               .css("color", "white");
@@ -3273,7 +3273,7 @@ function openManageTransferModalById(invoiceNumber) {
             $("#manageTransferInvoice").val(header.transfer_invoice_number);
             $("#manageTransferNotes").val(header.notes || "");
 
-            // ✅ Step 4: Select branches (after options exist)
+            
             $("#manageTransferFromBranch")
               .val(header.from_branch)
               .trigger("change");
@@ -3281,13 +3281,13 @@ function openManageTransferModalById(invoiceNumber) {
               .val(header.to_branch)
               .trigger("change");
 
-            // ✅ Step 5: Render motorcycles list
+            
             renderManagingTransferLists();
 
-            // ✅ Step 6: Show modal
+            
             $("#manageTransferModal").modal("show");
 
-            // ✅ Step 7: Hide loader
+            
             $("#manageTransferLoading").hide();
             $("#manageTransferContent").show();
           } else {
@@ -3319,7 +3319,7 @@ function deleteTransfer(transferId) {
       if (response.success) {
         $("#deleteTransferConfirmationModal").modal("hide");
         showSuccessModal("Transfer record deleted successfully.");
-        // Reload all three tables to reflect the change
+        
         $("#globalTransferSearchBtn").click();
       } else {
         showErrorModal(
@@ -3333,9 +3333,9 @@ function deleteTransfer(transferId) {
   });
 }
 
-// =============================================================================
-// VII. TRANSFER MANAGEMENT
-// =============================================================================
+
+
+
 
 function updateTransferSummary(transfers) {
   if (!transfers || !Array.isArray(transfers)) {
@@ -3646,11 +3646,11 @@ function rejectSelectedTransfers() {
   });
 }
 
-// =============================================================================
-// VIII. INVOICE & RECEIPT LOOKUP
-// =============================================================================
 
-// --- A. Invoice Search ---
+
+
+
+
 function searchInvoiceNumber() {
   const invoiceNumber = $("#invoiceNumberSearch").val().trim();
 
@@ -4092,7 +4092,7 @@ function printInvoice(invoice, invoiceNumber) {
     printWindow.print();
   }, 300);
 }
-// --- B. Transfer Receipt Search & Display ---
+
 function searchTransferReceipt() {
   const transferInvoiceNumber = $("#transferInvoiceSearch").val().trim();
 
@@ -4221,21 +4221,21 @@ function showTransferReceipt(receiptData) {
     transferInvoiceNumber = receiptData.transfer_invoice_number;
   }
 
-  // Set header information
+  
   $("#receiptDate").text(formatDate(headerData.transfer_date));
   $("#receiptTransferId").text(headerData.id || "N/A");
   $("#receiptInvoiceNo").text(transferInvoiceNumber || "N/A");
   $("#receiptFromBranch").text(headerData.from_branch);
   $("#receiptToBranch").text(headerData.to_branch);
 
-  // Set notes or show default message
+  
   if (notes && notes.trim() !== "") {
     $("#receiptNotes").text(notes);
   } else {
     $("#receiptNotes").text("No notes provided.");
   }
 
-  // Populate motorcycles list
+  
   const $receiptList = $("#receiptMotorcyclesList");
   $receiptList.empty();
 
@@ -4381,7 +4381,7 @@ function printReceipt() {
     }
 
     @page {
-        size: 80mm auto; /* Or 8.5in 5.5in for short coupon */
+        size: 80mm auto;
         margin: 5mm;
     }
 
@@ -4502,13 +4502,13 @@ function printReceipt() {
   }, 250);
 }
 
-// =============================================================================
-// IX. FILTER BY MODEL
-// =============================================================================
+
+
+
 
 function fetchModelsForFilter() {
   if (allModelsCache.length > 0) {
-    return; // Avoid repeated API calls
+    return; 
   }
   $.ajax({
     url: "../api/inventory_management.php",
@@ -4574,7 +4574,7 @@ function updateModelSearchResults(searchTerm) {
     );
   } else {
     filteredModels.slice(0, 50).forEach((model) => {
-      // Limit to 50 results for performance
+      
       resultsContainer.append(
         `<li class="dropdown-item" style="cursor: pointer;" onclick="addModelToSelection('${escapeHtml(
           model
@@ -4601,13 +4601,13 @@ function addModelToSelection(modelName) {
  * @param {string} modelName The model to remove.
  */
 function removeModelFromSelection(event, modelName) {
-  event.stopPropagation(); // Prevent dropdown from closing
+  event.stopPropagation(); 
   selectedReportModels = selectedReportModels.filter((m) => m !== modelName);
   renderModelFilterUI();
 }
-// =============================================================================
-// IX. REPORTING
-// =============================================================================
+
+
+
 
 function updateReportFilterOptions() {
   const selectedReport = $("#reportType").val();
@@ -4640,14 +4640,14 @@ function updateReportFilterOptions() {
   });
   $periodContainer.html(radioHtml);
 
-  // --- THIS IS THE FIX ---
-  // If the new report type is 'as_of_date' only, and a month was previously selected,
-  // automatically set the as-of-date to the end of that month.
+  
+  
+  
   if (config.periods.length === 1 && config.periods[0] === "as_of_date") {
     const currentMonthValue = $("#reportMonth").val();
     if (currentMonthValue) {
       const [year, month] = currentMonthValue.split("-");
-      // new Date(year, month, 0) gets the last day of the previous month. So, for month '09', it gets the last day of '09'.
+      
       const lastDay = new Date(year, month, 0).getDate();
       const newAsOfDate = `${year}-${month}-${String(lastDay).padStart(
         2,
@@ -4656,7 +4656,7 @@ function updateReportFilterOptions() {
       $("#asOfDate").val(newAsOfDate);
     }
   }
-  // --- END FIX ---
+  
 
   if (config.filters.includes("sale_type")) {
     $("#soldSaleTypeContainer").show();
@@ -4689,20 +4689,20 @@ function updateDatePickerVisibility() {
   }
 }
 
-// REPLACE the existing showMonthlyReportOptions function with this one
+
 function showMonthlyReportOptions() {
-  // Reset model filter each time modal is opened
+  
   selectedReportModels = [];
   renderModelFilterUI();
-  fetchModelsForFilter(); // Fetch models if not already cached
+  fetchModelsForFilter(); 
 
-  // Set current month as default
+  
   const now = new Date();
   const currentMonth =
     now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   $("#reportMonth").val(currentMonth);
 
-  // Branch selection logic
+  
   if (
     currentUserBranch === "HEADOFFICE" ||
     ["ADMIN", "IT STAFF", "HEAD"].includes(currentUserPosition)
@@ -4724,8 +4724,8 @@ function showMonthlyReportOptions() {
 
   $("#monthlyReportOptionsModal").modal("show");
 }
-// In inventory_management.js
-// START: Replace this function
+
+
 function generateReport() {
   const reportType = $("#reportType").val();
   const periodType = $('input[name="reportPeriodType"]:checked').val();
@@ -4739,7 +4739,7 @@ function generateReport() {
   };
   const apiData = {
     action: "",
-    period_type: periodType, // Pass the period type to the API
+    period_type: periodType, 
     ...filters,
   };
 
@@ -4786,10 +4786,10 @@ function generateReport() {
       callReportAPI(apiData, renderMonthlyInventoryReport, reportType);
       break;
     case "inventory_summary":
-      // THIS IS THE FIX: Call the existing 'get_monthly_inventory' action.
+      
       apiData.action = "get_monthly_inventory";
 
-      // This then sends the data to your new rendering function that creates the multi-sheet layout.
+      
       callReportAPI(apiData, renderInventorySummaryReport, reportType);
       break;
     case "sold_units":
@@ -4817,8 +4817,8 @@ function generateReport() {
       callReportAPI(apiData, renderRedeemedReport, reportType);
       break;
     case "motorcycle":
-      apiData.action = "get_available_motorcycles_report"; // FIX: This line now correctly passes the filter values (apiData.branch, apiData.brand)
-      // instead of trying to read them from the API response (res.branch, res.brand), where they don't exist.
+      apiData.action = "get_available_motorcycles_report"; 
+      
       callReportAPI(apiData, renderMotorcycleReport, reportType);
       break;
     default:
@@ -4840,7 +4840,7 @@ function callReportAPI(apiData, renderFunction, reportType) {
         currentReportSummary = response.summary;
         currentReportMonth = response.month || apiData.month;
 
-        // This line is the fix. It correctly reads the 'as_of_date' from the new summary report.
+        
         currentReportDate =
           response.as_of_date || response.date || apiData.date;
 
@@ -4896,7 +4896,7 @@ function generateReportPDF() {
   }
 }
 
-// --- A. Inventory Report ---
+
 function generateMonthlyInventoryReport(
   month,
   branch,
@@ -4917,9 +4917,9 @@ function generateMonthlyInventoryReport(
   };
 
   if (date) {
-    apiData.date = date; // Send 'date' for "As of Date" mode
+    apiData.date = date; 
   } else {
-    apiData.month = month; // Send 'month' for "Monthly" mode
+    apiData.month = month; 
   }
 
   $.ajax({
@@ -4934,7 +4934,7 @@ function generateMonthlyInventoryReport(
         currentReportBranch = response.branch;
         currentReportSummary = response.summary;
         currentReportType = "inventory";
-        currentReportDate = response.as_of_date; // Capture the as-of-date from the response
+        currentReportDate = response.as_of_date; 
 
         renderMonthlyInventoryReport(
           response.data,
@@ -4954,14 +4954,14 @@ function generateMonthlyInventoryReport(
 }
 
 function renderMonthlyInventoryReport(response) {
-  // Destructure variables from the response object.
+  
   const { data, summary } = response;
-  const isRepoReport = currentReportCategory === "repo"; // Check if this is a REPO report
+  const isRepoReport = currentReportCategory === "repo"; 
 
   let reportTitle = "Inventory Balance Report";
   let dateSubtitle = "";
 
-  // This block now correctly uses the global report variables set by callReportAPI
+  
   if (currentReportDate) {
     dateSubtitle = `As of ${formatDate(currentReportDate)}`;
   } else if (currentReportMonth && currentReportMonth.includes("-")) {
@@ -5241,20 +5241,20 @@ function renderMonthlyInventoryReport(response) {
     .appendTo("head");
 }
 
-// START: Corrected PDF Generation Function
+
 function generateInventoryReportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({
-    orientation: "landscape", // Use landscape for more horizontal space
+    orientation: "landscape", 
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // FIX: Check if it's a repo report to conditionally add columns
+  
   const isRepoReport = currentReportCategory === "repo";
 
-  // --- DYNAMIC HEADER LOGIC ---
+  
   let reportTitle = "Inventory Balance Report";
   let dateSubtitle = "";
 
@@ -5271,7 +5271,7 @@ function generateInventoryReportPDF() {
     reportTitle = "Monthly Inventory Balance Report";
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   }
-  // --- END DYNAMIC HEADER ---
+  
 
   const totalIn = currentReportSummary?.in || 0;
   const totalOut = currentReportSummary?.out || 0;
@@ -5281,7 +5281,7 @@ function generateInventoryReportPDF() {
   const costEndingActual =
     currentReportSummary?.inventory_cost?.ending_actual || 0;
 
-  // Details for summary cards
+  
   const receivedTransfers = currentReportSummary?.received_transfers || 0;
   const newDeliveries = currentReportSummary?.new_deliveries || 0;
   const transfersOut = currentReportSummary?.transfers_out || 0;
@@ -5307,7 +5307,7 @@ function generateInventoryReportPDF() {
   let currentY = 38;
   currentY = addFiltersToPdf(doc, currentY);
 
-  // FIX: Define base columns first
+  
   const columns = [
     { header: "QTY", dataKey: "qty" },
     { header: "MODEL", dataKey: "model" },
@@ -5318,20 +5318,20 @@ function generateInventoryReportPDF() {
     { header: "Inventory Cost", dataKey: "inventory_cost" },
   ];
 
-  // FIX: Conditionally add repo columns
+  
   if (isRepoReport) {
     columns.push({ header: "CUSTOMER NAME", dataKey: "customer_name" });
     columns.push({ header: "DATE SOLD", dataKey: "date_sold" });
   }
 
-  // FIX: Conditionally map row data and handle "no data" colspan
+  
   const rows =
     !currentReportData.data || currentReportData.data.length === 0
       ? [
           {
             qty: {
               content: "No inventory data found for this period",
-              colSpan: isRepoReport ? 9 : 7, // Dynamic colspan
+              colSpan: isRepoReport ? 9 : 7, 
               styles: { halign: "center" },
             },
           },
@@ -5377,8 +5377,8 @@ function generateInventoryReportPDF() {
       qty: { halign: "center" },
       inventory_cost: { halign: "right" },
     },
-    columns: columns.map((c) => c.header), // Pass headers
-    body: rows.map((row) => columns.map((c) => row[c.dataKey])), // Pass data based on dataKey
+    columns: columns.map((c) => c.header), 
+    body: rows.map((row) => columns.map((c) => row[c.dataKey])), 
     margin: { left: 10, right: 10 },
   });
 
@@ -5388,7 +5388,7 @@ function generateInventoryReportPDF() {
     finalTableY = 50;
   }
 
-  // --- Summary Cards ---
+  
   const cardMargin = 8;
   const leftRightMargin = 10;
   const topMargin = 20;
@@ -5513,7 +5513,7 @@ function generateInventoryReportPDF() {
   );
 }
 
-// START: Replace this function
+
 function generateInventoryReportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({
@@ -5524,7 +5524,7 @@ function generateInventoryReportPDF() {
   const pageHeight = doc.internal.pageSize.getHeight();
   const isRepoReport = currentReportCategory === "repo";
 
-  // --- DYNAMIC HEADER LOGIC ---
+  
   let reportTitle = "Inventory Balance Report";
   let dateSubtitle = "";
 
@@ -5540,7 +5540,7 @@ function generateInventoryReportPDF() {
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   }
 
-  // --- DATA PREPARATION ---
+  
   const beginningBalance = currentReportSummary?.beginning_balance || 0;
   const costBeginning =
     currentReportSummary?.inventory_cost?.beginning_balance || 0;
@@ -5558,7 +5558,7 @@ function generateInventoryReportPDF() {
 
   currentReportData.data.sort((a, b) => a.model.localeCompare(b.model));
 
-  // --- PDF HEADER ---
+  
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(0, 15, 113);
@@ -5574,7 +5574,7 @@ function generateInventoryReportPDF() {
   let currentY = 38;
   currentY = addFiltersToPdf(doc, currentY);
 
-  // --- PDF MAIN TABLE ---
+  
   const columns = [
     { header: "QTY", dataKey: "qty" },
     { header: "MODEL", dataKey: "model" },
@@ -5646,7 +5646,7 @@ function generateInventoryReportPDF() {
     finalTableY = 50;
   }
 
-  // --- SUMMARY CARDS ---
+  
   const cardMargin = 10;
   const leftRightMargin = 10;
   const topMargin = 20;
@@ -5700,7 +5700,7 @@ function generateInventoryReportPDF() {
     }
   }
 
-  // Row 1: Beginning Balance & IN
+  
   drawCard(
     leftRightMargin,
     currentY,
@@ -5726,10 +5726,10 @@ function generateInventoryReportPDF() {
     `Received: ${receivedTransfers} | New: ${newDeliveries}`
   );
 
-  // Move down for the next row of cards
+  
   currentY += cardHeight + cardMargin;
 
-  // Row 2: OUT & Ending Balance
+  
   drawCard(
     leftRightMargin,
     currentY,
@@ -5758,7 +5758,7 @@ function generateInventoryReportPDF() {
   currentY += cardHeight + 10;
   currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
 
-  // --- PDF FOOTER ---
+  
   const now = new Date();
   const generatedOn = now.toLocaleDateString("en-US", {
     weekday: "long",
@@ -5783,7 +5783,7 @@ function generateInventoryReportPDF() {
     }_${currentReportBranch}.pdf`
   );
 }
-// ---B. Inventory Summary Report ---
+
 
 function toggleInventorySummaryDetails(element, brand, model, branch) {
   const row = $(element);
@@ -5893,7 +5893,7 @@ function renderInventorySummaryReport(response) {
         </div>`;
 
   if (isHeadOffice || isAdminUser) {
-    // --- GLOBAL VIEW ---
+    
     let navTabsHtml = `<ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#summary-sheet" type="button">Summary</button></li>`;
     brandNames.forEach((brand) => {
@@ -6009,7 +6009,7 @@ function renderInventorySummaryReport(response) {
     tabContentHtml += `</div>`;
     mainContentHtml += navTabsHtml + tabContentHtml;
   } else {
-    // --- BRANCH VIEW ---
+    
     const branch_name = currentUserBranch;
     let navTabsHtml = `<ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#summary-sheet" type="button">Summary</button></li>`;
@@ -6085,7 +6085,7 @@ function renderInventorySummaryReport(response) {
     mainContentHtml += navTabsHtml + tabContentHtml;
   }
 
-  // --- 4. BUILD SUMMARY CARDS (RIGHT COLUMN) ---
+  
   const beginningBalance = summary?.beginning_balance || 0;
   const costBeginning = summary?.inventory_cost?.beginning_balance || 0;
   const receivedTransfers = summary?.received_transfers || 0;
@@ -6128,7 +6128,7 @@ function renderInventorySummaryReport(response) {
         </div>`;
 
   mainContentHtml += generateBrandSummaryHtml(data);
-  // --- 5. COMBINE INTO FINAL 2-COLUMN LAYOUT ---
+  
   const finalHtml = `<div class="row"><div class="col-lg-8">${mainContentHtml}</div><div class="col-lg-4">${summaryCardsHtml}</div></div>`;
   $("#monthlyReportContent").html(finalHtml);
 }
@@ -6188,7 +6188,7 @@ function generateInventorySummaryReportPDF() {
   const { data } = currentReportData;
   const report_scope = isHeadOffice || isAdminUser ? "global" : "branch";
 
-  // --- Dynamic Date & Title Logic ---
+  
   let dateSubtitle = "";
   let fileNameDate = new Date().toISOString().slice(0, 10);
   if (currentReportDate) {
@@ -6204,7 +6204,7 @@ function generateInventorySummaryReportPDF() {
     fileNameDate = currentReportMonth;
   }
 
-  // --- Styling Constants ---
+  
   const headerBlue = [0, 15, 113];
   const subheaderGray = [73, 80, 87];
   const footerGray = [108, 117, 125];
@@ -6217,11 +6217,11 @@ function generateInventorySummaryReportPDF() {
     fontStyle: "bold",
     halign: "center",
     valign: "middle",
-    fontSize: 7, // Smaller font for headers
-    cellPadding: 2, // Less padding in headers
+    fontSize: 7, 
+    cellPadding: 2, 
   };
 
-  // --- Reusable Helper Functions ---
+  
   const drawHeader = (doc, title, subtitle, filters = []) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     let currentY = 25;
@@ -6239,7 +6239,7 @@ function generateInventorySummaryReportPDF() {
     doc.setFontSize(11).setTextColor(...subheaderGray);
     doc.text(subtitle, pageWidth / 2, currentY, { align: "center" });
 
-    // Add filters if any
+    
     if (filters.length > 0) {
       currentY += 10;
       doc.setFontSize(9).setTextColor(...subheaderGray);
@@ -6305,19 +6305,19 @@ function generateInventorySummaryReportPDF() {
       }
     }
 
-    // --- Sheet 1: Global Summary ---
+    
     let startY = drawHeader(doc, "Inventory Summary Report", dateSubtitle);
 
-    // Calculate column widths dynamically
+    
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 40;
     const availableWidth = pageWidth - 2 * margin;
-    const brandColWidth = 80; // Fixed width for brand column
+    const brandColWidth = 80; 
     const branchColWidth = Math.min(
       35,
       (availableWidth - brandColWidth - 60) / branches.length
-    ); // Even smaller branch columns
-    const totalColWidth = 50; // Fixed width for total column
+    ); 
+    const totalColWidth = 50; 
 
     const summaryHead = [["BRAND", ...branchShortcuts, "GRAND TOTAL"]];
     const summaryBody = [];
@@ -6349,7 +6349,7 @@ function generateInventorySummaryReportPDF() {
     totalRow.push(grandTotalAll);
     summaryBody.push(totalRow);
 
-    // Create column styles dynamically
+    
     const columnStyles = {
       0: {
         halign: "left",
@@ -6358,17 +6358,17 @@ function generateInventorySummaryReportPDF() {
       },
     };
 
-    // Add branch column styles
+    
     branches.forEach((_, index) => {
       columnStyles[index + 1] = {
         halign: "center",
         cellWidth: branchColWidth,
-        fontSize: 7, // Smaller font for branch data
-        cellPadding: 1, // Minimal padding
+        fontSize: 7, 
+        cellPadding: 1, 
       };
     });
 
-    // Add total column style
+    
     columnStyles[branches.length + 1] = {
       halign: "center",
       cellWidth: totalColWidth,
@@ -6405,7 +6405,7 @@ function generateInventorySummaryReportPDF() {
       },
     });
 
-    // --- Sheets 2-5: Brand Details ---
+    
     brandNames.forEach((brand) => {
       const brandData = models_by_brand[brand] || {};
       const sortedModels = Object.keys(brandData);
@@ -6417,12 +6417,12 @@ function generateInventorySummaryReportPDF() {
           dateSubtitle
         );
 
-        // Calculate column widths for brand details
-        const modelColWidth = 100; // Even smaller model column width
+        
+        const modelColWidth = 100; 
         const detailBranchColWidth = Math.min(
           30,
           (availableWidth - modelColWidth - 40) / branches.length
-        ); // Much smaller branch columns
+        ); 
         const modelTotalColWidth = 40;
 
         const head = [["MODEL", ...branchShortcuts, "TOTAL"]];
@@ -6455,27 +6455,27 @@ function generateInventorySummaryReportPDF() {
         subtotalRow.push(brandGrandTotal);
         body.push(subtotalRow);
 
-        // Create column styles for brand details
+        
         const brandDetailColumnStyles = {
           0: {
             halign: "left",
             cellWidth: modelColWidth,
-            fontSize: 6, // Even smaller font for model names
+            fontSize: 6, 
             cellPadding: 1,
           },
         };
 
-        // Add branch column styles
+        
         branches.forEach((_, index) => {
           brandDetailColumnStyles[index + 1] = {
             halign: "center",
             cellWidth: detailBranchColWidth,
-            fontSize: 5, // Smaller font for branch data
+            fontSize: 5, 
             cellPadding: 1,
           };
         });
 
-        // Add total column style
+        
         brandDetailColumnStyles[branches.length + 1] = {
           halign: "center",
           cellWidth: modelTotalColWidth,
@@ -6491,9 +6491,9 @@ function generateInventorySummaryReportPDF() {
           theme: "grid",
           headStyles: tableHeadStyles,
           bodyStyles: {
-            fontSize: 5, // Smaller font for compact look
+            fontSize: 5, 
             halign: "center",
-            cellPadding: 1, // Minimal padding
+            cellPadding: 1, 
           },
           columnStyles: brandDetailColumnStyles,
           didParseCell: (data) => {
@@ -6508,7 +6508,7 @@ function generateInventorySummaryReportPDF() {
               }
             }
           },
-          // Add word wrap for long model names
+          
           willDrawCell: (data) => {
             if (data.section === "body" && data.column.index === 0) {
               data.cell.text = data.cell.text.join(" ");
@@ -6522,7 +6522,7 @@ function generateInventorySummaryReportPDF() {
     addFooters(doc, "Global Inventory Tally");
     doc.save(`Global_Inventory_Tally_${fileNameDate}.pdf`);
   } else {
-    // BRANCH PDF CODE (unchanged from your working version)
+    
     const branch_name = currentUserBranch;
     const doc = new jsPDF({
       orientation: "landscape",
@@ -6646,7 +6646,7 @@ function generateInventorySummaryReportPDF() {
     doc.save(`Branch_Inventory_Summary_${branch_name}_${fileNameDate}.pdf`);
   }
 }
-// ---c. Sold Report ---
+
 
 function renderSoldUnitsReport(response) {
   const { data, summary, branch, month, date, start_date, end_date } = response;
@@ -6856,7 +6856,7 @@ function generateSoldUnitsReportPDF() {
   const marginBottom = 15;
   let currentY = 15;
 
-  // --- HEADER ---
+  
   doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
     align: "center",
@@ -6873,7 +6873,7 @@ function generateSoldUnitsReportPDF() {
 
   currentY = addFiltersToPdf(doc, currentY);
 
-  // --- DATA TABLES ---
+  
   const groupedData = {};
   currentReportData.data.forEach((item) => {
     const branchName = item.current_branch || "Unknown Branch";
@@ -6993,7 +6993,7 @@ function generateSoldUnitsReportPDF() {
     }
   }
 
-  // --- SUMMARY SECTION (MOVED TO END) ---
+  
   const totalCod = currentReportData.data.filter(
     (i) => i.payment_type === "COD"
   ).length;
@@ -7036,7 +7036,7 @@ function generateSoldUnitsReportPDF() {
   currentY += cardHeight;
   currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
 
-  // --- FOOTER ---
+  
   const generatedOn = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -7059,9 +7059,9 @@ function generateSoldUnitsReportPDF() {
     `Sold_Units_Report_${fileNameDate}_${safeBranch}_${safeSaleType}.pdf`
   );
 }
-// END: Replace this function
 
-// --- C. Transferred / Received / Scrapped Reports ---
+
+
 function generateTransferredSummary(
   month,
   branch,
@@ -7240,7 +7240,7 @@ function renderTransferredSummaryReport(response) {
 
   $("#monthlyReportContent").html(html);
 }
-// START: Replace this function
+
 function generateTransferredReportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("l", "mm", "a4");
@@ -7290,7 +7290,7 @@ function generateTransferredReportPDF() {
   const topMargin = 15;
   let currentY = topMargin;
 
-  // --- HEADER ---
+  
   doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
     align: "center",
@@ -7306,7 +7306,7 @@ function generateTransferredReportPDF() {
   currentY += 6;
   currentY = addFiltersToPdf(doc, currentY);
 
-  // --- MAIN TABLE ---
+  
   const tableColumns = [
     { header: "#", dataKey: "index" },
     { header: "Invoice Number", dataKey: "invoice_number" },
@@ -7360,7 +7360,7 @@ function generateTransferredReportPDF() {
 
   let finalY = doc.autoTable.previous.finalY + 10;
 
-  // --- SUMMARY SECTION (MOVED TO THE END) ---
+  
   const cardWidth = (pageWidth - 2 * leftRightMargin - 10) / 2;
   const cardHeight = 20;
 
@@ -7369,29 +7369,29 @@ function generateTransferredReportPDF() {
     finalY = topMargin;
   }
 
-  // Card for Total Transferred
-  // Card for Total Transferred
+  
+  
   doc.setFillColor(0, 15, 113);
   doc.roundedRect(leftRightMargin, finalY, cardWidth, cardHeight, 3, 3, "F");
-  doc.setFontSize(8).setTextColor(200, 200, 255).setFont("helvetica", "bold"); // Reduced font size
+  doc.setFontSize(8).setTextColor(200, 200, 255).setFont("helvetica", "bold"); 
   doc.text("TOTAL TRANSFERRED", leftRightMargin + 10, finalY + 7);
-  doc.setFontSize(12).setTextColor(255, 255, 255); // Reduced font size
-  doc.text(String(totalTransferred), leftRightMargin + 10, finalY + 15); // Card for Total Inventory Cost
+  doc.setFontSize(12).setTextColor(255, 255, 255); 
+  doc.text(String(totalTransferred), leftRightMargin + 10, finalY + 15); 
 
   const secondCardX = leftRightMargin + cardWidth + 10;
   doc.setFillColor(40, 167, 69);
   doc.roundedRect(secondCardX, finalY, cardWidth, cardHeight, 3, 3, "F");
-  doc.setFontSize(8).setTextColor(200, 255, 200).setFont("helvetica", "bold"); // Reduced font size
+  doc.setFontSize(8).setTextColor(200, 255, 200).setFont("helvetica", "bold"); 
   doc.text("TOTAL INVENTORY COST", secondCardX + 10, finalY + 7);
-  doc.setFontSize(12).setTextColor(255, 255, 255); // Reduced font size
+  doc.setFontSize(12).setTextColor(255, 255, 255); 
   doc.text(formatCurrency(totalInventoryCost), secondCardX + 10, finalY + 15);
 
   finalY += cardHeight;
 
-  // Add Brand Summary Table
+  
   finalY = addBrandSummaryToPdf(doc, currentReportData.data, finalY);
 
-  // --- FOOTER ---
+  
   const generatedOn = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -7412,7 +7412,7 @@ function generateTransferredReportPDF() {
   const safeBranchName = branchName.replace(/\s+/g, "_");
   doc.save(`Transferred_Summary_${fileNameDate}_${safeBranchName}.pdf`);
 }
-// END: Replace this function
+
 
 function generateReceivedSummary(
   month,
@@ -7428,7 +7428,7 @@ function generateReceivedSummary(
     url: "../api/inventory_management.php",
     method: "GET",
     data: {
-      action: "get_monthly_received_summary", // New API action
+      action: "get_monthly_received_summary", 
       month: month,
       branch: branch,
       category: category,
@@ -7440,7 +7440,7 @@ function generateReceivedSummary(
         currentReportData = response.data;
         currentReportMonth = response.month;
         currentReportBranch = response.branch;
-        currentReportType = "received"; // Set the current report type
+        currentReportType = "received"; 
         currentReportSummary = response.summary;
 
         renderReceivedSummaryReport(
@@ -7635,7 +7635,7 @@ function generateReceivedReportPDF() {
   const topMargin = 15;
   let currentY = topMargin;
 
-  // --- HEADER ---
+  
   doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
     align: "center",
@@ -7651,7 +7651,7 @@ function generateReceivedReportPDF() {
   currentY += 6;
 
   currentY = addFiltersToPdf(doc, currentY);
-  // --- MAIN TABLE ---
+  
   const tableColumns = [
     { header: "#", dataKey: "index" },
     { header: "Invoice Number", dataKey: "invoice_number" },
@@ -7710,7 +7710,7 @@ function generateReceivedReportPDF() {
 
   let finalY = doc.autoTable.previous.finalY + 10;
 
-  // --- SUMMARY SECTION (MOVED TO THE END) ---
+  
   const totalReceived = currentReportSummary?.total_received || 0;
   const totalInventoryCost = currentReportSummary?.total_inventory_cost || 0;
   const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
@@ -7721,7 +7721,7 @@ function generateReceivedReportPDF() {
     finalY = topMargin;
   }
 
-  // Card for Total Received
+  
   doc.setFillColor(0, 15, 113);
   doc.roundedRect(marginLR, finalY, cardWidth, cardHeight, 3, 3, "F");
   doc.setFontSize(8).setTextColor(200, 200, 255).setFont("helvetica", "bold");
@@ -7729,7 +7729,7 @@ function generateReceivedReportPDF() {
   doc.setFontSize(12).setTextColor(255, 255, 255);
   doc.text(String(totalReceived), marginLR + 10, finalY + 15);
 
-  // Card for Total Inventory Cost
+  
   const secondCardX = marginLR + cardWidth + 10;
   doc.setFillColor(40, 167, 69);
   doc.roundedRect(secondCardX, finalY, cardWidth, cardHeight, 3, 3, "F");
@@ -7740,10 +7740,10 @@ function generateReceivedReportPDF() {
 
   finalY += cardHeight;
 
-  // Add Brand Summary Table
+  
   finalY = addBrandSummaryToPdf(doc, currentReportData.data, finalY);
 
-  // --- FOOTER ---
+  
   const generatedOn = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -7765,7 +7765,7 @@ function generateReceivedReportPDF() {
   doc.save(`Received_Summary_${fileNameDate}_${safeBranchName}.pdf`);
 }
 
-// Add this entire new function
+
 function renderDeliveredSummaryReport(response) {
   const { data, summary, month, date, start_date, end_date } = response;
 
@@ -7922,7 +7922,7 @@ function generateDeliveredReportPDF() {
   const topMargin = 15;
   let currentY = topMargin;
 
-  // --- PDF HEADER ---
+  
   doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
     align: "center",
@@ -7939,7 +7939,7 @@ function generateDeliveredReportPDF() {
   currentY += 6;
   currentY = addFiltersToPdf(doc, currentY);
 
-  // --- MAIN TABLE ---
+  
   const tableColumns = [
     { header: "#", dataKey: "index" },
     { header: "Invoice Number", dataKey: "invoice_number" },
@@ -7989,7 +7989,7 @@ function generateDeliveredReportPDF() {
 
   let finalY = doc.autoTable.previous.finalY + 10;
 
-  // --- SUMMARY CARDS ---
+  
   const totalDelivered = currentReportSummary?.total_delivered || 0;
   const totalInventoryCost = currentReportSummary?.total_inventory_cost || 0;
   const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
@@ -8018,8 +8018,8 @@ function generateDeliveredReportPDF() {
   finalY += cardHeight;
   finalY = addBrandSummaryToPdf(doc, currentReportData.data, finalY);
 
-  // START: Add this footer block
-  // --- FOOTER ---
+  
+  
   const generatedOn = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -8036,12 +8036,12 @@ function generateDeliveredReportPDF() {
       align: "center",
     });
   }
-  // END: Add this footer block
+  
 
   const safeBranchName = (currentReportBranch || "all").replace(/\s+/g, "_");
   doc.save(`Delivered_Summary_${fileNameDate}_${safeBranchName}.pdf`);
 }
-// END: Replace this function
+
 function generateScrappedReport() {
   const month = $("#reportMonth").val();
   const branch = $("#reportBranch").val() || "all";
@@ -8076,8 +8076,8 @@ function generateScrappedReport() {
         currentReportBranch = response.branch;
         currentReportType = "scrapped";
         currentReportSummary = response.summary;
-        currentReportCategory = category; // Add this line
-        currentReportBrand = brand; // Add this line
+        currentReportCategory = category; 
+        currentReportBrand = brand; 
 
         renderScrappedReport(response);
         $("#monthlyInventoryReportModal").modal("show");
@@ -8110,7 +8110,7 @@ function renderScrappedReport(response) {
   const { data, summary, branch, month, date, start_date, end_date } = response;
 
   let dateSubtitle = "";
-  // FIX: This block correctly handles all date types
+  
   if (date) {
     dateSubtitle = `For ${formatDate(date)}`;
   } else if (month) {
@@ -8171,7 +8171,7 @@ function renderScrappedReport(response) {
         </div>
     `;
 
-  // Summary by brand and branch
+  
   if (
     response.summary_by_brand_branch &&
     response.summary_by_brand_branch.length > 0
@@ -8215,7 +8215,7 @@ function renderScrappedReport(response) {
         `;
   }
 
-  // Summary by reason
+  
   if (response.summary_by_reason && response.summary_by_reason.length > 0) {
     html += `
             <div class="card mb-4">
@@ -8255,7 +8255,7 @@ function renderScrappedReport(response) {
         `;
   }
 
-  // Detailed list
+  
   if (response.data && response.data.length > 0) {
     html += `
             <div class="card">
@@ -8317,7 +8317,7 @@ function renderScrappedReport(response) {
   html += generateBrandSummaryHtml(response.data);
   $("#monthlyReportContent").html(html);
 }
-// START: Replace this function
+
 function generateScrappedReportPDF() {
   const { jsPDF } = window.jspdf;
 
@@ -8327,17 +8327,17 @@ function generateScrappedReportPDF() {
     );
     return;
   }
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" }); // --- DYNAMIC HEADER AND FILTERS ---
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" }); 
 
   let dateSubtitle = "";
-  let fileNameDate = new Date().toISOString().slice(0, 10); // Fallback
+  let fileNameDate = new Date().toISOString().slice(0, 10); 
 
   if (currentReportDate) {
-    // Handles Daily
+    
     dateSubtitle = `For ${formatDate(currentReportDate)}`;
     fileNameDate = currentReportDate;
   } else if (currentReportMonth && currentReportMonth.includes("-")) {
-    // Handles Monthly
+    
     const [year, monthNum] = currentReportMonth.split("-");
     const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
       "default",
@@ -8346,7 +8346,7 @@ function generateScrappedReportPDF() {
     dateSubtitle = `For the Month of ${monthName} ${year}`;
     fileNameDate = currentReportMonth;
   } else if (currentReportStartDate && currentReportEndDate) {
-    // Handles Custom Range
+    
     if (currentReportStartDate === currentReportEndDate) {
       dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
       fileNameDate = currentReportStartDate;
@@ -8362,7 +8362,7 @@ function generateScrappedReportPDF() {
   const pageHeight = doc.internal.pageSize.getHeight();
   const marginLR = 10;
   const marginBottom = 15;
-  let currentY = 15; // Main Title
+  let currentY = 15; 
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
@@ -8382,13 +8382,13 @@ function generateScrappedReportPDF() {
   doc.setFontSize(10);
   doc.setTextColor(0, 64, 133);
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
-  currentY += 6; // Filter Parameters Header
+  currentY += 6; 
 
   currentY = addFiltersToPdf(doc, currentY);
   doc.setDrawColor(0, 15, 113);
   doc.setLineWidth(0.8);
   doc.line(marginLR, currentY, pageWidth - marginLR, currentY);
-  currentY += 4; // --- DATA PREPARATION & TABLE GENERATION ---
+  currentY += 4; 
 
   const groupedData = {};
   currentReportData.forEach((item) => {
@@ -8459,7 +8459,7 @@ function generateScrappedReportPDF() {
       },
     });
     currentY = doc.autoTable.previous.finalY + 10;
-  } // --- SUMMARY CARDS & FOOTER ---
+  } 
 
   const totalScrapped = currentReportSummary.total_scrapped;
   const totalInventoryCost = currentReportSummary.total_inventory_cost;
@@ -8523,14 +8523,14 @@ function generateScrappedReportPDF() {
     doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, {
       align: "center",
     });
-  } // --- SAVE PDF ---
+  } 
 
   const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
   doc.save(`Scrapped_Units_Report_${fileNameDate}_${safeBranch}.pdf`);
 }
-// END: Replace this function
 
-// --- ADD THESE TWO NEW FUNCTIONS TO YOUR JAVASCRIPT FILE ---
+
+
 
 /**
  * Renders the HTML for the Redeemed Units report modal.
@@ -8652,7 +8652,7 @@ function generateRedeemedReportPDF() {
   }
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-  // --- 1. DYNAMIC HEADER AND FILTERS ---
+  
   let dateSubtitle = "";
   let fileNameDate = new Date().toISOString().slice(0, 10);
 
@@ -8695,7 +8695,7 @@ function generateRedeemedReportPDF() {
   currentY += 6;
   currentY = addFiltersToPdf(doc, currentY);
 
-  // --- 2. DATA GROUPING & TABLE GENERATION ---
+  
   const groupedData = {};
   currentReportData.data.forEach((item) => {
     const branchName = item.current_branch || "Unknown Branch";
@@ -8767,7 +8767,7 @@ function generateRedeemedReportPDF() {
       addBranchSection(branchName, groupedData[branchName]);
     });
 
-  // --- 3. SUMMARY SECTION ---
+  
   const totalRedeemed = currentReportSummary?.total_redeemed || 0;
   const totalAmountPaid = currentReportSummary?.total_amount_paid || 0;
   const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
@@ -8814,12 +8814,12 @@ function generateRedeemedReportPDF() {
   currentY += cardHeight;
   currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
 
-  // --- 4. FOOTER AND SAVE ---
+  
   addFootersToPdf(doc, "Redeemed Units Report");
   const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
   doc.save(`Redeemed_Units_Report_${fileNameDate}_${safeBranch}.pdf`);
 }
-// --- D. Motorcycle List Report ---
+
 function generateMotorcycleReport(branch, brandFilter) {
   $("#monthlyReportOptionsModal").modal("hide");
   $("#monthlyReportContent").html(
@@ -8855,7 +8855,7 @@ function renderMotorcycleReport(response) {
   const { data, date, month, start_date, end_date } = response;
 
   let dateSubtitle = "";
-  // Logic to determine the correct subtitle based on the API response
+  
   if (start_date && end_date) {
     if (start_date === end_date) {
       dateSubtitle = `For ${formatDate(start_date)}`;
@@ -8891,7 +8891,7 @@ function renderMotorcycleReport(response) {
   } else {
     const branches = {};
     data.forEach((item) => {
-      const branchName = item.branch_as_of_date || item.current_branch; // Use the calculated historical branch
+      const branchName = item.branch_as_of_date || item.current_branch; 
       if (!branches[branchName]) {
         branches[branchName] = [];
       }
@@ -9016,7 +9016,7 @@ function generateMotorcycleReportPDF() {
   const marginBottom = 20;
   let currentY = 15;
 
-  // --- HEADER ---
+  
   doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
     align: "center",
@@ -9032,7 +9032,7 @@ function generateMotorcycleReportPDF() {
   currentY += 6;
 
   currentY = addFiltersToPdf(doc, currentY);
-  // --- DATA TABLES ---
+  
   const columns = [
     { header: "QTY", dataKey: "qty" },
     { header: "MODEL", dataKey: "model" },
@@ -9092,7 +9092,7 @@ function generateMotorcycleReportPDF() {
       addBranchSection(branchName, groupedData[branchName]);
     });
 
-  // --- SUMMARY SECTION (MOVED TO END) ---
+  
   const totalUnits = currentReportData.data.length;
   const totalValue = currentReportData.data.reduce(
     (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
@@ -9153,11 +9153,11 @@ function generateMotorcycleReportPDF() {
 
   currentY += cardHeight;
 
-  // Add Brand Summary Table
-  // Add Brand Summary Table
+  
+  
   currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
 
-  // --- FOOTER AND SAVE ---
+  
   const generatedOn = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -9181,9 +9181,9 @@ function generateMotorcycleReportPDF() {
     `Available_Units_Report_${fileNameDate}_${safeBranch}_${safeBrand}_${safeCategory}.pdf`
   );
 }
-// =============================================================================
-// X. VALIDATION
-// =============================================================================
+
+
+
 
 function checkEngineNumber(engineNumber, $element, excludeId = 0) {
   if (!engineNumber) return;
@@ -9265,9 +9265,9 @@ function clearFieldError($element) {
   $element.next(".invalid-feedback").remove();
 }
 
-// =============================================================================
-// XI. UTILITY & HELPER FUNCTIONS
-// =============================================================================
+
+
+
 
 function populateBranchesDropdown() {
   const branches = [
@@ -9324,7 +9324,7 @@ function populateBranchesDropdown() {
 function formatDate(dateString) {
   if (!dateString || dateString === "0000-00-00") return "N/A";
   const date = new Date(dateString);
-  // This adjustment prevents timezone issues where the date might show as the previous day.
+  
   const userTimezoneOffset = date.getTimezoneOffset() * 60000;
   const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
   return adjustedDate.toLocaleDateString("en-US", {
@@ -9346,7 +9346,7 @@ function escapeHtml(text) {
 }
 
 function getTransferStatusBadge(status) {
-  // Ensure status is a string and lowercase before comparing
+  
   const lowerStatus = String(status || "").toLowerCase();
   switch (lowerStatus) {
     case "in-transit":
@@ -9369,7 +9369,7 @@ function formatDateTime(timestampString) {
   if (!timestampString || timestampString === "0000-00-00 00:00:00")
     return "N/A";
   const date = new Date(timestampString);
-  // This adjustment prevents timezone issues
+  
   const userTimezoneOffset = date.getTimezoneOffset() * 60000;
   const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
   return adjustedDate.toLocaleString("en-US", {
@@ -9638,13 +9638,13 @@ function addBrandSummaryToPdf(doc, data, startY) {
 
   let finalY = startY;
 
-  // Check if there is enough space, otherwise add a new page
-  const tableHeight = (body.length + 2) * 8; // Approximate height
+  
+  const tableHeight = (body.length + 2) * 8; 
   if (startY + tableHeight > doc.internal.pageSize.getHeight() - 20) {
     doc.addPage();
-    finalY = 20; // Start Y on new page
+    finalY = 20; 
   } else {
-    finalY += 10; // Add some margin
+    finalY += 10; 
   }
 
   doc.setFontSize(10);
@@ -9692,12 +9692,12 @@ function addBrandSummaryToPdf(doc, data, startY) {
 function buildFilterDisplayHtml() {
   const filters = [];
 
-  // Branch
+  
   if (currentReportBranch && currentReportBranch.toLowerCase() !== "all") {
     filters.push(`Branch: ${escapeHtml(currentReportBranch)}`);
   }
 
-  // Category
+  
   if (
     currentReportCategory &&
     currentReportCategory.toLowerCase() !== "all" &&
@@ -9706,7 +9706,7 @@ function buildFilterDisplayHtml() {
     filters.push(`Category: ${escapeHtml(currentReportCategory)}`);
   }
 
-  // Brand
+  
   if (
     currentReportBrand &&
     currentReportBrand.toLowerCase() !== "all" &&
@@ -9715,7 +9715,7 @@ function buildFilterDisplayHtml() {
     filters.push(`Brand: ${escapeHtml(currentReportBrand)}`);
   }
 
-  // Model
+  
   if (
     currentReportModel &&
     currentReportModel.toLowerCase() !== "all" &&
@@ -9724,7 +9724,7 @@ function buildFilterDisplayHtml() {
     filters.push(`Model(s): ${escapeHtml(currentReportModel)}`);
   }
 
-  // Sale Type
+  
   if (
     currentReportSaleType &&
     currentReportSaleType.toLowerCase() !== "all" &&
@@ -9752,7 +9752,7 @@ function addFiltersToPdf(doc, currentY) {
   const filters = [];
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Build the array of active filters
+  
   if (currentReportBranch && currentReportBranch.toLowerCase() !== "all") {
     filters.push(`Branch: ${currentReportBranch}`);
   }
@@ -9790,15 +9790,15 @@ function addFiltersToPdf(doc, currentY) {
     filterString = filters.join(" | ");
   }
 
-  // Set styles and draw the text on the PDF
+  
   doc.setFontSize(9);
-  doc.setTextColor(220, 53, 69); // Red color (Bootstrap's btn-danger)
+  doc.setTextColor(220, 53, 69); 
   doc.setFont("helvetica", "bold");
   doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, {
     align: "center",
   });
 
-  // Return the new Y position, adding some padding below the filter line
+  
   return currentY + 7;
 }
 
@@ -9808,7 +9808,7 @@ function addFiltersToPdf(doc, currentY) {
  * @returns {string} The date in "yyyy-mm-dd" format or an empty string.
  */
 function formatDateForAPI(dateString) {
-  if (!dateString || !dateString.includes("/")) return dateString; // Return if empty or not in the expected format
+  if (!dateString || !dateString.includes("/")) return dateString; 
   const [month, day, year] = dateString.split("/");
   if (month && day && year) {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
@@ -9831,14 +9831,14 @@ function addFootersToPdf(doc, reportTitle) {
   });
 
   for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i); // Switch to the page
+    doc.setPage(i); 
     doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125); // A muted gray color
+    doc.setTextColor(108, 117, 125); 
 
-    // Generated on text on the left
+    
     doc.text(`Generated on: ${genTime}`, 10, pageHeight - 10);
 
-    // Report title and page number in the center
+    
     const centerText = `Page ${i} of ${pageCount} | ${reportTitle}`;
     doc.text(centerText, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
@@ -9909,7 +9909,7 @@ function renderManagingTransferLists() {
   let itemsAddedCount = managingTransfer.itemsToAdd.length;
   let itemsRemovedCount = managingTransfer.itemsToRemove.length;
 
-  // Render initial items that are NOT marked for removal
+  
   managingTransfer.initialItems.forEach((item) => {
     if (!managingTransfer.itemsToRemove.includes(item.id)) {
       totalInitial++;
@@ -9928,7 +9928,7 @@ function renderManagingTransferLists() {
     }
   });
 
-  // Render items that are marked for removal (with an undo button)
+  
   managingTransfer.itemsToRemove.forEach((itemId) => {
     const item = managingTransfer.initialItems.find((i) => i.id === itemId);
     if (item) {
@@ -9945,7 +9945,7 @@ function renderManagingTransferLists() {
     }
   });
 
-  // Render newly added items
+  
   managingTransfer.itemsToAdd.forEach((item) => {
     initialList.append(`
             <div class="transfer-item to-be-added d-flex justify-content-between align-items-center">
@@ -9967,13 +9967,13 @@ function renderManagingTransferLists() {
     );
   }
 
-  // Update summary
+  
   $("#manageTransferTotal").text(totalInitial + itemsAddedCount);
   $("#manageTransferAdded").text(itemsAddedCount);
   $("#manageTransferRemoved").text(itemsRemovedCount);
 }
 
-// Functions to manipulate the items in the managingTransfer object
+
 function removeItemFromTransfer(motorcycleId) {
   if (!managingTransfer.itemsToRemove.includes(motorcycleId)) {
     managingTransfer.itemsToRemove.push(motorcycleId);
