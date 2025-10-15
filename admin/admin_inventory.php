@@ -1445,99 +1445,87 @@
         </div>
     </div>
 
-    <div class="modal fade" id="manageTransferModal" tabindex="-1" aria-labelledby="manageTransferModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-secondary text-white">
-                    <h5 class="modal-title" id="manageTransferModalLabel">Manage Transfer Items</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+<div class="modal fade" id="manageTransferModal" tabindex="-1" aria-labelledby="manageTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="manageTransferModalLabel">Manage Transfer Items</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="manageTransferLoading" class="text-center py-5">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-2">Loading transfer details...</p>
                 </div>
-                <div class="modal-body">
-                    <div id="manageTransferLoading" class="text-center py-5">
-                        <div class="spinner-border" role="status"></div>
-                        <p class="mt-2">Loading transfer details...</p>
+
+                <div id="manageTransferContent" style="display: none;">
+                    <div class="row g-3 mb-4 p-3 border rounded bg-light">
+                        <div class="col-md-3">
+                            <label for="manageTransferDate" class="form-label">Transfer Date</label>
+                            <input type="text" class="form-control" id="manageTransferDate" required placeholder="mm/dd/yyyy">
+                        </div>
+                        <div class="col-md-3 d-none" id="manageDateReceivedContainer"> 
+                            <label for="manageDateReceived" class="form-label">Date Received</label>
+                            <input type="text" class="form-control" id="manageDateReceived" placeholder="mm/dd/yyyy">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="manageTransferInvoice" class="form-label">MT / Invoice #</label>
+                            <input type="text" class="form-control" id="manageTransferInvoice">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="manageTransferFromBranch" class="form-label">From Branch</label>
+                            <select id="manageTransferFromBranch" class="form-select"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="manageTransferToBranch" class="form-label">To Branch</label>
+                            <select id="manageTransferToBranch" class="form-select"></select>
+                        </div>
+                        <div class="col-12">
+                            <label for="manageTransferNotes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="manageTransferNotes" rows="2"></textarea>
+                        </div>
                     </div>
 
-                    <div id="manageTransferContent" style="display: none;">
-                        <div class="row g-3 mb-4 p-3 border rounded bg-light">
-                            <div class="col-md-3">
-                                <label for="manageTransferDate" class="form-label">Transfer Date</label>
-                                <input type="text" class="form-control datepicker" id="manageTransferDate"
-                                    placeholder="mm/dd/yyyy">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="manageTransferInvoice" class="form-label">MT / Invoice #</label>
-                                <input type="text" class="form-control" id="manageTransferInvoice">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="manageTransferFromBranch" class="form-label">From Branch</label>
-                                <select id="manageTransferFromBranch" class="form-select">
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="manageTransferToBranch" class="form-label">To Branch</label>
-                                <select id="manageTransferToBranch" class="form-select">
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label for="manageTransferNotes" class="form-label">Notes (Optional)</label>
-                                <textarea class="form-control" id="manageTransferNotes" rows="2"></textarea>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between">
+                                    <span>Items in Transfer</span>
+                                    <div>
+                                        <span class="badge bg-primary">Total: <span id="manageTransferTotal">0</span></span>
+                                        <span class="badge bg-success">Added: <span id="manageTransferAdded">0</span></span>
+                                        <span class="badge bg-danger">Removed: <span id="manageTransferRemoved">0</span></span>
+                                    </div>
+                                </div>
+                                <div class="card-body list-container" id="managingTransferInitialList"></div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex justify-content-between">
-                                        <span>Items in Transfer</span>
-                                        <div>
-                                            <span class="badge bg-primary">Total: <span
-                                                    id="manageTransferTotal">0</span></span>
-                                            <span class="badge bg-success">Added: <span
-                                                    id="manageTransferAdded">0</span></span>
-                                            <span class="badge bg-danger">Removed: <span
-                                                    id="manageTransferRemoved">0</span></span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body list-container" id="managingTransferInitialList">
-                                    </div>
+                        <div class="col-lg-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    Add Available Units from <strong id="manageTransferFrom"></strong>
                                 </div>
-                            </div>
-
-                            <div class="col-lg-6">
-                                <div class="card h-100">
-                                    <div class="card-header">
-                                        Add Available Units from <strong id="manageTransferFrom"></strong>
+                                <div class="card-body">
+                                    <p class="text-muted small">Search for available units from the 'From' branch to add to this transfer.</p>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="manageTransferSearch" placeholder="Search by Engine # or Model...">
+                                        <button class="btn btn-primary text-white" type="button" id="manageTransferSearchBtn"><i class="bi bi-search"></i></button>
                                     </div>
-                                    <div class="card-body">
-                                        <p class="text-muted small">Search for available units from the 'From' branch to
-                                            add to this transfer.</p>
-                                        <div class="input-group mb-3">
-                                            <input type="text" class="form-control" id="manageTransferSearch"
-                                                placeholder="Search by Engine # or Model...">
-                                            <button class="btn btn-primary text-white" type="button"
-                                                id="manageTransferSearchBtn"><i class="bi bi-search"></i></button>
-                                        </div>
-                                        <div class="list-group" id="manageTransferSearchResults"
-                                            style="max-height: 300px; overflow-y: auto;">
-                                        </div>
-                                    </div>
+                                    <div class="list-group" id="manageTransferSearchResults" style="max-height: 300px; overflow-y: auto;"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary text-white" id="saveTransferChangesBtn">Save
-                        Changes</button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary text-white" id="saveTransferChangesBtn">Save Changes</button>
             </div>
         </div>
     </div>
-
+</div>
     <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'        
         aria-hidden='true'>
                 <div class='modal-dialog'>

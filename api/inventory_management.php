@@ -2108,13 +2108,9 @@ function searchInventory() {
     }
 
     $result = $stmt->get_result();
-
-    // --- FIX 2: MODIFIED DATA PROCESSING LOOP ---
-    // This loop now structures the data to include a 'redeem_details' object,
-    // matching what your JavaScript function expects.
     $data = [];
     while ($row = $result->fetch_assoc()) {
-        // Check if redemption details exist from the JOIN
+       
         if (isset($row['redeem_date']) && $row['redeem_date'] !== null) {
             $row['redeem_details'] = [
                 'redeem_date' => $row['redeem_date'],
@@ -2124,7 +2120,6 @@ function searchInventory() {
             $row['redeem_details'] = null;
         }
 
-        // Unset the original flat columns to keep the final JSON clean
         unset($row['redeem_date']);
         unset($row['amount_paid']);
 
@@ -4536,115 +4531,137 @@ function getTransferDetailsByInvoice() {
     ]);
 }
 
-/**
- * Updates an entire transfer group, including its date, branches, notes,
- * invoice number, and the motorcycles included in it.
- */
 function update_transfer_group() {
     global $conn;
-
-    // --- 1. Sanitize incoming data ---
-    $originalInvoiceNumber = isset($_POST['original_invoice_number']) ? sanitizeInput($_POST['original_invoice_number']) : '';
-    $newInvoiceNumber      = isset($_POST['transfer_invoice_number']) ? sanitizeInput($_POST['transfer_invoice_number']) : '';
-    $fromBranch            = isset($_POST['from_branch']) ? sanitizeInput($_POST['from_branch']) : '';
-    $toBranch              = isset($_POST['to_branch']) ? sanitizeInput($_POST['to_branch']) : '';
-    $transferDate          = isset($_POST['transfer_date']) ? sanitizeInput($_POST['transfer_date']) : '';
-    $notes                 = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : '';
-    $transferredBy         = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
-
-    $itemsToAdd            = isset($_POST['motorcycles_to_add']) ? $_POST['motorcycles_to_add'] : [];
-    $itemsToRemove         = isset($_POST['motorcycles_to_remove']) ? $_POST['motorcycles_to_remove'] : [];
-
-    // --- 2. Validation ---
-    if (empty($originalInvoiceNumber) || empty($newInvoiceNumber) || empty($toBranch) || empty($transferDate)) {
-        echo json_encode(['success' => false, 'message' => 'Missing required transfer details.']);
-        return;
-    }
-    if ($fromBranch === $toBranch) {
-        echo json_encode(['success' => false, 'message' => 'From and To branches cannot be the same.']);
-        return;
-    }
-
-    // --- 3. Convert date format (MM/DD/YYYY → YYYY-MM-DD) ---
-    $dateObj = DateTime::createFromFormat('m/d/Y', $transferDate);
-    if ($dateObj) {
-        $transferDate = $dateObj->format('Y-m-d');
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid date format.']);
-        return;
-    }
-
-    $conn->begin_transaction();
+    $stmt = null;  // Initialize for finally block
 
     try {
-        // --- 4. Handle Items to Remove ---
-        if (!empty($itemsToRemove)) {
+        // 1. Sanitize and validate all inputs
+        $originalInvoiceNumber = isset($_POST['original_invoice_number']) ? sanitizeInput($_POST['original_invoice_number']) : '';
+        $newInvoiceNumber = isset($_POST['transfer_invoice_number']) ? sanitizeInput($_POST['transfer_invoice_number']) : '';
+        $fromBranch = isset($_POST['from_branch']) ? sanitizeInput($_POST['from_branch']) : '';
+        $toBranch = isset($_POST['to_branch']) ? sanitizeInput($_POST['to_branch']) : '';
+        $transferDate = isset($_POST['transfer_date']) ? sanitizeInput($_POST['transfer_date']) : '';
+        $dateReceived = isset($_POST['date_received']) ? sanitizeInput($_POST['date_received']) : '';
+        $transferredBy = isset($_POST['transferred_by']) ? intval($_POST['transferred_by']) : (isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0);
+        $notes = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : '';
+        $transferStatusProvided = isset($_POST['transfer_status']) ? sanitizeInput($_POST['transfer_status']) : null;
+        
+        $itemsToAdd = isset($_POST['motorcycles_to_add']) ? json_decode($_POST['motorcycles_to_add'], true) : [];
+        $itemsToRemove = isset($_POST['motorcycles_to_remove']) ? json_decode($_POST['motorcycles_to_remove'], true) : [];
+
+        $isDateReceivedEdit = !empty($dateReceived) && empty($transferDate) && empty($fromBranch) && empty($toBranch) && empty($notes) && empty($newInvoiceNumber) && empty($transferStatusProvided);
+
+        if (empty($originalInvoiceNumber)) {
+            echo json_encode(['success' => false, 'message' => 'Missing original invoice number.']);
+            return;
+        }
+
+        if ($isDateReceivedEdit && !empty($transferStatusProvided)) {
+            echo json_encode(['success' => false, 'message' => 'Cannot update transfer_status when only editing date_received.']);
+            return;
+        }
+
+        // Convert date formats if needed
+        if (!empty($transferDate)) {
+            $dateObjTransfer = DateTime::createFromFormat('m/d/Y', $transferDate);
+            if ($dateObjTransfer) $transferDate = $dateObjTransfer->format('Y-m-d');
+            else {
+                echo json_encode(['success' => false, 'message' => 'Invalid transfer date format.']);
+                return;
+            }
+        }
+
+        if (!empty($dateReceived)) {
+            $dateObjReceived = DateTime::createFromFormat('m/d/Y', $dateReceived);
+            if ($dateObjReceived) $dateReceived = $dateObjReceived->format('Y-m-d');
+            else {
+                echo json_encode(['success' => false, 'message' => 'Invalid date received format.']);
+                return;
+            }
+        }
+
+        // Check for duplicate invoice number
+        $checkStmt = $conn->prepare('SELECT id FROM inventory_transfers WHERE transfer_invoice_number = ? AND transfer_invoice_number != ? LIMIT 1');
+        $checkStmt->bind_param('ss', $newInvoiceNumber, $originalInvoiceNumber);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();  // Fetch results
+        if ($checkResult->num_rows > 0) {
+            echo json_encode(['success' => false, 'message' => 'New invoice number already exists.']);
+            $checkStmt->close();
+            return;
+        }
+        $checkStmt->close();  // Close the statement
+
+        $conn->begin_transaction();
+
+        // 4. Handle Items to Remove
+        if (!empty($itemsToRemove) && !$isDateReceivedEdit) {
             $removeIds = array_map('intval', $itemsToRemove);
             $placeholders = implode(',', array_fill(0, count($removeIds), '?'));
             $types = str_repeat('i', count($removeIds));
 
-            // Revert motorcycles to available and restore branch
-            $sqlUpdate = "UPDATE motorcycle_inventory 
-                          SET status = 'available', current_branch = ? 
-                          WHERE id IN ($placeholders)";
-            $updateMotorcycleStmt = $conn->prepare($sqlUpdate);
-            $updateMotorcycleStmt->bind_param('s' . $types, $fromBranch, ...$removeIds);
-            $updateMotorcycleStmt->execute();
+            $revertStmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'available', current_branch = ? WHERE id IN ($placeholders)");
+            $revertStmt->bind_param('s' . $types, $fromBranch, ...$removeIds);
+            $revertStmt->execute();
+            $revertStmt->close();  // Close the statement
 
-            // Delete transfer entries
-            $sqlDelete = "DELETE FROM inventory_transfers 
-                          WHERE transfer_invoice_number = ? 
-                          AND motorcycle_id IN ($placeholders)";
-            $deleteTransferStmt = $conn->prepare($sqlDelete);
-            $deleteTransferStmt->bind_param('s' . $types, $originalInvoiceNumber, ...$removeIds);
-            $deleteTransferStmt->execute();
-        }
+            $deleteStmt = $conn->prepare("DELETE FROM inventory_transfers WHERE transfer_invoice_number = ? AND motorcycle_id IN ($placeholders)");
+            $deleteStmt->bind_param('s' . $types, $originalInvoiceNumber, ...$removeIds);
+            $deleteStmt->execute();
+            $deleteResult = $deleteStmt->get_result();  // Fetch if needed, though DELETE doesn't return rows
+            $deleteStmt->close();  // Close the statement
 
-        // --- 5. Handle Items to Add ---
-        if (!empty($itemsToAdd)) {
-            $addTransferStmt = $conn->prepare("
-                INSERT INTO inventory_transfers 
-                    (motorcycle_id, from_branch, to_branch, transfer_date, transferred_by, notes, transfer_status, transfer_invoice_number)
-                VALUES (?, ?, ?, ?, ?, ?, 'in-transit', ?)
-            ");
-
-            $updateMotorcycleStmt = $conn->prepare("
-                UPDATE motorcycle_inventory 
-                SET status = 'transferred', current_branch = ?, inventory_cost = ? 
-                WHERE id = ?
-            ");
-
-            foreach ($itemsToAdd as $item) {
-                $motorcycleId  = intval($item['id']);
-                $inventoryCost = floatval($item['inventory_cost']);
-
-                // Update motorcycle record
-                $updateMotorcycleStmt->bind_param('sdi', $toBranch, $inventoryCost, $motorcycleId);
-                $updateMotorcycleStmt->execute();
-
-                // Insert new transfer
-                $addTransferStmt->bind_param('isssiss', $motorcycleId, $fromBranch, $toBranch, $transferDate, $transferredBy, $notes, $newInvoiceNumber);
-                $addTransferStmt->execute();
+            foreach ($removeIds as $id) {
+                log_action($conn, 'UPDATE', 'motorcycle_inventory', $id, "Removed from transfer group {$originalInvoiceNumber} and reverted to available.");
             }
         }
 
-        // --- 6. Update existing group ---
-        $updateGroupStmt = $conn->prepare("
-            UPDATE inventory_transfers
-            SET to_branch = ?, transfer_date = ?, notes = ?, transfer_invoice_number = ?
-            WHERE transfer_invoice_number = ?
-        ");
-        $updateGroupStmt->bind_param('sssss', $toBranch, $transferDate, $notes, $newInvoiceNumber, $originalInvoiceNumber);
-        $updateGroupStmt->execute();
+        // 5. Handle Items to Add
+        if (!empty($itemsToAdd) && !$isDateReceivedEdit) {
+            $addTransferStmt = $conn->prepare("INSERT INTO inventory_transfers (motorcycle_id, from_branch, to_branch, transfer_date, date_received, transferred_by, notes, transfer_status, transfer_invoice_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $updateMotorcycleStmt = $conn->prepare("UPDATE motorcycle_inventory SET status = 'transferred', current_branch = ?, inventory_cost = ? WHERE id = ?");
 
-        // --- 7. Commit and log ---
+            foreach ($itemsToAdd as $item) {
+                $motorcycleId = intval($item['id']);
+                $inventoryCost = floatval($item['inventory_cost']);
+
+                $updateMotorcycleStmt->bind_param('sdi', $toBranch, $inventoryCost, $motorcycleId);
+                $updateMotorcycleStmt->execute();
+                $updateMotorcycleStmt->close();  // Close inside the loop for safety, though it's the same statement
+
+                $addTransferStmt->bind_param('issssssss', $motorcycleId, $fromBranch, $toBranch, $transferDate, $dateReceived, $transferredBy, $notes, $transferStatusProvided ?: 'in-transit', $newInvoiceNumber);
+                $addTransferStmt->execute();
+                log_action($conn, 'CREATE', 'inventory_transfers', $conn->insert_id, "Added to transfer group {$newInvoiceNumber}.");
+            }
+            $addTransferStmt->close();  // Close after the loop
+        }
+
+        // 6. Update the existing group, protecting transfer_status
+        if ($isDateReceivedEdit) {
+            $updateGroupStmt = $conn->prepare("UPDATE inventory_transfers SET date_received = ? WHERE transfer_invoice_number = ?");
+            $updateGroupStmt->bind_param('ss', $dateReceived, $originalInvoiceNumber);
+        } else {
+            $updateGroupStmt = $conn->prepare("UPDATE inventory_transfers SET to_branch = ?, transfer_date = ?, date_received = ?, transferred_by = ?, notes = ?, transfer_invoice_number = ? WHERE transfer_invoice_number = ?");
+            $updateGroupStmt->bind_param('sssssss', $toBranch, $transferDate, $dateReceived, $transferredBy, $notes, $newInvoiceNumber, $originalInvoiceNumber);
+        }
+        $updateGroupStmt->execute();
+        $updateGroupStmt->close();  // Close the statement
+
+        log_action($conn, 'UPDATE', 'inventory_transfers', 0, "Updated transfer group {$originalInvoiceNumber} with transfer_status protected.");
+
         $conn->commit();
-        log_action($conn, 'UPDATE', 'inventory_transfers', 0, "Updated transfer group #{$originalInvoiceNumber} → {$newInvoiceNumber}");
-        echo json_encode(['success' => true, 'message' => 'Transfer group successfully updated.']);
+        echo json_encode(['success' => true, 'message' => 'Transfer group updated successfully with transfer_status protected.']);
 
     } catch (Exception $e) {
-        $conn->rollback();
-        echo json_encode(['success' => false, 'message' => 'Error updating transfer group: ' . $e->getMessage()]);
+        if ($conn->rollback()) {
+            echo json_encode(['success' => false, 'message' => 'Error updating transfer group: ' . $e->getMessage() . '. Transaction rolled back.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error updating transfer group and rollback failed: ' . $e->getMessage()]);
+        }
+    } finally {
+        // Clean up any open statements here if needed
+        if ($stmt) $stmt->close();  // Though not used, this is for safety
     }
 }
 
