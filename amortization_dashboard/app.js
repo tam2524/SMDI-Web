@@ -490,7 +490,7 @@ function handlePasswordSubmit(e) {
             openModal(uploadModal);
         }, 1000);
     } else {
-        passwordStatus.textContent = '❌ Incorrect password. Please try again.';
+        passwordStatus.textContent = 'Incorrect password.';
         passwordStatus.style.color = 'red';
         passwordInput.value = '';
         passwordInput.focus();
