@@ -4704,8 +4704,8 @@ function showMonthlyReportOptions() {
 
   
   if (
-    currentUserBranch === "HEADOFFICE" ||
-    ["ADMIN", "IT STAFF", "HEAD"].includes(currentUserPosition)
+    currentUserBranch === "HEADOFFICE", "ADMIN" ||
+    ["IT STAFF", "HEAD"].includes(currentUserPosition)
   ) {
     populateBranchesDropdown();
     $("#reportBranch").prop("disabled", false);
