@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 addPricingBtn.textContent = '↻ Update Pricing';
                 
                 // Show success message
-                showNotification(`✅ Loaded ${data.motorcycles.length} motorcycle models from existing pricing file`, 'success');
+                showNotification(` Loaded ${data.motorcycles.length} motorcycle models from existing pricing file`, 'success');
             } else {
                 console.log('No existing pricing data found');
                 calculatorFieldset.disabled = true;
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                uploadStatus.textContent = `✅ Success! ${data.rowCount} records loaded.`;
+                uploadStatus.textContent = `Success! ${data.rowCount} records loaded.`;
                 uploadStatus.style.color = 'green';
                 motorcycleData = data.motorcycles;
                 
@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 addPricingBtn.textContent = '↻ Update Pricing';
                 
                 // Show global notification
-                showNotification(`✅ Successfully loaded ${data.rowCount} motorcycle models`, 'success');
+                showNotification(`Successfully loaded ${data.rowCount} motorcycle models`, 'success');
                 
                 // Close modal after successful upload
                 setTimeout(() => {
@@ -481,7 +481,7 @@ function handlePasswordSubmit(e) {
     const enteredPassword = passwordInput.value.trim();
     
     if (enteredPassword === ADMIN_PASSWORD) {
-        passwordStatus.textContent = '✅ Access granted!';
+        passwordStatus.textContent = ' Access granted!';
         passwordStatus.style.color = 'green';
         
         // Close password modal and open upload modal after successful authentication
