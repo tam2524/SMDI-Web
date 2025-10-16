@@ -1,6 +1,3 @@
-
-
-
 let selectedReportModels = [];
 let allModelsCache = [];
 let currentReportModel = null;
