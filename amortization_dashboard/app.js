@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show selected model info
             selectedModelName.innerHTML = selectedMotorcycle.model;
             selectedBrand.textContent = selectedMotorcycle.brand;
-            selectedLCP.textContent = parseFloat(selectedMotorcycle.lcp).toLocaleString('en-US');
+            // selectedLCP.textContent = parseFloat(selectedMotorcycle.lcp).toLocaleString('en-US');
             selectedModelInfo.style.display = 'block';
             
             // Pre-fill down payment
@@ -410,22 +410,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             <h3>${data.brand} - ${data.model}</h3>
                         </div>
                         <div class="summary-grid">
-                            <div class="summary-item">
-                                <label>List Cash Price</label>
-                                <div class="value">₱${parseFloat(data.lcp).toLocaleString('en-US')}</div>
-                            </div>
+                           
                             <div class="summary-item">
                                 <label>Down Payment</label>
                                 <div class="value">₱${parseFloat(data.downpayment).toLocaleString('en-US')}</div>
                             </div>
-                            <div class="summary-item">
-                                <label>Amount Financed</label>
-                                <div class="value highlight">₱${parseFloat(data.amount_financed).toLocaleString('en-US')}</div>
-                            </div>
-                            <div class="summary-item">
-                                <label>Interest Rate</label>
-                                <div class="value">${data.interest_rate}%</div>
-                            </div>
+                           
                         </div>
                     </div>
                     <div class="amortization-section">
