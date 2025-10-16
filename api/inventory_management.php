@@ -128,7 +128,12 @@ switch ($action) {
         searchInvoiceNumber();
         break;
 
-
+    case 'get_direct_shipments':
+    getDirectShipments();
+    break;  
+    case 'delete_invoice_transaction':
+    deleteInvoiceTransaction();
+    break;  
     case 'get_motorcycle_transfers':
         getMotorcycleTransfers();
         break;
@@ -4646,9 +4651,119 @@ function update_transfer_group() {
     }
 }
 
+function getDirectShipments() {
+    global $conn;
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
+    $limit = 15;
+    $offset = ($page - 1) * $limit;
 
+    // Base query selects motorcycles that do NOT appear in the transfers table.
+    $baseSql = "FROM motorcycle_inventory mi
+                LEFT JOIN invoices i ON mi.invoice_id = i.id
+                LEFT JOIN inventory_transfers it ON mi.id = it.motorcycle_id ";
 
+    // The key logic: filter for records where there is no matching transfer.
+    $where = "WHERE it.id IS NULL "; 
 
+    if (!empty($query)) {
+        $searchTerm = "%$query%";
+        $where .= " AND (i.invoice_number LIKE '$searchTerm' OR mi.brand LIKE '$searchTerm' OR mi.model LIKE '$searchTerm' OR mi.engine_number LIKE '$searchTerm' OR mi.frame_number LIKE '$searchTerm' OR mi.current_branch LIKE '$searchTerm')";
+    }
+
+    // Count total records for pagination
+    $countSql = "SELECT COUNT(mi.id) as total " . $baseSql . $where;
+    $totalRecords = $conn->query($countSql)->fetch_assoc()['total'];
+    $totalPages = ceil($totalRecords / $limit);
+
+    // Fetch paginated data
+    $sql = "SELECT mi.id, i.invoice_number, i.id as invoice_id, mi.date_delivered, mi.brand, mi.model, mi.engine_number, mi.frame_number, mi.current_branch
+            " . $baseSql . $where . "
+            ORDER BY mi.date_delivered DESC
+            LIMIT $limit OFFSET $offset";
+
+    $result = $conn->query($sql);
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'pagination' => ['currentPage' => $page, 'totalPages' => $totalPages]
+    ]);
+}
+function deleteInvoiceTransaction() {
+    global $conn;
+
+    $invoiceId = isset($_POST['invoice_id']) ? intval($_POST['invoice_id']) : 0;
+
+    if ($invoiceId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid Invoice ID provided.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+
+    try {
+        // Find all motorcycles on this invoice to check their status
+        $getMotorcyclesStmt = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE invoice_id = ?");
+        $getMotorcyclesStmt->bind_param('i', $invoiceId);
+        $getMotorcyclesStmt->execute();
+        $motorcycleResult = $getMotorcyclesStmt->get_result();
+        
+        $motorcycleIds = [];
+        while ($row = $motorcycleResult->fetch_assoc()) {
+            $motorcycleIds[] = $row['id'];
+        }
+
+        if (!empty($motorcycleIds)) {
+            $placeholders = implode(',', array_fill(0, count($motorcycleIds), '?'));
+            $types = str_repeat('i', count($motorcycleIds));
+
+            // Safety Check 1: Ensure none of these units have been transferred.
+            $checkTransfersStmt = $conn->prepare("SELECT COUNT(*) as count FROM inventory_transfers WHERE motorcycle_id IN ($placeholders)");
+            $checkTransfersStmt->bind_param($types, ...$motorcycleIds);
+            $checkTransfersStmt->execute();
+            if ($checkTransfersStmt->get_result()->fetch_assoc()['count'] > 0) {
+                throw new Exception("Cannot delete invoice: One or more motorcycles from this invoice have transfer history.");
+            }
+
+            // Safety Check 2: Ensure none have been sold.
+            $checkSalesStmt = $conn->prepare("SELECT COUNT(*) as count FROM motorcycle_sales WHERE motorcycle_id IN ($placeholders)");
+            $checkSalesStmt->bind_param($types, ...$motorcycleIds);
+            $checkSalesStmt->execute();
+            if ($checkSalesStmt->get_result()->fetch_assoc()['count'] > 0) {
+                throw new Exception("Cannot delete invoice: One or more motorcycles from this invoice have been sold.");
+            }
+
+            // If all checks pass, delete the motorcycle records.
+            $deleteMotorcyclesStmt = $conn->prepare("DELETE FROM motorcycle_inventory WHERE invoice_id = ?");
+            $deleteMotorcyclesStmt->bind_param('i', $invoiceId);
+            $deleteMotorcyclesStmt->execute();
+        }
+
+        // Finally, delete the invoice itself.
+        $deleteInvoiceStmt = $conn->prepare("DELETE FROM invoices WHERE id = ?");
+        $deleteInvoiceStmt->bind_param('i', $invoiceId);
+        $deleteInvoiceStmt->execute();
+
+        if ($deleteInvoiceStmt->affected_rows > 0) {
+            $conn->commit();
+            log_action($conn, 'DELETE', 'invoices', $invoiceId, "Deleted invoice and all associated direct-shipment motorcycles.");
+            echo json_encode(['success' => true, 'message' => 'Invoice and all its motorcycles have been deleted successfully.']);
+        } else {
+            // This might happen if motorcycles were deleted but the invoice was already gone.
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Invoice transaction cleaned up successfully.']);
+        }
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
 
 /**
  * Fetches paginated and searchable data from the audit_log.

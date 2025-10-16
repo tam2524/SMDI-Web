@@ -220,13 +220,14 @@ $(document).ready(function () {
         loadRedeemedUnits(1);
         break;
 
-      
+      case '#directShipments':
+    loadDirectShipments(1);
+    break;
       
       
       case "#activityLog":
         loadActivityLog(1);
         break;
-      
       
       
     }
@@ -245,6 +246,14 @@ $(document).ready(function () {
   $("#redeemedUnitsSearchBtn").on("click", () =>
     loadRedeemedUnits(1, $("#redeemedUnitsSearch").val())
   );
+
+  $("#directShipmentsSearchBtn").on("click", () =>
+    loadDirectShipments(1, $("#directShipmentsSearch").val())
+);
+
+$("#directShipmentsSearch").on("keypress", function (e) {
+    if (e.which === 13) $(this).next("button").click();
+});
 
   
   $(document).on("show.bs.modal", ".modal", function () {
@@ -333,7 +342,13 @@ $("#confirmRevertBtn").on("click", revertTransaction);
  * Central function to set up all event listeners for the page.
  */
 function setupEventListeners() {
-  
+  $("#directShipmentsSearchBtn").on("click", () =>
+    loadDirectShipments(1, $("#directShipmentsSearch").val())
+);
+
+$("#directShipmentsSearch").on("keypress", function (e) {
+    if (e.which === 13) $(this).next("button").click();
+});
   $("body").on(
     "input",
     ".engine-number, #editEngineNumber, .frame-number, #editFrameNumber",
@@ -1552,6 +1567,7 @@ function updateMotorcycle() {
           currentInventorySort,
           currentInventoryQuery
         );
+        loadDirectShipments(1);
       } else {
         console.error("Update Motorcycle Error:", response.message);
 
@@ -2725,9 +2741,105 @@ function getStatusBadge(status) {
 }
 
 
+/**
+ * Loads data for the Direct Shipments tab via AJAX.
+ * @param {number} [page=1] - The page number to load.
+ * @param {string} [query=''] - The search term.
+ */
+function loadDirectShipments(page = 1, query = "") {
+  loadGenericLogData(
+    "get_direct_shipments",
+    "#directShipmentsTableBody",
+    "#directShipmentsPagination",
+    renderDirectShipmentsTable,
+    "loadDirectShipments",
+    page,
+    query
+  );
+}
+/**
+ * Renders the HTML table rows for the direct shipments data.
+ * @param {Array<object>} data - The array of shipment data from the API.
+ */
+function renderDirectShipmentsTable(data) {
+  let html = "";
+  if (!data || data.length === 0) {
+    $("#directShipmentsTableBody").html(
+      '<tr><td colspan="8" class="text-center py-4">No direct shipments found.</td></tr>'
+    );
+    return;
+  }
+  data.forEach((item) => {
+    // Sanitize invoice number for use in JavaScript function call
+    const safeInvoiceNumber = escapeHtml(item.invoice_number || '').replace(/'/g, "\\'");
 
+    html += `<tr>
+            <td>${escapeHtml(item.invoice_number || 'N/A')}</td>
+            <td>${formatDate(item.date_delivered)}</td>
+            <td>${escapeHtml(item.brand)}</td>
+            <td>${escapeHtml(item.model)}</td>
+            <td><code>${escapeHtml(item.engine_number)}</code></td>
+            <td><code>${escapeHtml(item.frame_number)}</code></td>
+            <td>${escapeHtml(item.current_branch)}</td>
+            <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="loadMotorcycleForEdit(${item.id})" title="Edit This Unit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="confirmDeleteInvoice(${item.invoice_id}, '${safeInvoiceNumber}')" title="Delete Entire Invoice">
+                        <i class="bi bi-journal-x"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+  });
+  $("#directShipmentsTableBody").html(html);
+}
 
+/**
+ * Shows a confirmation modal before deleting an entire invoice transaction.
+ * @param {number} invoiceId The ID of the invoice to be deleted.
+ * @param {string} invoiceNumber The number of the invoice for display in the message.
+ */
+function confirmDeleteInvoice(invoiceId, invoiceNumber) {
+    const message = `Are you sure you want to <strong>permanently delete</strong> the entire invoice transaction for <strong>#${invoiceNumber}</strong>? This will remove all motorcycles associated with this invoice and cannot be undone.`;
+    showConfirmationModal(
+        message,
+        'Confirm Invoice Deletion',
+        () => deleteInvoiceTransaction(invoiceId),
+        'danger',
+        'Yes, Delete Invoice'
+    );
+}
 
+/**
+ * Makes an AJAX call to delete an entire invoice and its associated motorcycles.
+ * @param {number} invoiceId The ID of the invoice to delete.
+ */
+function deleteInvoiceTransaction(invoiceId) {
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "POST",
+        data: {
+            action: "delete_invoice_transaction",
+            invoice_id: invoiceId
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                showSuccessModal(response.message);
+                loadDirectShipments(1);   // Refresh the current tab
+                loadInventoryTable();     // Refresh the main inventory tab
+                loadInventoryDashboard(); // Refresh the dashboard
+            } else {
+                showErrorModal(response.message || 'Failed to delete the invoice transaction.');
+            }
+        },
+        error: function() {
+            showErrorModal('An error occurred while trying to delete the invoice.');
+        }
+    });
+}
 /**
  * Loads the system-wide activity log with pagination and search.
  * @param {number} [page=1] - The page number to load.

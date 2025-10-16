@@ -97,6 +97,10 @@
                             History</button>
                     </li>
                     <li class='nav-item' role='presentation'>
+                    <button class='nav-link' id='direct-shipments-tab' data-bs-toggle='tab' data-bs-target='#directShipments'
+                    type='button' role='tab'>Direct Shipments</button>
+                    </li>
+                    <li class='nav-item' role='presentation'>
                         <button class='nav-link' id='sold-units-tab' data-bs-toggle='tab' data-bs-target='#soldUnits'
                             type='button' role='tab'>Sold Units</button>
                     </li>
@@ -331,7 +335,36 @@
                             </div>
                         </div>
                     </div>
-
+<div class='tab-pane fade' id='directShipments' role='tabpanel' aria-labelledby='direct-shipments-tab'>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Direct Shipments from Supplier</h5>
+        <div class="input-group" style="max-width: 300px;">
+            <input type="text" id="directShipmentsSearch" class="form-control" placeholder="Search...">
+            <button class="btn btn-primary text-white" type="button" id="directShipmentsSearchBtn"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+    <div class='table-responsive'>
+        <table class='table table-striped table-hover' id='directShipmentsTable'>
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Date Delivered</th>
+                    <th>Brand</th>
+                    <th>Model</th>
+                    <th>Engine No.</th>
+                    <th>Frame No.</th>
+                    <th>Branch Delivered To</th>
+                    <th> Actions</th>
+                </tr>
+            </thead>
+            <tbody id='directShipmentsTableBody'>
+                </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class='pagination pagination-sm justify-content-center' id='directShipmentsPagination'></ul>
+    </nav>
+</div>
 
                     <div class="modal fade" id="deleteTransferConfirmationModal" tabindex="-1">
                         <div class="modal-dialog">
