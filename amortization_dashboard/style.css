@@ -781,3 +781,28 @@ mark {
         padding: 15px;
     }
 }
+
+/* Password Modal Styles */
+#passwordModal .modal-content {
+    max-width: 400px;
+}
+
+#passwordForm .form-group {
+    margin-bottom: 1rem;
+}
+
+#passwordForm input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+#passwordStatus {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    text-align: center;
+}

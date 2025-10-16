@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedLCP = document.getElementById('selectedLCP');
     const closeResultsBtn = document.getElementById('closeResults');
     const printResultsBtn = document.getElementById('printResults');
+    const ADMIN_PASSWORD = "solidforce2025";
 
     // --- Check if elements exist before adding event listeners ---
     if (!uploadModal || !resultsModal || !addPricingBtn || !calculatorFieldset) {
@@ -172,7 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="search-result-item" data-model="${motorcycle.model}">
                 <div class="model-name">${highlightMatch(motorcycle.model, searchTerm)}</div>
                 <div class="model-brand">${motorcycle.brand}</div>
-                <div class="model-price">₱${parseFloat(motorcycle.lcp).toLocaleString('en-US')}</div>
             </div>
         `).join('');
 
@@ -452,4 +452,77 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize by checking for existing pricing
     checkExistingPricing();
+
+    
+function openPasswordModal() {
+    const passwordModal = document.getElementById('passwordModal');
+    if (passwordModal) {
+        passwordModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        document.getElementById('adminPassword').focus();
+    }
+}
+
+function closePasswordModal() {
+    const passwordModal = document.getElementById('passwordModal');
+    if (passwordModal) {
+        passwordModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        document.getElementById('passwordStatus').textContent = '';
+        document.getElementById('passwordForm').reset();
+    }
+}
+
+function handlePasswordSubmit(e) {
+    e.preventDefault();
+    
+    const passwordInput = document.getElementById('adminPassword');
+    const passwordStatus = document.getElementById('passwordStatus');
+    const enteredPassword = passwordInput.value.trim();
+    
+    if (enteredPassword === ADMIN_PASSWORD) {
+        passwordStatus.textContent = '✅ Access granted!';
+        passwordStatus.style.color = 'green';
+        
+        // Close password modal and open upload modal after successful authentication
+        setTimeout(() => {
+            closePasswordModal();
+            openModal(uploadModal);
+        }, 1000);
+    } else {
+        passwordStatus.textContent = '❌ Incorrect password. Please try again.';
+        passwordStatus.style.color = 'red';
+        passwordInput.value = '';
+        passwordInput.focus();
+    }
+}
+
+// Update the existing addPricingBtn event listener
+addPricingBtn.addEventListener('click', function() {
+    openPasswordModal(); // Always show password modal first
+});
+
+// Add event listener for password form
+const passwordForm = document.getElementById('passwordForm');
+if (passwordForm) {
+    passwordForm.addEventListener('submit', handlePasswordSubmit);
+}
+
+// Close password modal when clicking outside
+window.addEventListener('click', function(e) {
+    const passwordModal = document.getElementById('passwordModal');
+    if (e.target === passwordModal) {
+        closePasswordModal();
+    }
+});
+
+// Close password modal with escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const passwordModal = document.getElementById('passwordModal');
+        if (passwordModal && passwordModal.style.display === 'block') {
+            closePasswordModal();
+        }
+    }
+});
 });

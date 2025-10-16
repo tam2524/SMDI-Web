@@ -86,6 +86,24 @@
         </div>
     </div>
 
+    <!-- Password Modal -->
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closePasswordModal()">&times;</span>
+        <div class="modal-header">
+            <img src="../assets/img/smdi_logo.jpg" alt="SMDI Logo" class="modal-logo">
+            <h2>Admin Access Required!</h2>
+        </div>
+        <form id="passwordForm">
+            <div class="form-group">
+                <input type="password" id="adminPassword" placeholder="Enter admin password" required>
+            </div>
+            <button type="submit">Continue</button>
+        </form>
+        <div id="passwordStatus"></div>
+    </div>
+</div>
+
     <script src="app.js"></script>
 
 </body>
