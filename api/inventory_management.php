@@ -2441,7 +2441,7 @@ function getMonthlyInventory() {
     $typesBeginning = 'ssss' . $paramTypes;
     $paramsBeginning = array_merge([$prevMonthEnd, $prevMonthEnd, $prevMonthEnd, $prevMonthEnd], $params);
     bindParams($stmtBeginning, $typesBeginning, $paramsBeginning);
-} else {
+    } else {
     
     $sqlBeginning = "
         SELECT COUNT(*) as count_beginning, COALESCE(SUM(mi.inventory_cost), 0) as cost_beginning
@@ -2458,7 +2458,7 @@ function getMonthlyInventory() {
     $typesBeginning = 'sssss' . $paramTypes;
     $paramsBeginning = array_merge([$branch, $prevMonthEnd, $prevMonthEnd, $prevMonthEnd, $prevMonthEnd], $params);
     bindParams($stmtBeginning, $typesBeginning, $paramsBeginning);
-}
+    }
     $stmtBeginning->execute();
     $beginningResult = $stmtBeginning->get_result()->fetch_assoc();
     $countBeginning = (int)($beginningResult['count_beginning'] ?? 0);
@@ -2467,7 +2467,7 @@ function getMonthlyInventory() {
 
      
     
-if (strtoupper($branch) === 'ALL') {
+    if (strtoupper($branch) === 'ALL') {
     
     
     $sqlNewDeliveries = "
@@ -2525,7 +2525,7 @@ if (strtoupper($branch) === 'ALL') {
         $endDate     
     ], $params);
     bindParams($stmtNewDeliveries, $types, $paramsNewDeliveries);
-}
+    }
     $stmtNewDeliveries->execute();
     $newDeliveriesResult = $stmtNewDeliveries->get_result()->fetch_assoc();
     $countNewDeliveries = (int)($newDeliveriesResult['count_new'] ?? 0);
@@ -2660,9 +2660,9 @@ if (strtoupper($branch) === 'ALL') {
 
    
 
-$repoSelects = '';
-$repoJoins = '';
-if ($category === 'repo') {
+    $repoSelects = '';
+    $repoJoins = '';
+    if ($category === 'repo') {
     $repoSelects = ", 
         COALESCE(ms_info.customer_name, '-') AS customer_name,
         COALESCE(ms_info.sale_date, '-') AS date_sold
@@ -2670,7 +2670,7 @@ if ($category === 'repo') {
     $repoJoins = "
         LEFT JOIN motorcycle_sales ms_info ON mi.id = ms_info.motorcycle_id
     ";
-}
+    }
   if (strtoupper($branch) === 'ALL') {
     
     $sqlEndingActualData = "
@@ -2719,7 +2719,7 @@ if ($category === 'repo') {
         $stmtEndingActual->execute();
         $endingActualResult = $stmtEndingActual->get_result()->fetch_assoc();
 
-} else {
+    } else {
     
     $sqlEndingActualData = "
     SELECT mi.*, i.invoice_number, mi.current_branch AS branch_at_cutoff $repoSelects
@@ -2797,7 +2797,7 @@ if ($category === 'repo') {
     }
     
     $data[] = $item;
-}
+    }
 
     
     if (strtoupper($branch) === 'ALL') {

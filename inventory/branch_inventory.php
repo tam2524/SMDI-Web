@@ -1421,7 +1421,28 @@
             </div>
         </div>
     </div>
-
+<div class='modal fade' id='underConstructionModal' tabindex='-1' aria-labelledby='underConstructionModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-dialog-centered'>
+        <div class='modal-content'>
+            <div class='modal-header bg-danger text-white'>
+                <h5 class='modal-title text-white' id='underConstructionModalLabel'>
+                    <i class='bi bi-tools me-2'></i>Feature Under Construction
+                </h5>
+                <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'
+                    aria-label='Close'></button>
+            </div>
+            <div class='modal-body text-center'>
+                <h4 class='text-danger mb-3'>This feature cannot be used right now.</h4>
+                <p class='lead'>We're currently working hard to finish the reporting module!</p>
+                <i class='bi bi-cone-striped' style='font-size: 3rem; color: orange;'></i>
+            </div>
+            <div class='modal-footer'>
+                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div class='modal fade' id='warningModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog'>
