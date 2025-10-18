@@ -2346,10 +2346,12 @@ function getAllModels() {
         echo json_encode(['success' => false, 'message' => 'Error fetching models: ' . $conn->error]);
     }
 }
+
+
 function getMonthlyInventory() {
      global $conn;
 
-    
+    // MODIFIED: Now checks for 'date' (for As-of mode) or 'month' (for Monthly mode)
     $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
     $asOfDate = isset($_GET['date']) ? sanitizeInput($_GET['date']) : '';
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
@@ -2357,20 +2359,20 @@ function getMonthlyInventory() {
     $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
     $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
 
-    
+    // MODIFIED: Validation checks for either date parameter
     if (empty($month) && empty($asOfDate)) {
         echo json_encode(['success' => false, 'message' => 'A Month or As-of Date parameter is required.']);
         return;
     }
 
     if (!empty($asOfDate)) {
-        
+        // --- As of Date Mode ---
         $endDate = $asOfDate;
         $startDate = date('Y-m-01', strtotime($asOfDate));
         $prevMonthEnd = date('Y-m-d', strtotime($startDate . ' -1 day'));
-        $reportMonth = date('Y-m', strtotime($asOfDate)); 
+        $reportMonth = date('Y-m', strtotime($asOfDate)); // Use the month of the as-of-date for context
     } else {
-        
+        // --- Monthly Mode (Original Logic) ---
         $startDate    = date('Y-m-01', strtotime($month));
         $endDate      = date('Y-m-t', strtotime($month));
         $prevMonthEnd = date('Y-m-d', strtotime('last day of previous month', strtotime($month)));
@@ -2392,7 +2394,7 @@ function getMonthlyInventory() {
         $paramTypes .= 's';
     }
 
-    
+    // ADD this block
     if ($models_str !== 'all' && !empty($models_str)) {
     $models = array_map('trim', explode(',', $models_str));
     if (!empty($models)) {
@@ -2405,14 +2407,14 @@ function getMonthlyInventory() {
     }
    }
 
-    
+    // Helper function remains the same
     function bindParams(&$stmt, $types, $params) {
         if (!empty($params)) {
             $stmt->bind_param($types, ...$params);
         }
     }
 
-    
+    // Initialize all variables to avoid undefined warnings
     $countBeginning = 0;
     $costBeginning = 0;
     $countNewDeliveries = 0;
@@ -2425,7 +2427,7 @@ function getMonthlyInventory() {
     $costSoldDuringMonth = 0;
 
     if (strtoupper($branch) === 'ALL') {
-    
+    // MODIFIED: Added checks for scraps and transfers before the period starts for a more accurate beginning balance.
     $sqlBeginning = "
         SELECT COUNT(*) AS count_beginning, COALESCE(SUM(mi.inventory_cost), 0) AS cost_beginning
         FROM motorcycle_inventory mi
@@ -2437,12 +2439,12 @@ function getMonthlyInventory() {
           $categoryCondition $brandCondition $modelCondition
     ";
     $stmtBeginning = $conn->prepare($sqlBeginning);
-    
+    // MODIFIED: More parameters are needed for the new NOT EXISTS clauses.
     $typesBeginning = 'ssss' . $paramTypes;
     $paramsBeginning = array_merge([$prevMonthEnd, $prevMonthEnd, $prevMonthEnd, $prevMonthEnd], $params);
     bindParams($stmtBeginning, $typesBeginning, $paramsBeginning);
-    } else {
-    
+} else {
+    // MODIFIED: Added checks for scraps and transfers for a more accurate beginning balance.
     $sqlBeginning = "
         SELECT COUNT(*) as count_beginning, COALESCE(SUM(mi.inventory_cost), 0) as cost_beginning
         FROM motorcycle_inventory mi
@@ -2454,85 +2456,59 @@ function getMonthlyInventory() {
           $categoryCondition $brandCondition $modelCondition
     ";
     $stmtBeginning = $conn->prepare($sqlBeginning);
-    
+    // MODIFIED: More parameters are needed for the new NOT EXISTS clauses.
     $typesBeginning = 'sssss' . $paramTypes;
     $paramsBeginning = array_merge([$branch, $prevMonthEnd, $prevMonthEnd, $prevMonthEnd, $prevMonthEnd], $params);
     bindParams($stmtBeginning, $typesBeginning, $paramsBeginning);
-    }
+}
     $stmtBeginning->execute();
     $beginningResult = $stmtBeginning->get_result()->fetch_assoc();
     $countBeginning = (int)($beginningResult['count_beginning'] ?? 0);
     $costBeginning  = (float)($beginningResult['cost_beginning'] ?? 0);
 
 
-     
-    
+     // === NEW DELIVERIES ===
     if (strtoupper($branch) === 'ALL') {
-    
-    
-    $sqlNewDeliveries = "
-        SELECT COUNT(*) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
-        FROM motorcycle_inventory mi
-       WHERE mi.date_delivered BETWEEN ? AND ?
-  AND mi.deleted_at IS NULL
-     $categoryCondition
-          $brandCondition
-          $modelCondition
-    ";
-    
+        $sqlNewDeliveries = "
+            SELECT COUNT(*) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
+            FROM motorcycle_inventory mi
+            WHERE mi.date_delivered BETWEEN ? AND ?
+              AND mi.deleted_at IS NULL
+              AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
+              $categoryCondition
+              $brandCondition
+              $modelCondition
+        ";
         $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
         $types = 'ss' . $paramTypes;
         $paramsNewDeliveries = array_merge([$startDate, $endDate], $params);
         bindParams($stmtNewDeliveries, $types, $paramsNewDeliveries);
-   } else {
-    
-    $sqlNewDeliveries = "
-        SELECT COUNT(DISTINCT mi.id) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
-        FROM motorcycle_inventory mi
-        WHERE mi.date_delivered BETWEEN ? AND ?
-          AND mi.deleted_at IS NULL
-          AND (
-                -- Condition 1: The item was delivered, never transferred, and is at the selected branch.
-                (
-                    mi.current_branch = ?
-                    AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
-                )
-            OR
-                -- Condition 2: The item was delivered AND its first transfer FROM this branch
-                -- happened IN THE SAME PERIOD.
-                (
-                    EXISTS (
-                        SELECT 1 FROM inventory_transfers it
-                        WHERE it.motorcycle_id = mi.id
-                          AND it.from_branch = ?
-                          -- THIS DATE CHECK IS THE CRITICAL FIX:
-                          AND it.transfer_date BETWEEN ? AND ?
-                          AND it.transfer_date = (SELECT MIN(it2.transfer_date) FROM inventory_transfers it2 WHERE it2.motorcycle_id = mi.id)
-                    )
-                )
-          )
-          $categoryCondition $brandCondition $modelCondition
-    ";
-    $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-    
-    $types = 'ssssss' . $paramTypes;
-    $paramsNewDeliveries = array_merge([
-        $startDate,  
-        $endDate,    
-        $branch,     
-        $branch,     
-        $startDate,  
-        $endDate     
-    ], $params);
-    bindParams($stmtNewDeliveries, $types, $paramsNewDeliveries);
+    } else {
+        // --- THIS IS THE FIX ---
+        $sqlNewDeliveries = "
+            SELECT COUNT(*) AS count_new, COALESCE(SUM(mi.inventory_cost), 0) AS cost_new
+            FROM motorcycle_inventory mi
+            WHERE mi.date_delivered BETWEEN ? AND ?
+              AND mi.deleted_at IS NULL
+              AND mi.current_branch = ?
+              -- This new line prevents transferred items from being counted as new deliveries
+              AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
+              $categoryCondition
+              $brandCondition
+              $modelCondition
+        ";
+        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
+        $types = 'sss' . $paramTypes;
+        $paramsNewDeliveries = array_merge([$startDate, $endDate, $branch], $params);
+        bindParams($stmtNewDeliveries, $types, $paramsNewDeliveries);
     }
     $stmtNewDeliveries->execute();
     $newDeliveriesResult = $stmtNewDeliveries->get_result()->fetch_assoc();
     $countNewDeliveries = (int)($newDeliveriesResult['count_new'] ?? 0);
     $costNewDeliveries  = (float)($newDeliveriesResult['cost_new'] ?? 0);
 
-    
-    
+    // === RECEIVED TRANSFERS ===
+    // FIXED: Use transfer_date instead of date_received for movement timing
     if (strtoupper($branch) === 'ALL') {
         $sqlReceived = "
             SELECT COUNT(*) AS count_received, COALESCE(SUM(mi.inventory_cost), 0) AS cost_received
@@ -2570,11 +2546,11 @@ function getMonthlyInventory() {
     $countReceived = (int)($receivedResult['count_received'] ?? 0);
     $costReceived  = (float)($receivedResult['cost_received'] ?? 0);
 
-    
+    // === TOTAL IN ===
     $countIn = $countNewDeliveries + $countReceived;
     $costIn  = $costNewDeliveries + $costReceived;
 
-    
+    // === TRANSFERS OUT ===
     if (strtoupper($branch) === 'ALL') {
         $sqlTransfersOut = "
             SELECT COUNT(*) AS count_transfers_out, COALESCE(SUM(mi.inventory_cost), 0) AS cost_transfers_out
@@ -2612,7 +2588,7 @@ function getMonthlyInventory() {
     $countTransfersOut = (int)($transfersOutResult['count_transfers_out'] ?? 0);
     $costTransfersOut  = (float)($transfersOutResult['cost_transfers_out'] ?? 0);
 
-    
+    // === SOLD DURING MONTH ===
     if (strtoupper($branch) === 'ALL') {
         $sqlSoldDuringMonth = "
             SELECT COUNT(*) AS count_sold_month, COALESCE(SUM(mi.inventory_cost), 0) AS cost_sold_month
@@ -2650,29 +2626,30 @@ function getMonthlyInventory() {
     $countSoldDuringMonth = (int)($soldDuringMonthResult['count_sold_month'] ?? 0);
     $costSoldDuringMonth  = (float)($soldDuringMonthResult['cost_sold_month'] ?? 0);
 
-    
+    // === TOTAL OUT ===
     $countOut = $countTransfersOut + $countSoldDuringMonth;
     $costOut  = $costTransfersOut + $costSoldDuringMonth;
 
-    
+    // === ENDING BALANCE CALCULATION ===
     $countEndingCalculated = $countBeginning + $countIn - $countOut;
     $costEndingCalculated  = $costBeginning  + $costIn  - $costOut;
 
-   
+   // === ACTUAL ENDING BALANCE & DETAILED DATA (as of endDate cutoff) ===
 
     $repoSelects = '';
     $repoJoins = '';
     if ($category === 'repo') {
     $repoSelects = ", 
-        COALESCE(ms_info.customer_name, '-') AS customer_name,
+        COALESCE(c.customer_name, '-') AS customer_name,
         COALESCE(ms_info.sale_date, '-') AS date_sold
     ";
     $repoJoins = "
         LEFT JOIN motorcycle_sales ms_info ON mi.id = ms_info.motorcycle_id
+        LEFT JOIN customers c ON ms_info.customer_id = c.id
     ";
     }
   if (strtoupper($branch) === 'ALL') {
-    
+    // MODIFIED: Prioritize date_received over date_delivered for accurate inventory timing.
     $sqlEndingActualData = "
     SELECT mi.*, i.invoice_number $repoSelects
     FROM motorcycle_inventory mi
@@ -2680,14 +2657,10 @@ function getMonthlyInventory() {
     $repoJoins
     WHERE mi.deleted_at IS NULL
           AND (COALESCE(mi.date_received, mi.date_delivered) <= ?) -- Use the true arrival date
-         -- MODIFIED: Include units that are sold IF their category is 'repo'.
-          AND (
-               LOWER(mi.category) = 'repo' 
-               OR NOT EXISTS (
-                    SELECT 1 FROM motorcycle_sales s
-                    WHERE s.motorcycle_id = mi.id
-                      AND s.sale_date <= ?
-               )
+          AND NOT EXISTS (
+               SELECT 1 FROM motorcycle_sales s
+               WHERE s.motorcycle_id = mi.id
+                 AND s.sale_date <= ?
           )
           AND NOT EXISTS (
               SELECT 1 FROM motorcycle_sales s
@@ -2701,7 +2674,7 @@ function getMonthlyInventory() {
     ";
 
 
-        
+        // Detailed rows
        $stmtData = $conn->prepare($sqlEndingActualData);
        $types = 'ss' . $paramTypes;
     $paramsData = array_merge([$endDate, $endDate], $params);
@@ -2709,7 +2682,7 @@ function getMonthlyInventory() {
         $stmtData->execute();
         $resultData = $stmtData->get_result();
 
-        
+        // Aggregate (count, cost) uses same query wrapped
         $sqlEndingActual = "
             SELECT COUNT(*) AS count_ending, COALESCE(SUM(sub.inventory_cost),0) AS cost_ending
             FROM ($sqlEndingActualData) sub
@@ -2719,8 +2692,8 @@ function getMonthlyInventory() {
         $stmtEndingActual->execute();
         $endingActualResult = $stmtEndingActual->get_result()->fetch_assoc();
 
-    } else {
-    
+} else {
+    // MODIFIED: Prioritize date_received over date_delivered for accurate inventory timing.
     $sqlEndingActualData = "
     SELECT mi.*, i.invoice_number, mi.current_branch AS branch_at_cutoff $repoSelects
     FROM motorcycle_inventory mi
@@ -2729,13 +2702,10 @@ function getMonthlyInventory() {
     WHERE mi.deleted_at IS NULL
           AND mi.current_branch = ?
           AND (COALESCE(mi.date_received, mi.date_delivered) <= ?) -- Use the true arrival date
-         AND (
-               LOWER(mi.category) = 'repo' 
-               OR NOT EXISTS (
-                    SELECT 1 FROM motorcycle_sales s
-                    WHERE s.motorcycle_id = mi.id
-                      AND s.sale_date <= ?
-               )
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_sales s
+              WHERE s.motorcycle_id = mi.id
+                AND s.sale_date <= ?
           )
           $categoryCondition
            $brandCondition
@@ -2743,20 +2713,20 @@ function getMonthlyInventory() {
         ORDER BY mi.brand, mi.model
     ";
 
-    
+    // Detailed rows
     $stmtData = $conn->prepare($sqlEndingActualData);
-    
+    // MODIFIED: Parameter count reduced from 4 to 3 for the main query.
     $types = 'sss' . $paramTypes;
     $paramsData = array_merge([
-        $branch,   
-        $endDate,  
-        $endDate   
+        $branch,   // mi.current_branch = ?
+        $endDate,  // COALESCE(...) <= ?
+        $endDate   // s.sale_date <= ?
     ], $params);
     bindParams($stmtData, $types, $paramsData);
     $stmtData->execute();
     $resultData = $stmtData->get_result();
     
-    
+    // Aggregate (count, cost) uses same query wrapped
     $sqlEndingActual = "
         SELECT COUNT(*) AS count_ending, COALESCE(SUM(sub.inventory_cost),0) AS cost_ending
         FROM ($sqlEndingActualData) sub
@@ -2770,7 +2740,7 @@ function getMonthlyInventory() {
     $countEndingActual = (int)($endingActualResult['count_ending'] ?? 0);
     $costEndingActual  = (float)($endingActualResult['cost_ending'] ?? 0);
 
-    
+    // === Build $data array from resultData (ACTUAL ENDING INVENTORY ONLY) ===
     $data = [];
    while ($row = $resultData->fetch_assoc()) {
     $item = [
@@ -2790,16 +2760,16 @@ function getMonthlyInventory() {
         'record_type' => 'inventory'
     ];
     
-    
+    // Conditionally add repo-specific data
     if ($category === 'repo') {
         $item['customer_name'] = $row['customer_name'];
         $item['date_sold'] = $row['date_sold'];
     }
     
     $data[] = $item;
-    }
+}
 
-    
+    // === TRANSFER DETAILS (for discrepancy calc and separate reporting) ===
     if (strtoupper($branch) === 'ALL') {
         $sqlTransferDetails = "
             SELECT it.*, mi.brand, mi.model, mi.engine_number, mi.frame_number, mi.inventory_cost,
@@ -2811,7 +2781,7 @@ function getMonthlyInventory() {
               $categoryCondition
                $brandCondition
                $modelCondition
-            ORDER BY it.transfer_date ASC
+            ORDER BY it.transfer_date DESC
         ";
         $stmtTransferDetails = $conn->prepare($sqlTransferDetails);
         $types = 'ss' . $paramTypes;
@@ -2833,7 +2803,7 @@ function getMonthlyInventory() {
               $categoryCondition
                $brandCondition
                $modelCondition
-            ORDER BY it.transfer_date ASC
+            ORDER BY it.transfer_date DESC
         ";
         $stmtTransferDetails = $conn->prepare($sqlTransferDetails);
         $types = 'ssssss' . $paramTypes;
@@ -2921,7 +2891,7 @@ function getMonthlyInventory() {
         ];
     }
 
-    
+    // === Build response ===
     $response = [
         'success' => true,
         'data' => $data,
@@ -2996,7 +2966,6 @@ function getMonthlyInventory() {
 
     echo json_encode($response);
 }
-
 function getMonthlyTransferredSummary() {
     global $conn;
 
@@ -4930,132 +4899,143 @@ function getDirectShipmentForEdit() {
 function updateDirectShipment() {
     global $conn;
 
-    $required = ['id', 'date_delivered', 'brand', 'model', 'category', 'engine_number', 'frame_number', 'color', 'current_branch', 'status'];
-    foreach ($required as $field) {
-        if (empty($_POST[$field])) {
-            echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
-            return;
-        }
+    // Always need ID
+    if (empty($_POST['id'])) {
+        echo json_encode(['success' => false, 'message' => "Missing required field: id"]);
+        return;
     }
 
     $id = intval($_POST['id']);
-    $dateReceived = sanitizeInput($_POST['date_received']);
-    $dateDelivered = sanitizeInput($_POST['date_delivered']);
-    $brand = sanitizeInput($_POST['brand']);
-    $model = sanitizeInput($_POST['model']);
-    $category = sanitizeInput($_POST['category']);
-    $engineNumber = sanitizeInput($_POST['engine_number']);
-    $frameNumber = sanitizeInput($_POST['frame_number']);
-    $invoiceNumber = isset($_POST['invoice_number']) ? sanitizeInput($_POST['invoice_number']) : '';
-    $color = sanitizeInput($_POST['color']);
-    $inventory_cost = !empty($_POST['inventory_cost']) ? floatval($_POST['inventory_cost']) : null;
-    $currentBranch = sanitizeInput($_POST['current_branch']);
-    $status = sanitizeInput($_POST['status']);
+    $invoiceNumber = isset($_POST['invoice_number']) ? sanitizeInput($_POST['invoice_number']) : null;
+
+    // Detect if ONLY invoice_number was submitted (others empty or not set)
+    $onlyInvoiceUpdate = true;
+    $fieldsToCheck = ['date_delivered', 'date_received', 'brand', 'model', 'category', 'engine_number', 'frame_number', 'color', 'inventory_cost', 'current_branch', 'status'];
+    foreach ($fieldsToCheck as $f) {
+        if (!empty($_POST[$f])) {
+            $onlyInvoiceUpdate = false;
+            break;
+        }
+    }
 
     $conn->begin_transaction();
 
     try {
-        // Check for duplicate engine and frame numbers (excluding current ID)
+        if ($onlyInvoiceUpdate) {
+            // 🔹 CASE 1: Only Invoice Number Updated → Update initial_dr_number only
+            $stmt = $conn->prepare("UPDATE motorcycle_inventory SET initial_dr_number = ? WHERE id = ?");
+            $stmt->bind_param('si', $invoiceNumber, $id);
+            if (!$stmt->execute()) {
+                throw new Exception('Error updating initial DR number: ' . $stmt->error);
+            }
+            $stmt->close();
+
+            $conn->commit();
+
+            log_action($conn, 'UPDATE', 'motorcycle_inventory', $id, "Updated initial DR number to '{$invoiceNumber}'");
+
+            echo json_encode([
+                'success' => true,
+                'message' => "Initial DR number updated successfully.",
+                'type' => 'initial_dr_number_updated'
+            ]);
+            return;
+        }
+
+        // 🔹 CASE 2: Full Update (same as before)
+        $required = ['date_delivered', 'brand', 'model', 'category', 'engine_number', 'frame_number', 'color', 'current_branch', 'status'];
+        foreach ($required as $field) {
+            if (empty($_POST[$field])) {
+                throw new Exception("Missing required field: $field");
+            }
+        }
+
+        $dateDelivered = sanitizeInput($_POST['date_delivered']);
+        $dateReceived = !empty($_POST['date_received']) ? sanitizeInput($_POST['date_received']) : null;
+        $brand = sanitizeInput($_POST['brand']);
+        $model = sanitizeInput($_POST['model']);
+        $category = sanitizeInput($_POST['category']);
+        $engineNumber = sanitizeInput($_POST['engine_number']);
+        $frameNumber = sanitizeInput($_POST['frame_number']);
+        $color = sanitizeInput($_POST['color']);
+        $inventory_cost = !empty($_POST['inventory_cost']) ? floatval($_POST['inventory_cost']) : null;
+        $currentBranch = sanitizeInput($_POST['current_branch']);
+        $status = sanitizeInput($_POST['status']);
+
+        // Check for duplicates
         $engineCheckStmt = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE engine_number = ? AND id != ?");
         $engineCheckStmt->bind_param('si', $engineNumber, $id);
         $engineCheckStmt->execute();
-        $engineCheckResult = $engineCheckStmt->get_result();
-        if ($engineCheckResult->num_rows > 0) {
-            throw new Exception("DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists in another motorcycle.");
+        if ($engineCheckStmt->get_result()->num_rows > 0) {
+            throw new Exception("DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists.");
         }
+        $engineCheckStmt->close();
 
         $frameCheckStmt = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE frame_number = ? AND id != ?");
         $frameCheckStmt->bind_param('si', $frameNumber, $id);
         $frameCheckStmt->execute();
-        $frameCheckResult = $frameCheckStmt->get_result();
-        if ($frameCheckResult->num_rows > 0) {
-            throw new Exception("DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists in another motorcycle.");
+        if ($frameCheckStmt->get_result()->num_rows > 0) {
+            throw new Exception("DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists.");
         }
+        $frameCheckStmt->close();
 
-        $invoiceId = null;
-        $invoiceMessage = "";
-
-        // Handle invoice number for direct shipments
-        if (!empty($invoiceNumber)) {
-            // Check if invoice already exists
-            $checkInvoiceStmt = $conn->prepare('SELECT id FROM invoices WHERE invoice_number = ?');
-            $checkInvoiceStmt->bind_param('s', $invoiceNumber);
-            $checkInvoiceStmt->execute();
-            $existingInvoiceResult = $checkInvoiceStmt->get_result();
-
-            if ($existingInvoiceResult->num_rows > 0) {
-                // Link to existing invoice
-                $existingInvoice = $existingInvoiceResult->fetch_assoc();
-                $invoiceId = $existingInvoice['id'];
-                $invoiceMessage = " (linked to existing invoice #$invoiceNumber)";
-            } else {
-                // Create new invoice
-                $invoiceStmt = $conn->prepare('INSERT INTO invoices (invoice_number, date_delivered, notes) VALUES (?, ?, ?)');
-                $notes = "Direct shipment - Motorcycle ID: $id";
-                $invoiceStmt->bind_param('sss', $invoiceNumber, $dateDelivered, $notes);
-                if (!$invoiceStmt->execute()) {
-                    throw new Exception('Error creating new invoice: ' . $invoiceStmt->error);
-                }
-                $invoiceId = $conn->insert_id;
-                $invoiceMessage = " (created new invoice #$invoiceNumber)";
-            }
-            $checkInvoiceStmt->close();
-
-            // Update initial_dr_number for direct shipment
-            $updateInitialDRStmt = $conn->prepare("UPDATE motorcycle_inventory SET initial_dr_number = ? WHERE id = ?");
-            $updateInitialDRStmt->bind_param('si', $invoiceNumber, $id);
-            if (!$updateInitialDRStmt->execute()) {
-                throw new Exception('Error updating initial DR number: ' . $updateInitialDRStmt->error);
-            }
-            $updateInitialDRStmt->close();
-        }
-
-        // Update motorcycle inventory
-        if ($invoiceId) {
-            $stmt = $conn->prepare("UPDATE motorcycle_inventory 
-                                   SET date_delivered = ?, date_received = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
-                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?, invoice_id = ?
-                                   WHERE id = ?");
-            $stmt->bind_param('ssssssssdssii', $dateDelivered, $dateReceived, $brand, $model, $category, $engineNumber,
-                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $invoiceId, $id);
-        } else {
-            $stmt = $conn->prepare("UPDATE motorcycle_inventory 
-                                   SET date_delivered = ?, date_received = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
-                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?
-                                   WHERE id = ?");
-            $stmt->bind_param('ssssssssdssi', $dateDelivered, $dateReceived, $brand, $model, $category, $engineNumber,
-                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $id);
-        }
+        // Update full record (including initial_dr_number)
+        $stmt = $conn->prepare("
+            UPDATE motorcycle_inventory 
+            SET 
+                date_delivered = ?, 
+                date_received = ?, 
+                brand = ?, 
+                model = ?, 
+                category = ?, 
+                engine_number = ?, 
+                frame_number = ?, 
+                color = ?, 
+                inventory_cost = ?, 
+                current_branch = ?, 
+                status = ?, 
+                initial_dr_number = ?
+            WHERE id = ?
+        ");
+        $stmt->bind_param(
+            'ssssssssdsssi',
+            $dateDelivered,
+            $dateReceived,
+            $brand,
+            $model,
+            $category,
+            $engineNumber,
+            $frameNumber,
+            $color,
+            $inventory_cost,
+            $currentBranch,
+            $status,
+            $invoiceNumber,
+            $id
+        );
 
         if (!$stmt->execute()) {
             throw new Exception('Error updating motorcycle: ' . $stmt->error);
         }
 
+        $stmt->close();
         $conn->commit();
 
-        $log_details = "Updated direct shipment motorcycle ID: {$id}. Invoice updated to: {$invoiceNumber}";
-        log_action($conn, 'UPDATE', 'motorcycle_inventory', $id, $log_details);
+        log_action($conn, 'UPDATE', 'motorcycle_inventory', $id, "Updated full record including initial DR: {$invoiceNumber}");
 
-        echo json_encode([ 
-            'success' => true, 
-            'message' => "Direct shipment updated successfully$invoiceMessage",
+        echo json_encode([
+            'success' => true,
+            'message' => "Direct shipment updated successfully.",
             'type' => 'direct_shipment_updated'
         ]);
 
     } catch (Exception $e) {
         $conn->rollback();
-
-        $errorMessage = $e->getMessage();
-        error_log("ERROR in updateDirectShipment(): " . $errorMessage);
-
-        if (strpos($errorMessage, 'DUPLICATE_ENGINE_NUMBER') !== false || 
-            strpos($errorMessage, 'DUPLICATE_FRAME_NUMBER') !== false) {
-            echo json_encode(['success' => false, 'message' => $errorMessage]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Error updating direct shipment. Please check console for details.']);
-        }
+        error_log("ERROR in updateDirectShipment(): " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
+
 /**
  * Fetches paginated and searchable data from the audit_log.
  */
@@ -5132,4 +5112,30 @@ function getActivityLog() {
     ]);
 }
 
+function getBranchAtDate($motorcycleId, $cutoffDate, $conn) {
+    $sql = "SELECT to_branch 
+            FROM inventory_transfers 
+            WHERE motorcycle_id = ? 
+              AND transfer_status = 'completed' 
+              AND transfer_date <= ? 
+            ORDER BY transfer_date DESC 
+            LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('is', $motorcycleId, $cutoffDate);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        return $result->fetch_assoc()['to_branch'];
+    }
+    
+    // If no transfers, get current branch
+    $sql = "SELECT current_branch FROM motorcycle_inventory WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('i', $motorcycleId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    return $result->fetch_assoc()['current_branch'];
+}
 ?>

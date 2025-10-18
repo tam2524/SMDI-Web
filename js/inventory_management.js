@@ -501,31 +501,31 @@ function setupEventListeners() {
   });
 
   
-  // $("#generateReportsButton").click(showMonthlyReportOptions);
-  // $("#generateReportBtn").off("click").on("click", generateReport);
-  // $(document).on("click", "#exportMonthlyReportToPDF", () =>
-  //   generateReportPDF()
-  // );
+  $("#generateReportsButton").click(showMonthlyReportOptions);
+  $("#generateReportBtn").off("click").on("click", generateReport);
+  $(document).on("click", "#exportMonthlyReportToPDF", () =>
+    generateReportPDF()
+  );
 
-  // FIX: Temporarily replace report button functionality to show 'Under Construction' modal
-  const generateReportsButton = document.getElementById('generateReportsButton');
-  const underConstructionModalElement = document.getElementById('underConstructionModal');
-  
-  if (generateReportsButton && underConstructionModalElement) {
-    // Instantiate the Bootstrap Modal object
-    const underConstructionModal = new bootstrap.Modal(underConstructionModalElement);
+//   // FIX: Temporarily replace report button functionality to show 'Under Construction' modal
+//   const generateReportsButton = document.getElementById('generateReportsButton');
+//   const underConstructionModalElement = document.getElementById('underConstructionModal');
+//   
+//   if (generateReportsButton && underConstructionModalElement) {
+//     // Instantiate the Bootstrap Modal object
+//     const underConstructionModal = new bootstrap.Modal(underConstructionModalElement);
 
-    // Use jQuery to remove the old handler and bind the new one
-    $(generateReportsButton).off('click').on('click', function(e) {
-      e.preventDefault();
-      // This is the CRITICAL line that shows the "Under Construction" modal
-      underConstructionModal.show();
-    });
-  } else {
-    // Fallback to original logic if elements are missing
-    $("#generateReportsButton").click(showMonthlyReportOptions);
-  }
-  
+//     // Use jQuery to remove the old handler and bind the new one
+//     $(generateReportsButton).off('click').on('click', function(e) {
+//       e.preventDefault();
+//       // This is the CRITICAL line that shows the "Under Construction" modal
+//       underConstructionModal.show();
+//     });
+//   } else {
+//     // Fallback to original logic if elements are missing
+//     $("#generateReportsButton").click(showMonthlyReportOptions);
+//   }
+//   
 
   $('input[name="reportPeriod"]').on("change", function () {
     if ($(this).val() === "as_of_date") {

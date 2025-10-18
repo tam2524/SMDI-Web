@@ -2904,7 +2904,7 @@ function loadDirectShipmentForEdit(id) {
         // Show direct shipment specific UI
         showDirectShipmentEditUI();
         
-        $("#editMotorcycleModal").modal("show");
+        $("#editDirectShipmentModal").modal("show");
       } else {
         showErrorModal(response.message || "Error loading direct shipment data");
       }
@@ -2998,7 +2998,7 @@ function loadDirectShipmentForEdit(id) {
         // Show direct shipment specific UI
         showDirectShipmentEditUI();
         
-        $("#editMotorcycleModal").modal("show");
+        $("#editDirectShipmentModal").modal("show");
       } else {
         showErrorModal(response.message || "Error loading direct shipment data");
       }
@@ -3100,13 +3100,13 @@ function showDirectShipmentEditUI() {
   // Add a badge to indicate this is a direct shipment edit
   $(".direct-shipment-badge").remove();
   const badge = `<span class="direct-shipment-badge badge bg-primary position-absolute top-0 end-0 m-2">Direct Shipment</span>`;
-  $("#editMotorcycleModal .modal-header").append(badge);
+  $("#editDirectShipmentModal .modal-header").append(badge);
   
   // Update the modal title
-  $("#editMotorcycleModal .modal-title").text("Edit Direct Shipment");
+  $("#editDirectShipmentModal .modal-title").text("Edit Direct Shipment");
   
   // Change the update button action
-  $("#editMotorcycleModal .btn-primary").off('click').on('click', updateDirectShipment);
+  $("#editDirectShipmentModal .btn-primary").off('click').on('click', updateDirectShipment);
 }
 
 /**
