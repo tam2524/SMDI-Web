@@ -703,7 +703,7 @@
                         <div class='row'>
                             <div class='col-md-4 mb-3'>
                                 <label for='editDateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='text' class='form-control datepicker' id='editDateDelivered' required placeholder="mm/dd/yyyy">
+                                <input type='text' class='form-control datepicker' id='editDateDelivered'  placeholder="mm/dd/yyyy">
                             </div>
                               <div class='col-md-4 mb-3'>
                                 <label for='editDateReceived' class='form-label'>Date Received</label>
