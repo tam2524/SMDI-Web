@@ -1158,7 +1158,6 @@ function loadInventoryTable(page = 1, sort = "", query = "") {
     },
   });
 }
-
 function renderInventoryTable(data) {
   let html = "";
 
@@ -1174,9 +1173,12 @@ function renderInventoryTable(data) {
         categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
       }
 
+      // Simply use the display_invoice_number from backend
+      const displayInvoiceNumber = item.display_invoice_number || "N/A";
+
       html += `
         <tr data-id="${item.id}">
-          <td>${item.invoice_number || "N/A"}</td>
+          <td>${displayInvoiceNumber}</td>
           <td>${
             item.date_received
               ? formatDate(item.date_received)
@@ -1191,7 +1193,7 @@ function renderInventoryTable(data) {
           <td>${formatCurrency(item.inventory_cost)}</td>
           <td>${item.current_branch}</td>
           <td>
-            <div class="btn-group btn-group-sm">
+             <div class="btn-group btn-group-sm">
               <button class="btn btn-outline-primary edit-btn" title="Edit Motorcycle">
                 <i class="bi bi-pencil"></i>
               </button>
@@ -1213,6 +1215,42 @@ function renderInventoryTable(data) {
   $("#inventoryTableBody").html(html);
   setupTableActionButtons();
 }
+
+// Helper function to determine which invoice number to display
+function getDisplayInvoiceNumber(item) {
+  // If the item has transfer_history (from backend), use the latest transfer invoice
+  if (item.transfer_history && item.transfer_history.length > 0) {
+    const latestTransfer = item.transfer_history[item.transfer_history.length - 1];
+    return latestTransfer.transfer_invoice_number || item.invoice_number;
+  }
+  
+  // If display_invoice_number is provided by backend, use it
+  if (item.display_invoice_number) {
+    return item.display_invoice_number;
+  }
+  
+  // Fallback to initial_dr_number or regular invoice_number
+  return item.initial_dr_number || item.invoice_number;
+}
+
+// Helper function to get the appropriate badge for the invoice
+function getInvoiceBadge(item) {
+  // Check if this item has transfer history
+  const hasTransfers = item.transfer_history && item.transfer_history.length > 0;
+  
+  if (hasTransfers) {
+    return '<small class="badge bg-success ms-1">Transfer</small>';
+  }
+  
+  // If it has initial_dr_number but no transfers, it's a direct shipment
+  if (item.initial_dr_number && !hasTransfers) {
+    return '<small class="badge bg-primary ms-1">DR</small>';
+  }
+  
+  // Default case (shouldn't normally happen)
+  return '<small class="badge bg-secondary ms-1">Invoice</small>';
+}
+
 
 function updateInventoryPaginationControls(totalPages) {
   let paginationHtml = "";
@@ -1431,6 +1469,14 @@ function deleteMotorcycle(id) {
     },
   });
 }
+
+function determineDocumentType(motorcycleData) {
+    if (motorcycleData.transfer_history && motorcycleData.transfer_history.length > 0) {
+        return 'transfer_invoice';
+    } else {
+        return 'initial_dr';
+    }
+}
 function loadMotorcycleForEdit(id) {
   $.ajax({
     url: "../api/inventory_management.php",
@@ -1446,29 +1492,30 @@ function loadMotorcycleForEdit(id) {
         const data = response.data;
         $("#editId").val(data.id);
         $("#editDateDelivered").val(formatDate(data.date_delivered));
-        $("#editDateReceived").val(
-          data.date_received ? formatDate(data.date_received) : ""
-        );
+        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
         $("#editBrand").val(data.brand);
         $("#editModel").val(data.model);
         $("#editCategory").val(data.category);
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
-        $("#editInvoiceNumber").val(data.invoice_number || "");
+        
+        // SCENARIO 1 & 2: Use display_invoice_number instead of invoice_number
+        $("#editInvoiceNumber").val(data.display_invoice_number || "");
+        
+        // Store the invoice source for the update function
+        $("#editInvoiceNumber").data('invoice-source', data.invoice_source || 'direct');
+        
         $("#editColor").val(data.color);
         $("#editInventoryCost").val(data.inventory_cost);
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
 
         toggleSoldDetails(data.status, data.sale_details);
-        const redeemContainer = $("#redeemInfoContainer");
+        
+        const redeemContainer = $('#redeemInfoContainer');
         if (data.redeem_details) {
-          $("#redeemInfoDate").text(
-            formatDate(data.redeem_details.redeem_date)
-          );
-          $("#redeemInfoAmount").text(
-            "₱" + formatCurrency(data.redeem_details.amount_paid)
-          );
+          $('#redeemInfoDate').text(formatDate(data.redeem_details.redeem_date));
+          $('#redeemInfoAmount').text('₱' + formatCurrency(data.redeem_details.amount_paid));
           redeemContainer.show();
         } else {
           redeemContainer.hide();
@@ -1485,14 +1532,24 @@ function loadMotorcycleForEdit(id) {
   });
 }
 
+function determineDocumentType(motorcycleData) {
+    if (motorcycleData.transfer_history && motorcycleData.transfer_history.length > 0) {
+        return 'transfer_invoice';
+    } else {
+        return 'initial_dr';
+    }
+}
+
 function updateMotorcycle() {
   const status = $("#editStatus").val();
-
   
   const dateReceivedValue = $("#editDateReceived").val();
   const formattedDateReceived = dateReceivedValue
     ? formatDateForAPI(dateReceivedValue)
     : null; 
+
+  // Get the invoice source from the data attribute
+  const invoiceSource = $("#editInvoiceNumber").data('invoice-source') || 'direct';
 
   const formData = {
     action: "update_motorcycle",
@@ -1505,6 +1562,7 @@ function updateMotorcycle() {
     engine_number: $("#editEngineNumber").val(),
     frame_number: $("#editFrameNumber").val(),
     invoice_number: $("#editInvoiceNumber").val(),
+    invoice_source: invoiceSource, // Add invoice source to form data
     color: $("#editColor").val(),
     inventory_cost: $("#editInventoryCost").val(),
     current_branch: $("#editCurrentBranch").val(),
@@ -1521,7 +1579,7 @@ function updateMotorcycle() {
     formData.monthly_amortization = $("#editMonthlyAmortization").val();
   }
 
-  
+  // Validation
   if (
     !formData.id ||
     !formData.date_delivered ||
@@ -1551,7 +1609,10 @@ function updateMotorcycle() {
       if (response.success) {
         $("#editMotorcycleModal").modal("hide");
 
-        if (response.type === "existing_invoice") {
+        // Handle different response types
+        if (response.type === "direct_shipment") {
+          showSuccessModal(response.message);
+        } else if (response.type === "existing_invoice") {
           showSuccessModal(response.message);
         } else if (response.type === "new_invoice") {
           showSuccessModal(response.message);
@@ -1560,14 +1621,13 @@ function updateMotorcycle() {
             response.message || "Motorcycle updated successfully!"
           );
         }
-
+        loadDirectShipments();
         loadInventoryDashboard();
         loadInventoryTable(
           currentInventoryPage,
           currentInventorySort,
           currentInventoryQuery
         );
-        loadDirectShipments(1);
       } else {
         console.error("Update Motorcycle Error:", response.message);
 
@@ -1592,6 +1652,9 @@ function updateMotorcycle() {
     },
   });
 }
+
+
+
 
 function toggleSoldDetails(status, saleDetails) {
   const soldDetailsContainer = $("#soldDetailsContainer");
@@ -2769,12 +2832,17 @@ function renderDirectShipmentsTable(data) {
     );
     return;
   }
+  
   data.forEach((item) => {
-    // Sanitize invoice number for use in JavaScript function call
-    const safeInvoiceNumber = escapeHtml(item.invoice_number || '').replace(/'/g, "\\'");
+    // Use initial_dr_number for display and safe handling
+    const displayInvoiceNumber = item.invoice_number || 'N/A';
+    const safeInvoiceNumber = escapeHtml(displayInvoiceNumber).replace(/'/g, "\\'");
 
     html += `<tr>
-            <td>${escapeHtml(item.invoice_number || 'N/A')}</td>
+            <td>
+                ${escapeHtml(displayInvoiceNumber)}
+                ${item.transfer_count > 0 ? '<small class="badge bg-warning ms-1" title="This unit has been transferred">Transferred</small>' : ''}
+            </td>
             <td>${formatDate(item.date_delivered)}</td>
             <td>${escapeHtml(item.brand)}</td>
             <td>${escapeHtml(item.model)}</td>
@@ -2783,10 +2851,10 @@ function renderDirectShipmentsTable(data) {
             <td>${escapeHtml(item.current_branch)}</td>
             <td class="text-end">
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="loadMotorcycleForEdit(${item.id})" title="Edit This Unit">
+                    <button class="btn btn-outline-primary" onclick="loadDirectShipmentForEdit(${item.id})" title="Edit This Direct Shipment">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn btn-outline-danger" onclick="confirmDeleteInvoice(${item.invoice_id}, '${safeInvoiceNumber}')" title="Delete Entire Invoice">
+                    <button class="btn btn-outline-danger" onclick="confirmDeleteInvoice(${item.invoice_id}, '${safeInvoiceNumber}')" title="Delete Entire Invoice" ${item.transfer_count > 0 ? 'disabled' : ''}>
                         <i class="bi bi-journal-x"></i>
                     </button>
                 </div>
@@ -2794,6 +2862,57 @@ function renderDirectShipmentsTable(data) {
         </tr>`;
   });
   $("#directShipmentsTableBody").html(html);
+}
+
+/**
+ * Load direct shipment for editing (specifically for Direct Shipments tab)
+ */
+function loadDirectShipmentForEdit(id) {
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "GET",
+    data: {
+      action: "get_direct_shipment_for_edit",
+      id: id
+    },
+    dataType: "json",
+    success: function (response) {
+      if (response.success) {
+        const data = response.data;
+        console.log("Direct Shipment Data:", data); // Debug log
+        
+        // Populate the form fields
+        $("#editId").val(data.id);
+        $("#editDateDelivered").val(formatDate(data.date_delivered));
+        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
+        $("#editBrand").val(data.brand);
+        $("#editModel").val(data.model);
+        $("#editCategory").val(data.category);
+        $("#editEngineNumber").val(data.engine_number);
+        $("#editFrameNumber").val(data.frame_number);
+        
+        // For direct shipments, always use initial_dr_number (display_invoice_number)
+        console.log("Initial DR Number:", data.display_invoice_number); // Debug
+        $("#editInvoiceNumber").val(data.display_invoice_number || "");
+        $("#editInvoiceNumber").data('invoice-source', 'direct');
+        
+        $("#editColor").val(data.color);
+        $("#editInventoryCost").val(data.inventory_cost);
+        $("#editCurrentBranch").val(data.current_branch);
+        $("#editStatus").val(data.status);
+
+        // Show direct shipment specific UI
+        showDirectShipmentEditUI();
+        
+        $("#editMotorcycleModal").modal("show");
+      } else {
+        showErrorModal(response.message || "Error loading direct shipment data");
+      }
+    },
+    error: function (xhr, status, error) {
+      showErrorModal("Error loading direct shipment: " + error);
+    },
+  });
 }
 
 /**
@@ -2839,6 +2958,193 @@ function deleteInvoiceTransaction(invoiceId) {
             showErrorModal('An error occurred while trying to delete the invoice.');
         }
     });
+}
+
+/**
+ * Load direct shipment for editing (specifically for Direct Shipments tab)
+ */
+function loadDirectShipmentForEdit(id) {
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "GET",
+    data: {
+      action: "get_direct_shipment_for_edit",
+      id: id
+    },
+    dataType: "json",
+    success: function (response) {
+      if (response.success) {
+        const data = response.data;
+        
+        // Populate the form fields
+        $("#editId").val(data.id);
+        $("#editDateDelivered").val(formatDate(data.date_delivered));
+        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
+        $("#editBrand").val(data.brand);
+        $("#editModel").val(data.model);
+        $("#editCategory").val(data.category);
+        $("#editEngineNumber").val(data.engine_number);
+        $("#editFrameNumber").val(data.frame_number);
+        
+        // For direct shipments, always use display_invoice_number (initial_dr_number)
+        $("#editInvoiceNumber").val(data.display_invoice_number || "");
+        $("#editInvoiceNumber").data('invoice-source', 'direct');
+        
+        $("#editColor").val(data.color);
+        $("#editInventoryCost").val(data.inventory_cost);
+        $("#editCurrentBranch").val(data.current_branch);
+        $("#editStatus").val(data.status);
+
+        // Show direct shipment specific UI
+        showDirectShipmentEditUI();
+        
+        $("#editMotorcycleModal").modal("show");
+      } else {
+        showErrorModal(response.message || "Error loading direct shipment data");
+      }
+    },
+    error: function (xhr, status, error) {
+      showErrorModal("Error loading direct shipment: " + error);
+    },
+  });
+}
+
+/**
+ * Update direct shipment (specifically for Direct Shipments tab)
+ */
+function updateDirectShipment() {
+  const status = $("#editStatus").val();
+  
+  const dateReceivedValue = $("#editDateReceived").val();
+  const formattedDateReceived = dateReceivedValue
+    ? formatDateForAPI(dateReceivedValue)
+    : null; 
+
+  const formData = {
+    action: "update_direct_shipment",
+    id: $("#editId").val(),
+    date_delivered: formatDateForAPI($("#editDateDelivered").val()),
+    date_received: formattedDateReceived, 
+    brand: $("#editBrand").val(),
+    model: $("#editModel").val(),
+    category: $("#editCategory").val(),
+    engine_number: $("#editEngineNumber").val(),
+    frame_number: $("#editFrameNumber").val(),
+    invoice_number: $("#editInvoiceNumber").val(),
+    color: $("#editColor").val(),
+    inventory_cost: $("#editInventoryCost").val(),
+    current_branch: $("#editCurrentBranch").val(),
+    status: status,
+  };
+
+  // Validation
+  if (
+    !formData.id ||
+    !formData.date_delivered ||
+    !formData.brand ||
+    !formData.model ||
+    !formData.category ||
+    !formData.engine_number ||
+    !formData.frame_number ||
+    !formData.color
+  ) {
+    showErrorModal("Please fill in all required fields");
+    return;
+  }
+
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "POST",
+    data: formData,
+    dataType: "json",
+    success: function (response) {
+      console.log("Update Direct Shipment Response:", response);
+
+      if (response.success) {
+        $("#editMotorcycleModal").modal("hide");
+
+        showSuccessModal(response.message || "Direct shipment updated successfully!");
+
+        // Refresh only the direct shipments tab
+        loadDirectShipments(currentDirectShipmentsPage, currentDirectShipmentsQuery);
+        
+      } else {
+        console.error("Update Direct Shipment Error:", response.message);
+
+        if (
+          response.message.includes("DUPLICATE_ENGINE_NUMBER") ||
+          response.message.includes("DUPLICATE_FRAME_NUMBER") ||
+          response.message.includes("Missing required field")
+        ) {
+          showErrorModal(response.message);
+        } else {
+          showErrorModal(response.message || "Error updating direct shipment.");
+        }
+      }
+    },
+    error: function (xhr, status, error) {
+      console.error("AJAX Error:", {
+        status: status,
+        error: error,
+        response: xhr.responseText,
+      });
+      showErrorModal("Connection error. Please try again.");
+    },
+  });
+}
+
+/**
+ * Show direct shipment specific UI in the modal
+ */
+function showDirectShipmentEditUI() {
+  // Add a badge to indicate this is a direct shipment edit
+  $(".direct-shipment-badge").remove();
+  const badge = `<span class="direct-shipment-badge badge bg-primary position-absolute top-0 end-0 m-2">Direct Shipment</span>`;
+  $("#editMotorcycleModal .modal-header").append(badge);
+  
+  // Update the modal title
+  $("#editMotorcycleModal .modal-title").text("Edit Direct Shipment");
+  
+  // Change the update button action
+  $("#editMotorcycleModal .btn-primary").off('click').on('click', updateDirectShipment);
+}
+
+/**
+ * Update the render function to use the new edit function
+ */
+function renderDirectShipmentsTable(data) {
+  let html = "";
+  if (!data || data.length === 0) {
+    $("#directShipmentsTableBody").html(
+      '<tr><td colspan="8" class="text-center py-4">No direct shipments found.</td></tr>'
+    );
+    return;
+  }
+  
+  data.forEach((item) => {
+    const safeInvoiceNumber = escapeHtml(item.invoice_number || '').replace(/'/g, "\\'");
+
+    html += `<tr>
+            <td>${escapeHtml(item.invoice_number || 'N/A')}</td>
+            <td>${formatDate(item.date_delivered)}</td>
+            <td>${escapeHtml(item.brand)}</td>
+            <td>${escapeHtml(item.model)}</td>
+            <td><code>${escapeHtml(item.engine_number)}</code></td>
+            <td><code>${escapeHtml(item.frame_number)}</code></td>
+            <td>${escapeHtml(item.current_branch)}</td>
+            <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="loadDirectShipmentForEdit(${item.id})" title="Edit This Direct Shipment">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="confirmDeleteInvoice(${item.invoice_id}, '${safeInvoiceNumber}')" title="Delete Entire Invoice">
+                        <i class="bi bi-journal-x"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+  });
+  $("#directShipmentsTableBody").html(html);
 }
 /**
  * Loads the system-wide activity log with pagination and search.

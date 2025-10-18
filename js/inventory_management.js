@@ -877,9 +877,12 @@ function renderInventoryTable(data) {
         categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
       }
 
+      // Simply use the display_invoice_number from backend
+      const displayInvoiceNumber = item.display_invoice_number || "N/A";
+
       html += `
         <tr data-id="${item.id}">
-          <td>${item.invoice_number || "N/A"}</td>
+          <td>${displayInvoiceNumber}</td>
           <td>${
             item.date_received
               ? formatDate(item.date_received)
@@ -924,6 +927,41 @@ function renderInventoryTable(data) {
 
   $("#inventoryTableBody").html(html);
   setupTableActionButtons();
+}
+
+// Helper function to determine which invoice number to display
+function getDisplayInvoiceNumber(item) {
+  // If the item has transfer_history (from backend), use the latest transfer invoice
+  if (item.transfer_history && item.transfer_history.length > 0) {
+    const latestTransfer = item.transfer_history[item.transfer_history.length - 1];
+    return latestTransfer.transfer_invoice_number || item.invoice_number;
+  }
+  
+  // If display_invoice_number is provided by backend, use it
+  if (item.display_invoice_number) {
+    return item.display_invoice_number;
+  }
+  
+  // Fallback to initial_dr_number or regular invoice_number
+  return item.initial_dr_number || item.invoice_number;
+}
+
+// Helper function to get the appropriate badge for the invoice
+function getInvoiceBadge(item) {
+  // Check if this item has transfer history
+  const hasTransfers = item.transfer_history && item.transfer_history.length > 0;
+  
+  if (hasTransfers) {
+    return '<small class="badge bg-success ms-1">Transfer</small>';
+  }
+  
+  // If it has initial_dr_number but no transfers, it's a direct shipment
+  if (item.initial_dr_number && !hasTransfers) {
+    return '<small class="badge bg-primary ms-1">DR</small>';
+  }
+  
+  // Default case (shouldn't normally happen)
+  return '<small class="badge bg-secondary ms-1">Invoice</small>';
 }
 
 function updateInventoryPaginationControls(totalPages) {
@@ -1404,31 +1442,44 @@ function loadMotorcycleForEdit(id) {
     },
     dataType: "json",
     success: function (response) {
+      console.log("Full response:", response); // Debug log
+      
       if (response.success) {
         const data = response.data;
+        console.log("Motorcycle data:", data); // Debug log
+        
         $("#editId").val(data.id);
-       $("#editDateDelivered").val(formatDate(data.date_delivered));
-$("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
+        $("#editDateDelivered").val(formatDate(data.date_delivered));
+        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
         $("#editBrand").val(data.brand);
         $("#editModel").val(data.model);
         $("#editCategory").val(data.category);
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
-        $("#editInvoiceNumber").val(data.invoice_number || "");
+        
+        console.log("display_invoice_number:", data.display_invoice_number); // Debug
+        console.log("initial_dr_number:", data.initial_dr_number); // Debug
+        console.log("invoice_source:", data.invoice_source); // Debug
+        
+        $("#editInvoiceNumber").val(data.display_invoice_number || "");
+        $("#editInvoiceNumber").data('invoice-source', data.invoice_source || 'direct');
+        
+        
         $("#editColor").val(data.color);
         $("#editInventoryCost").val(data.inventory_cost);
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
 
         toggleSoldDetails(data.status, data.sale_details);
+        
         const redeemContainer = $('#redeemInfoContainer');
-                if (data.redeem_details) {
-                    $('#redeemInfoDate').text(formatDate(data.redeem_details.redeem_date));
-                    $('#redeemInfoAmount').text('₱' + formatCurrency(data.redeem_details.amount_paid));
-                    redeemContainer.show();
-                } else {
-                    redeemContainer.hide();
-                }
+        if (data.redeem_details) {
+          $('#redeemInfoDate').text(formatDate(data.redeem_details.redeem_date));
+          $('#redeemInfoAmount').text('₱' + formatCurrency(data.redeem_details.amount_paid));
+          redeemContainer.show();
+        } else {
+          redeemContainer.hide();
+        }
 
         $("#editMotorcycleModal").modal("show");
       } else {
@@ -1443,12 +1494,14 @@ $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) :
 
 function updateMotorcycle() {
   const status = $("#editStatus").val();
-
   
   const dateReceivedValue = $("#editDateReceived").val();
   const formattedDateReceived = dateReceivedValue
     ? formatDateForAPI(dateReceivedValue)
     : null; 
+
+  // Get the invoice source from the data attribute
+  const invoiceSource = $("#editInvoiceNumber").data('invoice-source') || 'direct';
 
   const formData = {
     action: "update_motorcycle",
@@ -1461,6 +1514,7 @@ function updateMotorcycle() {
     engine_number: $("#editEngineNumber").val(),
     frame_number: $("#editFrameNumber").val(),
     invoice_number: $("#editInvoiceNumber").val(),
+    invoice_source: invoiceSource, // Add invoice source to form data
     color: $("#editColor").val(),
     inventory_cost: $("#editInventoryCost").val(),
     current_branch: $("#editCurrentBranch").val(),
@@ -1477,7 +1531,7 @@ function updateMotorcycle() {
     formData.monthly_amortization = $("#editMonthlyAmortization").val();
   }
 
-  
+  // Validation
   if (
     !formData.id ||
     !formData.date_delivered ||
@@ -1507,7 +1561,10 @@ function updateMotorcycle() {
       if (response.success) {
         $("#editMotorcycleModal").modal("hide");
 
-        if (response.type === "existing_invoice") {
+        // Handle different response types
+        if (response.type === "direct_shipment") {
+          showSuccessModal(response.message);
+        } else if (response.type === "existing_invoice") {
           showSuccessModal(response.message);
         } else if (response.type === "new_invoice") {
           showSuccessModal(response.message);
@@ -1601,9 +1658,6 @@ function togglePaymentTypeDetails(paymentType) {
     $("#installmentDetails").hide();
   }
 }
-
-
-
 
 function searchModels() {
   const query = $("#searchModel").val().trim();

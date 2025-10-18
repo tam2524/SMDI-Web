@@ -688,6 +688,7 @@
         </div>
     </div>
 
+
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
@@ -700,17 +701,15 @@
                     <form id='editMotorcycleForm'>
                         <input type='hidden' id='editId'>
                         <div class='row'>
-                            <div class='col-md-6 mb-3'>
+                            <div class='col-md-4 mb-3'>
                                 <label for='editDateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='text' class='form-control datepicker' id='editDateDelivered'
-                                    placeholder="mm/dd/yyyy">
+                                <input type='text' class='form-control datepicker' id='editDateDelivered' required placeholder="mm/dd/yyyy">
                             </div>
-                            <div class='col-md-6 mb-3'>
+                              <div class='col-md-4 mb-3'>
                                 <label for='editDateReceived' class='form-label'>Date Received</label>
-                                <input type='text' class='form-control datepicker' id='editDateReceived'
-                                    placeholder="mm/dd/yyyy">
+                                <input type='text' class='form-control datepicker' id='editDateReceived' placeholder="mm/dd/yyyy">
                             </div>
-                            <div class='col-md-6 mb-3'>
+                            <div class='col-md-4 mb-3'>
                                 <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
                                 <input type='text' class='form-control' id='editInvoiceNumber' required>
                             </div>
@@ -761,7 +760,8 @@
                         <div class='row'>
                             <div class='col-md-6 mb-3'>
                                 <label for='editCurrentBranch' class='form-label'>Branch</label>
-
+                               
+                                <!-- Admin can select any branch -->
                                 <select class='form-select' id='editCurrentBranch' required>
                                     <option value='HEADOFFICE'>HEADOFFICE</option>
                                     <option value='KINGDOM'>KINGDOM</option>
@@ -805,7 +805,7 @@
                                     <option value='CFCIPRC'>CFCIPRC</option>
 
                                 </select>
-
+                                
                             </div>
                             <div class='col-md-6 mb-3'>
                                 <label for='editStatus' class='form-label'>Status</label>
@@ -813,34 +813,32 @@
                                     <option value='available'>Available</option>
                                     <option value='sold'>Sold</option>
                                     <option value='transferred'>Transferred</option>
-                                    <option value='scrapped'>Scrapped</option>
-
                                 </select>
                             </div>
 
-                            <div id="redeemInfoContainer" class="col-12" style="display: none;">
-                                <div class="alert alert-success small p-2">
-                                    <h6 class="alert-heading small mb-1"><i class="bi bi-award-fill me-1"></i>Redemption
-                                        Information</h6>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <strong>Redeemed On:</strong> <span id="redeemInfoDate"></span>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Amount Paid:</strong> <span id="redeemInfoAmount"></span>
-                                        </div>
+                                                   <div id="redeemInfoContainer" class="col-12" style="display: none;">
+                            <div class="alert alert-success small p-2">
+                                <h6 class="alert-heading small mb-1"><i class="bi bi-award-fill me-1"></i>Redemption Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Redeemed On:</strong> <span id="redeemInfoDate"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Amount Paid:</strong> <span id="redeemInfoAmount"></span>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+
                             <!-- Sold Details Section -->
-                            <div id='soldDetailsContainer' style='display: none;'>
+                            <div id="soldDetailsContainer" style="display: none;">
                                 <hr>
-                                <h6 class='text-primary'>Sale Information</h6>
+                                <h6 class="text-primary">Sale Information</h6>
                                 <div class="row">
                                     <div class='col-md-4 mb-2'>
                                         <label for='editSaleDate' class='form-label'><strong>Sale Date:</strong></label>
-                                        <input type='text' class='form-control datepicker' id='editSaleDate'
-                                            name='sale_date' placeholder="mm/dd/yyyy">
+                                        <input type='text' class='form-control datepicker' id='editSaleDate' name='sale_date' placeholder="mm/dd/yyyy">
                                     </div>
                                     <div class="col-md-4 mb-2">
                                         <label for="editCustomerName" class="form-label"><strong>Customer
@@ -860,42 +858,40 @@
                                 </div>
 
                                 <!-- COD Details -->
-                                <div id='codDetails' style='display: none;'>
-                                    <div class='row'>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editDrNumber' class='form-label'><strong>DR
+                                <div id="codDetails" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label for="editDrNumber" class="form-label"><strong>DR
                                                     Number:</strong></label>
-                                            <input type='text' class='form-control' id='editDrNumber' name='dr_number'>
+                                            <input type="text" class="form-control" id="editDrNumber" name="dr_number">
                                         </div>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editCodAmount' class='form-label'><strong>COD
+                                        <div class="col-md-6 mb-2">
+                                            <label for="editCodAmount" class="form-label"><strong>COD
                                                     Amount:</strong></label>
-                                            <input type='number' step='0.01' class='form-control' id='editCodAmount'
-                                                name='cod_amount' min='0'>
+                                            <input type="number" step="0.01" class="form-control" id="editCodAmount"
+                                                name="cod_amount" min="0">
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Installment Details -->
-                                <div id='installmentDetails' style='display: none;'>
-                                    <div class='row'>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editTerms' class='form-label'><strong>Terms ( months
-                                                    ):</strong></label>
-                                            <input type='number' class='form-control' id='editTerms' name='terms'
-                                                min='1'>
+                                <div id="installmentDetails" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label for="editTerms" class="form-label"><strong>Terms
+                                                    (months):</strong></label>
+                                            <input type="number" class="form-control" id="editTerms" name="terms"
+                                                min="1">
                                         </div>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editMonthlyAmortization' class='form-label'><strong>Monthly
+                                        <div class="col-md-6 mb-2">
+                                            <label for="editMonthlyAmortization" class="form-label"><strong>Monthly
                                                     Amortization:</strong></label>
-                                            <input type='number' step='0.01' class='form-control'
-                                                id='editMonthlyAmortization' name='monthly_amortization' min='0'>
+                                            <input type="number" step="0.01" class="form-control"
+                                                id="editMonthlyAmortization" name="monthly_amortization" min="0">
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-
 
                         </div>
                         <div class='d-grid'>
