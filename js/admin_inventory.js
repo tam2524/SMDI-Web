@@ -2901,9 +2901,6 @@ function loadDirectShipmentForEdit(id) {
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
 
-        // Show direct shipment specific UI
-        showDirectShipmentEditUI();
-        
         $("#editDirectShipmentModal").modal("show");
       } else {
         showErrorModal(response.message || "Error loading direct shipment data");
@@ -2961,53 +2958,6 @@ function deleteInvoiceTransaction(invoiceId) {
 }
 
 /**
- * Load direct shipment for editing (specifically for Direct Shipments tab)
- */
-function loadDirectShipmentForEdit(id) {
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "GET",
-    data: {
-      action: "get_direct_shipment_for_edit",
-      id: id
-    },
-    dataType: "json",
-    success: function (response) {
-      if (response.success) {
-        const data = response.data;
-        
-        // Populate the form fields
-        $("#editId").val(data.id);
-        $("#editDateDelivered").val(formatDate(data.date_delivered));
-        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
-        $("#editBrand").val(data.brand);
-        $("#editModel").val(data.model);
-        $("#editCategory").val(data.category);
-        $("#editEngineNumber").val(data.engine_number);
-        $("#editFrameNumber").val(data.frame_number);
-        
-        // For direct shipments, always use display_invoice_number (initial_dr_number)
-        $("#editInvoiceNumber").val(data.display_invoice_number || "");
-        $("#editInvoiceNumber").data('invoice-source', 'direct');
-        
-        $("#editColor").val(data.color);
-        $("#editInventoryCost").val(data.inventory_cost);
-        $("#editCurrentBranch").val(data.current_branch);
-        $("#editStatus").val(data.status);
-
-        // Show direct shipment specific UI
-        showDirectShipmentEditUI();
-        
-        $("#editDirectShipmentModal").modal("show");
-      } else {
-        showErrorModal(response.message || "Error loading direct shipment data");
-      }
-    },
-    error: function (xhr, status, error) {
-      showErrorModal("Error loading direct shipment: " + error);
-    },
-  });
-}
 
 /**
  * Update direct shipment (specifically for Direct Shipments tab)
@@ -3093,21 +3043,6 @@ function updateDirectShipment() {
   });
 }
 
-/**
- * Show direct shipment specific UI in the modal
- */
-function showDirectShipmentEditUI() {
-  // Add a badge to indicate this is a direct shipment edit
-  $(".direct-shipment-badge").remove();
-  const badge = `<span class="direct-shipment-badge badge bg-primary position-absolute top-0 end-0 m-2">Direct Shipment</span>`;
-  $("#editDirectShipmentModal .modal-header").append(badge);
-  
-  // Update the modal title
-  $("#editDirectShipmentModal .modal-title").text("Edit Direct Shipment");
-  
-  // Change the update button action
-  $("#editDirectShipmentModal .btn-primary").off('click').on('click', updateDirectShipment);
-}
 
 /**
  * Update the render function to use the new edit function
