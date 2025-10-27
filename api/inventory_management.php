@@ -4802,25 +4802,49 @@ function updateDirectShipment() {
     $conn->begin_transaction();
 
     try {
-        // ✅ FIXED: Check for duplicate DR number excluding current record
-        if (!empty($initialDrNumber)) {
-            $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM motorcycle_inventory WHERE initial_dr_number = ? AND id <> ?");
-            $checkStmt->bind_param('si', $initialDrNumber, $inventoryId);
-            $checkStmt->execute();
-            $count = $checkStmt->get_result()->fetch_assoc()['count'];
-            $checkStmt->close();
-
-            if ($count > 0) {
-                throw new Exception("DR number '{$initialDrNumber}' already exists for another motorcycle.");
+        // ✅ MODIFIED: Check if invoice exists and get its ID, or create new one
+        $invoiceId = null;
+        
+        // First, check if an invoice with this number already exists
+        $checkInvoiceStmt = $conn->prepare("SELECT id, date_delivered FROM invoices WHERE invoice_number = ?");
+        $checkInvoiceStmt->bind_param('s', $initialDrNumber);
+        $checkInvoiceStmt->execute();
+        $invoiceResult = $checkInvoiceStmt->get_result();
+        
+        if ($invoiceResult->num_rows > 0) {
+            // Invoice exists - use existing invoice
+            $existingInvoice = $invoiceResult->fetch_assoc();
+            $invoiceId = $existingInvoice['id'];
+            
+            // Optional: You can update the existing invoice date if needed, or keep the original
+            // For now, we'll keep the original invoice date
+            $checkInvoiceStmt->close();
+            
+            // Log that we're linking to existing invoice
+            error_log("Linking motorcycle {$inventoryId} to existing invoice {$initialDrNumber} (ID: {$invoiceId})");
+        } else {
+            // Invoice doesn't exist - create new one
+            $checkInvoiceStmt->close();
+            
+            $insertInvoiceStmt = $conn->prepare("INSERT INTO invoices (invoice_number, date_delivered) VALUES (?, ?)");
+            $insertInvoiceStmt->bind_param('ss', $initialDrNumber, $dateDelivered);
+            
+            if (!$insertInvoiceStmt->execute()) {
+                throw new Exception("Failed to create invoice: " . $insertInvoiceStmt->error);
             }
+            
+            $invoiceId = $conn->insert_id;
+            $insertInvoiceStmt->close();
+            
+            error_log("Created new invoice {$initialDrNumber} (ID: {$invoiceId}) for motorcycle {$inventoryId}");
         }
 
-        // ✅ FIXED: Update both fields in motorcycle_inventory
-        $sql = "UPDATE motorcycle_inventory SET initial_dr_number = ?, date_delivered = ? WHERE id = ?";
+        // ✅ MODIFIED: Update motorcycle_inventory with invoice_id linkage
+        $sql = "UPDATE motorcycle_inventory SET initial_dr_number = ?, date_delivered = ?, invoice_id = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
         if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
 
-        $stmt->bind_param('ssi', $initialDrNumber, $dateDelivered, $inventoryId);
+        $stmt->bind_param('ssii', $initialDrNumber, $dateDelivered, $invoiceId, $inventoryId);
         if (!$stmt->execute()) throw new Exception("Execute failed: " . $stmt->error);
         
         $affectedRows = $stmt->affected_rows;
@@ -4833,13 +4857,18 @@ function updateDirectShipment() {
         $conn->commit();
 
         // Log the changes
-        log_action($conn, 'UPDATE', 'motorcycle_inventory', $inventoryId, 
-            "Updated direct shipment: DR number to '{$initialDrNumber}', delivery date to '{$dateDelivered}'");
+        $actionDetails = "Updated direct shipment: DR number to '{$initialDrNumber}', delivery date to '{$dateDelivered}'";
+        if ($invoiceId) {
+            $actionDetails .= ", linked to invoice ID: {$invoiceId}";
+        }
+        
+        log_action($conn, 'UPDATE', 'motorcycle_inventory', $inventoryId, $actionDetails);
 
         echo json_encode([
             'success' => true,
-            'message' => 'Direct shipment updated successfully.',
-            'type' => 'inventory_updated'
+            'message' => 'Direct shipment updated successfully and linked to invoice.',
+            'type' => 'inventory_updated',
+            'invoice_id' => $invoiceId
         ]);
 
     } catch (Exception $e) {
@@ -4848,7 +4877,6 @@ function updateDirectShipment() {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 }
-
 /**
  * Fetches paginated and searchable data from the audit_log.
  */
