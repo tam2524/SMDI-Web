@@ -3121,137 +3121,140 @@ function getMonthlyScrappedSummary() {
         'summary_by_reason' => [] 
     ]);
 }
-function getAvailableMotorcyclesReport() {
+function getAvailableMotorcyclesReport()
+{
     global $conn;
 
-    
-    $period_type = isset($_GET['period_type']) ? sanitizeInput($_GET['period_type']) : 'as_of_date';
-    $date = isset($_GET['date']) ? sanitizeInput($_GET['date']) : date('Y-m-d');
-    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null;
-    $start_date_param = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : null;
-    $end_date_param = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : null;
-    
-    $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
-    $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
-    $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
-    $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
+    // === Parameters ===
+    $period_type = $_GET['period_type'] ?? 'monthly';
+    $month = $_GET['month'] ?? null;
+    $branch = $_GET['branch'] ?? 'ALL';
+    $category = strtolower($_GET['category'] ?? 'all');
+    $brand = strtolower($_GET['brand'] ?? 'all');
+    $model = $_GET['model'] ?? 'all';
 
-    
-    $reportEndDate = date('Y-m-d'); 
-    switch ($period_type) {
-        case 'daily':
-        case 'as_of_date':
-            if (!empty($date)) { $reportEndDate = $date; }
-            break;
-        case 'monthly':
-            if (!empty($month)) { $reportEndDate = date('Y-m-t', strtotime($month)); }
-            break;
-        case 'custom_range':
-            if (!empty($end_date_param)) { $reportEndDate = $end_date_param; }
-            break;
+    // === Determine cutoff date ===
+    if ($period_type === 'monthly' && !empty($month)) {
+        $reportEndDate = date('Y-m-t', strtotime($month)); // Last day of month
+        $reportMonth = $month;
+    } else {
+        $reportEndDate = date('Y-m-d');
+        $reportMonth = date('Y-m', strtotime($reportEndDate));
     }
 
-    
-    $sql = "";
+    // === Filters ===
+    $filters = "";
     $params = [];
-    $types = '';
+    $types = "";
 
-    
-    $filterConditions = "";
-    $filterParams = [];
-    $filterTypes = '';
-
-    if ($category !== 'all') { 
-        $filterConditions .= " AND LOWER(mi.category) = ?"; 
-        $filterParams[] = $category; 
-        $filterTypes .= 's'; 
-    }
-    if ($brand !== 'all') { 
-        $filterConditions .= " AND LOWER(mi.brand) = ?"; 
-        $filterParams[] = $brand; 
-        $filterTypes .= 's'; 
-    }
-    if ($models_str !== 'all' && !empty($models_str)) {
-        $models = array_map('trim', explode(',', $models_str));
-        if (!empty($models)) {
-            $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
-            $filterConditions .= " AND mi.model IN ($modelPlaceholders)";
-            foreach ($models as $model) { 
-                $filterParams[] = $model; 
-                $filterTypes .= 's'; 
-            }
-        }
+    if ($category !== 'all') {
+        $filters .= " AND LOWER(mi.category) = ?";
+        $params[] = $category;
+        $types .= 's';
     }
 
-    
-    if (strtoupper($branch) === 'ALL') {
-        
-        $sql = "
-            SELECT mi.*, i.invoice_number
-            FROM motorcycle_inventory mi
-            LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE
-                mi.deleted_at IS NULL
-                AND (COALESCE(mi.date_received, mi.date_delivered) <= ?)
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date <= ?)
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date <= ?)
-                $filterConditions
-            ORDER BY mi.current_branch, mi.brand, mi.model
-        ";
-        
-        $params = array_merge([$reportEndDate, $reportEndDate, $reportEndDate], $filterParams);
-        $types = 'sss' . $filterTypes;
-
-    } else {
-        
-        $sql = "
-            SELECT mi.*, i.invoice_number
-            FROM motorcycle_inventory mi
-            LEFT JOIN invoices i ON mi.invoice_id = i.id
-            WHERE
-                mi.deleted_at IS NULL
-                AND mi.current_branch = ?
-                AND (COALESCE(mi.date_received, mi.date_delivered) <= ?)
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_sales s WHERE s.motorcycle_id = mi.id AND s.sale_date <= ?)
-                AND NOT EXISTS (SELECT 1 FROM motorcycle_scraps sc WHERE sc.motorcycle_id = mi.id AND sc.scrap_date <= ?)
-                $filterConditions
-            ORDER BY mi.brand, mi.model
-        ";
-        
-        $params = array_merge([$branch, $reportEndDate, $reportEndDate, $reportEndDate], $filterParams);
-        $types = 'ssss' . $filterTypes;
+    if ($brand !== 'all') {
+        $filters .= " AND LOWER(mi.brand) = ?";
+        $params[] = $brand;
+        $types .= 's';
     }
-    
-    
+
+    if ($model !== 'all' && !empty($model)) {
+        $filters .= " AND mi.model = ?";
+        $params[] = $model;
+        $types .= 's';
+    }
+
+    // === Main Query (aligned with getMonthlyInventory) ===
+    $sql = "
+        SELECT 
+            mi.*,
+            COALESCE(
+                (
+                    SELECT it.to_branch
+                    FROM inventory_transfers it
+                    WHERE it.motorcycle_id = mi.id
+                      AND it.transfer_status = 'completed'
+                      AND it.transfer_date <= ?
+                    ORDER BY it.transfer_date DESC
+                    LIMIT 1
+                ),
+                (
+                    SELECT it2.from_branch
+                    FROM inventory_transfers it2
+                    WHERE it2.motorcycle_id = mi.id
+                      AND it2.transfer_status = 'completed'
+                    ORDER BY it2.transfer_date ASC
+                    LIMIT 1
+                ),
+                mi.current_branch
+            ) AS branch_as_of_report_date
+        FROM motorcycle_inventory mi
+        WHERE mi.deleted_at IS NULL
+          AND mi.date_delivered <= ?
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_sales s
+              WHERE s.motorcycle_id = mi.id
+                AND s.sale_date <= ?
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_scraps sc
+              WHERE sc.motorcycle_id = mi.id
+                AND sc.scrap_date <= ?
+          )
+          $filters
+        ORDER BY mi.brand, mi.model, mi.engine_number
+    ";
+
+    // === Bind parameters ===
+    $paramsFinal = array_merge([$reportEndDate, $reportEndDate, $reportEndDate, $reportEndDate], $params);
+    $typesFinal = 'ssss' . $types;
+
     $stmt = $conn->prepare($sql);
-    if ($stmt) {
-        if (!empty($params)) {
-            $stmt->bind_param($types, ...$params);
-        }
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $data = [];
-        while ($row = $result->fetch_assoc()) {
-            $data[] = $row;
-        }
-        $stmt->close();
-        
-        $response = [
-            'success' => true,
-            'data' => $data,
-            'date' => ($period_type === 'daily' || $period_type === 'as_of_date') ? $reportEndDate : null,
-            'month' => ($period_type === 'monthly') ? date('Y-m', strtotime($reportEndDate)) : null,
-            'start_date' => ($period_type === 'custom_range') ? $start_date_param : null,
-            'end_date' => ($period_type === 'custom_range') ? $end_date_param : null
-        ];
-        
-        echo json_encode($response);
-
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to prepare the SQL statement: ' . $conn->error]);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
     }
+
+    $stmt->bind_param($typesFinal, ...$paramsFinal);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // === Build list of available units ===
+    $data = [];
+    $total_cost = 0;
+    $total_units = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $effective_branch = strtoupper($row['branch_as_of_report_date'] ?? $row['current_branch']);
+
+        // Include only matching branch (if not "ALL")
+        if (strtoupper($branch) === 'ALL' || $effective_branch === strtoupper($branch)) {
+            $row['effective_branch'] = $effective_branch; // For reference only
+            $data[] = $row;
+            $total_units++;
+            $total_cost += (float)($row['inventory_cost'] ?? 0);
+        }
+    }
+
+    $stmt->close();
+
+    // === Return JSON Response ===
+    echo json_encode([
+        'success' => true,
+        'month' => $reportMonth,
+        'end_date' => $reportEndDate,
+        'branch' => $branch,
+        'category' => $category,
+        'brand' => $brand,
+        'model' => $model,
+        'total_available_units' => $total_units,
+        'total_inventory_cost' => $total_cost,
+        'data' => $data
+    ]);
 }
+
+
 function getSoldMotorcyclesReport() {
     global $conn;
 
@@ -3699,120 +3702,128 @@ function markAsRedeem() {
 function getDeliveredStocksSummary() {
     global $conn;
 
-    
-    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : null;
-    $date = isset($_GET['date']) ? sanitizeInput($_GET['date']) : null;
-    $startDate = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : null;
-    $endDate = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : null;
-    
+    // --- Parameters ---
+    $month = isset($_GET['month']) ? sanitizeInput($_GET['month']) : '';
+    $asOfDate = isset($_GET['date']) ? sanitizeInput($_GET['date']) : '';
     $branch = isset($_GET['branch']) ? sanitizeInput($_GET['branch']) : 'all';
     $category = isset($_GET['category']) ? strtolower(sanitizeInput($_GET['category'])) : 'all';
     $brand = isset($_GET['brand']) ? strtolower(sanitizeInput($_GET['brand'])) : 'all';
     $models_str = isset($_GET['model']) ? sanitizeInput($_GET['model']) : 'all';
 
-    
-    if ($date) {
-        $startDate = $date; $endDate = $date;
-    } elseif ($month) {
-        $startDate = date('Y-m-01', strtotime($month)); $endDate = date('Y-m-t', strtotime($month));
-    } elseif (!$startDate || !$endDate) {
-        echo json_encode(['success' => false, 'message' => 'A valid date range is required.']);
+    // --- Validation ---
+    if (empty($month) && empty($asOfDate)) {
+        echo json_encode(['success' => false, 'message' => 'A Month or As-of Date parameter is required.']);
         return;
     }
 
-    
-    $params = [];
-    $types = '';
+    // --- Date setup ---
+    if (!empty($asOfDate)) {
+        $endDate = $asOfDate;
+        $startDate = date('Y-m-01', strtotime($asOfDate));
+    } else {
+        $startDate = date('Y-m-01', strtotime($month));
+        $endDate = date('Y-m-t', strtotime($month));
+    }
 
-    
-    $sql = "
-        SELECT 
-            mi.*, i.invoice_number,
-            COALESCE(
-                (SELECT it_first.from_branch FROM inventory_transfers it_first WHERE it_first.motorcycle_id = mi.id ORDER BY it_first.transfer_date ASC, it_first.id ASC LIMIT 1),
-                mi.current_branch
-            ) AS initial_delivery_branch
-        FROM motorcycle_inventory mi
-        LEFT JOIN invoices i ON mi.invoice_id = i.id
-        WHERE mi.date_delivered BETWEEN ? AND ?
-    ";
-    $params[] = $startDate;
-    $params[] = $endDate;
-    $types .= 'ss';
-    
-    
-    if ($category !== 'all') { $sql .= " AND LOWER(mi.category) = ?"; $params[] = $category; $types .= 's'; }
-    if ($brand !== 'all') { $sql .= " AND LOWER(mi.brand) = ?"; $params[] = $brand; $types .= 's'; }
+    // --- Build filters ---
+    $params = [$startDate, $endDate];
+    $paramTypes = 'ss';
+    $conditions = "mi.date_delivered BETWEEN ? AND ? AND mi.deleted_at IS NULL";
+
+    if ($brand !== 'all') {
+        $conditions .= " AND LOWER(mi.brand) = ? ";
+        $params[] = $brand;
+        $paramTypes .= 's';
+    }
+
+    if ($category !== 'all') {
+        $conditions .= " AND LOWER(mi.category) = ? ";
+        $params[] = $category;
+        $paramTypes .= 's';
+    }
+
     if ($models_str !== 'all' && !empty($models_str)) {
         $models = array_map('trim', explode(',', $models_str));
         if (!empty($models)) {
             $modelPlaceholders = implode(',', array_fill(0, count($models), '?'));
-            $sql .= " AND mi.model IN ($modelPlaceholders)";
-            foreach ($models as $model) { $params[] = $model; $types .= 's'; }
+            $conditions .= " AND mi.model IN ($modelPlaceholders) ";
+            foreach ($models as $m) {
+                $params[] = $m;
+                $paramTypes .= 's';
+            }
         }
     }
 
-    
-    
-    if ($branch !== 'all') {
-        $sql .= " AND (
-                    -- Condition 1: The item was delivered, never transferred, and is at the selected branch.
-                    (
-                        mi.current_branch = ?
-                        AND NOT EXISTS (SELECT 1 FROM inventory_transfers it WHERE it.motorcycle_id = mi.id)
-                    )
-                OR
-                    -- Condition 2: The item was delivered AND its first transfer FROM this branch
-                    -- happened IN THE SAME PERIOD.
-                    (
-                        EXISTS (
-                            SELECT 1 FROM inventory_transfers it
-                            WHERE it.motorcycle_id = mi.id
-                              AND it.from_branch = ?
-                              AND it.transfer_date BETWEEN ? AND ?
-                              AND it.transfer_date = (SELECT MIN(it2.transfer_date) FROM inventory_transfers it2 WHERE it2.motorcycle_id = mi.id)
-                        )
-                    )
-              )";
-        
-        $params[] = $branch;
-        $params[] = $branch;
-        $params[] = $startDate;
-        $params[] = $endDate;
-        $types .= 'ssss';
-    }
 
-    $sql .= " ORDER BY mi.date_delivered ASC, mi.model";
+    // --- SQL: delivered stocks during period (include later transfers) ---
+    $sql = "
+        SELECT 
+            mi.id,
+            mi.brand,
+            mi.model,
+            mi.color,
+            mi.engine_number,
+            mi.frame_number,
+            mi.inventory_cost,
+            mi.category,
+            mi.date_delivered,
+            mi.initial_dr_number,
+            mi.current_branch,
+            i.invoice_number
+        FROM motorcycle_inventory mi
+        LEFT JOIN invoices i ON mi.invoice_id = i.id
+        WHERE $conditions
+        ORDER BY mi.date_delivered ASC
+    ";
 
-    
+    // --- Prepare and execute ---
     $stmt = $conn->prepare($sql);
-    if ($stmt) {
-        if (!empty($params)) { $stmt->bind_param($types, ...$params); }
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $data = [];
-        $totalDelivered = 0;
-        $totalInventoryCost = 0;
-
-        while ($row = $result->fetch_assoc()) {
-            $data[] = $row;
-            $totalDelivered++;
-            $totalInventoryCost += (float)$row['inventory_cost'];
-        }
-
-        echo json_encode([
-            'success' => true, 'data' => $data,
-            'month' => $month, 'date' => $date, 'start_date' => $startDate, 'end_date' => $endDate,
-            'branch' => $branch,
-            'summary' => [
-                'total_delivered' => $totalDelivered,
-                'total_inventory_cost' => $totalInventoryCost
-            ]
-        ]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $conn->error]);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'SQL Prepare failed: ' . $conn->error]);
+        return;
     }
+
+    $stmt->bind_param($paramTypes, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // --- Process result ---
+    $data = [];
+    $totalDelivered = 0;
+    $totalCost = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $data[] = [
+            'id' => (int)$row['id'],
+            'brand' => $row['brand'],
+            'model' => $row['model'],
+            'color' => $row['color'],
+            'engine_number' => $row['engine_number'],
+            'frame_number' => $row['frame_number'],
+            'inventory_cost' => (float)$row['inventory_cost'],
+            'category' => $row['category'],
+            'invoice_number' => $row['invoice_number'],
+            'date_delivered' => $row['date_delivered'],
+            'initial_dr_number' => $row['initial_dr_number'],
+            'branch' => $row['current_branch'],
+        ];
+        $totalDelivered++;
+        $totalCost += (float)$row['inventory_cost'];
+    }
+
+    // --- Return JSON ---
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'branch' => $branch,
+        'month' => $month,
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+        'summary' => [
+            'total_delivered' => $totalDelivered,
+            'total_inventory_cost' => $totalCost,
+        ],
+    ]);
 }
 
 
@@ -4543,52 +4554,65 @@ function getDirectShipments() {
     $limit = 15;
     $offset = ($page - 1) * $limit;
 
-    // Show individual motorcycles with their INITIAL DR NUMBER (not transfer invoices)
+    // Select individual motorcycles for direct shipments
     $sql = "SELECT 
                 mi.id,
-                i.id as invoice_id,
-                mi.initial_dr_number as invoice_number,
-                i.date_delivered,
+                mi.initial_dr_number AS invoice_number,
+                mi.date_delivered AS shipment_date,
                 mi.brand,
                 mi.model,
                 mi.engine_number,
                 mi.frame_number,
-                mi.current_branch,
-                mi.status,
-                (SELECT COUNT(*) FROM inventory_transfers it WHERE it.motorcycle_id = mi.id) as transfer_count
+                mi.current_branch
             FROM motorcycle_inventory mi
-            INNER JOIN invoices i ON mi.invoice_id = i.id
             WHERE 1=1";
 
-    $countSql = "SELECT COUNT(mi.id) as total 
+    $countSql = "SELECT COUNT(mi.id) AS total 
                  FROM motorcycle_inventory mi
-                 INNER JOIN invoices i ON mi.invoice_id = i.id
                  WHERE 1=1";
+
+    $params = [];
+    $types = '';
 
     if (!empty($query)) {
         $searchTerm = "%$query%";
-        $sql .= " AND (mi.initial_dr_number LIKE '$searchTerm' OR mi.brand LIKE '$searchTerm' OR mi.model LIKE '$searchTerm' OR mi.engine_number LIKE '$searchTerm' OR mi.frame_number LIKE '$searchTerm' OR mi.current_branch LIKE '$searchTerm')";
-        $countSql .= " AND (mi.initial_dr_number LIKE '$searchTerm' OR mi.brand LIKE '$searchTerm' OR mi.model LIKE '$searchTerm' OR mi.engine_number LIKE '$searchTerm' OR mi.frame_number LIKE '$searchTerm' OR mi.current_branch LIKE '$searchTerm')";
+        $sql .= " AND (mi.initial_dr_number LIKE ? OR mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? OR mi.frame_number LIKE ? OR mi.current_branch LIKE ?)";
+        $countSql .= " AND (mi.initial_dr_number LIKE ? OR mi.brand LIKE ? OR mi.model LIKE ? OR mi.engine_number LIKE ? OR mi.frame_number LIKE ? OR mi.current_branch LIKE ?)";
+        $params = array_fill(0, 6, $searchTerm);
+        $types = str_repeat('s', 6);
     }
 
-    $sql .= " ORDER BY i.date_delivered DESC, mi.initial_dr_number DESC
-              LIMIT $limit OFFSET $offset";
+    $sql .= " ORDER BY mi.date_delivered DESC, mi.initial_dr_number DESC LIMIT ? OFFSET ?";
+    $paramsWithLimit = $params;
+    $paramsWithLimit[] = $limit;
+    $paramsWithLimit[] = $offset;
+    $typesWithLimit = $types . 'ii';
 
     // Get total count
-    $totalRecords = $conn->query($countSql)->fetch_assoc()['total'];
+    $countStmt = $conn->prepare($countSql);
+    if (!empty($query)) {
+        $countStmt->bind_param($types, ...$params);
+    }
+    $countStmt->execute();
+    $totalRecords = $countStmt->get_result()->fetch_assoc()['total'];
+    $countStmt->close();
     $totalPages = ceil($totalRecords / $limit);
 
     // Get data
-    $result = $conn->query($sql);
-    if (!$result) {
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
         return;
     }
-    
+    $stmt->bind_param($typesWithLimit, ...$paramsWithLimit);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
     $data = [];
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
     }
+    $stmt->close();
 
     echo json_encode([
         'success' => true,
@@ -4596,6 +4620,8 @@ function getDirectShipments() {
         'pagination' => ['currentPage' => $page, 'totalPages' => $totalPages]
     ]);
 }
+
+
 function deleteInvoiceTransaction() {
     global $conn;
 
@@ -4609,7 +4635,7 @@ function deleteInvoiceTransaction() {
     $conn->begin_transaction();
 
     try {
-        // First, check if any motorcycles from this invoice have been transferred
+        // Check if any motorcycles from this invoice have been transferred
         $checkTransfersStmt = $conn->prepare("SELECT COUNT(*) as count FROM inventory_transfers it 
                                             INNER JOIN motorcycle_inventory mi ON it.motorcycle_id = mi.id 
                                             WHERE mi.invoice_id = ?");
@@ -4618,6 +4644,7 @@ function deleteInvoiceTransaction() {
         if ($checkTransfersStmt->get_result()->fetch_assoc()['count'] > 0) {
             throw new Exception("Cannot delete invoice: One or more motorcycles from this invoice have transfer history.");
         }
+        $checkTransfersStmt->close();
 
         // Check if this invoice is used in any transfers as transfer_invoice_number
         $checkTransferInvoiceStmt = $conn->prepare("SELECT COUNT(*) as count FROM inventory_transfers WHERE transfer_invoice_number = (SELECT invoice_number FROM invoices WHERE id = ?)");
@@ -4626,8 +4653,9 @@ function deleteInvoiceTransaction() {
         if ($checkTransferInvoiceStmt->get_result()->fetch_assoc()['count'] > 0) {
             throw new Exception("Cannot delete invoice: This invoice number is being used in transfer transactions.");
         }
+        $checkTransferInvoiceStmt->close();
 
-        // Find all motorcycles on this invoice to check their status
+        // Get all motorcycles on this invoice to check their status
         $getMotorcyclesStmt = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE invoice_id = ?");
         $getMotorcyclesStmt->bind_param('i', $invoiceId);
         $getMotorcyclesStmt->execute();
@@ -4637,31 +4665,36 @@ function deleteInvoiceTransaction() {
         while ($row = $motorcycleResult->fetch_assoc()) {
             $motorcycleIds[] = $row['id'];
         }
+        $getMotorcyclesStmt->close();
 
         if (!empty($motorcycleIds)) {
             $placeholders = implode(',', array_fill(0, count($motorcycleIds), '?'));
             $types = str_repeat('i', count($motorcycleIds));
 
-            // Safety Check: Ensure none have been sold.
+            // Check if any have been sold
             $checkSalesStmt = $conn->prepare("SELECT COUNT(*) as count FROM motorcycle_sales WHERE motorcycle_id IN ($placeholders)");
             $checkSalesStmt->bind_param($types, ...$motorcycleIds);
             $checkSalesStmt->execute();
             if ($checkSalesStmt->get_result()->fetch_assoc()['count'] > 0) {
                 throw new Exception("Cannot delete invoice: One or more motorcycles from this invoice have been sold.");
             }
+            $checkSalesStmt->close();
 
-            // If all checks pass, delete the motorcycle records.
+            // Delete motorcycle records
             $deleteMotorcyclesStmt = $conn->prepare("DELETE FROM motorcycle_inventory WHERE invoice_id = ?");
             $deleteMotorcyclesStmt->bind_param('i', $invoiceId);
             $deleteMotorcyclesStmt->execute();
+            $deleteMotorcyclesStmt->close();
         }
 
-        // Finally, delete the invoice itself.
+        // Delete the invoice
         $deleteInvoiceStmt = $conn->prepare("DELETE FROM invoices WHERE id = ?");
         $deleteInvoiceStmt->bind_param('i', $invoiceId);
         $deleteInvoiceStmt->execute();
+        $affectedRows = $deleteInvoiceStmt->affected_rows;
+        $deleteInvoiceStmt->close();
 
-        if ($deleteInvoiceStmt->affected_rows > 0) {
+        if ($affectedRows > 0) {
             $conn->commit();
             log_action($conn, 'DELETE', 'invoices', $invoiceId, "Deleted invoice and all associated direct-shipment motorcycles.");
             echo json_encode(['success' => true, 'message' => 'Invoice and all its motorcycles have been deleted successfully.']);
@@ -4675,6 +4708,7 @@ function deleteInvoiceTransaction() {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
 }
+
 function getDirectShipmentForEdit() {
     global $conn;
 
@@ -4684,21 +4718,26 @@ function getDirectShipmentForEdit() {
         return;
     }
 
-    // Get motorcycle data specifically for direct shipment editing
-    $stmt = $conn->prepare("SELECT 
-                mi.*, 
-                i.invoice_number,
-                i.id as invoice_id,
-                mi.initial_dr_number as display_invoice_number
-            FROM motorcycle_inventory mi 
-            LEFT JOIN invoices i ON mi.invoice_id = i.id 
-            WHERE mi.id = ?");
-    
+    // ✅ FIXED: Fetch directly from motorcycle_inventory for direct shipments
+    $stmt = $conn->prepare("
+        SELECT 
+            mi.id,
+            mi.initial_dr_number AS invoice_number,
+            mi.date_delivered AS shipment_date,
+            mi.brand,
+            mi.model,
+            mi.engine_number,
+            mi.frame_number,
+            mi.current_branch
+        FROM motorcycle_inventory mi
+        WHERE mi.id = ?
+    ");
+
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
         return;
     }
-    
+
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -4707,146 +4746,100 @@ function getDirectShipmentForEdit() {
         $data = $result->fetch_assoc();
         $stmt->close();
 
-        // For direct shipments, we always use direct source
+        // Add fallback for empty values
+        if (empty($data['shipment_date'])) {
+            $data['shipment_date'] = '';
+        }
+        if (empty($data['invoice_number'])) {
+            $data['invoice_number'] = '';
+        }
+
+        // Indicate this came from direct shipment
         $data['invoice_source'] = 'direct';
-        
+
         echo json_encode(['success' => true, 'data' => $data]);
     } else {
-        if ($stmt) $stmt->close();
+        $stmt->close();
         echo json_encode(['success' => false, 'message' => 'Motorcycle not found']);
     }
 }
 function updateDirectShipment() {
     global $conn;
 
-    // Always need ID
+    // Validate required fields
     if (empty($_POST['id'])) {
-        echo json_encode(['success' => false, 'message' => "Missing required field: id"]);
+        echo json_encode(['success' => false, 'message' => 'Missing required field: id (motorcycle inventory ID)']);
         return;
     }
 
-    $id = intval($_POST['id']);
-    $invoiceNumber = isset($_POST['invoice_number']) ? sanitizeInput($_POST['invoice_number']) : null;
+    $inventoryId = intval($_POST['id']);
+    $initialDrNumber = isset($_POST['invoice_number']) ? trim(sanitizeInput($_POST['invoice_number'])) : null;
+    $dateDelivered = isset($_POST['shipment_date']) ? trim(sanitizeInput($_POST['shipment_date'])) : null;
 
-    // Detect if ONLY invoice_number was submitted (others empty or not set)
-    $onlyInvoiceUpdate = true;
-    $fieldsToCheck = ['date_delivered', 'date_received', 'brand', 'model', 'category', 'engine_number', 'frame_number', 'color', 'inventory_cost', 'current_branch', 'status'];
-    foreach ($fieldsToCheck as $f) {
-        if (!empty($_POST[$f])) {
-            $onlyInvoiceUpdate = false;
-            break;
-        }
+    // Validate required fields
+    if (empty($initialDrNumber)) {
+        echo json_encode(['success' => false, 'message' => 'Invoice Number is required.']);
+        return;
+    }
+
+    if (empty($dateDelivered)) {
+        echo json_encode(['success' => false, 'message' => 'Shipment Date is required.']);
+        return;
+    }
+
+    // Validate date format and logic
+    $deliveryTimestamp = strtotime($dateDelivered);
+    if ($deliveryTimestamp === false) {
+        echo json_encode(['success' => false, 'message' => 'Invalid date format.']);
+        return;
+    }
+
+    if ($deliveryTimestamp > time()) {
+        echo json_encode(['success' => false, 'message' => 'Delivery date cannot be in the future.']);
+        return;
     }
 
     $conn->begin_transaction();
 
     try {
-        if ($onlyInvoiceUpdate) {
-            // 🔹 CASE 1: Only Invoice Number Updated → Update initial_dr_number only
-            $stmt = $conn->prepare("UPDATE motorcycle_inventory SET initial_dr_number = ? WHERE id = ?");
-            $stmt->bind_param('si', $invoiceNumber, $id);
-            if (!$stmt->execute()) {
-                throw new Exception('Error updating initial DR number: ' . $stmt->error);
-            }
-            $stmt->close();
+        // ✅ FIXED: Check for duplicate DR number excluding current record
+        if (!empty($initialDrNumber)) {
+            $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM motorcycle_inventory WHERE initial_dr_number = ? AND id <> ?");
+            $checkStmt->bind_param('si', $initialDrNumber, $inventoryId);
+            $checkStmt->execute();
+            $count = $checkStmt->get_result()->fetch_assoc()['count'];
+            $checkStmt->close();
 
-            $conn->commit();
-
-            log_action($conn, 'UPDATE', 'motorcycle_inventory', $id, "Updated initial DR number to '{$invoiceNumber}'");
-
-            echo json_encode([
-                'success' => true,
-                'message' => "Initial DR number updated successfully.",
-                'type' => 'initial_dr_number_updated'
-            ]);
-            return;
-        }
-
-        // 🔹 CASE 2: Full Update (same as before)
-        $required = ['date_delivered', 'brand', 'model', 'category', 'engine_number', 'frame_number', 'color', 'current_branch', 'status'];
-        foreach ($required as $field) {
-            if (empty($_POST[$field])) {
-                throw new Exception("Missing required field: $field");
+            if ($count > 0) {
+                throw new Exception("DR number '{$initialDrNumber}' already exists for another motorcycle.");
             }
         }
 
-        $dateDelivered = sanitizeInput($_POST['date_delivered']);
-        $dateReceived = !empty($_POST['date_received']) ? sanitizeInput($_POST['date_received']) : null;
-        $brand = sanitizeInput($_POST['brand']);
-        $model = sanitizeInput($_POST['model']);
-        $category = sanitizeInput($_POST['category']);
-        $engineNumber = sanitizeInput($_POST['engine_number']);
-        $frameNumber = sanitizeInput($_POST['frame_number']);
-        $color = sanitizeInput($_POST['color']);
-        $inventory_cost = !empty($_POST['inventory_cost']) ? floatval($_POST['inventory_cost']) : null;
-        $currentBranch = sanitizeInput($_POST['current_branch']);
-        $status = sanitizeInput($_POST['status']);
+        // ✅ FIXED: Update both fields in motorcycle_inventory
+        $sql = "UPDATE motorcycle_inventory SET initial_dr_number = ?, date_delivered = ? WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
 
-        // Check for duplicates
-        $engineCheckStmt = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE engine_number = ? AND id != ?");
-        $engineCheckStmt->bind_param('si', $engineNumber, $id);
-        $engineCheckStmt->execute();
-        if ($engineCheckStmt->get_result()->num_rows > 0) {
-            throw new Exception("DUPLICATE_ENGINE_NUMBER: Engine number '$engineNumber' already exists.");
-        }
-        $engineCheckStmt->close();
-
-        $frameCheckStmt = $conn->prepare("SELECT id FROM motorcycle_inventory WHERE frame_number = ? AND id != ?");
-        $frameCheckStmt->bind_param('si', $frameNumber, $id);
-        $frameCheckStmt->execute();
-        if ($frameCheckStmt->get_result()->num_rows > 0) {
-            throw new Exception("DUPLICATE_FRAME_NUMBER: Frame number '$frameNumber' already exists.");
-        }
-        $frameCheckStmt->close();
-
-        // Update full record (including initial_dr_number)
-        $stmt = $conn->prepare("
-            UPDATE motorcycle_inventory 
-            SET 
-                date_delivered = ?, 
-                date_received = ?, 
-                brand = ?, 
-                model = ?, 
-                category = ?, 
-                engine_number = ?, 
-                frame_number = ?, 
-                color = ?, 
-                inventory_cost = ?, 
-                current_branch = ?, 
-                status = ?, 
-                initial_dr_number = ?
-            WHERE id = ?
-        ");
-        $stmt->bind_param(
-            'ssssssssdsssi',
-            $dateDelivered,
-            $dateReceived,
-            $brand,
-            $model,
-            $category,
-            $engineNumber,
-            $frameNumber,
-            $color,
-            $inventory_cost,
-            $currentBranch,
-            $status,
-            $invoiceNumber,
-            $id
-        );
-
-        if (!$stmt->execute()) {
-            throw new Exception('Error updating motorcycle: ' . $stmt->error);
-        }
-
+        $stmt->bind_param('ssi', $initialDrNumber, $dateDelivered, $inventoryId);
+        if (!$stmt->execute()) throw new Exception("Execute failed: " . $stmt->error);
+        
+        $affectedRows = $stmt->affected_rows;
         $stmt->close();
+
+        if ($affectedRows === 0) {
+            throw new Exception("No changes made. Motorcycle not found or data unchanged.");
+        }
+
         $conn->commit();
 
-        log_action($conn, 'UPDATE', 'motorcycle_inventory', $id, "Updated full record including initial DR: {$invoiceNumber}");
+        // Log the changes
+        log_action($conn, 'UPDATE', 'motorcycle_inventory', $inventoryId, 
+            "Updated direct shipment: DR number to '{$initialDrNumber}', delivery date to '{$dateDelivered}'");
 
         echo json_encode([
             'success' => true,
-            'message' => "Direct shipment updated successfully.",
-            'type' => 'direct_shipment_updated'
+            'message' => 'Direct shipment updated successfully.',
+            'type' => 'inventory_updated'
         ]);
 
     } catch (Exception $e) {

@@ -219,16 +219,12 @@ $(document).ready(function () {
       case "#redeemedUnits":
         loadRedeemedUnits(1);
         break;
-
-      case '#directShipments':
-    loadDirectShipments(1);
-    break;
-      
-      
       case "#activityLog":
         loadActivityLog(1);
         break;
-      
+      case "#directShipments":  // NEW: Load direct shipments when tab is shown
+      loadDirectShipments(1);
+      break;
       
     }
   });
@@ -246,14 +242,6 @@ $(document).ready(function () {
   $("#redeemedUnitsSearchBtn").on("click", () =>
     loadRedeemedUnits(1, $("#redeemedUnitsSearch").val())
   );
-
-  $("#directShipmentsSearchBtn").on("click", () =>
-    loadDirectShipments(1, $("#directShipmentsSearch").val())
-);
-
-$("#directShipmentsSearch").on("keypress", function (e) {
-    if (e.which === 13) $(this).next("button").click();
-});
 
   
   $(document).on("show.bs.modal", ".modal", function () {
@@ -342,13 +330,7 @@ $("#confirmRevertBtn").on("click", revertTransaction);
  * Central function to set up all event listeners for the page.
  */
 function setupEventListeners() {
-  $("#directShipmentsSearchBtn").on("click", () =>
-    loadDirectShipments(1, $("#directShipmentsSearch").val())
-);
-
-$("#directShipmentsSearch").on("keypress", function (e) {
-    if (e.which === 13) $(this).next("button").click();
-});
+  
   $("body").on(
     "input",
     ".engine-number, #editEngineNumber, .frame-number, #editFrameNumber",
@@ -373,6 +355,15 @@ $("#directShipmentsSearch").on("keypress", function (e) {
   });
   $("#manageTransferSearchBtn").on("click", searchAvailableForTransfer);
   $("#saveTransferChangesBtn").on("click", submitTransferUpdate);
+  
+  $("#directShipmentsSearchBtn").on("click", () =>
+  loadDirectShipments(1, $("#directShipmentsSearch").val())
+);
+$("#directShipmentsSearch").on("keypress", function (e) {
+  if (e.which === 13) {
+    $("#directShipmentsSearchBtn").click();
+  }
+});
 
   
   $("#globalTransferSearchBtn").on("click", function () {
@@ -1158,6 +1149,7 @@ function loadInventoryTable(page = 1, sort = "", query = "") {
     },
   });
 }
+
 function renderInventoryTable(data) {
   let html = "";
 
@@ -1173,12 +1165,9 @@ function renderInventoryTable(data) {
         categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
       }
 
-      // Simply use the display_invoice_number from backend
-      const displayInvoiceNumber = item.display_invoice_number || "N/A";
-
       html += `
         <tr data-id="${item.id}">
-          <td>${displayInvoiceNumber}</td>
+          <td>${item.invoice_number || "N/A"}</td>
           <td>${
             item.date_received
               ? formatDate(item.date_received)
@@ -1193,7 +1182,7 @@ function renderInventoryTable(data) {
           <td>${formatCurrency(item.inventory_cost)}</td>
           <td>${item.current_branch}</td>
           <td>
-             <div class="btn-group btn-group-sm">
+            <div class="btn-group btn-group-sm">
               <button class="btn btn-outline-primary edit-btn" title="Edit Motorcycle">
                 <i class="bi bi-pencil"></i>
               </button>
@@ -1215,42 +1204,6 @@ function renderInventoryTable(data) {
   $("#inventoryTableBody").html(html);
   setupTableActionButtons();
 }
-
-// Helper function to determine which invoice number to display
-function getDisplayInvoiceNumber(item) {
-  // If the item has transfer_history (from backend), use the latest transfer invoice
-  if (item.transfer_history && item.transfer_history.length > 0) {
-    const latestTransfer = item.transfer_history[item.transfer_history.length - 1];
-    return latestTransfer.transfer_invoice_number || item.invoice_number;
-  }
-  
-  // If display_invoice_number is provided by backend, use it
-  if (item.display_invoice_number) {
-    return item.display_invoice_number;
-  }
-  
-  // Fallback to initial_dr_number or regular invoice_number
-  return item.initial_dr_number || item.invoice_number;
-}
-
-// Helper function to get the appropriate badge for the invoice
-function getInvoiceBadge(item) {
-  // Check if this item has transfer history
-  const hasTransfers = item.transfer_history && item.transfer_history.length > 0;
-  
-  if (hasTransfers) {
-    return '<small class="badge bg-success ms-1">Transfer</small>';
-  }
-  
-  // If it has initial_dr_number but no transfers, it's a direct shipment
-  if (item.initial_dr_number && !hasTransfers) {
-    return '<small class="badge bg-primary ms-1">DR</small>';
-  }
-  
-  // Default case (shouldn't normally happen)
-  return '<small class="badge bg-secondary ms-1">Invoice</small>';
-}
-
 
 function updateInventoryPaginationControls(totalPages) {
   let paginationHtml = "";
@@ -1469,14 +1422,6 @@ function deleteMotorcycle(id) {
     },
   });
 }
-
-function determineDocumentType(motorcycleData) {
-    if (motorcycleData.transfer_history && motorcycleData.transfer_history.length > 0) {
-        return 'transfer_invoice';
-    } else {
-        return 'initial_dr';
-    }
-}
 function loadMotorcycleForEdit(id) {
   $.ajax({
     url: "../api/inventory_management.php",
@@ -1492,30 +1437,29 @@ function loadMotorcycleForEdit(id) {
         const data = response.data;
         $("#editId").val(data.id);
         $("#editDateDelivered").val(formatDate(data.date_delivered));
-        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
+        $("#editDateReceived").val(
+          data.date_received ? formatDate(data.date_received) : ""
+        );
         $("#editBrand").val(data.brand);
         $("#editModel").val(data.model);
         $("#editCategory").val(data.category);
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
-        
-        // SCENARIO 1 & 2: Use display_invoice_number instead of invoice_number
-        $("#editInvoiceNumber").val(data.display_invoice_number || "");
-        
-        // Store the invoice source for the update function
-        $("#editInvoiceNumber").data('invoice-source', data.invoice_source || 'direct');
-        
+        $("#editInvoiceNumber").val(data.invoice_number || "");
         $("#editColor").val(data.color);
         $("#editInventoryCost").val(data.inventory_cost);
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
 
         toggleSoldDetails(data.status, data.sale_details);
-        
-        const redeemContainer = $('#redeemInfoContainer');
+        const redeemContainer = $("#redeemInfoContainer");
         if (data.redeem_details) {
-          $('#redeemInfoDate').text(formatDate(data.redeem_details.redeem_date));
-          $('#redeemInfoAmount').text('₱' + formatCurrency(data.redeem_details.amount_paid));
+          $("#redeemInfoDate").text(
+            formatDate(data.redeem_details.redeem_date)
+          );
+          $("#redeemInfoAmount").text(
+            "₱" + formatCurrency(data.redeem_details.amount_paid)
+          );
           redeemContainer.show();
         } else {
           redeemContainer.hide();
@@ -1532,24 +1476,14 @@ function loadMotorcycleForEdit(id) {
   });
 }
 
-function determineDocumentType(motorcycleData) {
-    if (motorcycleData.transfer_history && motorcycleData.transfer_history.length > 0) {
-        return 'transfer_invoice';
-    } else {
-        return 'initial_dr';
-    }
-}
-
 function updateMotorcycle() {
   const status = $("#editStatus").val();
+
   
   const dateReceivedValue = $("#editDateReceived").val();
   const formattedDateReceived = dateReceivedValue
     ? formatDateForAPI(dateReceivedValue)
     : null; 
-
-  // Get the invoice source from the data attribute
-  const invoiceSource = $("#editInvoiceNumber").data('invoice-source') || 'direct';
 
   const formData = {
     action: "update_motorcycle",
@@ -1562,7 +1496,6 @@ function updateMotorcycle() {
     engine_number: $("#editEngineNumber").val(),
     frame_number: $("#editFrameNumber").val(),
     invoice_number: $("#editInvoiceNumber").val(),
-    invoice_source: invoiceSource, // Add invoice source to form data
     color: $("#editColor").val(),
     inventory_cost: $("#editInventoryCost").val(),
     current_branch: $("#editCurrentBranch").val(),
@@ -1579,7 +1512,7 @@ function updateMotorcycle() {
     formData.monthly_amortization = $("#editMonthlyAmortization").val();
   }
 
-  // Validation
+  
   if (
     !formData.id ||
     !formData.date_delivered ||
@@ -1609,10 +1542,7 @@ function updateMotorcycle() {
       if (response.success) {
         $("#editMotorcycleModal").modal("hide");
 
-        // Handle different response types
-        if (response.type === "direct_shipment") {
-          showSuccessModal(response.message);
-        } else if (response.type === "existing_invoice") {
+        if (response.type === "existing_invoice") {
           showSuccessModal(response.message);
         } else if (response.type === "new_invoice") {
           showSuccessModal(response.message);
@@ -1621,7 +1551,7 @@ function updateMotorcycle() {
             response.message || "Motorcycle updated successfully!"
           );
         }
-        loadDirectShipments();
+
         loadInventoryDashboard();
         loadInventoryTable(
           currentInventoryPage,
@@ -1652,9 +1582,6 @@ function updateMotorcycle() {
     },
   });
 }
-
-
-
 
 function toggleSoldDetails(status, saleDetails) {
   const soldDetailsContainer = $("#soldDetailsContainer");
@@ -2518,6 +2445,198 @@ function loadRedeemedUnits(page = 1, query = "") {
     query
   );
 }
+
+/**
+ * Loads direct shipments data with pagination and optional search.
+ * @param {number} page - The page number to load.
+ * @param {string} query - The search query (e.g., by model or invoice).
+ */
+function loadDirectShipments(page = 1, query = "") {
+  $("#directShipmentsTableBody").html(
+    '<tr><td colspan="8" class="text-center py-5"><div class="spinner-border spinner-border-sm"></div></td></tr>'
+  );
+
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "GET",
+    data: { action: "get_direct_shipments", page, query },
+    dataType: "json",
+    success: function (response) {
+      if (response.success) {
+        renderDirectShipmentsTable(response.data);
+        renderGenericPagination(
+          "#directShipmentsPagination",
+          page,
+          response.pagination.totalPages,
+          "loadDirectShipments"
+        );
+      } else {
+        $("#directShipmentsTableBody").html(
+          '<tr><td colspan="8" class="text-center text-danger py-4">Error loading direct shipments</td></tr>'
+        );
+      }
+    },
+    error: function () {
+      $("#directShipmentsTableBody").html(
+        '<tr><td colspan="8" class="text-center text-danger py-4">Error loading direct shipments</td></tr>'
+      );
+    },
+  });
+}
+
+
+/**
+ * Renders the direct shipments table.
+ * @param {Array} data - The shipments data from the API.
+ */
+function renderDirectShipmentsTable(data) {
+    if (!data || data.length === 0) {
+        $("#directShipmentsTableBody").html(
+            '<tr><td colspan="8" class="text-center py-4">No direct shipments found.</td></tr>'
+        );
+        return;
+    }
+
+    let html = "";
+    data.forEach((item) => {
+        // Debug logging to check the actual data
+        console.log("Item data:", item);
+        console.log("Shipment date raw:", item.shipment_date);
+        console.log("Formatted date:", formatDate(item.shipment_date));
+        
+        html += `<tr>
+            <td>${escapeHtml(item.invoice_number || "N/A")}</td>
+            <td>${formatDate(item.shipment_date)}</td>
+            <td>${escapeHtml(item.brand)}</td>
+            <td>${escapeHtml(item.model)}</td>
+            <td><code>${escapeHtml(item.engine_number)}</code></td>
+            <td><code>${escapeHtml(item.frame_number)}</code></td>
+            <td>${escapeHtml(item.current_branch)}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-warning edit-shipment-btn" 
+                        data-id="${item.id}" 
+                        title="Edit Invoice & Date">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </td>
+        </tr>`;
+    });
+
+    $("#directShipmentsTableBody").html(html);
+
+    // Attach click handler for edit buttons
+    $(".edit-shipment-btn").on("click", function () {
+        const id = $(this).data("id");
+        loadDirectShipmentForEdit(id);
+    });
+}
+/**
+ * Loads a direct shipment for editing (fetches fresh data from backend).
+ * @param {number} id - The motorcycle/shipment ID.
+ */
+function loadDirectShipmentForEdit(id) {
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "GET",
+    data: { action: "get_direct_shipment_for_edit", id },
+    dataType: "json",
+    success: function (response) {
+      console.log("Edit response:", response);
+
+      if (response.success) {
+        const data = response.data;
+
+        // ✅ FIXED: Use motorcycle_inventory ID, not invoice_id
+        $("#editShipmentId").val(data.id); // This is the motorcycle_inventory.id
+        $("#editShipmentDate").val(data.shipment_date ? formatDateForInput(data.shipment_date) : "");
+        $("#editShipmentInvoice").val(data.invoice_number || "");
+
+        $("#editShipmentModal").modal("show");
+      } else {
+        showErrorModal(response.message || "Error loading direct shipment data");
+      }
+    },
+    error: function (xhr, status, error) {
+      showErrorModal("Error loading direct shipment: " + error);
+    },
+  });
+}
+
+// Helper: convert "2025-12-24" -> "2025-12-24" (ISO format for <input type="date">)
+function formatDateForInput(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+
+/**
+ * Submits the edit form for a direct shipment.
+ */
+function submitEditShipment() {
+  const id = $("#editShipmentId").val();
+  const date = $("#editShipmentDate").val();
+  const invoice = $("#editShipmentInvoice").val().trim();
+
+  // Validate inputs
+  if (!id) {
+    showErrorModal("Invalid motorcycle ID. Please refresh and try again.");
+    return;
+  }
+
+  if (!date) {
+    showErrorModal("Shipment Date is required.");
+    return;
+  }
+
+  if (!invoice) {
+    showErrorModal("Invoice Number is required.");
+    return;
+  }
+
+  // Show loading state
+  const saveBtn = $("#saveEditShipmentBtn");
+  const originalText = saveBtn.html();
+  saveBtn.prop('disabled', true).html('<div class="spinner-border spinner-border-sm"></div> Saving...');
+
+  $.ajax({
+    url: "../api/inventory_management.php",
+    method: "POST",
+    data: {
+      action: "update_direct_shipment",
+      id: id, // This is motorcycle_inventory.id
+      shipment_date: date, // Already in YYYY-MM-DD format for input type="date"
+      invoice_number: invoice,
+    },
+    dataType: "json",
+    success: function (response) {
+      saveBtn.prop('disabled', false).html(originalText);
+      
+      if (response.success) {
+        $("#editShipmentModal").modal("hide");
+        showSuccessModal(response.message || "Direct shipment updated successfully!");
+        
+        // Reload the current page and search
+        const currentPage = 1; // Or get current pagination state
+        const currentQuery = $("#directShipmentsSearch").val();
+        loadDirectShipments(currentPage, currentQuery);
+      } else {
+        showErrorModal(response.message || "Error updating shipment.");
+      }
+    },
+    error: function (xhr, status, error) {
+      saveBtn.prop('disabled', false).html(originalText);
+      showErrorModal("Network error: " + error);
+    },
+  });
+}
+
+// Attach submit handler to the modal's save button
+$("#saveEditShipmentBtn").on("click", submitEditShipment);
+
 function loadGenericLogData(
   action,
   bodySelector,
@@ -2804,283 +2923,9 @@ function getStatusBadge(status) {
 }
 
 
-/**
- * Loads data for the Direct Shipments tab via AJAX.
- * @param {number} [page=1] - The page number to load.
- * @param {string} [query=''] - The search term.
- */
-function loadDirectShipments(page = 1, query = "") {
-  loadGenericLogData(
-    "get_direct_shipments",
-    "#directShipmentsTableBody",
-    "#directShipmentsPagination",
-    renderDirectShipmentsTable,
-    "loadDirectShipments",
-    page,
-    query
-  );
-}
-/**
- * Renders the HTML table rows for the direct shipments data.
- * @param {Array<object>} data - The array of shipment data from the API.
- */
-function renderDirectShipmentsTable(data) {
-  let html = "";
-  if (!data || data.length === 0) {
-    $("#directShipmentsTableBody").html(
-      '<tr><td colspan="8" class="text-center py-4">No direct shipments found.</td></tr>'
-    );
-    return;
-  }
-  
-  data.forEach((item) => {
-    // Use initial_dr_number for display and safe handling
-    const displayInvoiceNumber = item.invoice_number || 'N/A';
-    const safeInvoiceNumber = escapeHtml(displayInvoiceNumber).replace(/'/g, "\\'");
-
-    html += `<tr>
-            <td>
-                ${escapeHtml(displayInvoiceNumber)}
-                ${item.transfer_count > 0 ? '<small class="badge bg-warning ms-1" title="This unit has been transferred">Transferred</small>' : ''}
-            </td>
-            <td>${formatDate(item.date_delivered)}</td>
-            <td>${escapeHtml(item.brand)}</td>
-            <td>${escapeHtml(item.model)}</td>
-            <td><code>${escapeHtml(item.engine_number)}</code></td>
-            <td><code>${escapeHtml(item.frame_number)}</code></td>
-            <td>${escapeHtml(item.current_branch)}</td>
-            <td class="text-end">
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="loadDirectShipmentForEdit(${item.id})" title="Edit This Direct Shipment">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-outline-danger" onclick="confirmDeleteInvoice(${item.invoice_id}, '${safeInvoiceNumber}')" title="Delete Entire Invoice" ${item.transfer_count > 0 ? 'disabled' : ''}>
-                        <i class="bi bi-journal-x"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>`;
-  });
-  $("#directShipmentsTableBody").html(html);
-}
-
-/**
- * Load direct shipment for editing (specifically for Direct Shipments tab)
- */
-function loadDirectShipmentForEdit(id) {
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "GET",
-    data: {
-      action: "get_direct_shipment_for_edit",
-      id: id
-    },
-    dataType: "json",
-    success: function (response) {
-      if (response.success) {
-        const data = response.data;
-        console.log("Direct Shipment Data:", data); // Debug log
-        
-        // Populate the form fields
-        $("#editId").val(data.id);
-        $("#editDateDelivered").val(formatDate(data.date_delivered));
-        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
-        $("#editBrand").val(data.brand);
-        $("#editModel").val(data.model);
-        $("#editCategory").val(data.category);
-        $("#editEngineNumber").val(data.engine_number);
-        $("#editFrameNumber").val(data.frame_number);
-        
-        // For direct shipments, always use initial_dr_number (display_invoice_number)
-        console.log("Initial DR Number:", data.display_invoice_number); // Debug
-        $("#editInvoiceNumber").val(data.display_invoice_number || "");
-        $("#editInvoiceNumber").data('invoice-source', 'direct');
-        
-        $("#editColor").val(data.color);
-        $("#editInventoryCost").val(data.inventory_cost);
-        $("#editCurrentBranch").val(data.current_branch);
-        $("#editStatus").val(data.status);
-
-        $("#editDirectShipmentModal").modal("show");
-      } else {
-        showErrorModal(response.message || "Error loading direct shipment data");
-      }
-    },
-    error: function (xhr, status, error) {
-      showErrorModal("Error loading direct shipment: " + error);
-    },
-  });
-}
-
-/**
- * Shows a confirmation modal before deleting an entire invoice transaction.
- * @param {number} invoiceId The ID of the invoice to be deleted.
- * @param {string} invoiceNumber The number of the invoice for display in the message.
- */
-function confirmDeleteInvoice(invoiceId, invoiceNumber) {
-    const message = `Are you sure you want to <strong>permanently delete</strong> the entire invoice transaction for <strong>#${invoiceNumber}</strong>? This will remove all motorcycles associated with this invoice and cannot be undone.`;
-    showConfirmationModal(
-        message,
-        'Confirm Invoice Deletion',
-        () => deleteInvoiceTransaction(invoiceId),
-        'danger',
-        'Yes, Delete Invoice'
-    );
-}
-
-/**
- * Makes an AJAX call to delete an entire invoice and its associated motorcycles.
- * @param {number} invoiceId The ID of the invoice to delete.
- */
-function deleteInvoiceTransaction(invoiceId) {
-    $.ajax({
-        url: "../api/inventory_management.php",
-        method: "POST",
-        data: {
-            action: "delete_invoice_transaction",
-            invoice_id: invoiceId
-        },
-        dataType: "json",
-        success: function(response) {
-            if (response.success) {
-                showSuccessModal(response.message);
-                loadDirectShipments(1);   // Refresh the current tab
-                loadInventoryTable();     // Refresh the main inventory tab
-                loadInventoryDashboard(); // Refresh the dashboard
-            } else {
-                showErrorModal(response.message || 'Failed to delete the invoice transaction.');
-            }
-        },
-        error: function() {
-            showErrorModal('An error occurred while trying to delete the invoice.');
-        }
-    });
-}
-
-/**
-
-/**
- * Update direct shipment (specifically for Direct Shipments tab)
- */
-function updateDirectShipment() {
-  const status = $("#editStatus").val();
-  
-  const dateReceivedValue = $("#editDateReceived").val();
-  const formattedDateReceived = dateReceivedValue
-    ? formatDateForAPI(dateReceivedValue)
-    : null; 
-
-  const formData = {
-    action: "update_direct_shipment",
-    id: $("#editId").val(),
-    date_delivered: formatDateForAPI($("#editDateDelivered").val()),
-    date_received: formattedDateReceived, 
-    brand: $("#editBrand").val(),
-    model: $("#editModel").val(),
-    category: $("#editCategory").val(),
-    engine_number: $("#editEngineNumber").val(),
-    frame_number: $("#editFrameNumber").val(),
-    invoice_number: $("#editInvoiceNumber").val(),
-    color: $("#editColor").val(),
-    inventory_cost: $("#editInventoryCost").val(),
-    current_branch: $("#editCurrentBranch").val(),
-    status: status,
-  };
-
-  // Validation
-  if (
-    !formData.id ||
-    !formData.date_delivered ||
-    !formData.brand ||
-    !formData.model ||
-    !formData.category ||
-    !formData.engine_number ||
-    !formData.frame_number ||
-    !formData.color
-  ) {
-    showErrorModal("Please fill in all required fields");
-    return;
-  }
-
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "POST",
-    data: formData,
-    dataType: "json",
-    success: function (response) {
-      console.log("Update Direct Shipment Response:", response);
-
-      if (response.success) {
-        $("#editMotorcycleModal").modal("hide");
-
-        showSuccessModal(response.message || "Direct shipment updated successfully!");
-
-        // Refresh only the direct shipments tab
-        loadDirectShipments(currentDirectShipmentsPage, currentDirectShipmentsQuery);
-        
-      } else {
-        console.error("Update Direct Shipment Error:", response.message);
-
-        if (
-          response.message.includes("DUPLICATE_ENGINE_NUMBER") ||
-          response.message.includes("DUPLICATE_FRAME_NUMBER") ||
-          response.message.includes("Missing required field")
-        ) {
-          showErrorModal(response.message);
-        } else {
-          showErrorModal(response.message || "Error updating direct shipment.");
-        }
-      }
-    },
-    error: function (xhr, status, error) {
-      console.error("AJAX Error:", {
-        status: status,
-        error: error,
-        response: xhr.responseText,
-      });
-      showErrorModal("Connection error. Please try again.");
-    },
-  });
-}
 
 
-/**
- * Update the render function to use the new edit function
- */
-function renderDirectShipmentsTable(data) {
-  let html = "";
-  if (!data || data.length === 0) {
-    $("#directShipmentsTableBody").html(
-      '<tr><td colspan="8" class="text-center py-4">No direct shipments found.</td></tr>'
-    );
-    return;
-  }
-  
-  data.forEach((item) => {
-    const safeInvoiceNumber = escapeHtml(item.invoice_number || '').replace(/'/g, "\\'");
 
-    html += `<tr>
-            <td>${escapeHtml(item.invoice_number || 'N/A')}</td>
-            <td>${formatDate(item.date_delivered)}</td>
-            <td>${escapeHtml(item.brand)}</td>
-            <td>${escapeHtml(item.model)}</td>
-            <td><code>${escapeHtml(item.engine_number)}</code></td>
-            <td><code>${escapeHtml(item.frame_number)}</code></td>
-            <td>${escapeHtml(item.current_branch)}</td>
-            <td class="text-end">
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="loadDirectShipmentForEdit(${item.id})" title="Edit This Direct Shipment">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-outline-danger" onclick="confirmDeleteInvoice(${item.invoice_id}, '${safeInvoiceNumber}')" title="Delete Entire Invoice">
-                        <i class="bi bi-journal-x"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>`;
-  });
-  $("#directShipmentsTableBody").html(html);
-}
 /**
  * Loads the system-wide activity log with pagination and search.
  * @param {number} [page=1] - The page number to load.
@@ -8156,7 +8001,7 @@ function renderDeliveredSummaryReport(response) {
                     <tr>
                         <th>#</th><th>Invoice Number</th><th>Model</th><th>Brand</th>
                         <th>Color</th><th>Engine Number</th><th>Frame Number</th>
-                        <th>Date Delivered</th><th>Branch Delivered To</th><th class="text-end">Inventory Cost</th>
+                        <th>Date Delivered</th><th class="text-end">Inventory Cost</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -8171,9 +8016,7 @@ function renderDeliveredSummaryReport(response) {
                     <td><code>${escapeHtml(item.engine_number)}</code></td>
                     <td><code>${escapeHtml(item.frame_number)}</code></td>
                     <td>${formatDate(item.date_delivered)}</td>
-                    <td><span class="badge bg-success">${escapeHtml(
-                      item.current_branch
-                    )}</span></td>
+                   
                     <td class="text-end fw-bold">${formatCurrency(
                       item.inventory_cost
                     )}</td>
@@ -8302,7 +8145,6 @@ function generateDeliveredReportPDF() {
     { header: "Engine Number", dataKey: "engine_number" },
     { header: "Frame Number", dataKey: "frame_number" },
     { header: "Date Delivered", dataKey: "date_delivered" },
-    { header: "Branch", dataKey: "current_branch" },
     { header: "Inventory Cost", dataKey: "inventory_cost" },
   ];
   const tableRows =
@@ -9174,162 +9016,188 @@ function generateRedeemedReportPDF() {
 }
 
 function generateMotorcycleReport(branch, brandFilter) {
+  // Hide options modal
   $("#monthlyReportOptionsModal").modal("hide");
-  $("#monthlyReportContent").html(
-    '<div class="text-center py-5"><div class="spinner-border text-black" role="status"></div></div>'
-  );
 
+  // Show loading spinner
+  $("#monthlyReportContent").html(`
+    <div class="text-center py-5">
+      <div class="spinner-border text-black" role="status"></div>
+      <p class="mt-3">Generating report, please wait...</p>
+    </div>
+  `);
+
+  // Collect selected filters from UI
+  const periodType = $("#periodTypeSelect").val() || "monthly";
+  const selectedMonth = $("#reportMonthInput").val() || moment().format("YYYY-MM");
+  const category = $("#categorySelect").val() || "all";
+  const model = $("#modelSelect").val() || "all";
+  const saleType = $("#saleTypeSelect").val() || "all";
+
+  // AJAX request
   $.ajax({
     url: "../api/inventory_management.php",
     method: "GET",
     data: {
       action: "get_available_motorcycles_report",
+      period_type: periodType,
       branch: branch,
+      category: category,
       brand: brandFilter,
+      model: model,
+      sale_type: saleType,
+      month: selectedMonth,
     },
     dataType: "json",
     success: function (response) {
-      if (response.success) {
-        currentReportData = response.data;
+      if (response.success && response.data && response.data.length > 0) {
+        currentReportData = response;
         currentReportType = "motorcycle";
-        renderMotorcycleReport(response.data, branch, brandFilter);
+
+        renderMotorcycleReport(
+          response,
+          branch,
+          brandFilter,
+          response.total_available_units,
+          response.total_inventory_cost,
+          response.month
+        );
+
         $("#monthlyInventoryReportModal").modal("show");
       } else {
-        showErrorModal(response.message || "Error generating report");
+        $("#monthlyReportContent").html(
+          `<p class='text-center text-danger py-4'>No available motorcycles found for the selected criteria.</p>`
+        );
       }
     },
     error: function (xhr, status, error) {
-      showErrorModal("Error generating report: " + error);
+      $("#monthlyReportContent").html(
+        `<p class='text-center text-danger py-4'>Error generating report: ${error}</p>`
+      );
     },
   });
 }
 
-function renderMotorcycleReport(response) {
-  const { data, date, month, start_date, end_date } = response;
+function renderMotorcycleReport(response, brandFilter, totalUnits, totalValue, month) {
+  const { data, date, start_date, end_date } = response;
 
+  // Determine date subtitle
   let dateSubtitle = "";
-  
   if (start_date && end_date) {
     if (start_date === end_date) {
       dateSubtitle = `For ${formatDate(start_date)}`;
     } else {
-      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(
-        end_date
-      )}`;
+      dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
     }
   } else if (date) {
     dateSubtitle = `As of ${formatDate(date)}`;
   } else if (month) {
     const [year, monthNum] = month.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
   }
 
-  $("#monthlyInventoryReportModalLabel").text(
-    "Available Motorcycle Units Report"
-  );
+  // Set modal title
+  $("#monthlyInventoryReportModalLabel").text("Available Motorcycle Units Report");
 
-  const totalUnits = data.length;
-  const totalValue = data.reduce(
+  // Compute totals
+  const computedTotalUnits = data.length;
+  const computedTotalValue = data.reduce(
     (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
     0
   );
 
-  let tablesHtml = "";
-  if (data.length === 0) {
-    tablesHtml = `<div class="alert alert-info text-center">No available motorcycles found for the selected criteria.</div>`;
-  } else {
-    const branches = {};
-    data.forEach((item) => {
-      const branchName = item.branch_as_of_date || item.current_branch; 
-      if (!branches[branchName]) {
-        branches[branchName] = [];
-      }
-      branches[branchName].push(item);
-    });
+  // Build table rows
+  let tableRows = "";
+  data.forEach((item, index) => {
+    tableRows += `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(item.model)}</td>
+        <td>${escapeHtml(item.color)}</td>
+        <td>${escapeHtml(item.brand)}</td>
+        <td><code>${escapeHtml(item.engine_number)}</code></td>
+        <td><code>${escapeHtml(item.frame_number)}</code></td>
+        <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+      </tr>`;
+  });
 
-    Object.keys(branches)
-      .sort()
-      .forEach((branchName) => {
-        const branchData = branches[branchName];
-        tablesHtml += `
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">${branchName} - ${branchData.length} unit/s</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-striped table-hover mb-0">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>#</th><th>Model</th><th>Color</th><th>Brand</th>
-                                        <th>Engine Number</th><th>Frame Number</th><th class="text-end">Inventory Cost</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-        branchData.forEach((item, index) => {
-          tablesHtml += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${escapeHtml(item.model)}</td>
-                        <td>${escapeHtml(item.color)}</td>
-                        <td>${escapeHtml(item.brand)}</td>
-                        <td><code>${escapeHtml(item.engine_number)}</code></td>
-                        <td><code>${escapeHtml(item.frame_number)}</code></td>
-                        <td class="text-end">${formatCurrency(
-                          item.inventory_cost
-                        )}</td>
-                    </tr>`;
-        });
-        tablesHtml += `</tbody></table></div></div></div>`;
-      });
-  }
+  // Build full HTML
+  const html = `
+    <div class="report-header text-center mb-4">
+      <div class="d-flex align-items-center justify-content-center mb-2">
+        <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+        <h4 class="mb-0" style="color: #000f71; font-weight: 600;">
+          SOLID MOTORCYCLE DISTRIBUTORS, INC.
+        </h4>
+        <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+      </div>
+      <h5 class="mb-2" style="color: #495057;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
+      <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
+      ${buildFilterDisplayHtml()}
+    </div>
 
-  let html = `
-        <div class="report-header text-center mb-4">
-            <div class="d-flex align-items-center justify-content-center mb-2">
-                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
-                <h4 class="mb-0" style="color: #000f71; font-weight: 600;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
-                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
-            </div>
-            <h5 class="mb-2" style="color: #495057;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
-            <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
-            ${buildFilterDisplayHtml()}
+    <div class="row mb-4">
+      <div class="col-md-6 mb-3 mb-md-0">
+        <div class="card border-0 shadow-sm text-center h-100" 
+             style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
+          <div class="card-body py-3">
+            <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">
+              TOTAL AVAILABLE UNITS
+            </h6>
+            <h3 class="mb-0 text-white">${computedTotalUnits}</h3>
+          </div>
         </div>
-        <div class="row mb-4">
-            <div class="col-md-6 mb-3 mb-md-0">
-                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
-                    <div class="card-body py-3">
-                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL AVAILABLE UNITS</h6>
-                        <h3 class="mb-0 text-white">${totalUnits}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #198754, #157347); color: white;">
-                    <div class="card-body py-3">
-                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY VALUE</h6>
-                        <h3 class="mb-0 text-white">${formatCurrency(
-                          totalValue
-                        )}</h3>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm text-center h-100" 
+             style="background: linear-gradient(135deg, #198754, #157347); color: white;">
+          <div class="card-body py-3">
+            <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">
+              TOTAL INVENTORY VALUE
+            </h6>
+            <h3 class="mb-0 text-white">${formatCurrency(computedTotalValue)}</h3>
+          </div>
         </div>
-        ${tablesHtml}
-        ${generateBrandSummaryHtml(data)}
-    `;
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white py-2">
+        <h6 class="mb-0">Available Units (${computedTotalUnits} Total)</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Model</th>
+                <th>Color</th>
+                <th>Brand</th>
+                <th>Engine Number</th>
+                <th>Frame Number</th>
+                <th class="text-end">Inventory Cost</th>
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    ${generateBrandSummaryHtml(data)}
+  `;
 
   $("#monthlyReportContent").html(html);
 }
+
 
 function generateMotorcycleReportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("l", "mm", "a4");
 
+  // Ensure report data exists
   if (!currentReportData || currentReportType !== "motorcycle") {
     showErrorModal(
       "Please generate an available motorcycle units report first before exporting to PDF."
@@ -9340,15 +9208,15 @@ function generateMotorcycleReportPDF() {
   let dateSubtitle = "";
   let fileNameDate = new Date().toISOString().slice(0, 10);
 
+  // Determine which date/period to display
   if (currentReportDate) {
     dateSubtitle = `As of ${formatDate(currentReportDate)}`;
     fileNameDate = currentReportDate;
   } else if (currentReportMonth && currentReportMonth.includes("-")) {
     const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
-      "default",
-      { month: "long" }
-    );
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
+      month: "long",
+    });
     dateSubtitle = `For the Month of ${monthName} ${year}`;
     fileNameDate = currentReportMonth;
   } else if (currentReportStartDate && currentReportEndDate) {
@@ -9369,7 +9237,7 @@ function generateMotorcycleReportPDF() {
   const marginBottom = 20;
   let currentY = 15;
 
-  
+  // ===== HEADER =====
   doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
   doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
     align: "center",
@@ -9384,10 +9252,12 @@ function generateMotorcycleReportPDF() {
   doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
   currentY += 6;
 
+  // Add filters section (optional UI info)
   currentY = addFiltersToPdf(doc, currentY);
-  
+
+  // ===== TABLE =====
   const columns = [
-    { header: "QTY", dataKey: "qty" },
+    { header: "#", dataKey: "no" },
     { header: "MODEL", dataKey: "model" },
     { header: "COLOR", dataKey: "color" },
     { header: "BRAND", dataKey: "brand" },
@@ -9395,62 +9265,40 @@ function generateMotorcycleReportPDF() {
     { header: "FRAME NUMBER", dataKey: "frame_number" },
     { header: "INVENTORY COST", dataKey: "inventory_cost" },
   ];
-  const groupedData = {};
-  currentReportData.data.forEach((item) => {
-    const branchName = item.current_branch || "Unknown Branch";
-    if (!groupedData[branchName]) groupedData[branchName] = [];
-    groupedData[branchName].push(item);
+
+  const rows = currentReportData.data.map((item, i) => ({
+    no: i + 1,
+    model: item.model,
+    color: item.color,
+    brand: item.brand,
+    engine_number: item.engine_number,
+    frame_number: item.frame_number,
+    inventory_cost: formatCurrency(item.inventory_cost),
+  }));
+
+  doc.autoTable({
+    startY: currentY,
+    head: [columns.map((c) => c.header)],
+    body: rows.map((r) => columns.map((c) => r[c.dataKey])),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: {
+      fillColor: [13, 110, 253],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+    },
+    margin: { left: marginLR, right: marginLR },
+    theme: "striped",
   });
 
-  function addBranchSection(branchName, items) {
-    if (currentY + 15 > pageHeight - marginBottom) {
-      doc.addPage();
-      currentY = 20;
-    }
-    doc.setFontSize(11).setTextColor(0, 64, 133).setFont("helvetica", "bold");
-    doc.text(`${branchName} - ${items.length} unit/s`, marginLR, currentY);
-    currentY += 6;
-    const rows = items.map((item) => ({
-      qty: "1",
-      model: item.model,
-      color: item.color,
-      brand: item.brand,
-      engine_number: item.engine_number,
-      frame_number: item.frame_number,
-      inventory_cost: formatCurrency(item.inventory_cost),
-    }));
+  currentY = doc.autoTable.previous.finalY + 10;
 
-    doc.autoTable({
-      startY: currentY,
-      head: [columns.map((c) => c.header)],
-      body: rows.map((r) => columns.map((c) => r[c.dataKey])),
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: {
-        fillColor: [248, 249, 250],
-        textColor: [73, 80, 87],
-        fontStyle: "bold",
-      },
-      margin: { left: marginLR, right: marginLR },
-      theme: "striped",
-      didDrawPage: (data) => {
-        currentY = data.cursor.y;
-      },
-    });
-    currentY = doc.autoTable.previous.finalY + 10;
-  }
-
-  Object.keys(groupedData)
-    .sort()
-    .forEach((branchName) => {
-      addBranchSection(branchName, groupedData[branchName]);
-    });
-
-  
+  // ===== TOTALS =====
   const totalUnits = currentReportData.data.length;
   const totalValue = currentReportData.data.reduce(
     (sum, item) => sum + (parseFloat(item.inventory_cost) || 0),
     0
   );
+
   const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
   const cardHeight = 20;
 
@@ -9459,26 +9307,16 @@ function generateMotorcycleReportPDF() {
     currentY = 20;
   }
 
-  function drawCard(
-    x,
-    y,
-    width,
-    height,
-    title,
-    mainValue,
-    subValue,
-    bgColor,
-    textColor
-  ) {
+  function drawCard(x, y, width, height, title, value, bgColor) {
     doc.setFillColor(...bgColor);
     doc.roundedRect(x, y, width, height, 3, 3, "F");
     doc
       .setFontSize(8)
-      .setTextColor(...textColor)
+      .setTextColor(255, 255, 255)
       .setFont("helvetica", "bold");
     doc.text(title, x + width / 2, y + 7, { align: "center" });
-    doc.setFontSize(12).setTextColor(255, 255, 255);
-    doc.text(String(mainValue), x + width / 2, y + 15, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(String(value), x + width / 2, y + 15, { align: "center" });
   }
 
   drawCard(
@@ -9488,10 +9326,9 @@ function generateMotorcycleReportPDF() {
     cardHeight,
     "TOTAL AVAILABLE UNITS",
     totalUnits,
-    "Motorcycles",
-    [13, 110, 253],
-    [200, 225, 255]
+    [13, 110, 253]
   );
+
   drawCard(
     marginLR + cardWidth + 10,
     currentY,
@@ -9499,18 +9336,15 @@ function generateMotorcycleReportPDF() {
     cardHeight,
     "TOTAL INVENTORY VALUE",
     formatCurrency(totalValue),
-    "Total value",
-    [25, 135, 84],
-    [200, 255, 220]
+    [25, 135, 84]
   );
 
-  currentY += cardHeight;
+  currentY += cardHeight + 10;
 
-  
-  
+  // ===== BRAND SUMMARY =====
   currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
 
-  
+  // ===== FOOTER =====
   const generatedOn = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -9527,6 +9361,7 @@ function generateMotorcycleReportPDF() {
     });
   }
 
+  // ===== SAVE FILE =====
   const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
   const safeBrand = (currentReportBrand || "all").replace(/\s+/g, "_");
   const safeCategory = (currentReportCategory || "all").replace(/\s+/g, "_");
