@@ -366,7 +366,7 @@ function getInventoryTable() {
     $totalPages = ceil( $totalRecords / $perPage );
 
     // Modified SQL query to include display_invoice_number and transfer_count
-     $sql = "SELECT mi.*, mi.date_received, i.invoice_number,
+    $sql = "SELECT mi.*, mi.date_received, i.invoice_number,
                    COALESCE(
                        (SELECT it.transfer_invoice_number 
                         FROM inventory_transfers it 
@@ -376,8 +376,7 @@ function getInventoryTable() {
                        mi.initial_dr_number,
                        i.invoice_number
                    ) as display_invoice_number,
-                   (SELECT COUNT(*) FROM inventory_transfers it WHERE it.motorcycle_id = mi.id) as transfer_count,
-                   mi.with_tba, mi.stock_report_number  
+                   (SELECT COUNT(*) FROM inventory_transfers it WHERE it.motorcycle_id = mi.id) as transfer_count
             FROM motorcycle_inventory mi 
             LEFT JOIN invoices i ON mi.invoice_id = i.id 
             $where 
@@ -427,7 +426,7 @@ function getMotorcycle() {
     $includeSaleDetails = isset($_GET['include_sale_details']) && $_GET['include_sale_details'] ? true : false;
 
     // Get ALL data including initial_dr_number
-     $stmt = $conn->prepare("SELECT mi.*, i.invoice_number, mi.with_tba, mi.stock_report_number 
+    $stmt = $conn->prepare("SELECT mi.*, i.invoice_number 
                             FROM motorcycle_inventory mi 
                             LEFT JOIN invoices i ON mi.invoice_id = i.id 
                             WHERE mi.id = ?");
@@ -637,9 +636,6 @@ function addMotorcycle() {
                 $category = sanitizeInput( $modelData[ 'category' ] );
                 $color = sanitizeInput( $modelData[ 'color' ] );
                 $inventory_cost = !empty( $modelData[ 'inventory_cost' ] ) ? floatval( $modelData[ 'inventory_cost' ] ) : null;
-                $with_tba = isset($modelData['with_tba']) && $modelData['with_tba'] ? 1 : 0;  // NEW: Handle "with TBA" checkbox
-                $stock_report_number = isset($modelData['stock_report_number']) ? sanitizeInput($modelData['stock_report_number']) : null;  // NEW: Handle stock report number
-
 
                 if ( isset( $modelData[ 'details' ] ) && is_array( $modelData[ 'details' ] ) ) {
                     foreach ( $modelData[ 'details' ] as $detailIndex => $detail ) {
@@ -684,9 +680,9 @@ function addMotorcycle() {
                         }
 
                         
-                          $stmt = $conn->prepare("INSERT INTO motorcycle_inventory 
-                                       (date_delivered, brand, model, category, engine_number, frame_number, invoice_id, color, inventory_cost, current_branch, status, with_tba, stock_report_number)  // UPDATED: Added with_tba and stock_report_number
-                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', ?, ?)"); 
+                        $stmt = $conn->prepare( "INSERT INTO motorcycle_inventory 
+                                               (date_delivered, brand, model, category, engine_number, frame_number, invoice_id, color, inventory_cost, current_branch, status) 
+                                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')" );
 
                         if ( !$stmt ) {
                             throw new Exception( 'Error preparing motorcycle insert: ' . $conn->error );
@@ -695,10 +691,10 @@ function addMotorcycle() {
                         $stmt->bind_param( 'ssssssisds', $dateDelivered, $brand, $modelName, $category, $engineNumber, $frameNumber, $invoiceId, $color, $inventory_cost, $branch );
 
                         if ( $stmt->execute() ) {
-                             $successCount++;
-                    $new_motorcycle_id = $conn->insert_id; 
-                    $log_details = "Added new motorcycle: Brand={$brand}, Model={$modelName}, Engine#={$engineNumber}. Delivered to {$branch}.";
-                    log_action($conn, 'CREATE', 'motorcycle_inventory', $new_motorcycle_id, $log_details);
+                            $successCount++;
+                        $new_motorcycle_id = $conn->insert_id; 
+    $log_details = "Added new motorcycle: Brand={$brand}, Model={$modelName}, Engine#={$engineNumber}. Delivered to {$branch}.";
+    log_action($conn, 'CREATE', 'motorcycle_inventory', $new_motorcycle_id, $log_details);
 } else {
     throw new Exception('Error executing motorcycle insert: ' . $stmt->error);
 }
@@ -770,7 +766,6 @@ function updateMotorcycle() {
     $inventory_cost = !empty($_POST['inventory_cost']) ? floatval($_POST['inventory_cost']) : null;
     $currentBranch = sanitizeInput($_POST['current_branch']);
     $status = sanitizeInput($_POST['status']);
-    $stock_report_number = isset($_POST['stock_report_number']) ? sanitizeInput($_POST['stock_report_number']) : null;  // NEW: Handle stock report number
 
     // Sale details
     $sale_date = isset($_POST['sale_date']) ? sanitizeInput($_POST['sale_date']) : null;
@@ -871,17 +866,17 @@ function updateMotorcycle() {
         if ($invoiceId) {
             $stmt = $conn->prepare("UPDATE motorcycle_inventory 
                                    SET date_delivered = ?, date_received = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
-                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?, invoice_id = ?, stock_report_number = ?  // UPDATED: Added stock_report_number
+                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?, invoice_id = ?
                                    WHERE id = ?");
-            $stmt->bind_param('ssssssssdssiii', $dateDelivered, $dateReceived, $brand, $model, $category, $engineNumber,
-                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $invoiceId, $stock_report_number, $id);  // UPDATED: Added stock_report_number binding and adjusted types
+            $stmt->bind_param('ssssssssdssii', $dateDelivered, $dateReceived, $brand, $model, $category, $engineNumber,
+                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $invoiceId, $id);
         } else {
             $stmt = $conn->prepare("UPDATE motorcycle_inventory 
                                    SET date_delivered = ?, date_received = ?, brand = ?, model = ?, category = ?, engine_number = ?, 
-                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?, stock_report_number = ?  // UPDATED: Added stock_report_number
+                                       frame_number = ?, color = ?, inventory_cost = ?, current_branch = ?, status = ?
                                    WHERE id = ?");
-            $stmt->bind_param('ssssssssdsssi', $dateDelivered, $dateReceived, $brand, $model, $category, $engineNumber,
-                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $stock_report_number, $id);  // UPDATED: Added stock_report_number binding and adjusted types
+            $stmt->bind_param('ssssssssdssi', $dateDelivered, $dateReceived, $brand, $model, $category, $engineNumber,
+                              $frameNumber, $color, $inventory_cost, $currentBranch, $status, $id);
         }
 
         if (!$stmt->execute()) {
@@ -965,7 +960,6 @@ function updateMotorcycle() {
         }
     }
 }
-
 function deleteMotorcycle() {
     global $conn;
 

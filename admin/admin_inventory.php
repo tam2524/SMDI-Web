@@ -53,8 +53,7 @@
                 </button>
                 <div class='collapse navbar-collapse' id='navbarCollapse'>
                     <div class='navbar-nav'>
-                        <a href='admin_dashboard.php' class='nav-item nav-link active'>Home</a>
-                        <a href='admin_inventory.php' class='nav-item nav-link active'>Inventory</a>
+                        <a href='admin_inventory.php' class='nav-item nav-link active'>Home</a>
                         <a href='../api/logout.php' class='nav-item nav-link active'>Logout</a>
 
                         <?php if ( isset( $_SESSION[ 'username' ] ) ): ?>
@@ -433,13 +432,10 @@
                             <table class='table table-striped table-hover' id='repossessedUnitsTable'>
                                 <thead>
                                     <tr>
-                                        <th>Repo Date</th>
-                                        <th>Original Sale Date</th>
                                         <th>Model</th>
                                         <th>Engine No.</th>
                                         <th>Current Branch</th>
                                         <th>Status</th>
-                                        <th>Reason</th>
                                         <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
@@ -501,7 +497,6 @@
                                 <thead>
                                     <tr>
                                         <th>Redeem Date</th>
-                                        <th>Original Repo Date</th>
                                         <th>Customer</th>
                                         <th>Model</th>
                                         <th>Engine No.</th>
