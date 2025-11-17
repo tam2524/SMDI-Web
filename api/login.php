@@ -47,7 +47,11 @@ if ($result->num_rows > 0) {
             case 'Inventory':
                 header("Location: ../inventory/headoffice_inventory.php");
                 // header("Location: ../under_repair.html");
-                break;    
+                break;
+             case 'Admin Inventory':
+                header("Location: ../inventory/admin_inventory.php");
+                // header("Location: ../under_repair.html");
+                break;           
             case 'Spareparts':
                 header("Location: ../spareparts/headoffice_spareparts.php");
                 break;           

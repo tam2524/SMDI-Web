@@ -2713,13 +2713,10 @@ function renderRepossessedUnitsTable(data) {
   }
   data.forEach((item) => {
     html += `<tr>
-            <td>${formatDate(item.repo_date)}</td>
-            <td>${formatDate(item.original_sale_date)}</td>
             <td>${escapeHtml(item.model)}</td>
             <td><code>${escapeHtml(item.engine_number)}</code></td>
             <td>${escapeHtml(item.current_branch)}</td>
             <td>${getStatusBadge(item.status)}</td>
-            <td>${escapeHtml(item.repo_reason)}</td>
             <td class="text-end">
                 <button class="btn btn-sm btn-warning revert-btn" data-id="${
                   item.id
@@ -2770,7 +2767,6 @@ function renderRedeemedUnitsTable(data) {
   data.forEach((item) => {
     html += `<tr>
             <td>${formatDate(item.redeem_date)}</td>
-            <td>${formatDate(item.original_repo_date)}</td>
             <td>${escapeHtml(item.redeemed_by_customer)}</td>
             <td>${escapeHtml(item.model)}</td>
             <td><code>${escapeHtml(item.engine_number)}</code></td>

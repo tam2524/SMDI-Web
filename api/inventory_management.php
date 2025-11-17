@@ -4919,7 +4919,7 @@ function getActivityLog() {
     $countStmt->close();
 
     
-    $sql = "SELECT al.id, al.action_timestamp, al.action_type, al.table_name, al.record_id, al.action_details, COALESCE(u.username, 'System') as username
+    $sql = "SELECT al.id, al.action_timestamp, al.action_type, al.table_name, al.record_id, al.action_details, COALESCE(u.username, 'HO') as username
             FROM audit_log al
             LEFT JOIN users u ON al.user_id = u.id
             $where
