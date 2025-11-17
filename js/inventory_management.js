@@ -204,11 +204,26 @@ function setupEventListeners() {
     }
   );
 
-   $('#addStockReportBtn').click(function() {
-        $('#editStockReportNumber').show();
-        $(this).hide();
-    });
-  
+$(document).on('change', '#editWithStockReport', function() {
+    const container = $('.stock-report-number-container');
+    if ($(this).is(':checked')) {
+        container.show();
+    } else {
+        container.hide();
+        $('#editStockReportNumber').val('');
+    }
+});
+
+// Add to setupEventListeners function
+$(document).on('change', '.model-with-stock-report', function() {
+    const container = $(this).closest('.model-form').find('.stock-report-number-container');
+    if ($(this).is(':checked')) {
+        container.show();
+    } else {
+        container.hide();
+        container.find('.model-stock-report-number').val('');
+    }
+});
   $("#reportType").on("change", updateReportFilterOptions);
 
   
@@ -901,6 +916,8 @@ function renderInventoryTable(data) {
         categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
       }
 
+       const withTBA = item.with_tba ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>';
+      const withStockReport = item.with_stock_report ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>';
       // Simply use the display_invoice_number from backend
       const displayInvoiceNumber = item.display_invoice_number || "N/A";
 
@@ -919,8 +936,8 @@ function renderInventoryTable(data) {
           <td>${item.frame_number}</td>
           <td>${item.color}</td>
           <td>${formatCurrency(item.inventory_cost)}</td>
-            <td>${item.stock_report_number ? '✓' : '✗'}</td>  <!-- NEW: With Stock Report column -->
-            <td>${item.with_tba == 1 ? '✓' : '✗'}</td>  <!-- NEW: With TBA column -->
+          <td class="text-center">${withTBA}</td>
+          <td class="text-center">${withStockReport}</td>
           <td>${item.current_branch}</td>
           <td>
             <div class="btn-group btn-group-sm">
@@ -1263,15 +1280,6 @@ function addModelForm() {
     updateSpecificDetailsFields(this);
   });
 
-    const withTbaCheckbox = clone.querySelector('.model-with-tba');
-    const withStockReportCheckbox = clone.querySelector('.model-with-stock-report');
-    const stockReportNumberInput = clone.querySelector('.model-stock-report-number');
-  withStockReportCheckbox.addEventListener('change', function() {
-        stockReportNumberInput.style.display = this.checked ? 'block' : 'none';
-        if (!this.checked) stockReportNumberInput.value = '';
-    });
-
-
   const branchInput = document.createElement("input");
   branchInput.type = "hidden";
   branchInput.className = "model-branch";
@@ -1280,6 +1288,7 @@ function addModelForm() {
 
   setTimeout(() => {
     updateSpecificDetailsFields(quantityInput);
+    attachUnitCheckboxListeners(); // Add this line
   }, 100);
 
   $("#modelFormsContainer").append(clone);
@@ -1311,13 +1320,38 @@ function updateSpecificDetailsFields(quantityInput) {
     for (let i = existingRows; i < quantity; i++) {
       const rowHtml = `
                 <div class="specific-details-row row g-3 align-items-end mb-3 border-bottom pb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label mb-1">Engine Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control engine-number" placeholder="Engine Number" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label mb-1">Frame Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control frame-number" placeholder="Frame Number" required>
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Options for this specific unit -->
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input unit-with-tba" type="checkbox" id="unitTBA_${modelCount}_${i}">
+                                    <label class="form-check-label small" for="unitTBA_${modelCount}_${i}">
+                                        With TBA
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input unit-with-stock-report" type="checkbox" id="unitStockReport_${modelCount}_${i}">
+                                    <label class="form-check-label small" for="unitStockReport_${modelCount}_${i}">
+                                        With Stock Report
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12 stock-report-number-unit-container" style="display: none;">
+                                <label class="form-label small mb-1">Stock Report No.</label>
+                                <input type="text" class="form-control form-control-sm unit-stock-report-number" placeholder="Stock report number">
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1329,6 +1363,25 @@ function updateSpecificDetailsFields(quantityInput) {
       rowsContainer.find(".specific-details-row").last().remove();
     }
   }
+
+  // Re-attach event listeners for the new rows
+  attachUnitCheckboxListeners();
+}
+
+function attachUnitCheckboxListeners() {
+    // Remove existing listeners to prevent duplicates
+    $(document).off('change', '.unit-with-stock-report');
+    
+    // Attach new listeners
+    $(document).on('change', '.unit-with-stock-report', function() {
+        const container = $(this).closest('.specific-details-row').find('.stock-report-number-unit-container');
+        if ($(this).is(':checked')) {
+            container.show();
+        } else {
+            container.hide();
+            container.find('.unit-stock-report-number').val('');
+        }
+    });
 }
 
 function updateModelNumbers() {
@@ -1386,6 +1439,9 @@ function addMotorcycle() {
         const detail = {
           engine_number: $(this).find(".engine-number").val(),
           frame_number: $(this).find(".frame-number").val(),
+          with_tba: $(this).find(".unit-with-tba").is(':checked') ? 1 : 0,
+          with_stock_report: $(this).find(".unit-with-stock-report").is(':checked') ? 1 : 0,
+          stock_report_number: $(this).find(".unit-stock-report-number").val() || null,
         };
 
         if (!detail.engine_number || !detail.frame_number) {
@@ -1491,9 +1547,7 @@ function loadMotorcycleForEdit(id) {
         $("#editCategory").val(data.category);
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
-         $('#editWithTba').prop('checked', data.with_tba == 1);  // NEW: Set with_tba checkbox
-    $('#editStockReportNumber').val(data.stock_report_number || '');  // NEW: Set stock report number
-    toggleStockReportField(data.stock_report_number);
+        
         console.log("display_invoice_number:", data.display_invoice_number); // Debug
         console.log("initial_dr_number:", data.initial_dr_number); // Debug
         console.log("invoice_source:", data.invoice_source); // Debug
@@ -1506,6 +1560,17 @@ function loadMotorcycleForEdit(id) {
         $("#editInventoryCost").val(data.inventory_cost);
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
+
+          // Populate TBA and Stock Report fields
+        if (data.with_tba) {
+            $("#editWithTBA").prop('checked', true);
+        }
+        if (data.with_stock_report) {
+            $("#editWithStockReport").prop('checked', true);
+            $("#editStockReportNumber").val(data.stock_report_number);
+            $("#stockReportContainer").show();
+            $("#addStockReportBtn").hide();
+        }
 
         toggleSoldDetails(data.status, data.sale_details);
         
@@ -1540,23 +1605,26 @@ function updateMotorcycle() {
   // Get the invoice source from the data attribute
   const invoiceSource = $("#editInvoiceNumber").data('invoice-source') || 'direct';
 
-  const formData = {
-    action: "update_motorcycle",
-    id: $("#editId").val(),
-    date_delivered: formatDateForAPI($("#editDateDelivered").val()),
-    date_received: formattedDateReceived, 
-    brand: $("#editBrand").val(),
-    model: $("#editModel").val(),
-    category: $("#editCategory").val(),
-    engine_number: $("#editEngineNumber").val(),
-    frame_number: $("#editFrameNumber").val(),
-    invoice_number: $("#editInvoiceNumber").val(),
-    invoice_source: invoiceSource, // Add invoice source to form data
-    color: $("#editColor").val(),
-    inventory_cost: $("#editInventoryCost").val(),
-    current_branch: $("#editCurrentBranch").val(),
-    status: status,
-  };
+const formData = {
+        action: "update_motorcycle",
+        id: $("#editId").val(),
+        date_delivered: formatDateForAPI($("#editDateDelivered").val()),
+        date_received: formattedDateReceived,
+        brand: $("#editBrand").val(),
+        model: $("#editModel").val(),
+        category: $("#editCategory").val(),
+        engine_number: $("#editEngineNumber").val(),
+        frame_number: $("#editFrameNumber").val(),
+        invoice_number: $("#editInvoiceNumber").val(),
+        invoice_source: invoiceSource,
+        color: $("#editColor").val(),
+        inventory_cost: $("#editInventoryCost").val(),
+        current_branch: $("#editCurrentBranch").val(),
+        status: status,
+        with_tba: $("#editWithTBA").is(':checked') ? 1 : 0,
+        with_stock_report: $("#editWithStockReport").is(':checked') ? 1 : 0,
+        stock_report_number: $("#editStockReportNumber").val() || null
+    };
 
   if (status === "sold") {
     formData.sale_date = formatDateForAPI($("#editSaleDate").val());
@@ -1886,13 +1954,6 @@ function viewModelDetails(units) {
   $("#detailsModal").modal("show");
 }
 
-$("#addMotorcycleModal").on("shown.bs.modal", function () {
-  if (!isAdmin) {
-    $("#branch").val(currentBranch).prop("readonly", true);
-  } else {
-    $("#branch").prop("readonly", false);
-  }
-});
 $("#addMotorcycleModal").on("hidden.bs.modal", function () {
   if (!isAdmin) {
     $("#branch").val(currentBranch);
