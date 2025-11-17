@@ -41,16 +41,16 @@ if ($result->num_rows > 0) {
                 header("Location: ../sales/sales_dashboard.php");
                 break;
             case 'BM':
-                header("Location: ../inventory/branch_inventory.php");
-                // header("Location: ../under_repair.html");
+                // header("Location: ../inventory/branch_inventory.php");
+                header("Location: ../under_repair.html");
                 break;
             case 'Inventory':
-                header("Location: ../inventory/headoffice_inventory.php");
-                // header("Location: ../under_repair.html");
+                // header("Location: ../inventory/headoffice_inventory.php");
+                header("Location: ../under_repair.html");
                 break;
              case 'Admin Inventory':
-                header("Location: ../inventory/admin_inventory.php");
-                // header("Location: ../under_repair.html");
+                // header("Location: ../inventory/admin_inventory.php");
+                header("Location: ../under_repair.html");
                 break;           
             case 'Spareparts':
                 header("Location: ../spareparts/headoffice_spareparts.php");

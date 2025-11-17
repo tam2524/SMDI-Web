@@ -222,7 +222,7 @@ $(document).ready(function () {
       case "#activityLog":
         loadActivityLog(1);
         break;
-      case "#directShipments":  // NEW: Load direct shipments when tab is shown
+      case "#directShipments":  
       loadDirectShipments(1);
       break;
       

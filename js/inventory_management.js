@@ -204,6 +204,10 @@ function setupEventListeners() {
     }
   );
 
+   $('#addStockReportBtn').click(function() {
+        $('#editStockReportNumber').show();
+        $(this).hide();
+    });
   
   $("#reportType").on("change", updateReportFilterOptions);
 
@@ -915,6 +919,8 @@ function renderInventoryTable(data) {
           <td>${item.frame_number}</td>
           <td>${item.color}</td>
           <td>${formatCurrency(item.inventory_cost)}</td>
+            <td>${item.stock_report_number ? '✓' : '✗'}</td>  <!-- NEW: With Stock Report column -->
+            <td>${item.with_tba == 1 ? '✓' : '✗'}</td>  <!-- NEW: With TBA column -->
           <td>${item.current_branch}</td>
           <td>
             <div class="btn-group btn-group-sm">
@@ -1257,6 +1263,15 @@ function addModelForm() {
     updateSpecificDetailsFields(this);
   });
 
+    const withTbaCheckbox = clone.querySelector('.model-with-tba');
+    const withStockReportCheckbox = clone.querySelector('.model-with-stock-report');
+    const stockReportNumberInput = clone.querySelector('.model-stock-report-number');
+  withStockReportCheckbox.addEventListener('change', function() {
+        stockReportNumberInput.style.display = this.checked ? 'block' : 'none';
+        if (!this.checked) stockReportNumberInput.value = '';
+    });
+
+
   const branchInput = document.createElement("input");
   branchInput.type = "hidden";
   branchInput.className = "model-branch";
@@ -1476,7 +1491,9 @@ function loadMotorcycleForEdit(id) {
         $("#editCategory").val(data.category);
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
-        
+         $('#editWithTba').prop('checked', data.with_tba == 1);  // NEW: Set with_tba checkbox
+    $('#editStockReportNumber').val(data.stock_report_number || '');  // NEW: Set stock report number
+    toggleStockReportField(data.stock_report_number);
         console.log("display_invoice_number:", data.display_invoice_number); // Debug
         console.log("initial_dr_number:", data.initial_dr_number); // Debug
         console.log("invoice_source:", data.invoice_source); // Debug
