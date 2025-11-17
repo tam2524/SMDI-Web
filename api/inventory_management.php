@@ -963,45 +963,51 @@ function updateMotorcycle() {
 function deleteMotorcycle() {
     global $conn;
 
-    $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    $id = isset($_POST['motorcycle_id']) ? intval($_POST['motorcycle_id']) : 0;
 
-    
-    $getInvoiceStmt = $conn->prepare("SELECT invoice_id FROM motorcycle_inventory WHERE id = ?");
-    $getInvoiceStmt->bind_param('i', $id);
-    $getInvoiceStmt->execute();
-    $invoiceResult = $getInvoiceStmt->get_result();
-    
-    if ($invoiceResult->num_rows === 0) {
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid motorcycle ID']);
+        return;
+    }
+
+    // 1️⃣ Check if motorcycle exists
+    $checkStmt = $conn->prepare("SELECT invoice_id FROM motorcycle_inventory WHERE id = ?");
+    $checkStmt->bind_param('i', $id);
+    $checkStmt->execute();
+    $result = $checkStmt->get_result();
+
+    if ($result->num_rows === 0) {
         echo json_encode(['success' => false, 'message' => 'Motorcycle not found']);
         return;
     }
-    
-    $invoiceData = $invoiceResult->fetch_assoc();
-    $invoiceId = $invoiceData['invoice_id'];
 
-    
+    $invoiceId = $result->fetch_assoc()['invoice_id'];
 
+    // 2️⃣ Begin transaction
     $conn->begin_transaction();
 
     try {
-        
+
+        // Delete transfer records first
         $deleteTransfers = $conn->prepare("DELETE FROM inventory_transfers WHERE motorcycle_id = ?");
         $deleteTransfers->bind_param('i', $id);
         $deleteTransfers->execute();
-        
-        
+
+        // Delete motorcycle
         $stmt = $conn->prepare("DELETE FROM motorcycle_inventory WHERE id = ?");
         $stmt->bind_param('i', $id);
         $stmt->execute();
 
-        
-        $checkInvoiceStmt = $conn->prepare("SELECT COUNT(*) as remaining FROM motorcycle_inventory WHERE invoice_id = ?");
+        if ($stmt->affected_rows === 0) {
+            throw new Exception("Motorcycle not found or already deleted.");
+        }
+
+        // Check if invoice becomes empty
+        $checkInvoiceStmt = $conn->prepare("SELECT COUNT(*) AS remaining FROM motorcycle_inventory WHERE invoice_id = ?");
         $checkInvoiceStmt->bind_param('i', $invoiceId);
         $checkInvoiceStmt->execute();
-        $checkResult = $checkInvoiceStmt->get_result();
-        $remaining = $checkResult->fetch_assoc()['remaining'];
-        
-        
+        $remaining = $checkInvoiceStmt->get_result()->fetch_assoc()['remaining'];
+
         if ($remaining == 0) {
             $deleteInvoiceStmt = $conn->prepare("DELETE FROM invoices WHERE id = ?");
             $deleteInvoiceStmt->bind_param('i', $invoiceId);
@@ -1010,13 +1016,12 @@ function deleteMotorcycle() {
 
         $conn->commit();
 
-         log_action($conn, 'DELETE', 'motorcycle_inventory', $id, $log_details);
+        // Log AFTER successful commit
+        $log_details = "Deleted motorcycle ID: $id, Invoice ID: $invoiceId";
+        log_action($conn, 'DELETE', 'motorcycle_inventory', $id, $log_details);
 
-        if ($stmt->affected_rows > 0) {
-            echo json_encode(['success' => true, 'message' => 'Motorcycle permanently deleted']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Motorcycle not found or already deleted']);
-        }
+        echo json_encode(['success' => true, 'message' => 'Motorcycle permanently deleted']);
+
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['success' => false, 'message' => 'Error deleting motorcycle: ' . $e->getMessage()]);
