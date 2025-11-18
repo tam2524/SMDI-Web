@@ -210,7 +210,6 @@
                                     <tr>
                                         <th>Invoice No</th>
                                         <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
-                                        <th>Inventory Cost</th>
                                         <th class='sortable-header' data-sort='brand'>Brand</th>
                                         <th class='sortable-header' data-sort='model'>Model</th>
                                         <th class='sortable-header' data-sort='category'>Category</th>
