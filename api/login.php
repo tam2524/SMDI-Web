@@ -54,7 +54,11 @@ if ($result->num_rows > 0) {
                 break;           
             case 'Spareparts':
                 header("Location: ../spareparts/headoffice_spareparts.php");
-                break;           
+                break;  
+            case 'Disable':
+                // header("Location: ../inventory/headoffice_inventory.php");
+                header("Location: ../under_repair.html");
+                break;             
             default:
                 // Fallback if no matching case
                 header("Location: ../login.html");
