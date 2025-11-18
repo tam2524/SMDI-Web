@@ -1173,13 +1173,13 @@ function renderInventoryTable(data) {
               ? formatDate(item.date_received)
               : formatDate(item.date_delivered)
           }</td>
+          <td>${formatCurrency(item.inventory_cost)}</td>
           <td>${item.brand}</td>
           <td>${item.model}</td>
           <td>${categoryBadge}</td>
           <td>${item.engine_number}</td>
           <td>${item.frame_number}</td>
           <td>${item.color}</td>
-          <td>${formatCurrency(item.inventory_cost)}</td>
           <td>${item.current_branch}</td>
           <td>
             <div class="btn-group btn-group-sm">

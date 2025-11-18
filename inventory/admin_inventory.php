@@ -210,13 +210,13 @@
                                     <tr>
                                         <th>Invoice No</th>
                                         <th class='sortable-header' data-sort='date_delivered'>Date Delivered</th>
+                                        <th>Inventory Cost</th>
                                         <th class='sortable-header' data-sort='brand'>Brand</th>
                                         <th class='sortable-header' data-sort='model'>Model</th>
                                         <th class='sortable-header' data-sort='category'>Category</th>
                                         <th>Engine No.</th>
                                         <th>Frame No.</th>
                                         <th>Color</th>
-                                        <th>Inventory Cost</th>
                                         <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
                                         <th class='no-print'>Actions</th>
                                     </tr>
