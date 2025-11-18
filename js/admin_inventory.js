@@ -4978,8 +4978,6 @@ function generateReport() {
     brand: $("#reportBrandFilter").val() || "all",
     model: $("#reportModelFilter").val() || "all",
     sale_type: $("#soldSaleTypeFilter").val() || "all",
-    // NEW: Add stock_tba_filter
-    stock_tba_filter: $("#stockTbaFilter").val() || "all",
   };
   const apiData = {
     action: "",
@@ -5030,7 +5028,10 @@ function generateReport() {
       callReportAPI(apiData, renderMonthlyInventoryReport, reportType);
       break;
     case "inventory_summary":
+      
       apiData.action = "get_monthly_inventory";
+
+      
       callReportAPI(apiData, renderInventorySummaryReport, reportType);
       break;
     case "sold_units":
@@ -5056,9 +5057,10 @@ function generateReport() {
     case "redeemed":
       apiData.action = "get_redeemed_units_report";
       callReportAPI(apiData, renderRedeemedReport, reportType);
-      break;  
+      break;
     case "motorcycle":
       apiData.action = "get_available_motorcycles_report"; 
+      
       callReportAPI(apiData, renderMotorcycleReport, reportType);
       break;
     default:
@@ -9979,53 +9981,59 @@ function buildFilterDisplayHtml() {
  * @returns {number} The new Y position after drawing the text.
  */
 function addFiltersToPdf(doc, currentY) {
-    const filters = [];
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const filters = [];
+  const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Branch filter
-    if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {handleApiResponse
-        filters.push(`Branch: ${currentReportBranch}`);
-    }
-    // Category filter
-    if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
-        filters.push(`Category: ${currentReportCategory}`);
-    }
-    // Brand filter
-    if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
-        filters.push(`Brand: ${currentReportBrand}`);
-    }
-    // Model filter
-    if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
-        filters.push(`Model(s): ${currentReportModel}`);
-    }
-    // Sale Type filter
-    if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
-        filters.push(`Sale Type: ${currentReportSaleType}`);
-    }
-    // NEW: Stock Report/TBA filter
-    if (currentReportStockTbaFilter && currentReportStockTbaFilter.toLowerCase() !== 'all' && currentReportStockTbaFilter !== '') {
-        const filterLabels = {
-            'with_stock_report_only': 'With Stock Report Only',
-            'with_tba_only': 'With TBA Only',
-            'all': 'With Both Stock Report & TBA'
-        };
-        const displayText = filterLabels[currentReportStockTbaFilter] || currentReportStockTbaFilter;
-        filters.push(`Stock/TBA: ${displayText}`);
-    }
+  
+  if (currentReportBranch && currentReportBranch.toLowerCase() !== "all") {
+    filters.push(`Branch: ${currentReportBranch}`);
+  }
+  if (
+    currentReportCategory &&
+    currentReportCategory.toLowerCase() !== "all" &&
+    currentReportCategory !== ""
+  ) {
+    filters.push(`Category: ${currentReportCategory}`);
+  }
+  if (
+    currentReportBrand &&
+    currentReportBrand.toLowerCase() !== "all" &&
+    currentReportBrand !== ""
+  ) {
+    filters.push(`Brand: ${currentReportBrand}`);
+  }
+  if (
+    currentReportModel &&
+    currentReportModel.toLowerCase() !== "all" &&
+    currentReportModel !== ""
+  ) {
+    filters.push(`Model(s): ${currentReportModel}`);
+  }
+  if (
+    currentReportSaleType &&
+    currentReportSaleType.toLowerCase() !== "all" &&
+    currentReportSaleType !== ""
+  ) {
+    filters.push(`Sale Type: ${currentReportSaleType}`);
+  }
 
-    let filterString = "FILTERS: ALL";
-    if (filters.length > 0) {
-        filterString = filters.join(' | ');
-    }
+  let filterString = "FILTERS: ALL";
+  if (filters.length > 0) {
+    filterString = filters.join(" | ");
+  }
 
-    // Set PDF styling
-    doc.setFontSize(9);
-    doc.setTextColor(220, 53, 69); 
-    doc.setFont("helvetica", "bold");
-    doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, { align: "center" });
+  
+  doc.setFontSize(9);
+  doc.setTextColor(220, 53, 69); 
+  doc.setFont("helvetica", "bold");
+  doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, {
+    align: "center",
+  });
 
-    return currentY + 7;
+  
+  return currentY + 7;
 }
+
 /**
  * Converts a date string from "mm/dd/yyyy" to "yyyy-mm-dd" for API submission.
  * @param {string} dateString The date in "mm/dd/yyyy" format.
@@ -10242,14 +10250,4 @@ function undoAddToTransfer(motorcycleId) {
     (item) => item.id !== motorcycleId
   );
   renderManagingTransferLists();
-}
-
-function handleApiResponse(data, renderFunction, reportType, apiData) {
-    currentReportBranch = apiData.branch || 'all';
-    currentReportCategory = apiData.category || 'all';
-    currentReportBrand = apiData.brand || 'all';
-    currentReportModel = apiData.model || 'all';
-    currentReportSaleType = apiData.sale_type || 'all';
-    currentReportStockTbaFilter = apiData.stock_tba_filter || 'all';
-    renderFunction(data);
 }

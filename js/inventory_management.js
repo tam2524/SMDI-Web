@@ -24,7 +24,6 @@ let currentReportCategory = null;
 let currentReportBrand = null;
 let modelCount = 0;
 let currentUserRole = "USER";
-let currentReportStockTbaFilter = 'all';
 const canAccessScrapFeature = isHeadOffice || isAdminUser;
 
 /**
@@ -62,11 +61,11 @@ let managingTransfer = {
 const reportOptionsConfig = {
   inventory: {
     periods: ["monthly", "as_of_date"],
-    filters: ["branch", "category", "brand", "model", "stock_tba"], // Added stock_tba
+    filters: ["branch", "category", "brand", "model"],
   },
   inventory_summary: {
     periods: ["monthly", "as_of_date"],
-    filters: ["branch", "category", "brand", "model", "stock_tba"], // Added stock_tba
+    filters: ["branch", "category", "brand", "model"],
   },
   transferred: {
     periods: ["daily", "monthly", "custom_range"],
@@ -77,11 +76,11 @@ const reportOptionsConfig = {
     filters: ["branch", "category", "brand", "model"],
   },
   delivered_stocks: {
-    periods: ["daily", "monthly", "custom_range"],
-    filters: ["branch", "category", "brand", "model"],
-  },
+        periods: ["daily", "monthly", "custom_range"],
+        filters: ["branch", "category", "brand", "model"],
+    },
   motorcycle: {
-    periods: ["monthly"],
+    periods: [ "monthly"],
     filters: ["branch", "category", "brand", "model"],
   },
   sold_units: {
@@ -92,10 +91,10 @@ const reportOptionsConfig = {
     periods: ["daily", "monthly", "custom_range"],
     filters: ["branch", "category", "brand", "model"],
   },
-  redeemed: {
-    periods: ["daily", "monthly", "custom_range"],
-    filters: ["branch", "category", "brand", "model"],
-  },
+   redeemed: {
+        periods: ["daily", "monthly", "custom_range"],
+        filters: ["branch", "category", "brand", "model"],
+    },
 };
 
 const pdfStyles = `
@@ -4402,7 +4401,6 @@ function updateReportFilterOptions() {
 
   $periodContainer.empty();
   $("#soldSaleTypeContainer").hide();
-  $("#stockTbaFilterContainer").hide(); // NEW: Hide by default
 
   let radioHtml = "";
   config.periods.forEach((period, index) => {
@@ -4422,25 +4420,26 @@ function updateReportFilterOptions() {
   });
   $periodContainer.html(radioHtml);
 
-  // Set as-of-date to end of month if only as_of_date is available
+  
+  
+  
   if (config.periods.length === 1 && config.periods[0] === "as_of_date") {
     const currentMonthValue = $("#reportMonth").val();
     if (currentMonthValue) {
       const [year, month] = currentMonthValue.split("-");
+      
       const lastDay = new Date(year, month, 0).getDate();
-      const newAsOfDate = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
+      const newAsOfDate = `${year}-${month}-${String(lastDay).padStart(
+        2,
+        "0"
+      )}`;
       $("#asOfDate").val(newAsOfDate);
     }
   }
+  
 
-  // Show sale type filter if configured
   if (config.filters.includes("sale_type")) {
     $("#soldSaleTypeContainer").show();
-  }
-
-  // NEW: Show stock TBA filter if configured
-  if (config.filters.includes("stock_tba")) {
-    $("#stockTbaFilterContainer").show();
   }
 
   $('input[name="reportPeriodType"]').on("change", updateDatePickerVisibility);
@@ -4472,20 +4471,18 @@ function updateDatePickerVisibility() {
 
 
 function showMonthlyReportOptions() {
-  // Reset model selection
+  
   selectedReportModels = [];
   renderModelFilterUI();
   fetchModelsForFilter(); 
 
-  // Set default month
+  
   const now = new Date();
-  const currentMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const currentMonth =
+    now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   $("#reportMonth").val(currentMonth);
 
-  // Set default stock TBA filter
-  $("#stockTbaFilter").val("all"); // NEW: Reset to default
-
-  // Handle branch and brand permissions
+  
   if (
     currentUserBranch === "HEADOFFICE" ||
     ["ADMIN", "IT STAFF", "HEAD"].includes(currentUserPosition)
@@ -4497,17 +4494,17 @@ function showMonthlyReportOptions() {
   } else {
     $("#reportBranch")
       .empty()
-      .append(`<option value="${currentUserBranch}">${currentUserBranch}</option>`);
+      .append(
+        `<option value="${currentUserBranch}">${currentUserBranch}</option>`
+      );
     $("#reportBranch").val(currentUserBranch).prop("disabled", true);
     $("#brandFilterContainer").hide();
     $("#reportBrandFilter").prop("disabled", true);
   }
 
-  // Trigger initial filter options update
-  updateReportFilterOptions();
-
   $("#monthlyReportOptionsModal").modal("show");
 }
+
 
 function generateReport() {
   const reportType = $("#reportType").val();
@@ -4519,8 +4516,6 @@ function generateReport() {
     brand: $("#reportBrandFilter").val() || "all",
     model: $("#reportModelFilter").val() || "all",
     sale_type: $("#soldSaleTypeFilter").val() || "all",
-    // NEW: Add stock_tba_filter
-    stock_tba_filter: $("#stockTbaFilter").val() || "all",
   };
   const apiData = {
     action: "",
@@ -4571,7 +4566,10 @@ function generateReport() {
       callReportAPI(apiData, renderMonthlyInventoryReport, reportType);
       break;
     case "inventory_summary":
+      
       apiData.action = "get_monthly_inventory";
+
+      
       callReportAPI(apiData, renderInventorySummaryReport, reportType);
       break;
     case "sold_units":
@@ -4586,22 +4584,23 @@ function generateReport() {
       apiData.action = "get_monthly_received_summary";
       callReportAPI(apiData, renderReceivedSummaryReport, reportType);
       break;
-    case "delivered_stocks":
-      apiData.action = "get_delivered_stocks_summary";
-      callReportAPI(apiData, renderDeliveredSummaryReport, reportType);
-      break;
+      case "delivered_stocks":
+        apiData.action = "get_delivered_stocks_summary";
+        callReportAPI(apiData, renderDeliveredSummaryReport, reportType);
+        break;
     case "scrapped":
       apiData.action = "get_monthly_scrapped_summary";
       callReportAPI(apiData, renderScrappedReport, reportType);
       break;
-    case "redeemed":
-      apiData.action = "get_redeemed_units_report";
-      callReportAPI(apiData, renderRedeemedReport, reportType);
-      break;  
+     case "redeemed":
+            apiData.action = "get_redeemed_units_report";
+            callReportAPI(apiData, renderRedeemedReport, reportType);
+            break;  
     case "motorcycle":
       apiData.action = "get_available_motorcycles_report"; 
-      callReportAPI(apiData, renderMotorcycleReport, reportType);
-      break;
+      
+        callReportAPI(apiData, renderMotorcycleReport, reportType);
+    break;
     default:
       showErrorModal("Invalid report type selected.");
       $("#monthlyReportContent").empty();
@@ -8501,40 +8500,29 @@ function addBrandSummaryToPdf(doc, data, startY) {
 function buildFilterDisplayHtml() {
     const filters = [];
     
-    // Branch filter
+    
     if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {
         filters.push(`Branch: ${escapeHtml(currentReportBranch)}`);
     }
 
-    // Category filter
+    
     if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
         filters.push(`Category: ${escapeHtml(currentReportCategory)}`);
     }
 
-    // Brand filter
+    
     if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
         filters.push(`Brand: ${escapeHtml(currentReportBrand)}`);
     }
 
-    // Model filter
+     
     if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
         filters.push(`Model(s): ${escapeHtml(currentReportModel)}`);
     }
     
-    // Sale Type filter
+    
     if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
         filters.push(`Sale Type: ${escapeHtml(currentReportSaleType)}`);
-    }
-
-    // NEW: Stock Report/TBA filter
-    if (currentReportStockTbaFilter && currentReportStockTbaFilter.toLowerCase() !== 'all' && currentReportStockTbaFilter !== '') {
-        const filterLabels = {
-            'with_stock_report_only': 'With Stock Report Only',
-            'with_tba_only': 'With TBA Only',
-            'all': 'With Both Stock Report & TBA'
-        };
-        const displayText = filterLabels[currentReportStockTbaFilter] || currentReportStockTbaFilter;
-        filters.push(`Stock/TBA: ${escapeHtml(displayText)}`);
     }
 
     if (filters.length === 0) {
@@ -8556,35 +8544,21 @@ function addFiltersToPdf(doc, currentY) {
     const filters = [];
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Branch filter
+    
     if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {
         filters.push(`Branch: ${currentReportBranch}`);
     }
-    // Category filter
     if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
         filters.push(`Category: ${currentReportCategory}`);
     }
-    // Brand filter
     if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
         filters.push(`Brand: ${currentReportBrand}`);
     }
-    // Model filter
     if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
         filters.push(`Model(s): ${currentReportModel}`);
     }
-    // Sale Type filter
     if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
         filters.push(`Sale Type: ${currentReportSaleType}`);
-    }
-    // NEW: Stock Report/TBA filter
-    if (currentReportStockTbaFilter && currentReportStockTbaFilter.toLowerCase() !== 'all' && currentReportStockTbaFilter !== '') {
-        const filterLabels = {
-            'with_stock_report_only': 'With Stock Report Only',
-            'with_tba_only': 'With TBA Only',
-            'all': 'With Both Stock Report & TBA'
-        };
-        const displayText = filterLabels[currentReportStockTbaFilter] || currentReportStockTbaFilter;
-        filters.push(`Stock/TBA: ${displayText}`);
     }
 
     let filterString = "FILTERS: ALL";
@@ -8592,12 +8566,13 @@ function addFiltersToPdf(doc, currentY) {
         filterString = filters.join(' | ');
     }
 
-    // Set PDF styling
+    
     doc.setFontSize(9);
     doc.setTextColor(220, 53, 69); 
     doc.setFont("helvetica", "bold");
     doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, { align: "center" });
 
+    
     return currentY + 7;
 }
 
@@ -8638,19 +8613,4 @@ function addFootersToPdf(doc, reportTitle) {
         const centerText = `Page ${i} of ${pageCount} | ${reportTitle}`;
         doc.text(centerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
     }
-}
-
-// In your API callback, make sure to set all filter variables including the new one
-function handleApiResponse(data, renderFunction, reportType, apiData) {
-    // Set global variables for filters
-    currentReportBranch = apiData.branch || 'all';
-    currentReportCategory = apiData.category || 'all';
-    currentReportBrand = apiData.brand || 'all';
-    currentReportModel = apiData.model || 'all';
-    currentReportSaleType = apiData.sale_type || 'all';
-    // NEW: Set stock TBA filter
-    currentReportStockTbaFilter = apiData.stock_tba_filter || 'all';
-    
-    // Call the render function
-    renderFunction(data);
 }
