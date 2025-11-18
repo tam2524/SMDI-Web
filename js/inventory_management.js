@@ -24,6 +24,7 @@ let currentReportCategory = null;
 let currentReportBrand = null;
 let modelCount = 0;
 let currentUserRole = "USER";
+let currentReportStockTbaFilter = 'all';
 const canAccessScrapFeature = isHeadOffice || isAdminUser;
 
 /**
@@ -61,11 +62,11 @@ let managingTransfer = {
 const reportOptionsConfig = {
   inventory: {
     periods: ["monthly", "as_of_date"],
-    filters: ["branch", "category", "brand", "model"],
+    filters: ["branch", "category", "brand", "model", "stock_tba"], // Added stock_tba
   },
   inventory_summary: {
     periods: ["monthly", "as_of_date"],
-    filters: ["branch", "category", "brand", "model"],
+    filters: ["branch", "category", "brand", "model", "stock_tba"], // Added stock_tba
   },
   transferred: {
     periods: ["daily", "monthly", "custom_range"],
@@ -76,11 +77,11 @@ const reportOptionsConfig = {
     filters: ["branch", "category", "brand", "model"],
   },
   delivered_stocks: {
-        periods: ["daily", "monthly", "custom_range"],
-        filters: ["branch", "category", "brand", "model"],
-    },
+    periods: ["daily", "monthly", "custom_range"],
+    filters: ["branch", "category", "brand", "model"],
+  },
   motorcycle: {
-    periods: [ "monthly"],
+    periods: ["monthly"],
     filters: ["branch", "category", "brand", "model"],
   },
   sold_units: {
@@ -91,10 +92,10 @@ const reportOptionsConfig = {
     periods: ["daily", "monthly", "custom_range"],
     filters: ["branch", "category", "brand", "model"],
   },
-   redeemed: {
-        periods: ["daily", "monthly", "custom_range"],
-        filters: ["branch", "category", "brand", "model"],
-    },
+  redeemed: {
+    periods: ["daily", "monthly", "custom_range"],
+    filters: ["branch", "category", "brand", "model"],
+  },
 };
 
 const pdfStyles = `
@@ -204,7 +205,26 @@ function setupEventListeners() {
     }
   );
 
-  
+$(document).on('change', '#editWithStockReport', function() {
+    const container = $('.stock-report-number-container');
+    if ($(this).is(':checked')) {
+        container.show();
+    } else {
+        container.hide();
+        $('#editStockReportNumber').val('');
+    }
+});
+
+// Add to setupEventListeners function
+$(document).on('change', '.model-with-stock-report', function() {
+    const container = $(this).closest('.model-form').find('.stock-report-number-container');
+    if ($(this).is(':checked')) {
+        container.show();
+    } else {
+        container.hide();
+        container.find('.model-stock-report-number').val('');
+    }
+});
   $("#reportType").on("change", updateReportFilterOptions);
 
   
@@ -897,7 +917,10 @@ function renderInventoryTable(data) {
         categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
       }
 
-      // Simply use the display_invoice_number from backend
+       const withTBA = item.with_tba ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>';
+const withStockReport = item.stock_report_number && item.stock_report_number !== '' ? 
+  '<i class="bi bi-check-circle text-success"></i>' : 
+  '<i class="bi bi-x-circle text-danger"></i>';
       const displayInvoiceNumber = item.display_invoice_number || "N/A";
 
       html += `
@@ -915,6 +938,8 @@ function renderInventoryTable(data) {
           <td>${item.frame_number}</td>
           <td>${item.color}</td>
           <td>${formatCurrency(item.inventory_cost)}</td>
+          <td class="text-center">${withTBA}</td>
+          <td class="text-center">${withStockReport}</td>
           <td>${item.current_branch}</td>
           <td>
             <div class="btn-group btn-group-sm">
@@ -1265,6 +1290,7 @@ function addModelForm() {
 
   setTimeout(() => {
     updateSpecificDetailsFields(quantityInput);
+    attachUnitCheckboxListeners(); // Add this line
   }, 100);
 
   $("#modelFormsContainer").append(clone);
@@ -1296,13 +1322,38 @@ function updateSpecificDetailsFields(quantityInput) {
     for (let i = existingRows; i < quantity; i++) {
       const rowHtml = `
                 <div class="specific-details-row row g-3 align-items-end mb-3 border-bottom pb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label mb-1">Engine Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control engine-number" placeholder="Engine Number" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label mb-1">Frame Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control frame-number" placeholder="Frame Number" required>
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Options for this specific unit -->
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input unit-with-tba" type="checkbox" id="unitTBA_${modelCount}_${i}">
+                                    <label class="form-check-label small" for="unitTBA_${modelCount}_${i}">
+                                        With TBA
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input unit-with-stock-report" type="checkbox" id="unitStockReport_${modelCount}_${i}">
+                                    <label class="form-check-label small" for="unitStockReport_${modelCount}_${i}">
+                                        With Stock Report
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12 stock-report-number-unit-container" style="display: none;">
+                                <label class="form-label small mb-1">Stock Report No.</label>
+                                <input type="text" class="form-control form-control-sm unit-stock-report-number" placeholder="Stock report number">
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1314,6 +1365,25 @@ function updateSpecificDetailsFields(quantityInput) {
       rowsContainer.find(".specific-details-row").last().remove();
     }
   }
+
+  // Re-attach event listeners for the new rows
+  attachUnitCheckboxListeners();
+}
+
+function attachUnitCheckboxListeners() {
+    // Remove existing listeners to prevent duplicates
+    $(document).off('change', '.unit-with-stock-report');
+    
+    // Attach new listeners
+    $(document).on('change', '.unit-with-stock-report', function() {
+        const container = $(this).closest('.specific-details-row').find('.stock-report-number-unit-container');
+        if ($(this).is(':checked')) {
+            container.show();
+        } else {
+            container.hide();
+            container.find('.unit-stock-report-number').val('');
+        }
+    });
 }
 
 function updateModelNumbers() {
@@ -1371,6 +1441,9 @@ function addMotorcycle() {
         const detail = {
           engine_number: $(this).find(".engine-number").val(),
           frame_number: $(this).find(".frame-number").val(),
+          with_tba: $(this).find(".unit-with-tba").is(':checked') ? 1 : 0,
+          with_stock_report: $(this).find(".unit-with-stock-report").is(':checked') ? 1 : 0,
+          stock_report_number: $(this).find(".unit-stock-report-number").val() || null,
         };
 
         if (!detail.engine_number || !detail.frame_number) {
@@ -1484,11 +1557,28 @@ function loadMotorcycleForEdit(id) {
         $("#editInvoiceNumber").val(data.display_invoice_number || "");
         $("#editInvoiceNumber").data('invoice-source', data.invoice_source || 'direct');
         
-        
         $("#editColor").val(data.color);
         $("#editInventoryCost").val(data.inventory_cost);
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
+
+        // Populate TBA and Stock Report fields - FIXED VERSION
+$("#editWithTBA").prop('checked', data.with_tba === 1 || data.with_tba === true);
+
+// FIX: Properly handle stock report number and container visibility
+const hasStockReport = data.stock_report_number && data.stock_report_number !== '' && data.stock_report_number !== 'NULL';
+console.log("Has stock report:", hasStockReport); // Debug
+console.log("With TBA:", data.with_tba); // Debug TBA value
+
+$("#editWithStockReport").prop('checked', hasStockReport);
+$("#editStockReportNumber").val(data.stock_report_number || "");
+
+// Always ensure container visibility matches checkbox state
+if (hasStockReport) {
+    $(".stock-report-number-container").show();
+} else {
+    $(".stock-report-number-container").hide();
+}
 
         toggleSoldDetails(data.status, data.sale_details);
         
@@ -1511,7 +1601,6 @@ function loadMotorcycleForEdit(id) {
     },
   });
 }
-
 function updateMotorcycle() {
   const status = $("#editStatus").val();
   
@@ -1523,23 +1612,26 @@ function updateMotorcycle() {
   // Get the invoice source from the data attribute
   const invoiceSource = $("#editInvoiceNumber").data('invoice-source') || 'direct';
 
-  const formData = {
-    action: "update_motorcycle",
-    id: $("#editId").val(),
-    date_delivered: formatDateForAPI($("#editDateDelivered").val()),
-    date_received: formattedDateReceived, 
-    brand: $("#editBrand").val(),
-    model: $("#editModel").val(),
-    category: $("#editCategory").val(),
-    engine_number: $("#editEngineNumber").val(),
-    frame_number: $("#editFrameNumber").val(),
-    invoice_number: $("#editInvoiceNumber").val(),
-    invoice_source: invoiceSource, // Add invoice source to form data
-    color: $("#editColor").val(),
-    inventory_cost: $("#editInventoryCost").val(),
-    current_branch: $("#editCurrentBranch").val(),
-    status: status,
-  };
+const formData = {
+        action: "update_motorcycle",
+        id: $("#editId").val(),
+        date_delivered: formatDateForAPI($("#editDateDelivered").val()),
+        date_received: formattedDateReceived,
+        brand: $("#editBrand").val(),
+        model: $("#editModel").val(),
+        category: $("#editCategory").val(),
+        engine_number: $("#editEngineNumber").val(),
+        frame_number: $("#editFrameNumber").val(),
+        invoice_number: $("#editInvoiceNumber").val(),
+        invoice_source: invoiceSource,
+        color: $("#editColor").val(),
+        inventory_cost: $("#editInventoryCost").val(),
+        current_branch: $("#editCurrentBranch").val(),
+        status: status,
+        with_tba: $("#editWithTBA").is(':checked') ? 1 : 0,
+        with_stock_report: $("#editWithStockReport").is(':checked') ? 1 : 0,
+        stock_report_number: $("#editStockReportNumber").val() || null
+    };
 
   if (status === "sold") {
     formData.sale_date = formatDateForAPI($("#editSaleDate").val());
@@ -1869,13 +1961,6 @@ function viewModelDetails(units) {
   $("#detailsModal").modal("show");
 }
 
-$("#addMotorcycleModal").on("shown.bs.modal", function () {
-  if (!isAdmin) {
-    $("#branch").val(currentBranch).prop("readonly", true);
-  } else {
-    $("#branch").prop("readonly", false);
-  }
-});
 $("#addMotorcycleModal").on("hidden.bs.modal", function () {
   if (!isAdmin) {
     $("#branch").val(currentBranch);
@@ -4317,6 +4402,7 @@ function updateReportFilterOptions() {
 
   $periodContainer.empty();
   $("#soldSaleTypeContainer").hide();
+  $("#stockTbaFilterContainer").hide(); // NEW: Hide by default
 
   let radioHtml = "";
   config.periods.forEach((period, index) => {
@@ -4336,26 +4422,25 @@ function updateReportFilterOptions() {
   });
   $periodContainer.html(radioHtml);
 
-  
-  
-  
+  // Set as-of-date to end of month if only as_of_date is available
   if (config.periods.length === 1 && config.periods[0] === "as_of_date") {
     const currentMonthValue = $("#reportMonth").val();
     if (currentMonthValue) {
       const [year, month] = currentMonthValue.split("-");
-      
       const lastDay = new Date(year, month, 0).getDate();
-      const newAsOfDate = `${year}-${month}-${String(lastDay).padStart(
-        2,
-        "0"
-      )}`;
+      const newAsOfDate = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
       $("#asOfDate").val(newAsOfDate);
     }
   }
-  
 
+  // Show sale type filter if configured
   if (config.filters.includes("sale_type")) {
     $("#soldSaleTypeContainer").show();
+  }
+
+  // NEW: Show stock TBA filter if configured
+  if (config.filters.includes("stock_tba")) {
+    $("#stockTbaFilterContainer").show();
   }
 
   $('input[name="reportPeriodType"]').on("change", updateDatePickerVisibility);
@@ -4387,18 +4472,20 @@ function updateDatePickerVisibility() {
 
 
 function showMonthlyReportOptions() {
-  
+  // Reset model selection
   selectedReportModels = [];
   renderModelFilterUI();
   fetchModelsForFilter(); 
 
-  
+  // Set default month
   const now = new Date();
-  const currentMonth =
-    now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const currentMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   $("#reportMonth").val(currentMonth);
 
-  
+  // Set default stock TBA filter
+  $("#stockTbaFilter").val("all"); // NEW: Reset to default
+
+  // Handle branch and brand permissions
   if (
     currentUserBranch === "HEADOFFICE" ||
     ["ADMIN", "IT STAFF", "HEAD"].includes(currentUserPosition)
@@ -4410,17 +4497,17 @@ function showMonthlyReportOptions() {
   } else {
     $("#reportBranch")
       .empty()
-      .append(
-        `<option value="${currentUserBranch}">${currentUserBranch}</option>`
-      );
+      .append(`<option value="${currentUserBranch}">${currentUserBranch}</option>`);
     $("#reportBranch").val(currentUserBranch).prop("disabled", true);
     $("#brandFilterContainer").hide();
     $("#reportBrandFilter").prop("disabled", true);
   }
 
+  // Trigger initial filter options update
+  updateReportFilterOptions();
+
   $("#monthlyReportOptionsModal").modal("show");
 }
-
 
 function generateReport() {
   const reportType = $("#reportType").val();
@@ -4432,6 +4519,8 @@ function generateReport() {
     brand: $("#reportBrandFilter").val() || "all",
     model: $("#reportModelFilter").val() || "all",
     sale_type: $("#soldSaleTypeFilter").val() || "all",
+    // NEW: Add stock_tba_filter
+    stock_tba_filter: $("#stockTbaFilter").val() || "all",
   };
   const apiData = {
     action: "",
@@ -4482,10 +4571,7 @@ function generateReport() {
       callReportAPI(apiData, renderMonthlyInventoryReport, reportType);
       break;
     case "inventory_summary":
-      
       apiData.action = "get_monthly_inventory";
-
-      
       callReportAPI(apiData, renderInventorySummaryReport, reportType);
       break;
     case "sold_units":
@@ -4500,23 +4586,22 @@ function generateReport() {
       apiData.action = "get_monthly_received_summary";
       callReportAPI(apiData, renderReceivedSummaryReport, reportType);
       break;
-      case "delivered_stocks":
-        apiData.action = "get_delivered_stocks_summary";
-        callReportAPI(apiData, renderDeliveredSummaryReport, reportType);
-        break;
+    case "delivered_stocks":
+      apiData.action = "get_delivered_stocks_summary";
+      callReportAPI(apiData, renderDeliveredSummaryReport, reportType);
+      break;
     case "scrapped":
       apiData.action = "get_monthly_scrapped_summary";
       callReportAPI(apiData, renderScrappedReport, reportType);
       break;
-     case "redeemed":
-            apiData.action = "get_redeemed_units_report";
-            callReportAPI(apiData, renderRedeemedReport, reportType);
-            break;  
+    case "redeemed":
+      apiData.action = "get_redeemed_units_report";
+      callReportAPI(apiData, renderRedeemedReport, reportType);
+      break;  
     case "motorcycle":
       apiData.action = "get_available_motorcycles_report"; 
-      
-        callReportAPI(apiData, renderMotorcycleReport, reportType);
-    break;
+      callReportAPI(apiData, renderMotorcycleReport, reportType);
+      break;
     default:
       showErrorModal("Invalid report type selected.");
       $("#monthlyReportContent").empty();
@@ -4924,204 +5009,6 @@ function renderMonthlyInventoryReport(response) {
     `
     )
     .appendTo("head");
-}
-
-
-
-function generateInventoryReportPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({
-    orientation: 'landscape', 
-  });
-
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  
-  const isRepoReport = currentReportCategory === 'repo';
-
-  
-  let reportTitle = "Inventory Balance Report";
-  let dateSubtitle = "";
-  
-  if (currentReportDate) {
-    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
-  } else if (currentReportMonth) {
-    const [year, monthNum] = currentReportMonth.split("-");
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", {
-      month: "long",
-    });
-    reportTitle = "Monthly Inventory Balance Report";
-    dateSubtitle = `For the Month of ${monthName} ${year}`;
-  }
-  
-
-  const totalIn = currentReportSummary?.in || 0;
-  const totalOut = currentReportSummary?.out || 0;
-  const endingActual = currentReportSummary?.ending_actual || 0;
-  const costTotalIn = currentReportSummary?.inventory_cost?.in || 0;
-  const costTotalOut = currentReportSummary?.inventory_cost?.out || 0;
-  const costEndingActual = currentReportSummary?.inventory_cost?.ending_actual || 0;
-  
-  
-  const receivedTransfers = currentReportSummary?.received_transfers || 0;
-  const newDeliveries = currentReportSummary?.new_deliveries || 0;
-  const transfersOut = currentReportSummary?.transfers_out || 0;
-  const soldDuringMonth = currentReportSummary?.sold_during_month || 0;
-
-  currentReportData.data.sort((a, b) => a.model.localeCompare(b.model));
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(0, 15, 113);
-  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, 15, { align: "center" });
-
-  doc.setFontSize(12);
-  doc.setTextColor(73, 80, 87);
-  doc.text(reportTitle, pageWidth / 2, 25, { align: "center" });
-
-  doc.setFontSize(10);
-  doc.setTextColor(0, 64, 133);
-  doc.text(dateSubtitle, pageWidth / 2, 33, { align: "center" });
-
-  let currentY = 38;
-  currentY = addFiltersToPdf(doc, currentY);
-
-  
-  const columns = [
-    { header: "QTY", dataKey: "qty" },
-    { header: "MODEL", dataKey: "model" },
-    { header: "COLOR", dataKey: "color" },
-    { header: "BRAND", dataKey: "brand" },
-    { header: "ENGINE NUMBER", dataKey: "engine_number" },
-    { header: "FRAME NUMBER", dataKey: "frame_number" },
-    { header: "Inventory Cost", dataKey: "inventory_cost" },
-  ];
-  
-  
-  if (isRepoReport) {
-    columns.push({ header: "CUSTOMER NAME", dataKey: "customer_name" });
-    columns.push({ header: "DATE SOLD", dataKey: "date_sold" });
-  }
-
-  
-  const rows =
-    !currentReportData.data || currentReportData.data.length === 0
-      ? [
-          {
-            qty: {
-              content: "No inventory data found for this period",
-              colSpan: isRepoReport ? 9 : 7, 
-              styles: { halign: "center" },
-            },
-          },
-        ]
-      : currentReportData.data.map((item) => {
-          const rowData = {
-            qty: "1",
-            model: item.model,
-            color: item.color,
-            brand: item.brand,
-            engine_number: item.engine_number,
-            frame_number: item.frame_number,
-            inventory_cost: formatCurrency(item.inventory_cost),
-          };
-
-          if (isRepoReport) {
-            rowData.customer_name = item.customer_name || '-';
-            rowData.date_sold = item.date_sold && item.date_sold !== '-' ? formatDate(item.date_sold) : '-';
-          }
-          return rowData;
-        });
-
-  function formatCurrency(amount) {
-    if (amount == null || amount === "") return "N/A";
-    return Number(amount).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  doc.autoTable({
-    startY: currentY,
-    headStyles: {
-      fillColor: [248, 249, 250],
-      textColor: [73, 80, 87],
-      fontStyle: "bold",
-    },
-    styles: { fontSize: 8, cellPadding: 2 },
-    columnStyles: {
-      qty: { halign: "center" },
-      inventory_cost: { halign: "right" },
-    },
-    columns: columns.map(c => c.header), 
-    body: rows.map(row => columns.map(c => row[c.dataKey])), 
-    margin: { left: 10, right: 10 },
-  });
-
-  let finalTableY = doc.autoTable.previous.finalY;
-
-  if (!finalTableY || isNaN(finalTableY)) {
-    finalTableY = 50;
-  }
-
-  
-  const cardMargin = 8;
-  const leftRightMargin = 10;
-  const topMargin = 20;
-  const bottomMargin = 20;
-  const cardHeight = 45;
-  const spaceAfterTable = 10;
-  const cardWidth = (pageWidth - 2 * leftRightMargin - 2 * cardMargin) / 3;
-  const summarySectionHeight = cardHeight + 10;
-
-  currentY = finalTableY + spaceAfterTable;
-
-  if (currentY + summarySectionHeight + bottomMargin > pageHeight) {
-    doc.addPage();
-    currentY = topMargin;
-  }
-
-  function drawCard(x, y, cardWidth, cardHeight, title, mainValue, subValue, mainColor, subColor, extraText) {
-    doc.setDrawColor(233, 236, 239);
-    doc.setFillColor(248, 249, 250);
-    doc.rect(x, y, cardWidth, cardHeight, "F");
-    
-    doc.setFontSize(9).setTextColor(73, 80, 87).setFont("helvetica", "bold").text(title, x + cardWidth / 2, y + 8, { align: "center" });
-    doc.setFontSize(16).setTextColor(...mainColor).setFont("helvetica", "bold").text(String(mainValue), x + cardWidth / 2, y + 25, { align: "center" });
-    doc.setFontSize(10).setTextColor(...subColor).setFont("helvetica", "normal");
-    
-    const subValueLines = doc.splitTextToSize(String(subValue), cardWidth - 10);
-    doc.text(subValueLines, x + cardWidth / 2, y + 33, { align: "center" });
-    
-    if (extraText) {
-      doc.setFontSize(7).setTextColor(73, 80, 87);
-      const extraTextLines = doc.splitTextToSize(extraText, cardWidth - 10);
-      doc.text(extraTextLines, x + cardWidth / 2, y + 40, { align: "center" });
-    }
-  }
-
-  drawCard(leftRightMargin, currentY, cardWidth, cardHeight, "IN", totalIn, formatCurrency(costTotalIn), [40, 167, 69], [40, 167, 69], `Received: ${receivedTransfers} | New: ${newDeliveries}`);
-  drawCard(leftRightMargin + (cardWidth + cardMargin), currentY, cardWidth, cardHeight, "OUT", totalOut, formatCurrency(costTotalOut), [220, 53, 69], [220, 53, 69], `Transferred: ${transfersOut} | Sold: ${soldDuringMonth}`);
-  drawCard(leftRightMargin + 2 * (cardWidth + cardMargin), currentY, cardWidth, cardHeight, "ENDING BALANCE", endingActual, formatCurrency(costEndingActual), [0, 64, 133], [0, 86, 179], null);
-
-  currentY += cardHeight + 10;
-  
-  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
-  
-  const now = new Date();
-  const generatedOn = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const totalPages = doc.internal.getNumberOfPages();
-  
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(108, 117, 125);
-    doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
-  }
-
-  doc.save(`Monthly_Inventory_Report_${currentReportMonth || currentReportDate}_${currentReportBranch}.pdf`);
 }
 
 
@@ -8614,29 +8501,40 @@ function addBrandSummaryToPdf(doc, data, startY) {
 function buildFilterDisplayHtml() {
     const filters = [];
     
-    
+    // Branch filter
     if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {
         filters.push(`Branch: ${escapeHtml(currentReportBranch)}`);
     }
 
-    
+    // Category filter
     if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
         filters.push(`Category: ${escapeHtml(currentReportCategory)}`);
     }
 
-    
+    // Brand filter
     if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
         filters.push(`Brand: ${escapeHtml(currentReportBrand)}`);
     }
 
-     
+    // Model filter
     if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
         filters.push(`Model(s): ${escapeHtml(currentReportModel)}`);
     }
     
-    
+    // Sale Type filter
     if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
         filters.push(`Sale Type: ${escapeHtml(currentReportSaleType)}`);
+    }
+
+    // NEW: Stock Report/TBA filter
+    if (currentReportStockTbaFilter && currentReportStockTbaFilter.toLowerCase() !== 'all' && currentReportStockTbaFilter !== '') {
+        const filterLabels = {
+            'with_stock_report_only': 'With Stock Report Only',
+            'with_tba_only': 'With TBA Only',
+            'all': 'With Both Stock Report & TBA'
+        };
+        const displayText = filterLabels[currentReportStockTbaFilter] || currentReportStockTbaFilter;
+        filters.push(`Stock/TBA: ${escapeHtml(displayText)}`);
     }
 
     if (filters.length === 0) {
@@ -8658,21 +8556,35 @@ function addFiltersToPdf(doc, currentY) {
     const filters = [];
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    
+    // Branch filter
     if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {
         filters.push(`Branch: ${currentReportBranch}`);
     }
+    // Category filter
     if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
         filters.push(`Category: ${currentReportCategory}`);
     }
+    // Brand filter
     if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
         filters.push(`Brand: ${currentReportBrand}`);
     }
+    // Model filter
     if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
         filters.push(`Model(s): ${currentReportModel}`);
     }
+    // Sale Type filter
     if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
         filters.push(`Sale Type: ${currentReportSaleType}`);
+    }
+    // NEW: Stock Report/TBA filter
+    if (currentReportStockTbaFilter && currentReportStockTbaFilter.toLowerCase() !== 'all' && currentReportStockTbaFilter !== '') {
+        const filterLabels = {
+            'with_stock_report_only': 'With Stock Report Only',
+            'with_tba_only': 'With TBA Only',
+            'all': 'With Both Stock Report & TBA'
+        };
+        const displayText = filterLabels[currentReportStockTbaFilter] || currentReportStockTbaFilter;
+        filters.push(`Stock/TBA: ${displayText}`);
     }
 
     let filterString = "FILTERS: ALL";
@@ -8680,13 +8592,12 @@ function addFiltersToPdf(doc, currentY) {
         filterString = filters.join(' | ');
     }
 
-    
+    // Set PDF styling
     doc.setFontSize(9);
     doc.setTextColor(220, 53, 69); 
     doc.setFont("helvetica", "bold");
     doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, { align: "center" });
 
-    
     return currentY + 7;
 }
 
@@ -8727,4 +8638,19 @@ function addFootersToPdf(doc, reportTitle) {
         const centerText = `Page ${i} of ${pageCount} | ${reportTitle}`;
         doc.text(centerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
     }
+}
+
+// In your API callback, make sure to set all filter variables including the new one
+function handleApiResponse(data, renderFunction, reportType, apiData) {
+    // Set global variables for filters
+    currentReportBranch = apiData.branch || 'all';
+    currentReportCategory = apiData.category || 'all';
+    currentReportBrand = apiData.brand || 'all';
+    currentReportModel = apiData.model || 'all';
+    currentReportSaleType = apiData.sale_type || 'all';
+    // NEW: Set stock TBA filter
+    currentReportStockTbaFilter = apiData.stock_tba_filter || 'all';
+    
+    // Call the render function
+    renderFunction(data);
 }

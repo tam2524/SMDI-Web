@@ -217,6 +217,8 @@
                                         <th>Frame No.</th>
                                         <th>Color</th>
                                         <th>Inventory Cost</th>
+                                        <th class="text-center">With TBA</th>
+        <th class="text-center">With Stock Report</th>
                                         <th class='sortable-header' data-sort='current_branch'>Current Branch</th>
                                         <th class='no-print'>Actions</th>
                                     </tr>
@@ -613,6 +615,16 @@
                                         <option value='Asiastar'>ASIASTAR</option>
                                     </select>
                                 </div>
+
+                                  <div class='col-md-6' id='stockTbaFilterContainer'>
+                                <label for='stockTbaFilter' class='form-label'>Stock Report/TBA</label>
+                                <select class='form-select' id='stockTbaFilter'>
+                                    <option value='all'>All Units</option>
+                                    <option value='with_stock_report_only'>With Stock Report Only</option>
+                                    <option value='with_tba_only'>With TBA Only</option>
+                                    <option value='with_both'>With Both Stock Report & TBA</option>
+                                </select>
+                            </div>
                                 <div class='col-12'>
                                     <label for='reportModelSearch' class='form-label'>Model( s )</label>
                                     <div class='dropdown'>
@@ -683,224 +695,249 @@
         </div>
     </div>
 
-    <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
-        aria-hidden='true'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='editMotorcycleModalLabel'>Edit Motorcycle Details</h5>
-                    <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
-                </div>
-                <div class='modal-body'>
-                    <form id='editMotorcycleForm'>
-                        <input type='hidden' id='editId'>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editDateDelivered' class='form-label'>Date Delivered</label>
-                                <input type='text' class='form-control datepicker' id='editDateDelivered'
-                                    placeholder="mm/dd/yyyy">
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editDateReceived' class='form-label'>Date Received</label>
-                                <input type='text' class='form-control datepicker' id='editDateReceived'
-                                    placeholder="mm/dd/yyyy">
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
-                                <input type='text' class='form-control' id='editInvoiceNumber' required>
+<div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
+    aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='editMotorcycleModalLabel'>Edit Motorcycle Details</h5>
+                <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
+            </div>
+            <div class='modal-body'>
+                <form id='editMotorcycleForm'>
+                    <input type='hidden' id='editId'>
+                    
+                    <!-- Options Section -->
+                    <div class='row mb-4'>
+                        <div class='col-md-6'>
+                            <div class='form-check'>
+                                <input class='form-check-input' type='checkbox' id='editWithTBA'>
+                                <label class='form-check-label' for='editWithTBA'>
+                                    With TBA (Tools, Batteries and Accessories)
+                                </label>
                             </div>
                         </div>
-                        <div class='row'>
-                            <div class='col-md-4 mb-3'>
-                                <label for='editBrand' class='form-label'>Brand</label>
-                                <select class='form-select' id='editBrand' required>
-                                    <option value='Suzuki'>Suzuki</option>
-                                    <option value='Honda'>Honda</option>
-                                    <option value='Kawasaki'>Kawasaki</option>
-                                    <option value='Yamaha'>Yamaha</option>
-                                    <option value='Asiastar'>Asiastar</option>
-                                </select>
+                        <div class='col-md-6'>
+                            <div class='form-check'>
+                                <input class='form-check-input' type='checkbox' id='editWithStockReport'>
+                                <label class='form-check-label' for='editWithStockReport'>
+                                    With Stock Report
+                                </label>
                             </div>
-                            <div class='col-md-4 mb-3'>
-                                <label for='editModel' class='form-label'>Model</label>
-                                <input type='text' class='form-control' id='editModel' required>
-                            </div>
-                            <div class='col-md-4 mb-3'>
-                                <label for='editCategory' class='form-label'>Category</label>
-                                <select class='form-select' id='editCategory' required>
-                                    <option value='brandnew'>Brand New</option>
-                                    <option value='repo'>Repo</option>
-                                </select>
+                            <div class='stock-report-number-container mt-2' style='display: none;'>
+                                <label for='editStockReportNumber' class='form-label'>Stock Report Number</label>
+                                <input type='text' class='form-control' id='editStockReportNumber' 
+                                       placeholder='Enter stock report number'>
                             </div>
                         </div>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editEngineNumber' class='form-label'>Engine Number</label>
-                                <input type='text' class='form-control' id='editEngineNumber' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editFrameNumber' class='form-label'>Frame Number</label>
-                                <input type='text' class='form-control' id='editFrameNumber' required>
-                            </div>
+                    </div>
+
+                    <div class='row'>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editDateDelivered' class='form-label'>Date Delivered</label>
+                            <input type='text' class='form-control datepicker' id='editDateDelivered'  placeholder="mm/dd/yyyy">
                         </div>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editColor' class='form-label'>Color</label>
-                                <input type='text' class='form-control' id='editColor' required>
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editInventoryCost' class='form-label'>Inventory Cost</label>
-                                <input type='number' step='0.01' class='form-control' id='editInventoryCost'>
-                            </div>
+                          <div class='col-md-4 mb-3'>
+                            <label for='editDateReceived' class='form-label'>Date Received</label>
+                            <input type='text' class='form-control datepicker' id='editDateReceived' placeholder="mm/dd/yyyy">
                         </div>
-                        <div class='row'>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editCurrentBranch' class='form-label'>Branch</label>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editInvoiceNumber' class='form-label'>Invoice Number/MT</label>
+                            <input type='text' class='form-control' id='editInvoiceNumber' required>
+                        </div>
+                    </div>
+                    <div class='row'>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editBrand' class='form-label'>Brand</label>
+                            <select class='form-select' id='editBrand' required>
+                                <option value='Suzuki'>Suzuki</option>
+                                <option value='Honda'>Honda</option>
+                                <option value='Kawasaki'>Kawasaki</option>
+                                <option value='Yamaha'>Yamaha</option>
+                                <option value='Asiastar'>Asiastar</option>
+                            </select>
+                        </div>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editModel' class='form-label'>Model</label>
+                            <input type='text' class='form-control' id='editModel' required>
+                        </div>
+                        <div class='col-md-4 mb-3'>
+                            <label for='editCategory' class='form-label'>Category</label>
+                            <select class='form-select' id='editCategory' required>
+                                <option value='brandnew'>Brand New</option>
+                                <option value='repo'>Repo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editEngineNumber' class='form-label'>Engine Number</label>
+                            <input type='text' class='form-control' id='editEngineNumber' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editFrameNumber' class='form-label'>Frame Number</label>
+                            <input type='text' class='form-control' id='editFrameNumber' required>
+                        </div>
+                    </div>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editColor' class='form-label'>Color</label>
+                            <input type='text' class='form-control' id='editColor' required>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editInventoryCost' class='form-label'>Inventory Cost</label>
+                            <input type='number' step='0.01' class='form-control' id='editInventoryCost'>
+                        </div>
+                    </div>
+                    <div class='row'>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editCurrentBranch' class='form-label'>Branch</label>
+                            <?php if ( isset( $_SESSION[ 'user_role' ] ) && $_SESSION[ 'user_role' ] === 'admin' ) { ?>
+                            <!-- Admin can select any branch -->
+                            <select class='form-select' id='editCurrentBranch' required>
+                                <option value='HEADOFFICE'>HEADOFFICE</option>
+                                <option value='KINGDOM'>KINGDOM</option>
+                                <option value='TANQUE'>TANQUE</option>
+                                <option value='DFISHER'>DFISHER</option>
+                                <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
+                                <option value='MAMBUSAO'>MAMBUSAO</option>
+                                <option value='SIGMA'>SIGMA</option>
+                                <option value='PRC'>PRC</option>
+                                <option value='BAILAN'>BAILAN</option>
+                                <option value='CUARTERO'>CUARTERO</option>
+                                <option value='JAMINDAN'>JAMINDAN</option>
+                                <option value='ROXAS HONDA'>ROXAS HONDA</option>
+                                <option value='ANTIQUE-1'>ANTIQUE-1</option>
+                                <option value='ANTIQUE-2'>ANTIQUE-2</option>
+                                <option value='DELGADO HONDA'>DELGADO HONDA</option>
+                                <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
+                                <option value='JARO-1'>JARO-1</option>
+                                <option value='JARO-2'>JARO-2</option>
+                                <option value='KALIBO MABINI'>KALIBO MABINI</option>
+                                <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
+                                <option value='ALTAVAS'>ALTAVAS</option>
+                                <option value='EMAP'>EMAP</option>
+                                <option value='CULASI'>CULASI</option>
+                                <option value='BACOLOD'>BACOLOD</option>
+                                <option value='PASSI-1'>PASSI-1</option>
+                                <option value='PASSI-2'>PASSI-2</option>
+                                <option value='BALASAN'>BALASAN</option>
+                                <option value='GUIMARAS'>GUIMARAS</option>
+                                <option value='PEMDI BACOLOD'>PEMDI BACOLOD</option>
+                                <option value='INFINITY BACOLOD'>INFINITY BACOLOD</option>
+                                <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
+                                <option value='AJUY'>AJUY</option>
+                                <option value='MINDORO-MB'>MINDORO-MB</option>
+                                <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
+                                <option value='3S MINDORO'>3S MINDORO</option>
+                                <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
+                                <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
+                                <option value='IBAJAY'>IBAJAY</option>
+                                <option value='NUMANCIA'>NUMANCIA</option>
+                                <option value='CFCIPRC'>CFCIPRC</option>
+                            </select>
+                            <?php } else { ?>
+                            <input type='text' class='form-control' id='editCurrentBranch'
+                                value="<?php echo $_SESSION['user_branch']; ?>" readonly>
+                            <input type='hidden' id='editCurrentBranchHidden'
+                                value="<?php echo $_SESSION['user_branch']; ?>">
+                            <?php } ?>
+                        </div>
+                        <div class='col-md-6 mb-3'>
+                            <label for='editStatus' class='form-label'>Status</label>
+                            <select class='form-select' id='editStatus' required>
+                                <option value='available'>Available</option>
+                                <option value='sold'>Sold</option>
+                                <option value='transferred'>Transferred</option>
+                            </select>
+                        </div>
 
-                                <select class='form-select' id='editCurrentBranch' required>
-                                    <option value='HEADOFFICE'>HEADOFFICE</option>
-                                    <option value='KINGDOM'>KINGDOM</option>
-                                    <option value='TANQUE'>TANQUE</option>
-                                    <option value='DFISHER'>DFISHER</option>
-                                    <option value='ROXAS SUZUKI'>ROXAS SUZUKI</option>
-                                    <option value='MAMBUSAO'>MAMBUSAO</option>
-                                    <option value='SIGMA'>SIGMA</option>
-                                    <option value='PRC'>PRC</option>
-                                    <option value='BAILAN'>BAILAN</option>
-                                    <option value='CUARTERO'>CUARTERO</option>
-                                    <option value='JAMINDAN'>JAMINDAN</option>
-                                    <option value='ROXAS HONDA'>ROXAS HONDA</option>
-                                    <option value='ANTIQUE-1'>ANTIQUE-1</option>
-                                    <option value='ANTIQUE-2'>ANTIQUE-2</option>
-                                    <option value='DELGADO HONDA'>DELGADO HONDA</option>
-                                    <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
-                                    <option value='JARO-1'>JARO-1</option>
-                                    <option value='JARO-2'>JARO-2</option>
-                                    <option value='KALIBO MABINI'>KALIBO MABINI</option>
-                                    <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
-                                    <option value='ALTAVAS'>ALTAVAS</option>
-                                    <option value='EMAP'>EMAP</option>
-                                    <option value='CULASI'>CULASI</option>
-                                    <option value='BACOLOD'>BACOLOD</option>
-                                    <option value='PASSI-1'>PASSI-1</option>
-                                    <option value='PASSI-2'>PASSI-2</option>
-                                    <option value='BALASAN'>BALASAN</option>
-                                    <option value='GUIMARAS'>GUIMARAS</option>
-                                    <option value='PEMDI BACOLOD'>PEMDI BACOLOD</option>
-                                    <option value='INFINITY BACOLOD'>INFINITY BACOLOD</option>
-                                    <option value='EEMSI-GUIMARAS'>EEMSI-GUIMARAS</option>
-                                    <option value='AJUY'>AJUY</option>
-                                    <option value='MINDORO-MB'>MINDORO-MB</option>
-                                    <option value='MINDORO ROXAS'>MINDORO ROXAS</option>
-                                    <option value='3S MINDORO'>3S MINDORO</option>
-                                    <option value='MINDORO MANSALAY'>MINDORO MANSALAY</option>
-                                    <option value='K-RIDERS ROXAS'>K-RIDERS ROXAS</option>
-                                    <option value='IBAJAY'>IBAJAY</option>
-                                    <option value='NUMANCIA'>NUMANCIA</option>
-                                    <option value='CFCIPRC'>CFCIPRC</option>
-
-                                </select>
-
-                            </div>
-                            <div class='col-md-6 mb-3'>
-                                <label for='editStatus' class='form-label'>Status</label>
-                                <select class='form-select' id='editStatus' required>
-                                    <option value='available'>Available</option>
-                                    <option value='sold'>Sold</option>
-                                    <option value='transferred'>Transferred</option>
-                                    <option value='scrapped'>Scrapped</option>
-
-                                </select>
-                            </div>
-
-                            <div id="redeemInfoContainer" class="col-12" style="display: none;">
-                                <div class="alert alert-success small p-2">
-                                    <h6 class="alert-heading small mb-1"><i class="bi bi-award-fill me-1"></i>Redemption
-                                        Information</h6>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <strong>Redeemed On:</strong> <span id="redeemInfoDate"></span>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Amount Paid:</strong> <span id="redeemInfoAmount"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Sold Details Section -->
-                            <div id='soldDetailsContainer' style='display: none;'>
-                                <hr>
-                                <h6 class='text-primary'>Sale Information</h6>
+                        <div id="redeemInfoContainer" class="col-12" style="display: none;">
+                            <div class="alert alert-success small p-2">
+                                <h6 class="alert-heading small mb-1"><i class="bi bi-award-fill me-1"></i>Redemption Information</h6>
                                 <div class="row">
-                                    <div class='col-md-4 mb-2'>
-                                        <label for='editSaleDate' class='form-label'><strong>Sale Date:</strong></label>
-                                        <input type='text' class='form-control datepicker' id='editSaleDate'
-                                            name='sale_date' placeholder="mm/dd/yyyy">
+                                    <div class="col-md-6">
+                                        <strong>Redeemed On:</strong> <span id="redeemInfoDate"></span>
                                     </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label for="editCustomerName" class="form-label"><strong>Customer
-                                                Name:</strong></label>
-                                        <input type="text" class="form-control" id="editCustomerName"
-                                            name="customer_name">
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label for="editPaymentType" class="form-label"><strong>Payment
-                                                Type:</strong></label>
-                                        <select class="form-select" id="editPaymentType" name="payment_type">
-                                            <option value="">Select Payment Type</option>
-                                            <option value="COD">COD</option>
-                                            <option value="Installment">Installment</option>
-                                        </select>
+                                    <div class="col-md-6">
+                                        <strong>Amount Paid:</strong> <span id="redeemInfoAmount"></span>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
 
-                                <!-- COD Details -->
-                                <div id='codDetails' style='display: none;'>
-                                    <div class='row'>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editDrNumber' class='form-label'><strong>DR
-                                                    Number:</strong></label>
-                                            <input type='text' class='form-control' id='editDrNumber' name='dr_number'>
-                                        </div>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editCodAmount' class='form-label'><strong>COD
-                                                    Amount:</strong></label>
-                                            <input type='number' step='0.01' class='form-control' id='editCodAmount'
-                                                name='cod_amount' min='0'>
-                                        </div>
-                                    </div>
+                        <!-- Sold Details Section -->
+                        <div id="soldDetailsContainer" style="display: none;">
+                            <hr>
+                            <h6 class="text-primary">Sale Information</h6>
+                            <div class="row">
+                                <div class='col-md-4 mb-2'>
+                                    <label for='editSaleDate' class='form-label'><strong>Sale Date:</strong></label>
+                                    <input type='text' class='form-control datepicker' id='editSaleDate' name='sale_date' placeholder="mm/dd/yyyy">
                                 </div>
+                                <div class="col-md-4 mb-2">
+                                    <label for="editCustomerName" class="form-label"><strong>Customer
+                                            Name:</strong></label>
+                                    <input type="text" class="form-control" id="editCustomerName"
+                                        name="customer_name">
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label for="editPaymentType" class="form-label"><strong>Payment
+                                            Type:</strong></label>
+                                    <select class="form-select" id="editPaymentType" name="payment_type">
+                                        <option value="">Select Payment Type</option>
+                                        <option value="COD">COD</option>
+                                        <option value="Installment">Installment</option>
+                                    </select>
+                                </div>
+                            </div>
 
-                                <!-- Installment Details -->
-                                <div id='installmentDetails' style='display: none;'>
-                                    <div class='row'>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editTerms' class='form-label'><strong>Terms ( months
-                                                    ):</strong></label>
-                                            <input type='number' class='form-control' id='editTerms' name='terms'
-                                                min='1'>
-                                        </div>
-                                        <div class='col-md-6 mb-2'>
-                                            <label for='editMonthlyAmortization' class='form-label'><strong>Monthly
-                                                    Amortization:</strong></label>
-                                            <input type='number' step='0.01' class='form-control'
-                                                id='editMonthlyAmortization' name='monthly_amortization' min='0'>
-                                        </div>
+                            <!-- COD Details -->
+                            <div id="codDetails" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label for="editDrNumber" class="form-label"><strong>DR
+                                                Number:</strong></label>
+                                        <input type="text" class="form-control" id="editDrNumber" name="dr_number">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label for="editCodAmount" class="form-label"><strong>COD
+                                                Amount:</strong></label>
+                                        <input type="number" step="0.01" class="form-control" id="editCodAmount"
+                                            name="cod_amount" min="0">
                                     </div>
                                 </div>
                             </div>
 
-
-
+                            <!-- Installment Details -->
+                            <div id="installmentDetails" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label for="editTerms" class="form-label"><strong>Terms
+                                                (months):</strong></label>
+                                        <input type="number" class="form-control" id="editTerms" name="terms"
+                                            min="1">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label for="editMonthlyAmortization" class="form-label"><strong>Monthly
+                                                Amortization:</strong></label>
+                                        <input type="number" step="0.01" class="form-control"
+                                            id="editMonthlyAmortization" name="monthly_amortization" min="0">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class='d-grid'>
-                            <button type='submit' class='btn btn-primary text-white'>Save Changes</button>
-                        </div>
-                    </form>
-                </div>
+
+                    </div>
+                    <div class='d-grid'>
+                        <button type='submit' class='btn btn-primary text-white'>Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
+
 
 <!-- Edit Direct Shipment Modal -->
 <div class="modal fade" id="editShipmentModal" tabindex="-1" aria-labelledby="editShipmentModalLabel" aria-hidden="true">

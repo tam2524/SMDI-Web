@@ -222,7 +222,7 @@ $(document).ready(function () {
       case "#activityLog":
         loadActivityLog(1);
         break;
-      case "#directShipments":  // NEW: Load direct shipments when tab is shown
+      case "#directShipments":  
       loadDirectShipments(1);
       break;
       
@@ -338,6 +338,16 @@ function setupEventListeners() {
       this.value = this.value.toUpperCase();
     }
   );
+
+  $(document).on('change', '#editWithStockReport', function() {
+    const container = $('.stock-report-number-container');
+    if ($(this).is(':checked')) {
+        container.show();
+    } else {
+        container.hide();
+        $('#editStockReportNumber').val('');
+    }
+});
 
   
   $('button[data-bs-target="#globalTransferHistory"]').on(
@@ -1164,7 +1174,10 @@ function renderInventoryTable(data) {
       } else if (item.category === "repo") {
         categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
       }
-
+const withTBA = item.with_tba ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>';
+const withStockReport = item.stock_report_number && item.stock_report_number !== '' ? 
+  '<i class="bi bi-check-circle text-success"></i>' : 
+  '<i class="bi bi-x-circle text-danger"></i>';
       html += `
         <tr data-id="${item.id}">
           <td>${item.invoice_number || "N/A"}</td>
@@ -1173,14 +1186,17 @@ function renderInventoryTable(data) {
               ? formatDate(item.date_received)
               : formatDate(item.date_delivered)
           }</td>
-          <td>${formatCurrency(item.inventory_cost)}</td>
           <td>${item.brand}</td>
           <td>${item.model}</td>
           <td>${categoryBadge}</td>
           <td>${item.engine_number}</td>
           <td>${item.frame_number}</td>
           <td>${item.color}</td>
+          <td>${formatCurrency(item.inventory_cost)}</td>
+          <td class="text-center">${withTBA}</td>
+          <td class="text-center">${withStockReport}</td>
           <td>${item.current_branch}</td>
+          
           <td>
             <div class="btn-group btn-group-sm">
               <button class="btn btn-outline-primary edit-btn" title="Edit Motorcycle">
@@ -1433,33 +1449,57 @@ function loadMotorcycleForEdit(id) {
     },
     dataType: "json",
     success: function (response) {
+      console.log("Full response:", response); // Debug log
+      
       if (response.success) {
         const data = response.data;
+        console.log("Motorcycle data:", data); // Debug log
+        
         $("#editId").val(data.id);
         $("#editDateDelivered").val(formatDate(data.date_delivered));
-        $("#editDateReceived").val(
-          data.date_received ? formatDate(data.date_received) : ""
-        );
+        $("#editDateReceived").val(data.date_received ? formatDate(data.date_received) : "");
         $("#editBrand").val(data.brand);
         $("#editModel").val(data.model);
         $("#editCategory").val(data.category);
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
-        $("#editInvoiceNumber").val(data.invoice_number || "");
+        
+        console.log("display_invoice_number:", data.display_invoice_number); // Debug
+        console.log("initial_dr_number:", data.initial_dr_number); // Debug
+        console.log("invoice_source:", data.invoice_source); // Debug
+        
+        $("#editInvoiceNumber").val(data.display_invoice_number || "");
+        $("#editInvoiceNumber").data('invoice-source', data.invoice_source || 'direct');
+        
         $("#editColor").val(data.color);
         $("#editInventoryCost").val(data.inventory_cost);
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
 
+        // Populate TBA and Stock Report fields - FIXED VERSION
+$("#editWithTBA").prop('checked', data.with_tba === 1 || data.with_tba === true);
+
+// FIX: Properly handle stock report number and container visibility
+const hasStockReport = data.stock_report_number && data.stock_report_number !== '' && data.stock_report_number !== 'NULL';
+console.log("Has stock report:", hasStockReport); // Debug
+console.log("With TBA:", data.with_tba); // Debug TBA value
+
+$("#editWithStockReport").prop('checked', hasStockReport);
+$("#editStockReportNumber").val(data.stock_report_number || "");
+
+// Always ensure container visibility matches checkbox state
+if (hasStockReport) {
+    $(".stock-report-number-container").show();
+} else {
+    $(".stock-report-number-container").hide();
+}
+
         toggleSoldDetails(data.status, data.sale_details);
-        const redeemContainer = $("#redeemInfoContainer");
+        
+        const redeemContainer = $('#redeemInfoContainer');
         if (data.redeem_details) {
-          $("#redeemInfoDate").text(
-            formatDate(data.redeem_details.redeem_date)
-          );
-          $("#redeemInfoAmount").text(
-            "₱" + formatCurrency(data.redeem_details.amount_paid)
-          );
+          $('#redeemInfoDate').text(formatDate(data.redeem_details.redeem_date));
+          $('#redeemInfoAmount').text('₱' + formatCurrency(data.redeem_details.amount_paid));
           redeemContainer.show();
         } else {
           redeemContainer.hide();
@@ -1475,32 +1515,37 @@ function loadMotorcycleForEdit(id) {
     },
   });
 }
-
 function updateMotorcycle() {
   const status = $("#editStatus").val();
-
   
   const dateReceivedValue = $("#editDateReceived").val();
   const formattedDateReceived = dateReceivedValue
     ? formatDateForAPI(dateReceivedValue)
     : null; 
 
-  const formData = {
-    action: "update_motorcycle",
-    id: $("#editId").val(),
-    date_delivered: formatDateForAPI($("#editDateDelivered").val()),
-    date_received: formattedDateReceived, 
-    brand: $("#editBrand").val(),
-    model: $("#editModel").val(),
-    category: $("#editCategory").val(),
-    engine_number: $("#editEngineNumber").val(),
-    frame_number: $("#editFrameNumber").val(),
-    invoice_number: $("#editInvoiceNumber").val(),
-    color: $("#editColor").val(),
-    inventory_cost: $("#editInventoryCost").val(),
-    current_branch: $("#editCurrentBranch").val(),
-    status: status,
-  };
+  // Get the invoice source from the data attribute
+  const invoiceSource = $("#editInvoiceNumber").data('invoice-source') || 'direct';
+
+const formData = {
+        action: "update_motorcycle",
+        id: $("#editId").val(),
+        date_delivered: formatDateForAPI($("#editDateDelivered").val()),
+        date_received: formattedDateReceived,
+        brand: $("#editBrand").val(),
+        model: $("#editModel").val(),
+        category: $("#editCategory").val(),
+        engine_number: $("#editEngineNumber").val(),
+        frame_number: $("#editFrameNumber").val(),
+        invoice_number: $("#editInvoiceNumber").val(),
+        invoice_source: invoiceSource,
+        color: $("#editColor").val(),
+        inventory_cost: $("#editInventoryCost").val(),
+        current_branch: $("#editCurrentBranch").val(),
+        status: status,
+        with_tba: $("#editWithTBA").is(':checked') ? 1 : 0,
+        with_stock_report: $("#editWithStockReport").is(':checked') ? 1 : 0,
+        stock_report_number: $("#editStockReportNumber").val() || null
+    };
 
   if (status === "sold") {
     formData.sale_date = formatDateForAPI($("#editSaleDate").val());
@@ -1512,7 +1557,7 @@ function updateMotorcycle() {
     formData.monthly_amortization = $("#editMonthlyAmortization").val();
   }
 
-  
+  // Validation
   if (
     !formData.id ||
     !formData.date_delivered ||
@@ -1542,7 +1587,10 @@ function updateMotorcycle() {
       if (response.success) {
         $("#editMotorcycleModal").modal("hide");
 
-        if (response.type === "existing_invoice") {
+        // Handle different response types
+        if (response.type === "direct_shipment") {
+          showSuccessModal(response.message);
+        } else if (response.type === "existing_invoice") {
           showSuccessModal(response.message);
         } else if (response.type === "new_invoice") {
           showSuccessModal(response.message);
@@ -4930,6 +4978,8 @@ function generateReport() {
     brand: $("#reportBrandFilter").val() || "all",
     model: $("#reportModelFilter").val() || "all",
     sale_type: $("#soldSaleTypeFilter").val() || "all",
+    // NEW: Add stock_tba_filter
+    stock_tba_filter: $("#stockTbaFilter").val() || "all",
   };
   const apiData = {
     action: "",
@@ -4980,10 +5030,7 @@ function generateReport() {
       callReportAPI(apiData, renderMonthlyInventoryReport, reportType);
       break;
     case "inventory_summary":
-      
       apiData.action = "get_monthly_inventory";
-
-      
       callReportAPI(apiData, renderInventorySummaryReport, reportType);
       break;
     case "sold_units":
@@ -5009,10 +5056,9 @@ function generateReport() {
     case "redeemed":
       apiData.action = "get_redeemed_units_report";
       callReportAPI(apiData, renderRedeemedReport, reportType);
-      break;
+      break;  
     case "motorcycle":
       apiData.action = "get_available_motorcycles_report"; 
-      
       callReportAPI(apiData, renderMotorcycleReport, reportType);
       break;
     default:
@@ -9933,59 +9979,53 @@ function buildFilterDisplayHtml() {
  * @returns {number} The new Y position after drawing the text.
  */
 function addFiltersToPdf(doc, currentY) {
-  const filters = [];
-  const pageWidth = doc.internal.pageSize.getWidth();
+    const filters = [];
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-  
-  if (currentReportBranch && currentReportBranch.toLowerCase() !== "all") {
-    filters.push(`Branch: ${currentReportBranch}`);
-  }
-  if (
-    currentReportCategory &&
-    currentReportCategory.toLowerCase() !== "all" &&
-    currentReportCategory !== ""
-  ) {
-    filters.push(`Category: ${currentReportCategory}`);
-  }
-  if (
-    currentReportBrand &&
-    currentReportBrand.toLowerCase() !== "all" &&
-    currentReportBrand !== ""
-  ) {
-    filters.push(`Brand: ${currentReportBrand}`);
-  }
-  if (
-    currentReportModel &&
-    currentReportModel.toLowerCase() !== "all" &&
-    currentReportModel !== ""
-  ) {
-    filters.push(`Model(s): ${currentReportModel}`);
-  }
-  if (
-    currentReportSaleType &&
-    currentReportSaleType.toLowerCase() !== "all" &&
-    currentReportSaleType !== ""
-  ) {
-    filters.push(`Sale Type: ${currentReportSaleType}`);
-  }
+    // Branch filter
+    if (currentReportBranch && currentReportBranch.toLowerCase() !== 'all') {handleApiResponse
+        filters.push(`Branch: ${currentReportBranch}`);
+    }
+    // Category filter
+    if (currentReportCategory && currentReportCategory.toLowerCase() !== 'all' && currentReportCategory !== '') {
+        filters.push(`Category: ${currentReportCategory}`);
+    }
+    // Brand filter
+    if (currentReportBrand && currentReportBrand.toLowerCase() !== 'all' && currentReportBrand !== '') {
+        filters.push(`Brand: ${currentReportBrand}`);
+    }
+    // Model filter
+    if (currentReportModel && currentReportModel.toLowerCase() !== 'all' && currentReportModel !== '') {
+        filters.push(`Model(s): ${currentReportModel}`);
+    }
+    // Sale Type filter
+    if (currentReportSaleType && currentReportSaleType.toLowerCase() !== 'all' && currentReportSaleType !== '') {
+        filters.push(`Sale Type: ${currentReportSaleType}`);
+    }
+    // NEW: Stock Report/TBA filter
+    if (currentReportStockTbaFilter && currentReportStockTbaFilter.toLowerCase() !== 'all' && currentReportStockTbaFilter !== '') {
+        const filterLabels = {
+            'with_stock_report_only': 'With Stock Report Only',
+            'with_tba_only': 'With TBA Only',
+            'all': 'With Both Stock Report & TBA'
+        };
+        const displayText = filterLabels[currentReportStockTbaFilter] || currentReportStockTbaFilter;
+        filters.push(`Stock/TBA: ${displayText}`);
+    }
 
-  let filterString = "FILTERS: ALL";
-  if (filters.length > 0) {
-    filterString = filters.join(" | ");
-  }
+    let filterString = "FILTERS: ALL";
+    if (filters.length > 0) {
+        filterString = filters.join(' | ');
+    }
 
-  
-  doc.setFontSize(9);
-  doc.setTextColor(220, 53, 69); 
-  doc.setFont("helvetica", "bold");
-  doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, {
-    align: "center",
-  });
+    // Set PDF styling
+    doc.setFontSize(9);
+    doc.setTextColor(220, 53, 69); 
+    doc.setFont("helvetica", "bold");
+    doc.text(filterString.toUpperCase(), pageWidth / 2, currentY, { align: "center" });
 
-  
-  return currentY + 7;
+    return currentY + 7;
 }
-
 /**
  * Converts a date string from "mm/dd/yyyy" to "yyyy-mm-dd" for API submission.
  * @param {string} dateString The date in "mm/dd/yyyy" format.
@@ -10202,4 +10242,14 @@ function undoAddToTransfer(motorcycleId) {
     (item) => item.id !== motorcycleId
   );
   renderManagingTransferLists();
+}
+
+function handleApiResponse(data, renderFunction, reportType, apiData) {
+    currentReportBranch = apiData.branch || 'all';
+    currentReportCategory = apiData.category || 'all';
+    currentReportBrand = apiData.brand || 'all';
+    currentReportModel = apiData.model || 'all';
+    currentReportSaleType = apiData.sale_type || 'all';
+    currentReportStockTbaFilter = apiData.stock_tba_filter || 'all';
+    renderFunction(data);
 }
