@@ -7,7 +7,7 @@ if (!isset($_SESSION['username'])) {
 $currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 $userRole = $_SESSION['user_role'] ?? 'user';
 $adminRoles = ['Admin', 'Head', 'itsuperadmin'];
-$canDelete = in_array($userRole, $adminRoles); // MODIFIED: Check if user has deletion rights
+$canDelete = in_array($userRole, $adminRoles); 
 ?>
 <!DOCTYPE html>
 <html lang='en'>
@@ -22,7 +22,6 @@ $canDelete = in_array($userRole, $adminRoles); // MODIFIED: Check if user has de
     <link href='../css/style.css' rel='stylesheet'>
     <link href='../css/spareparts_inventory_style.css' rel='stylesheet'>
     <style>
-        /* Custom styles for a more professional look */
         .stat-card {
             border: 1px solid #e9ecef;
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -38,9 +37,8 @@ $canDelete = in_array($userRole, $adminRoles); // MODIFIED: Check if user has de
             border-color: var(--bs-primary);
         }
         .table thead { background-color: #f8f9fa; }
-        /* NEW: Style for zero-stock items */
+        
         .stock-zero { background-color: #f8d7da !important; }
-        /* NEW: Force modal text to be black */
         .modal-body, .modal-body label, .modal-body p, .modal-body span, .modal-body strong { color: #212529 !important; }
         .modal-body input, .modal-body select, .modal-body textarea { color: #212529 !important; }
         .modal-body .form-text { color: #6c757d !important; }
@@ -218,7 +216,6 @@ $canDelete = in_array($userRole, $adminRoles); // MODIFIED: Check if user has de
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
     <script>
-        // NEW: Pass authorization status to JS
         const canDelete = <?php echo json_encode($canDelete); ?>;
         const currentBranch = '<?php echo htmlspecialchars($currentBranch); ?>';
     </script>

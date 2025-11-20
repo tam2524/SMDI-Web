@@ -44,29 +44,22 @@ try {
 }
 
 function getUsers($conn) {
-    // Pagination parameters
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $perPage = 10;
     $offset = ($page - 1) * $perPage;
     
-    // Search parameter
     $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
     
-    // Base query
     $sql = "SELECT id, username, fullName, position, branch FROM users WHERE 1=1";
     $countSql = "SELECT COUNT(*) as total FROM users WHERE 1=1";
     
-    // Add search conditions if provided
     if (!empty($search)) {
         $searchTerm = "%$search%";
         $sql .= " AND (username LIKE ? OR fullName LIKE ?)";
         $countSql .= " AND (username LIKE ? OR fullName LIKE ?)";
     }
-    
-    // Add pagination
     $sql .= " LIMIT ? OFFSET ?";
     
-    // Get total count
     $stmt = $conn->prepare($countSql);
     if (!empty($search)) {
         $stmt->bind_param("sss", $searchTerm, $searchTerm, $searchTerm);
@@ -75,7 +68,6 @@ function getUsers($conn) {
     $total = $stmt->get_result()->fetch_assoc()['total'];
     $stmt->close();
     
-    // Get paginated results
     $stmt = $conn->prepare($sql);
     if (!empty($search)) {
         $stmt->bind_param("sssii", $searchTerm, $searchTerm, $searchTerm, $perPage, $offset);
@@ -120,7 +112,6 @@ function getUser($conn) {
 }
 
 function addUser($conn, $data) {
-    // Validate required fields
     $required = ['username', 'password', 'confirmPassword'];
     foreach ($required as $field) {
         if (empty($data[$field])) {
@@ -132,7 +123,6 @@ function addUser($conn, $data) {
         throw new Exception('Passwords do not match');
     }
     
-    // Check if username already exists
     $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
     $stmt->bind_param("s", $data['username']);
     $stmt->execute();
@@ -140,10 +130,8 @@ function addUser($conn, $data) {
         throw new Exception('Username already exists');
     }
     
-    // Hash password
     $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
     
-    // Set default values for optional fields
     $fullName = $data['fullName'] ?? null;
     $position = $data['position'] ?? null;
     $branch = $data['branch'] ?? null;
@@ -166,22 +154,21 @@ function addUser($conn, $data) {
 }
 
 function editUser($conn, $data) {
-    // Validate required fields
+
     if (empty($data['id'])) {
         throw new Exception('User ID is required');
     }
     
     $id = intval($data['id']);
     
-    // Check if user exists
+
     $stmt = $conn->prepare("SELECT id FROM users WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     if ($stmt->get_result()->num_rows === 0) {
         throw new Exception('User not found');
     }
-    
-    // Check if username is being changed to one that already exists
+  
     if (!empty($data['username'])) {
         $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
         $stmt->bind_param("si", $data['username'], $id);
@@ -190,14 +177,12 @@ function editUser($conn, $data) {
             throw new Exception('Username already exists');
         }
     }
-    
-    // Build update query
+
     $sql = "UPDATE users SET ";
     $params = [];
     $types = "";
     $updates = [];
-    
-    // Add fields to update
+
     if (!empty($data['username'])) {
         $updates[] = "username = ?";
         $params[] = $data['username'];
@@ -222,7 +207,7 @@ function editUser($conn, $data) {
         $types .= "s";
     }
     
-    // Update password if provided
+
     if (!empty($data['password'])) {
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
         $updates[] = "password = ?";
@@ -255,7 +240,7 @@ function deleteUser($conn, $data) {
     
     $id = intval($data['id']);
     
-    // Check if user exists first
+
     $stmt = $conn->prepare("SELECT id FROM users WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();

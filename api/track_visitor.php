@@ -9,7 +9,6 @@ function trackVisitor() {
     $page_visited = $_SERVER['REQUEST_URI'];
     $referrer = $_SERVER['HTTP_REFERER'] ?? '';
     
-    // Check if this is a unique visit (same IP within last hour)
     $stmt = $conn->prepare("SELECT COUNT(*) FROM visitor_logs 
                            WHERE ip_address = ? AND visit_time > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
     $stmt->bind_param("s", $ip_address);
@@ -28,6 +27,4 @@ function trackVisitor() {
     }
 }
 
-// Call this function on your public pages
-// trackVisitor();
 ?>

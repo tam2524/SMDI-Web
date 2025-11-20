@@ -214,7 +214,6 @@ $(document).on('change', '#editWithStockReport', function() {
     }
 });
 
-// Add to setupEventListeners function
 $(document).on('change', '.model-with-stock-report', function() {
     const container = $(this).closest('.model-form').find('.stock-report-number-container');
     if ($(this).is(':checked')) {
@@ -526,25 +525,6 @@ $(document).on('change', '.model-with-stock-report', function() {
     generateReportPDF()
   );
 
-//   // FIX: Temporarily replace report button functionality to show 'Under Construction' modal
-//   const generateReportsButton = document.getElementById('generateReportsButton');
-//   const underConstructionModalElement = document.getElementById('underConstructionModal');
-//   
-//   if (generateReportsButton && underConstructionModalElement) {
-//     // Instantiate the Bootstrap Modal object
-//     const underConstructionModal = new bootstrap.Modal(underConstructionModalElement);
-
-//     // Use jQuery to remove the old handler and bind the new one
-//     $(generateReportsButton).off('click').on('click', function(e) {
-//       e.preventDefault();
-//       // This is the CRITICAL line that shows the "Under Construction" modal
-//       underConstructionModal.show();
-//     });
-//   } else {
-//     // Fallback to original logic if elements are missing
-//     $("#generateReportsButton").click(showMonthlyReportOptions);
-//   }
-//   
 
   $('input[name="reportPeriod"]').on("change", function () {
     if ($(this).val() === "as_of_date") {
@@ -972,39 +952,29 @@ const withStockReport = item.stock_report_number && item.stock_report_number !==
   $("#inventoryTableBody").html(html);
   setupTableActionButtons();
 }
-
-// Helper function to determine which invoice number to display
 function getDisplayInvoiceNumber(item) {
-  // If the item has transfer_history (from backend), use the latest transfer invoice
   if (item.transfer_history && item.transfer_history.length > 0) {
     const latestTransfer = item.transfer_history[item.transfer_history.length - 1];
     return latestTransfer.transfer_invoice_number || item.invoice_number;
   }
-  
-  // If display_invoice_number is provided by backend, use it
   if (item.display_invoice_number) {
     return item.display_invoice_number;
   }
   
-  // Fallback to initial_dr_number or regular invoice_number
   return item.initial_dr_number || item.invoice_number;
 }
 
-// Helper function to get the appropriate badge for the invoice
 function getInvoiceBadge(item) {
-  // Check if this item has transfer history
   const hasTransfers = item.transfer_history && item.transfer_history.length > 0;
   
   if (hasTransfers) {
     return '<small class="badge bg-success ms-1">Transfer</small>';
   }
   
-  // If it has initial_dr_number but no transfers, it's a direct shipment
   if (item.initial_dr_number && !hasTransfers) {
     return '<small class="badge bg-primary ms-1">DR</small>';
   }
   
-  // Default case (shouldn't normally happen)
   return '<small class="badge bg-secondary ms-1">Invoice</small>';
 }
 
@@ -1289,7 +1259,7 @@ function addModelForm() {
 
   setTimeout(() => {
     updateSpecificDetailsFields(quantityInput);
-    attachUnitCheckboxListeners(); // Add this line
+    attachUnitCheckboxListeners();
   }, 100);
 
   $("#modelFormsContainer").append(clone);
@@ -1365,15 +1335,14 @@ function updateSpecificDetailsFields(quantityInput) {
     }
   }
 
-  // Re-attach event listeners for the new rows
   attachUnitCheckboxListeners();
 }
 
 function attachUnitCheckboxListeners() {
-    // Remove existing listeners to prevent duplicates
+
     $(document).off('change', '.unit-with-stock-report');
     
-    // Attach new listeners
+
     $(document).on('change', '.unit-with-stock-report', function() {
         const container = $(this).closest('.specific-details-row').find('.stock-report-number-unit-container');
         if ($(this).is(':checked')) {
@@ -1534,11 +1503,11 @@ function loadMotorcycleForEdit(id) {
     },
     dataType: "json",
     success: function (response) {
-      console.log("Full response:", response); // Debug log
+      console.log("Full response:", response); 
       
       if (response.success) {
         const data = response.data;
-        console.log("Motorcycle data:", data); // Debug log
+        console.log("Motorcycle data:", data); 
         
         $("#editId").val(data.id);
         $("#editDateDelivered").val(formatDate(data.date_delivered));
@@ -1549,9 +1518,9 @@ function loadMotorcycleForEdit(id) {
         $("#editEngineNumber").val(data.engine_number);
         $("#editFrameNumber").val(data.frame_number);
         
-        console.log("display_invoice_number:", data.display_invoice_number); // Debug
-        console.log("initial_dr_number:", data.initial_dr_number); // Debug
-        console.log("invoice_source:", data.invoice_source); // Debug
+        console.log("display_invoice_number:", data.display_invoice_number); 
+        console.log("initial_dr_number:", data.initial_dr_number); 
+        console.log("invoice_source:", data.invoice_source); 
         
         $("#editInvoiceNumber").val(data.display_invoice_number || "");
         $("#editInvoiceNumber").data('invoice-source', data.invoice_source || 'direct');
@@ -1561,18 +1530,17 @@ function loadMotorcycleForEdit(id) {
         $("#editCurrentBranch").val(data.current_branch);
         $("#editStatus").val(data.status);
 
-        // Populate TBA and Stock Report fields - FIXED VERSION
 $("#editWithTBA").prop('checked', data.with_tba === 1 || data.with_tba === true);
 
-// FIX: Properly handle stock report number and container visibility
+
 const hasStockReport = data.stock_report_number && data.stock_report_number !== '' && data.stock_report_number !== 'NULL';
-console.log("Has stock report:", hasStockReport); // Debug
-console.log("With TBA:", data.with_tba); // Debug TBA value
+console.log("Has stock report:", hasStockReport); 
+console.log("With TBA:", data.with_tba); 
 
 $("#editWithStockReport").prop('checked', hasStockReport);
 $("#editStockReportNumber").val(data.stock_report_number || "");
 
-// Always ensure container visibility matches checkbox state
+
 if (hasStockReport) {
     $(".stock-report-number-container").show();
 } else {
@@ -1608,7 +1576,6 @@ function updateMotorcycle() {
     ? formatDateForAPI(dateReceivedValue)
     : null; 
 
-  // Get the invoice source from the data attribute
   const invoiceSource = $("#editInvoiceNumber").data('invoice-source') || 'direct';
 
 const formData = {
@@ -1642,7 +1609,6 @@ const formData = {
     formData.monthly_amortization = $("#editMonthlyAmortization").val();
   }
 
-  // Validation
   if (
     !formData.id ||
     !formData.date_delivered ||
@@ -1672,7 +1638,6 @@ const formData = {
       if (response.success) {
         $("#editMotorcycleModal").modal("hide");
 
-        // Handle different response types
         if (response.type === "direct_shipment") {
           showSuccessModal(response.message);
         } else if (response.type === "existing_invoice") {
@@ -2434,10 +2399,6 @@ function submitRepo() {
         },
     });
 }
-
-
-
-
 
 
 function transferSelectedMotorcycles() {

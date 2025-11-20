@@ -1,13 +1,13 @@
 $(document).ready(function() {
-    // --- Global Variables ---
+    
     let inventoryData = [], salesData = [], paymentsData = [], transfersData = [], incomingTransfersData = [];
     
-    // --- Initial Load ---
+    
     loadDashboardStats();
-    loadInventory(); // Load inventory on page start
+    loadInventory(); 
     setupEventListeners();
 
-    // --- Event Listeners Setup ---
+    
     function setupEventListeners() {
         $('button[data-bs-toggle="tab"]').on('shown.bs.tab', e => {
             const targetTab = $(e.target).attr('id');
@@ -17,47 +17,47 @@ $(document).ready(function() {
                 case 'sales-tab': loadSales(); break;
                 case 'payments-tab': loadPayments(); break;
                 case 'transfer-tab': loadTransfers(); break;
-                case 'incoming-transfer-tab': loadIncomingTransfers(); break; // NEW
+                case 'incoming-transfer-tab': loadIncomingTransfers(); break; 
             }
         });
 
-        // Form submissions (using a generic handler where possible)
+        
         $('#addPartsInForm').submit(e => submitGenericForm(e, 'add_multiple_parts_in', '#addPartsInModal', [loadInventory, loadDashboardStats]));
         $('#editPartForm').submit(e => submitGenericForm(e, 'edit_parts', '#editPartModal', [loadInventory, loadDashboardStats]));
         
-        // Custom submission handlers for more complex forms
+        
         $('#sellPartsOutForm').submit(submitSellPartsOut);
         $('#recordPaymentForm').submit(submitRecordPayment);
         $('#transferPartsForm').submit(submitTransfer);
 
-        // Search functionality
+        
         $('#inventorySearch').on('keyup', e => renderInventory(filterData(inventoryData, $(e.target).val(), ['part_no', 'description'])));
         $('#salesSearch').on('keyup', e => renderSales(filterData(salesData, $(e.target).val(), ['customer_name', 'or_number'])));
         $('#paymentsSearch').on('keyup', e => renderPayments(filterData(paymentsData, $(e.target).val(), ['customer_name', 'or_number'])));
         $('#transfersSearch').on('keyup', e => renderTransfers(filterData(transfersData, $(e.target).val(), ['part_no', 'to_location'])));
 
-        // Print Button Listeners
+        
         $('#printInventoryBtn').on('click', () => generatePdf('inventoryTable', 'Inventory Report'));
         $('#printSalesBtn').on('click', () => generatePdf('salesTable', 'Sales Report'));
         $('#printPaymentsBtn').on('click', () => generatePdf('paymentsTable', 'Payments Report'));
         $('#printTransfersBtn').on('click', () => generatePdf('transfersTable', 'Outgoing Transfers Report'));
 
-        // Sales Modal
+        
         $('#sellPartsOutModal').on('show.bs.modal', initializeSellPartsModal);
         $('#salePartSearchInput').on('keyup', handleSalePartSearch);
         $('#partsForSaleList').on('click', '.remove-sale-item', function() { $(this).closest('tr').remove(); updateSaleTotal(); });
         $('#partsForSaleList').on('input', '.sale-qty, .sale-price', updateSaleTotal);
         
-        // Payment Modal with customer search
+        
         $('#recordPaymentModal').on('show.bs.modal', () => { $('#recordPaymentForm')[0].reset(); $('#customerSearchResults').empty(); $('#balance_info').text('Enter the OR number from the installment sale.');});
         $('#payment_customer_search').on('keyup', handleCustomerSearch);
 
-        // Transfer Modal
+        
         $('#transferPartsModal').on('show.bs.modal', initializeTransferModal);
-        // ... (Add other specific modal listeners if not covered by generic handlers)
+        
     }
 
-    // --- Generic API Loader ---
+    
     function loadApiData(endpoint, successCallback, tableBodyId = null, data = {}) {
         if (tableBodyId) $(`#${tableBodyId}`).html(`<tr><td colspan="10" class="text-center py-5"><div class='spinner-border text-primary'></div></td></tr>`);
         
@@ -81,7 +81,7 @@ $(document).ready(function() {
         });
     }
 
-    // --- Data Loading Functions ---
+    
     function loadDashboardStats() {
         $('#dashboard-content').addClass('d-none');
         $('#dashboard-loader').removeClass('d-none');
@@ -114,7 +114,7 @@ $(document).ready(function() {
         }, 'incomingTransfersTableBody');
     }
 
-    // --- UI Rendering Functions ---
+    
     function renderInventory(data) {
         const tableBody = $('#inventoryTableBody');
         tableBody.empty();
@@ -216,7 +216,7 @@ $(document).ready(function() {
         });
     }
 
-    // --- Action Handlers ---
+    
     function handleDelete(event) {
         const button = $(event.currentTarget);
         const type = button.data('type');
@@ -235,7 +235,7 @@ $(document).ready(function() {
                 success: response => {
                     if (response.success) {
                         showSuccessModal(response.message);
-                        // Refresh relevant tables
+                        
                         if (type === 'part') { loadInventory(); loadDashboardStats(); }
                         if (type === 'sale') { loadSales(); loadInventory(); loadDashboardStats(); }
                         if (type === 'payment') { loadPayments(); loadSales(); loadDashboardStats(); }
@@ -247,7 +247,7 @@ $(document).ready(function() {
         }
     }
     
-    // --- Sale Modal Logic ---
+    
     function initializeSellPartsModal() {
         $('#sellPartsOutForm')[0].reset();
         $('#out_date').val(new Date().toISOString().split('T')[0]);
@@ -352,7 +352,7 @@ $(document).ready(function() {
         });
     }
 
-    // --- Payment Modal Logic ---
+    
     function handleCustomerSearch() {
         const term = $('#payment_customer_search').val();
         if (term.length < 2) { $('#customerSearchResults').empty(); return; }
@@ -381,7 +381,7 @@ $(document).ready(function() {
             payment_date: $('#payment_date').val(),
             or_number: $('#payment_or_number').val(),
             amount: $('#payment_amount').val(),
-            customer_name: 'N/A' // Customer name is retrieved in backend via OR
+            customer_name: 'N/A' 
         };
         $.ajax({
             url: '../api/spareparts_inventory.php', method: 'POST', data: formData, dataType: 'json',
@@ -397,7 +397,7 @@ $(document).ready(function() {
         });
     }
     
-    // --- Transfer Logic ---
+    
     function populateIncomingTransferModal(transfer) {
         const body = $('#incomingTransferDetailsBody');
         body.html(`<p><strong>From:</strong> ${escapeHtml(transfer.from_branch)}</p><p><strong>Date Sent:</strong> ${transfer.transfer_date}</p><hr><h5>Items to Receive:</h5>`);
@@ -427,7 +427,7 @@ $(document).ready(function() {
         });
     });
 
-    // --- Receipt Generation ---
+    
     function showSaleReceipt(formData, items) {
         let total = 0;
         let itemsHtml = items.map(item => {
@@ -477,7 +477,7 @@ $(document).ready(function() {
         $('#receiptModal').modal('show');
     }
 
-    // --- Utility Functions ---
+    
     const generatePdf = (tableId, title) => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text(title, 14, 15); doc.autoTable({ html: `#${tableId}`, startY: 20 }); doc.save(`${title.replace(/ /g, '_')}.pdf`); };
     const showSuccessModal = message => { $('#successMessage').text(message); $('#successModal').modal('show'); };
     const showErrorModal = message => { $('#errorMessage').text(message); $('#errorModal').modal('show'); };

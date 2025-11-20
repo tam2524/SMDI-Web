@@ -1,21 +1,21 @@
 <?php
-// api/audit_helper.php
+
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
 /**
- * Logs a user action to the audit_log table.
+ * 
  *
- * @param mysqli $conn The database connection object.
- * @param string $action_type The type of action (e.g., 'CREATE', 'UPDATE').
- * @param string $table_name The name of the table affected.
- * @param int|null $record_id The ID of the record that was changed.
- * @param string $details A human-readable description of the action.
+ * @param mysqli 
+ * @param string 
+ * @param string 
+ * @param int|null 
+ * @param string
  */
 function log_action($conn, $action_type, $table_name, $record_id, $details = '') {
-    // Return early if the connection is invalid
+
     if (!$conn || $conn->connect_error) {
         error_log("Audit Log Error: Database connection is not available.");
         return;

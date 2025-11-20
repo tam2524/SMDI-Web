@@ -1,4 +1,4 @@
-// track_visit.js
+
 document.addEventListener('DOMContentLoaded', function() {
     fetch('../api/track_visit.php', {
         method: 'POST',

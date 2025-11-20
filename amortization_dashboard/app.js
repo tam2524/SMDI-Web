@@ -1,9 +1,9 @@
-// Global variable to hold all motorcycle data from the uploaded file
+
 let motorcycleData = [];
 let selectedMotorcycle = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Modal Elements ---
+    
     const uploadModal = document.getElementById('uploadModal');
     const resultsModal = document.getElementById('resultsModal');
     const addPricingBtn = document.getElementById('addPricingBtn');
@@ -19,13 +19,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const printResultsBtn = document.getElementById('printResults');
     const ADMIN_PASSWORD = "solidforce2025";
 
-    // --- Check if elements exist before adding event listeners ---
+    
     if (!uploadModal || !resultsModal || !addPricingBtn || !calculatorFieldset) {
         console.error('Required elements not found in DOM');
         return;
     }
 
-      // --- Modal Functions ---
+      
     function openModal(modal) {
         if (modal) {
             modal.style.display = 'block';
@@ -40,12 +40,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Open modals
+    
     addPricingBtn.addEventListener('click', function() {
         openModal(uploadModal);
     });
 
-    // Close modals
+    
     closeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             const modal = this.closest('.modal');
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Add event listeners only if buttons exist
+    
     if (closeResultsBtn) {
         closeResultsBtn.addEventListener('click', function() {
             closeModal(resultsModal);
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Close modals when clicking outside
+    
     window.addEventListener('click', function(e) {
         if (e.target === uploadModal) {
             closeModal(uploadModal);
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- Check for existing pricing data on page load ---
+    
     function checkExistingPricing() {
         console.log('Checking for existing pricing data...');
         
@@ -120,20 +120,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`Found ${data.motorcycles.length} existing motorcycle records`);
                 motorcycleData = data.motorcycles;
                 
-                // Enable calculator
+                
                 calculatorFieldset.disabled = false;
                 
-                // Update upload button text to indicate data is loaded
+                
                 addPricingBtn.textContent = '↻ Update Pricing';
                 
-                // Show success message
+                
                 showNotification(` Loaded ${data.motorcycles.length} motorcycle models from existing pricing file`, 'success');
             } else {
                 console.log('No existing pricing data found');
                 calculatorFieldset.disabled = true;
                 addPricingBtn.textContent = '+ Add Pricing';
                 
-                // Show modal automatically if no data exists
+                
                 setTimeout(() => {
                     openModal(uploadModal);
                 }, 500);
@@ -142,14 +142,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error checking existing pricing:', error);
             calculatorFieldset.disabled = true;
-            // Still show modal on error
+            
             setTimeout(() => {
                 openModal(uploadModal);
             }, 500);
         });
     }
 
-    // --- Search Functionality ---
+    
     function searchModels(query) {
         if (!query || query.length < 2) {
             searchResults.innerHTML = '';
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const matches = motorcycleData.filter(motorcycle => 
             motorcycle.model.toLowerCase().includes(searchTerm) ||
             motorcycle.brand.toLowerCase().includes(searchTerm)
-        ).slice(0, 8); // Limit to 8 results
+        ).slice(0, 8); 
 
         if (matches.length === 0) {
             searchResults.innerHTML = '<div class="no-results">No matching models found</div>';
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         searchResults.style.display = 'block';
 
-        // Add click event listeners to search results
+        
         document.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', function() {
                 const modelName = this.getAttribute('data-model');
@@ -196,23 +196,23 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedMotorcycle = motorcycleData.find(m => m.model === modelName);
         
         if (selectedMotorcycle) {
-            // Update search input
+            
             modelSearch.value = selectedMotorcycle.model;
             
-            // Hide search results
+            
             searchResults.style.display = 'none';
             
-            // Show selected model info
+            
             selectedModelName.innerHTML = selectedMotorcycle.model;
             selectedBrand.textContent = selectedMotorcycle.brand;
-            // selectedLCP.textContent = parseFloat(selectedMotorcycle.lcp).toLocaleString('en-US');
+            
             selectedModelInfo.style.display = 'block';
             
-            // Pre-fill down payment
+            
             const dpInput = document.getElementById('downpayment');
             dpInput.value = selectedMotorcycle.dp || '';
             
-            // Show minimum DP warning if applicable
+            
             const dpWarning = document.getElementById('dpWarning');
             const minDPSpan = document.getElementById('minDP');
             if (selectedMotorcycle.dp && selectedMotorcycle.dp > 0) {
@@ -222,12 +222,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 dpWarning.style.display = 'none';
             }
             
-            // Focus on down payment input
+            
             dpInput.focus();
         }
     }
 
-    // Search input event listeners
+    
     let searchTimeout;
     modelSearch.addEventListener('input', function() {
         clearTimeout(searchTimeout);
@@ -243,16 +243,16 @@ document.addEventListener('DOMContentLoaded', function() {
         searchTimeout = setTimeout(() => searchModels(query), 300);
     });
 
-    // Close search results when clicking outside
+    
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.search-container')) {
             searchResults.style.display = 'none';
         }
     });
 
-    // --- Notification function ---
+    
     function showNotification(message, type = 'info') {
-        // Remove existing notification
+        
         const existingNotification = document.querySelector('.global-notification');
         if (existingNotification) {
             existingNotification.remove();
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.body.appendChild(notification);
 
-        // Auto remove after 5 seconds
+        
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.style.animation = 'slideOut 0.3s ease-in';
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Add CSS for animations
+    
     const style = document.createElement('style');
     style.textContent = `
         @keyframes slideIn {
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 
-    // --- File Upload Logic ---
+    
     const uploadForm = document.getElementById('uploadForm');
     const uploadStatus = document.getElementById('uploadStatus');
 
@@ -326,16 +326,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 uploadStatus.style.color = 'green';
                 motorcycleData = data.motorcycles;
                 
-                // Enable the calculator
+                
                 calculatorFieldset.disabled = false;
                 
-                // Update button text
+                
                 addPricingBtn.textContent = '↻ Update Pricing';
                 
-                // Show global notification
+                
                 showNotification(`Successfully loaded ${data.rowCount} motorcycle models`, 'success');
                 
-                // Close modal after successful upload
+                
                 setTimeout(() => {
                     closeModal(uploadModal);
                 }, 1500);
@@ -356,14 +356,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- Calculation Logic ---
+    
     const calculateBtn = document.getElementById('calculateBtn');
     const resultsContent = document.getElementById('results-content');
     const dpInput = document.getElementById('downpayment');
     const dpWarning = document.getElementById('dpWarning');
     const minDPSpan = document.getElementById('minDP');
 
-    // DP input validation
+    
     dpInput.addEventListener('input', function() {
         if (selectedMotorcycle && selectedMotorcycle.dp && selectedMotorcycle.dp > 0) {
             const currentDP = parseFloat(this.value) || 0;
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const downpayment = parseFloat(dpInput.value);
 
-        // Validate minimum down payment
+        
         if (selectedMotorcycle.dp && downpayment < selectedMotorcycle.dp) {
             alert(`Down payment must be at least ₱${parseFloat(selectedMotorcycle.dp).toLocaleString('en-US')}`);
             return;
@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
             calculateBtn.textContent = 'Calculate Amortization';
 
             if (data.success) {
-                // Format the results for modal display
+                
                 let html = `
                     <div class="results-summary">
                         <div class="model-header">
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Initialize by checking for existing pricing
+    
     checkExistingPricing();
 
     
@@ -484,7 +484,7 @@ function handlePasswordSubmit(e) {
         passwordStatus.textContent = ' Access granted!';
         passwordStatus.style.color = 'green';
         
-        // Close password modal and open upload modal after successful authentication
+        
         setTimeout(() => {
             closePasswordModal();
             openModal(uploadModal);
@@ -497,18 +497,18 @@ function handlePasswordSubmit(e) {
     }
 }
 
-// Update the existing addPricingBtn event listener
+
 addPricingBtn.addEventListener('click', function() {
-    openPasswordModal(); // Always show password modal first
+    openPasswordModal(); 
 });
 
-// Add event listener for password form
+
 const passwordForm = document.getElementById('passwordForm');
 if (passwordForm) {
     passwordForm.addEventListener('submit', handlePasswordSubmit);
 }
 
-// Close password modal when clicking outside
+
 window.addEventListener('click', function(e) {
     const passwordModal = document.getElementById('passwordModal');
     if (e.target === passwordModal) {
@@ -516,7 +516,7 @@ window.addEventListener('click', function(e) {
     }
 });
 
-// Close password modal with escape key
+
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         const passwordModal = document.getElementById('passwordModal');

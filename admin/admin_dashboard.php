@@ -77,7 +77,7 @@
     .pagination .page-item.disabled .page-link {
         color: #ccc;
         pointer-events: none;
-        /* Disable click */
+      
         background-color: white;
         border-color: #ccc;
     }
@@ -85,10 +85,9 @@
     .pagination .page-item.disabled .page-link:hover {
         background-color: white;
         color: #ccc;
-        /* No change on hover for disabled */
+    
     }
 
-    /* Tab styling */
     .nav-tabs .nav-link {
         color: #495057;
         border: 1px solid transparent;
@@ -112,7 +111,6 @@
         padding: 0px 0;
     }
 
-    /* Visitor Stats Cards */
     .visitor-card .card-title {
         font-size: 0.9rem;
         margin-bottom: 0.5rem;
@@ -123,7 +121,6 @@
         font-weight: bold;
     }
 
-    /* Visitor Table */
     #visitorsTable {
         font-size: 0.9rem;
     }

@@ -13,17 +13,13 @@ $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
 
-    // Verify password
     if (password_verify($password, $user['password'])) {
          $_SESSION['user_id'] = $user['id']; 
         $_SESSION['username'] = $user['username'];
         $_SESSION['position'] = $user['position']; 
         $_SESSION['user_branch'] = $user['branch'];
-
-        // Trim any extra whitespace from the position
         $position = trim($user['position']);
 
-        // Redirect based on position
         switch ($position) {
             case 'IT Staff':   
             case 'Admin': 

@@ -1,4 +1,4 @@
-// Define the models for each brand
+
 const brandModels = {
     "Suzuki": ["GSX-250RL/FRLX", "GSX-150", "BIGBIKE", "GSX150FRF NEW", "GSX-S150", "UX110NER", "UB125", "AVENIS", "FU150", "FU150-FI", "FW110D", "FW110SD/SC", "DS250RL", "FJ110 LB-2", "FW110D(SMASH FI)", "FJ110LX", "UB125LNM(NEW)", "UK110", "UX110", "UK125", "GD110"],
     "Honda": ["GIORNO+", "CCG 125", "CFT125MRCS", "AFB110MDJ", "AFS110MDJ", "AFB110MDH", "CFT125MSJ", "AFS110MCDE", "MRCP", "DIO", "MSM", "MRP", "MRS", "CFT125MRCJ", "MSP", "MSS", "AFP110DFP", "MRCP", "AFP110DFR", "ZN125", "PCX160NEW", "PCX160", "AFB110MSJ", "AFP110SFR", "AFP110SFP", "CBR650", "CB500", "CB650R", "GL150R", "CBR500", "AIRBLADE 150", "AIRBLADE160", "ADV160", "CBR150RMIV/RAP", "BEAT-CSFN/FR/R3/FS/3", "CB150X", "WINNER X", "CRF-150", "CRF300", "CMX500", "XR150", "ACB160", "ACB125"],
@@ -13,19 +13,19 @@ let currentSort = '';
 let totalPages = 1;
 
 $(document).ready(function() {
-    // Initialize models dropdown on page load
+    
     updateModelsDropdown($('#brand').val(), $('#model'));
     
-    // Initialize modals and event handlers
+    
     initSalesTable();
     initQuotaManagement();
     initSummaryReport();
     initModals();
     
-    // Initial load of sales
+    
     loadSales();
 
-    // Show/hide inputs based on filter type selection
+    
 $('#filterType').on('change', function() {
     const filterType = $(this).val();
     if (filterType === 'monthly') {
@@ -37,7 +37,7 @@ $('#filterType').on('change', function() {
     }
 });
 
-// Update exportReport function to use filter type and inputs
+
 function exportReport(format) {
     const filterType = $('#filterType').val();
     const branch = $('#summaryBranchFilter').val();
@@ -71,17 +71,17 @@ function exportReport(format) {
     if (branch && branch !== 'all') url += `&branch=${encodeURIComponent(branch)}`;
     if (brand && brand !== 'all') url += `&brand=${encodeURIComponent(brand)}`;
 
-    // Show loading state
+    
     const btn = format === 'excel' ? $('#exportExcelBtn') : $('#exportPdfBtn');
     const originalText = btn.html();
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
 
-    // Create hidden iframe for download
+    
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
 
-    // Check if data exists before download
+    
     fetch(url, { method: 'HEAD', cache: 'no-cache' })
         .then(response => {
             if (response.ok) {
@@ -107,26 +107,26 @@ function exportReport(format) {
 
 });
 
-// ==================== SALES TABLE FUNCTIONS ====================
+
 function initSalesTable() {
-    // Handle brand change to update models dropdown
+    
     $('#brand').change(function() {
         updateModelsDropdown($(this).val(), $('#model'));
     });
 
-    // Handle edit brand change
+    
     $('#editBrand').change(function() {
         updateModelsDropdown($(this).val(), $('#editModel'));
     });
 
-    // Search input event
+    
     $('#searchInput').on('input', function() {
         const query = $(this).val();
-        currentPage = 1; // Reset to first page when searching
+        currentPage = 1; 
         loadSales(query);
     });
 
-    // Pagination click events - updated version
+    
     $(document).on('click', '.page-link', function(e) {
         e.preventDefault();
         if ($(this).parent().hasClass('disabled')) return;
@@ -141,13 +141,13 @@ function initSalesTable() {
             currentPage = parseInt($(this).data('page'));
         }
         
-        // Only load if page actually changed
+        
         if (currentPage !== oldPage) {
             loadSales($('#searchInput').val(), currentPage, currentSort);
         }
     });
 
-    // Sorting functionality - ensure this updates currentSort
+    
     $('.dropdown-item').on('click', function(e) {
         e.preventDefault();
         currentSort = $(this).data('sort');
@@ -155,12 +155,12 @@ function initSalesTable() {
         loadSales($('#searchInput').val(), currentPage, currentSort);
     });
 
-    // Handle checkbox changes
+    
     $('#salesTableBody').on('change', 'input[name="recordCheckbox"]', function() {
         updateSelectedRecords();
     });
 
-    // Handle select all checkbox
+    
     $('#selectAll').on('change', function() {
         const isChecked = $(this).is(':checked');
         $('#salesTableBody input[name="recordCheckbox"]').prop('checked', isChecked);
@@ -184,7 +184,7 @@ $('#uploadSalesDataForm').submit(function(e) {
                 if (response.success) {
                     alert(response.message);
                     $('#uploadSalesDataModal').modal('hide');
-                    loadSales(); // Reload sales data
+                    loadSales(); 
                 } else {
                     alert(response.message);
                 }
@@ -195,7 +195,7 @@ $('#uploadSalesDataForm').submit(function(e) {
         });
     });
 function loadSales(query = '', page = 1, sort = '') {
-    // Show loading state
+    
     $('#salesTableBody').html('<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
     
     $.ajax({
@@ -210,7 +210,7 @@ function loadSales(query = '', page = 1, sort = '') {
         success: function(response) {
             if (response.success) {
                 totalPages = response.totalPages || 1;
-                currentPage = Math.min(currentPage, totalPages); // Ensure currentPage is valid
+                currentPage = Math.min(currentPage, totalPages); 
                 
                 if (response.data && response.data.length > 0) {
                     $('#salesTableBody').html(generateTableRows(response.data));
@@ -281,7 +281,7 @@ function updatePaginationControls(totalPages) {
     
 
     
-    // First page + ellipsis
+    
     if (startPage > 1) {
         paginationHtml += `
             <li class="page-item">
@@ -295,7 +295,7 @@ function updatePaginationControls(totalPages) {
         }
     }
     
-    // Page numbers
+    
     for (let i = startPage; i <= endPage; i++) {
         paginationHtml += `
             <li class="page-item ${currentPage === i ? 'active' : ''}">
@@ -303,7 +303,7 @@ function updatePaginationControls(totalPages) {
             </li>`;
     }
     
-    // Last page + ellipsis
+    
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
             paginationHtml += `
@@ -344,11 +344,11 @@ function updateSelectedRecords() {
     });
 }
 
-// Handle CSV file upload with date
+
 $('#uploadSalesDataForm').on('submit', function(e) {
     e.preventDefault();
     
-    // Show loading spinner
+    
     $('#loadingSpinner').show();
     
     let formData = new FormData();
@@ -381,27 +381,27 @@ $('#uploadSalesDataForm').on('submit', function(e) {
     });
 });
 
-// ==================== QUOTA MANAGEMENT FUNCTIONS ====================
+
 function initQuotaManagement() {
-    // Initialize quota modal when shown
+    
     $('#salesQuotaModal').on('shown.bs.modal', function() {
         populateBranchDropdown();
         loadQuotas();
         resetQuotaForm();
     });
 
-    // Handle add quota button click
+    
     $('#addQuotaBtn').on('click', function() {
         resetQuotaForm();
         showQuotaForm();
     });
 
-    // Handle cancel button click
+    
     $('#cancelQuotaBtn').on('click', function() {
         resetQuotaForm();
     });
 
-    // Handle edit quota button click
+    
     $(document).on('click', '.edit-quota-button', function() {
         const quotaId = $(this).closest('tr').data('id');
         
@@ -428,7 +428,7 @@ function initQuotaManagement() {
         });
     });
 
-    // Handle quota search
+    
     $('#quotaSearchBtn').on('click', function() {
         const query = $('#quotaSearchInput').val();
         loadQuotas(query);
@@ -441,7 +441,7 @@ function initQuotaManagement() {
         }
     });
 
-    // Handle quota form submission
+    
     $('#salesQuotaForm').submit(function(e) {
         e.preventDefault();
         
@@ -482,7 +482,7 @@ function initQuotaManagement() {
         });
     });
 
-    // Handle delete quota button click
+    
     $(document).on('click', '.delete-quota-button', function() {
         const quotaId = $(this).closest('tr').data('id');
         
@@ -591,19 +591,19 @@ function generateQuotaTableRows(quotas) {
     return rows;
 }
 
-// ==================== SUMMARY REPORT FUNCTIONS ====================
+
 function initSummaryReport() {
-    // Generate report button click handler
+    
     $('#generateSummaryBtn').on('click', function() {
         generateSummaryReport();
     });
 
-    // Export to Excel button
+    
     $('#exportExcelBtn').on('click', function() {
         exportReport('excel');
     });
 
-    // Export to PDF button
+    
     $('#exportPdfBtn').on('click', function() {
         exportReport('pdf');
     });
@@ -723,33 +723,33 @@ function exportReport(format) {
     if (branch && branch !== 'all') url += `&branch=${encodeURIComponent(branch)}`;
     if (brand && brand !== 'all') url += `&brand=${encodeURIComponent(brand)}`;
 
-    // Show loading state
+    
     const btn = format === 'excel' ? $('#exportExcelBtn') : $('#exportPdfBtn');
     const originalText = btn.html();
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
 
-    // Create hidden iframe for download
+    
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
 
-    // First check if data exists
+    
     fetch(url, {
         method: 'HEAD',
         cache: 'no-cache'
     })
     .then(response => {
         if (response.ok) {
-            // Data exists - trigger download
+            
             iframe.src = url;
 
-            // Reset button and remove iframe after delay
+            
             setTimeout(() => {
                 btn.prop('disabled', false).html(originalText);
                 setTimeout(() => document.body.removeChild(iframe), 5000);
             }, 3000);
         } else if (response.status === 404) {
-            // No data found
+            
             showWarningModal(`No sales data found for the selected filters.`);
             btn.prop('disabled', false).html(originalText);
             document.body.removeChild(iframe);
@@ -771,14 +771,14 @@ function showLoading(show, element) {
     }
 }
 
-// ==================== MODAL FUNCTIONS ====================
+
 function initModals() {
 
     const modalElements = document.querySelectorAll('.modal');
     modalElements.forEach(modalEl => {
         new bootstrap.Modal(modalEl);
     });
-    // Handle add sale form submission
+    
     $('#addSaleForm').submit(function(e) {
         e.preventDefault();
         
@@ -816,8 +816,8 @@ function initModals() {
         });
     });
 
-   // Handle edit button click
-// Handle edit button click
+   
+
 $(document).on('click', '.edit-button', function() {
     const saleId = $(this).closest('tr').data('id');
     
@@ -834,7 +834,7 @@ $(document).on('click', '.edit-button', function() {
                 $('#editBranch').val(sale.branch);
                 $('#editBrand').val(sale.brand);
                 
-                // Update models dropdown for the selected brand with the current model as default
+                
                 updateModelsDropdown(sale.brand, $('#editModel'), sale.model);
                 
                 $('#editQuantity').val(sale.qty);
@@ -849,7 +849,7 @@ $(document).on('click', '.edit-button', function() {
     });
 });
 
-    // Handle edit sale form submission
+    
     $('#editSaleForm').submit(function(e) {
         e.preventDefault();
         
@@ -883,13 +883,13 @@ $(document).on('click', '.edit-button', function() {
         });
     });
 
-    // Handle delete button click
+    
     $(document).on('click', '.delete-button', function() {
         saleIdToDelete = $(this).closest('tr').data('id');
         $('#confirmationModal').modal('show');
     });
 
-    // Handle delete selected button click
+    
     $('#deleteSelectedButton').on('click', function() {
         if (selectedRecordIds.length > 0) {
             $('#confirmationModal').modal('show');
@@ -898,7 +898,7 @@ $(document).on('click', '.edit-button', function() {
         }
     });
 
-    // Handle confirm delete button click
+    
     $('#confirmDeleteBtn').on('click', function() {
         const idsToDelete = saleIdToDelete ? [saleIdToDelete] : selectedRecordIds;
         
@@ -932,15 +932,15 @@ $(document).on('click', '.edit-button', function() {
         }
     });
 
-    // Print options functionality
+    
     $('#sortBy').on('change', function() {
         const selectedValue = $(this).val();
         
-        // Hide all range selectors
+        
         $('#dateRange').hide();
         $('#branchSelection').hide();
         
-        // Show the appropriate range based on the selected value
+        
         if (selectedValue === 'dateRange') {
             $('#dateRange').show();
         } else if (selectedValue === 'branch') {
@@ -948,7 +948,7 @@ $(document).on('click', '.edit-button', function() {
         }
     });
 
-    // Handle print confirmation
+    
     $('#confirmPrint').on('click', function() {
         const fromDate = $('#fromDate').val();
         const toDate = $('#toDate').val();
@@ -960,14 +960,14 @@ $(document).on('click', '.edit-button', function() {
             return;
         }
 
-        // Redirect to generate report script
+        
         window.location.href = `../api/export_summary.php?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}&branch=${encodeURIComponent(branch)}&format=${encodeURIComponent(outputFormat)}`;
         
         $('#printOptionsModal').modal('hide');
     });
 }
 
-// ==================== HELPER FUNCTIONS ====================
+
 function showSuccessModal(message) {
     $('#successMessage').text(message);
     $('#successModal').modal('show');
@@ -995,10 +995,10 @@ function showWarningModal(message) {
         $('#warningMessage').text(message);
         modal.modal('show');
         
-        // Auto-hide after 5 seconds
+        
         setTimeout(() => modal.modal('hide'), 5000);
     } else {
-        // Fallback if modal not available
+        
         alert('Warning: ' + message);
     }
 }

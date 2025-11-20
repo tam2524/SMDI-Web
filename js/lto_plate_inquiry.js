@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         No records found for: ${lastname}, ${firstname}
                     </div>`;
             } else if (Array.isArray(data)) {
-                // Handle multiple results
+                
                 let resultsHTML = `
                 <div class="card">
                     <div class="card-header bg-primary text-white ">
@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="card-body">`;
                 
                 data.forEach((item, index) => {
-                    // Format name display
+                    
                     let nameDisplay;
                     if (item.full_name) {
                         nameDisplay = item.full_name;
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         nameDisplay = `${item.last_name || ''}${item.first_name ? ', ' + item.first_name : ''}`;
                     }
 
-                    // Format plate number display
+                    
                     const plateDisplay = (item.plate_number === 'ND' || !item.plate_number) ? 
                                         'ON PROCESS' : 
                                         item.plate_number;
@@ -76,8 +76,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 resultsHTML += `</div></div>`;
                 resultContainer.innerHTML = resultsHTML;
             } else {
-                // Single result case
-                // Format name display
+                
+                
                 let nameDisplay;
                 if (data.full_name) {
                     nameDisplay = data.full_name;
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     nameDisplay = `${data.last_name || ''}${data.first_name ? ', ' + data.first_name : ''}`;
                 }
 
-                // Format plate number display
+                
                 const plateDisplay = (data.plate_number === 'ND' || !data.plate_number) ? 
                                     'ON PROCESS' : 
                                     data.plate_number;

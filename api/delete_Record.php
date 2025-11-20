@@ -22,7 +22,6 @@ $sql = "DELETE FROM records WHERE record_id IN ($placeholders)";
 
 $stmt = mysqli_prepare($conn, $sql);
 if ($stmt) {
-    // Bind parameters
     mysqli_stmt_bind_param($stmt, str_repeat('i', count($ids)), ...$ids);
     if (mysqli_stmt_execute($stmt)) {
         echo json_encode(['status' => 'success', 'message' => 'Records deleted successfully.']);

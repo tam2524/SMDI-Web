@@ -4,12 +4,12 @@ $(document).ready(function() {
     let currentPage = 1;
     let totalPages = 1;
 
-    // Convert input text to uppercase
+    
     $('#addRecordForm input[type="text"], #editRecordForm input[type="text"]').on('keyup input', function() {
         $(this).val($(this).val().toUpperCase());
     });
 
-    // Load records with pagination
+    
     function loadRecords(query = '', page = 1) {
         $.ajax({
             url: '../api/fetch_Records.php',
@@ -21,11 +21,11 @@ $(document).ready(function() {
                 currentPage = response.pagination.currentPage;
                 totalPages = response.pagination.totalPages;
                 updatePaginationControls();
-                updateSelectedRecords(); // Update checkboxes after loading
+                updateSelectedRecords(); 
             },
             error: function(xhr, status, error) {
                 console.error("Error loading records:", error);
-                // Fallback for non-JSON response
+                
                 if (xhr.responseText) {
                     $('#RecordTableBody').html(xhr.responseText);
                 }
@@ -33,16 +33,16 @@ $(document).ready(function() {
         });
     }
 
-    // Update pagination controls
+    
     function updatePaginationControls() {
         let paginationHtml = '';
         
-        // Previous button
+        
         paginationHtml += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" id="prevPage">Previous</a>
         </li>`;
         
-        // Page numbers (show up to 5 pages around current page)
+        
         const startPage = Math.max(1, currentPage - 2);
         const endPage = Math.min(totalPages, currentPage + 2);
         
@@ -66,7 +66,7 @@ $(document).ready(function() {
             paginationHtml += `<li class="page-item"><a class="page-link page-number" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
         }
         
-        // Next button
+        
         paginationHtml += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
             <a class="page-link" href="#" id="nextPage">Next</a>
         </li>`;
@@ -74,10 +74,10 @@ $(document).ready(function() {
         $('#paginationControls').html(paginationHtml);
     }
 
-    // Initial load of records
+    
     loadRecords();
     
-    // Pagination event handlers
+    
     $(document).on('click', '#prevPage', function(e) {
         e.preventDefault();
         if (currentPage > 1) {
@@ -98,13 +98,13 @@ $(document).ready(function() {
         loadRecords($('#searchInput').val(), page);
     });
 
-    // Search input event
+    
     $('#searchInput').on('input', function() {
-        currentPage = 1; // Reset to first page when searching
+        currentPage = 1; 
         loadRecords($(this).val());
     });
 
-    // Update selected records array
+    
     function updateSelectedRecords() {
         selectedRecordIds = [];
         $('#RecordTableBody input[name="recordCheckbox"]:checked').each(function() {
@@ -112,34 +112,34 @@ $(document).ready(function() {
         });
     }
 
-    // Select all checkbox
+    
     $('#selectAll').on('change', function() {
         const isChecked = $(this).is(':checked');
         $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', isChecked);
         updateSelectedRecords();
     });
-// Delete single record button click
+
 $('#RecordTableBody').on('click', '.delete-button', function() {
     RecordIdToDelete = $(this).closest('tr').data('id');
-    selectedRecordIds = [RecordIdToDelete]; // Set the single record to delete
-    // Uncheck all checkboxes and check the current one
+    selectedRecordIds = [RecordIdToDelete]; 
+    
     $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', false);
     $(this).closest('tr').find('input[name="recordCheckbox"]').prop('checked', true);
     $('#confirmationModal').modal('show');
 });
 
-// Delete selected records button
+
 $('#deleteSelectedButton').on('click', function() {
-    updateSelectedRecords(); // Make sure we have the latest selection
+    updateSelectedRecords(); 
     if (selectedRecordIds.length > 0) {
-        RecordIdToDelete = null; // Clear any single selection
+        RecordIdToDelete = null; 
         $('#confirmationModal').modal('show');
     } else {
         showWarningModal('No records selected for deletion.');
     }
 });
 
-// Unified delete confirmation handler
+
 $('#confirmDeleteBtn').on('click', function() {
     const idsToDelete = selectedRecordIds.length > 0 ? selectedRecordIds : 
                        (RecordIdToDelete ? [RecordIdToDelete] : []);
@@ -175,7 +175,7 @@ $('#confirmDeleteBtn').on('click', function() {
     });
 });
 
-    // Add record form submission
+    
     $('#addRecordForm').on('submit', function(e) {
         e.preventDefault();
         $.ajax({
@@ -200,7 +200,7 @@ $('#confirmDeleteBtn').on('click', function() {
         });
     });
 
-    // Edit record button click
+    
     $('#RecordTableBody').on('click', '.edit-button', function() {
         let recordId = $(this).closest('tr').data('id');
 
@@ -230,7 +230,7 @@ $('#confirmDeleteBtn').on('click', function() {
         });
     });
 
-    // Edit record form submission
+    
     $('#editRecordForm').on('submit', function(e) {
         e.preventDefault();
         $.ajax({
@@ -254,7 +254,7 @@ $('#confirmDeleteBtn').on('click', function() {
     });
 
 
-    // Sorting functionality
+    
     $('.dropdown-item').on('click', function(e) {
         e.preventDefault();
         const sortOption = $(this).data('sort');
@@ -274,16 +274,16 @@ $('#confirmDeleteBtn').on('click', function() {
                 return;
         }
 
-        currentPage = 1; // Reset to first page when sorting
+        currentPage = 1; 
         loadRecords($('#searchInput').val(), currentPage, sortColumn);
     });
 
-    // Print options modal
+    
     $('#printButton').on('click', function() {
         $('#printOptionsModal').modal('show');
     });
 
-    // Show/hide range inputs based on sort selection
+    
     $('#sortBy').on('change', function() {
         const selectedValue = $(this).val();
         $('#batchRange').hide();
@@ -296,7 +296,7 @@ $('#confirmDeleteBtn').on('click', function() {
         }
     });
 
-    // Handle print confirmation
+    
     $('#confirmPrint').on('click', function() {
         const documentType = $('#documentType').val();
         const sortBy = $('#sortBy').val();
@@ -334,7 +334,7 @@ $('#confirmDeleteBtn').on('click', function() {
         }
     });
 
-    // Modal functions
+    
     function showSuccessModal(message) {
         $('#successMessage').text(message);
         $('#successModal').modal('show');

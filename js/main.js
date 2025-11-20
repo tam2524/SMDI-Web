@@ -1,7 +1,7 @@
 (function ($) {
     "use strict";
 
-    // Spinner
+    
     var spinner = function () {
         setTimeout(function () {
             if ($('#spinner').length > 0) {
@@ -12,7 +12,7 @@
     spinner(0);
 
 
-    // Fixed Navbar
+    
     $(window).scroll(function () {
         if ($(window).width() < 992) {
             if ($(this).scrollTop() > 55) {
@@ -30,7 +30,7 @@
     });
 
 
-    // Back to top button
+    
     $(window).scroll(function () {
         if ($(this).scrollTop() > 300) {
             $('.back-to-top').fadeIn('slow');
@@ -44,7 +44,7 @@
     });
 
 
-    // Testimonial carousel
+    
     $(".testimonial-carousel").owlCarousel({
         autoplay: true,
         smartSpeed: 2000,
@@ -78,7 +78,7 @@
     });
 
 
-    // vegetable carousel
+    
     $(".vegetable-carousel").owlCarousel({
         autoplay: true,
         smartSpeed: 1500,
@@ -112,7 +112,7 @@
     });
 
 
-    // Modal Video
+    
     $(document).ready(function () {
         var $videoSrc;
         $('.btn-play').click(function () {
@@ -131,7 +131,7 @@
 
 
 
-    // Product Quantity
+    
     $('.quantity button').on('click', function () {
         var button = $(this);
         var oldValue = button.parent().parent().find('input').val();
@@ -149,7 +149,7 @@
 
 })(jQuery);
 
-//Pop up window for Map
+
 function openMapPopup(event) {
     event.preventDefault();
     var url = event.target.href;
@@ -159,7 +159,7 @@ function openMapPopup(event) {
     window.open(url, windowName, windowFeatures);
 }
 
-//Send SMS
+
 function sendMessage() {
     fetch('api/inquiry.php')
         .then(response => response.text())
@@ -171,14 +171,14 @@ function sendMessage() {
         });
 }
 
-//Current Date
+
 document.addEventListener("DOMContentLoaded", function() {
     const dateElement = document.getElementById("currentDate");
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const today = new Date().toLocaleDateString(undefined, options);
     dateElement.textContent = today;
 });
-// About Transition
+
     function isElementInViewport(el) {
         const rect = el.getBoundingClientRect();
         return (
@@ -225,7 +225,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 document.addEventListener('DOMContentLoaded', includeHTML);
     
-//LTO REG INQUIRY
+
 document.addEventListener("DOMContentLoaded", function() {
             const form = document.getElementById('inquiryForm');
             form.addEventListener('submit', function(event) {
@@ -280,7 +280,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
             });
         });
-//Motorcycle Inquiry
+
   document.addEventListener("DOMContentLoaded", function() {
             const mcbrand = document.getElementById("mcbrand");
             const mcmodel = document.getElementById("mcmodel");
@@ -305,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
             });
         });
-//Liaison DB
+
 $(document).ready(function() {
     let RecordIdToDelete = null;
 

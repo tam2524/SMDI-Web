@@ -5,7 +5,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 header('Content-Type: application/json');
 
-// --- Check if we're just looking for existing data ---
 if (isset($_POST['check_existing']) && $_POST['check_existing'] === 'true') {
     $data_files = glob('uploads/pricing_data.*');
     if (empty($data_files)) {
@@ -36,7 +35,6 @@ if (isset($_POST['check_existing']) && $_POST['check_existing'] === 'true') {
     exit;
 }
 
-// --- Main logic for calculations ---
 $data_files = glob('uploads/pricing_data.*');
 if (empty($data_files)) {
     echo json_encode(['success' => false, 'message' => 'No pricing file found. Please upload first.']);
@@ -54,11 +52,9 @@ try {
         exit;
     }
     
-    // Return motorcycles for the calculator (when no specific calculation is requested)
     $model_name = $_POST['model'] ?? null;
     $downpayment = $_POST['downpayment'] ?? null;
     
-    // If no specific calculation, just return the motorcycle list
     if (!$model_name && !$downpayment) {
         echo json_encode([
             'success' => true, 
@@ -68,7 +64,6 @@ try {
         exit;
     }
     
-    // Validate calculation parameters
     if (!$model_name) {
         echo json_encode(['success' => false, 'message' => 'Model name is required.']);
         exit;
@@ -81,7 +76,6 @@ try {
     
     $downpayment = floatval($downpayment);
     
-    // Find the selected motorcycle
     $selected_motorcycle = null;
     foreach ($motorcycles as $motorcycle) {
         if ($motorcycle['model'] === $model_name) {
@@ -105,7 +99,6 @@ try {
         exit;
     }
 
-    // Perform calculation
     $lcp = $selected_motorcycle['lcp'];
     $interest_rate = $selected_motorcycle['ir'];
     $amount_financed = $lcp - $downpayment;
@@ -149,7 +142,6 @@ try {
     echo json_encode(['success' => false, 'message' => 'Error reading file: ' . $e->getMessage()]);
 }
 
-// Helper function to parse motorcycle data from spreadsheet rows
 function parseMotorcycleData($dataRows) {
     $motorcycles = [];
     $current_brand = '';
@@ -190,7 +182,6 @@ function parseMotorcycleData($dataRows) {
     return $motorcycles;
 }
 
-// Helper functions
 function isNumericValue($value) {
     if (is_numeric($value)) return true;
     if (is_string($value)) {

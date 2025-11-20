@@ -1,18 +1,18 @@
 
-// Visitor Logs Tab Functionality
+
 $(document).ready(function() {
     let visitorCurrentPage = 1;
     let visitorTotalPages = 1;
     let visitorStartDate = '';
     let visitorEndDate = '';
 
-    // Load visitor logs when tab is shown
+    
     $('#visitors-tab').on('click', function() {
         loadVisitorStats();
         loadVisitorLogs();
     });
 
-    // Load visitor statistics
+    
     function loadVisitorStats() {
         $.ajax({
             url: '../api/visitor_stats.php',
@@ -34,7 +34,7 @@ $(document).ready(function() {
         });
     }
 
-    // Load visitor logs
+    
     function loadVisitorLogs(page = 1) {
         $.ajax({
             url: '../api/visitor_logs.php',
@@ -50,7 +50,7 @@ $(document).ready(function() {
                 
                 if (response.logs && response.logs.length > 0) {
                     response.logs.forEach(function(log) {
-                        // Simple device detection from user agent
+                        
                         let device = 'Desktop';
                         if (/mobile/i.test(log.user_agent)) {
                             device = 'Mobile';
@@ -83,16 +83,16 @@ $(document).ready(function() {
         });
     }
 
-    // Update visitor pagination controls
+    
     function updateVisitorPagination() {
         let paginationHtml = '';
         
-        // Previous button
+        
         paginationHtml += `<li class="page-item ${visitorCurrentPage === 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" id="prevVisitorsPage">Previous</a>
         </li>`;
         
-        // Page numbers
+        
         const startPage = Math.max(1, visitorCurrentPage - 2);
         const endPage = Math.min(visitorTotalPages, visitorCurrentPage + 2);
         
@@ -116,7 +116,7 @@ $(document).ready(function() {
             paginationHtml += `<li class="page-item"><a class="page-link visitor-page-number" href="#" data-page="${visitorTotalPages}">${visitorTotalPages}</a></li>`;
         }
         
-        // Next button
+        
         paginationHtml += `<li class="page-item ${visitorCurrentPage === visitorTotalPages ? 'disabled' : ''}">
             <a class="page-link" href="#" id="nextVisitorsPage">Next</a>
         </li>`;
@@ -124,7 +124,7 @@ $(document).ready(function() {
         $('#visitorsPaginationControls').html(paginationHtml);
     }
 
-    // Filter visitors by date range
+    
     $('#filterVisitorsBtn').on('click', function() {
         visitorStartDate = $('#visitorStartDate').val();
         visitorEndDate = $('#visitorEndDate').val();
@@ -133,7 +133,7 @@ $(document).ready(function() {
         loadVisitorLogs();
     });
 
-    // Reset visitor filter
+    
     $('#resetVisitorFilterBtn').on('click', function() {
         $('#visitorStartDate').val('');
         $('#visitorEndDate').val('');
@@ -144,7 +144,7 @@ $(document).ready(function() {
         loadVisitorLogs();
     });
 
-    // Pagination event handlers
+    
     $(document).on('click', '#prevVisitorsPage', function(e) {
         e.preventDefault();
         if (visitorCurrentPage > 1) {

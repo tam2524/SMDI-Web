@@ -534,7 +534,6 @@
                         aria-label='Close'></button>
                 </div>
                 <div class='modal-body'>
-                    <!-- Step 1: Report Type Selection -->
                     <div class='mb-4'>
                         <label for='reportType' class='form-label fw-bold'>1. Select Report Type</label>
                         <select class='form-select form-select-lg' id='reportType'>
@@ -550,15 +549,12 @@
                         </select>
                     </div>
 
-                    <!-- Step 2: Date & Period Options ( Dynamic ) -->
                     <div class='mb-4'>
                         <label class='form-label fw-bold'>2. Select Period</label>
                         <div id='periodOptionsContainer' class='p-3 bg-light border rounded'>
-                            <!-- Radio buttons will be dynamically inserted here by JS -->
                         </div>
                     </div>
 
-                    <!-- Date Picker Containers ( Dynamic ) -->
                     <div id='datePickerSection'>
                         <div id='dailyDatePickerContainer' class='mb-3' style='display: none;'>
                             <label for='dailyDate' class='form-label'>Select Date</label>
@@ -964,7 +960,6 @@
   </div>
 </div>
   
-
     <div class='modal fade' id='sellMotorcycleModal' tabindex='-1' aria-labelledby='sellMotorcycleModalLabel'
         aria-hidden='true'>
         <div class='modal-dialog'>
@@ -1170,9 +1165,6 @@
             </div>
         </div>
     </div>
-
-
-
 
 
     <div class='modal fade' id='searchTransferReceiptModal' tabindex='-1'
@@ -1639,13 +1631,13 @@
                                                         <label for='customerName' class='form-label'>Customer Name <span
                                                                         class='text-danger'>*</span></label>
                                                         <input type='text' class='form-control' id='customerName'
-                                required>
+                                                        required>
                                                     </div>
                                                 <div class='mb-3'>
                                                         <label for='paymentType' class='form-label'>Payment Type <span  
                                                                       class='text-danger'>*</span></label>
                                                         <select class='form-select' id='paymentType'
-                                onchange='handlePaymentTypeChange()' required>
+                                                                onchange='handlePaymentTypeChange()' required>
                                                                 <option value=''>Select Payment Type</option>
                                                                 <option value='COD'>Cash on Delivery ( COD )</option>
                                                                 <option value='Installment'>Installment</option>
@@ -1659,14 +1651,14 @@
                                                             </div>
                                                         <div class='mb-3'>
                                                                 <label for='codAmount' class='form-label'>COD Amount
-                                    <span                                         class='text-danger'>*</span></label>
+                                                        <span class='text-danger'>*</span></label>
                                                       <input type='number' step='0.01' class='form-control'
-                                    id='codAmount'>
+                                                        id='codAmount'>
                                                             </div>
                                                     </div>
                                                 <div id='installmentFields' style='display: none;'>
                                                         <div class='mb-3'>
-                                                                <label for='terms' class='form-label'>Terms ( months )
+                                                            <label for='terms' class='form-label'>Terms ( months )
                                     <span                                         class='text-danger'>*</span></label>
                                                                 <input type='number' class='form-control' id='terms'
                                     min='1'>

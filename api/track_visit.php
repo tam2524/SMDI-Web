@@ -1,7 +1,6 @@
 <?php
 require_once 'db_config.php';
 
-// Enable error reporting for debugging (remove in production)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -10,22 +9,18 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 try {
-    // Get JSON input from frontend
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);
 
-    // Validate required fields
     if (empty($data['page'])) {
         throw new Exception('Missing page parameter');
     }
 
-    // Prepare data for database
     $ip_address = $_SERVER['REMOTE_ADDR'];
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-    $page_visited = substr($data['page'], 0, 255); // Truncate to match VARCHAR(255)
+    $page_visited = substr($data['page'], 0, 255);
     $referrer = substr($data['referrer'] ?? 'direct', 0, 255);
 
-    // Check for existing visit (same IP within 1 hour)
     $stmt = $conn->prepare("
         SELECT COUNT(*) 
         FROM visitor_logs 
@@ -41,7 +36,6 @@ try {
     $response = ['status' => 'exists'];
     
     if ($count == 0) {
-        // Insert new visit
         $stmt = $conn->prepare("
             INSERT INTO visitor_logs 
             (ip_address, user_agent, page_visited) 
@@ -66,11 +60,9 @@ try {
         'message' => $e->getMessage()
     ]);
     
-    // Log full error for debugging
     error_log("Tracking Error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
 }
 
-// Close connection
 if (isset($conn)) {
     $conn->close();
 }

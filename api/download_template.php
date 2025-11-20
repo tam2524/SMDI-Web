@@ -4,11 +4,9 @@ require_once '../vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 
-// Create a new spreadsheet
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 
-// Define branch headers
 $branches = [
     'MODEL', 'RXS-S', 'RXS-H', 'ANT-1', 'ANT-2', 'SDH', 'SDS', 'JAR-1', 'JAR-2',
     'SKM', 'SKS', 'ALTA', 'EMAP', 'CUL', 'BAC', 'PAS-1', 'PAS-2',
@@ -17,7 +15,6 @@ $branches = [
 ];
 $sheet->fromArray($branches, NULL, 'A1');
 
-// Ordered model list (excluding SUB-TOTALs)
 $orderedModels = [
     // Suzuki
     "GSX-250RL/FRLX", "GSX-150", "BIGBIKE", "GSX150FRF NEW", "GSX-S150", "UX110NER", "UB125", "AVENIS", "FU150", "FU150-FI",
@@ -40,7 +37,6 @@ $orderedModels = [
     "ROUSER 200", "W800", "VERYS 650", "KLX232", "NINJA ZX-10R", "Z900 SE"
 ];
 
-// Write model rows
 $row = 2;
 foreach ($orderedModels as $model) {
     $rowData = array_merge([$model], array_fill(1, count($branches) - 1, ''));
@@ -48,13 +44,11 @@ foreach ($orderedModels as $model) {
     $row++;
 }
 
-// Output settings
 $filename = 'sales_data_template.csv';
 header('Content-Type: text/csv');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Cache-Control: max-age=0');
 
-// Write to output
 $writer = new Csv($spreadsheet);
 $writer->save('php://output');
 exit;

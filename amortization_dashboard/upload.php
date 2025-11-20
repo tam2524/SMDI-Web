@@ -5,7 +5,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 header('Content-Type: application/json');
 
-// --- File upload logic ---
 $uploadDir = 'uploads/';
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0755, true);
@@ -29,7 +28,6 @@ if ($fileExtension != 'xlsx' && $fileExtension != 'csv') {
 array_map('unlink', glob($uploadDir . $fileName . '.*'));
 move_uploaded_file($_FILES['pricingFile']['tmp_name'], $permanentFilePath);
 
-// --- IMPROVED PARSER WITH BETTER BRAND DETECTION ---
 try {
     $spreadsheet = IOFactory::load($permanentFilePath);
     $worksheet = $spreadsheet->getActiveSheet();
@@ -44,11 +42,8 @@ try {
         $colB = $row[1] ?? '';
         $colC = $row[2] ?? '';
         
-        // Skip empty rows
         if (empty(trim($colA)) && empty(trim($colB)) && empty(trim($colC))) continue;
         
-        // IMPROVED: Detect brand sections dynamically
-        // Brand headers are typically in column A with empty column B
         $colAUpper = strtoupper(trim($colA));
         $isBrandRow = empty(trim($colB)) && 
                      !empty(trim($colA)) && 
@@ -63,7 +58,6 @@ try {
             continue;
         }
         
-        // Skip header rows
         $colALower = strtolower($colA);
         $colBLower = strtolower($colB);
         if (strpos($colALower, 'd.price') !== false || 
@@ -71,13 +65,11 @@ try {
             strpos($colALower, 'dp') !== false) {
             continue;
         }
-        
-        // Skip the "BELOW" row and other non-data rows
+
         if (trim($colB) === 'BELOW' || trim($colA) === 'BELOW' || empty(trim($colB))) {
             continue;
         }
         
-        // Motorcycle data rows: Column A has price, Column B has model name
         if (isNumericValue($colA) && !empty(trim($colB)) && !empty($current_brand)) {
             $motorcycle = [
                 'brand' => $current_brand,
@@ -130,7 +122,6 @@ try {
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
 
-// Helper functions
 function isNumericValue($value) {
     if (is_numeric($value)) return true;
     if (is_string($value)) {

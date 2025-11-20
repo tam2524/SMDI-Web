@@ -70,14 +70,14 @@
 
 .pagination .page-item.disabled .page-link {
     color: #ccc;
-    pointer-events: none; /* Disable click */
+    pointer-events: none;
     background-color: white;
     border-color: #ccc;
 }
 
 .pagination .page-item.disabled .page-link:hover {
     background-color: white;
-    color: #ccc; /* No change on hover for disabled */
+    color: #ccc; 
 }
 
     </style>

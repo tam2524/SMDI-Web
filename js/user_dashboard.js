@@ -1,11 +1,11 @@
-//USER
+
 $(document).ready(function() {
-    // Load users when the user management tab is shown
+    
     $('#users-tab').on('click', function() {
         loadUsers();
     });
 
-    // Add User Form Submission
+    
     $('#addUserForm').submit(function(e) {
         e.preventDefault();
         
@@ -42,7 +42,7 @@ $(document).ready(function() {
         });
     });
 
-    // Edit User Form Submission
+    
     $('#editUserForm').submit(function(e) {
         e.preventDefault();
         
@@ -73,7 +73,7 @@ $(document).ready(function() {
         });
     });
 
-    // Load Users Function
+    
     function loadUsers(page = 1, search = '') {
         $.ajax({
             url: '../api/user_management.php?action=get_users',
@@ -114,13 +114,13 @@ $(document).ready(function() {
         });
     }
 
-    // Update User Pagination
+    
     function updateUserPagination(currentPage, totalPages) {
         $('#usersPaginationControls').empty();
         
         if (totalPages <= 1) return;
         
-        // Previous button
+        
         let prevDisabled = currentPage <= 1 ? 'disabled' : '';
         $('#usersPaginationControls').append(`
             <li class="page-item ${prevDisabled}">
@@ -128,7 +128,7 @@ $(document).ready(function() {
             </li>
         `);
         
-        // Show limited page numbers
+        
         let startPage = Math.max(1, currentPage - 2);
         let endPage = Math.min(totalPages, currentPage + 2);
         
@@ -159,7 +159,7 @@ $(document).ready(function() {
             `);
         }
         
-        // Next button
+        
         let nextDisabled = currentPage >= totalPages ? 'disabled' : '';
         $('#usersPaginationControls').append(`
             <li class="page-item ${nextDisabled}">
@@ -168,7 +168,7 @@ $(document).ready(function() {
         `);
     }
 
-    // Pagination Click Event
+    
     $(document).on('click', '#usersPaginationControls .page-link', function(e) {
         e.preventDefault();
         if ($(this).parent().hasClass('disabled')) return;
@@ -177,7 +177,7 @@ $(document).ready(function() {
         loadUsers(page, search);
     });
 
-    // Search Users with debounce
+    
     let searchTimeout;
     $('#searchUserInput').on('keyup', function() {
         clearTimeout(searchTimeout);
@@ -187,7 +187,7 @@ $(document).ready(function() {
         }, 500);
     });
 
-    // Edit User Click Event
+    
     $(document).on('click', '.edit-user', function() {
         let userId = $(this).data('id');
         
@@ -216,7 +216,7 @@ $(document).ready(function() {
         });
     });
 
-    // Delete User Click Event
+    
     $(document).on('click', '.delete-user', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -224,20 +224,20 @@ $(document).ready(function() {
         let userId = $(this).data('id');
         let username = $(this).closest('tr').find('td:first').text();
         
-        // Store the user ID in the confirmation modal
+        
         $('#confirmationModal').data('userId', userId);
         
-        // Update the confirmation message
+        
         $('#confirmationModal .modal-body').html(`
             <p>Are you sure you want to delete user <strong>${username}</strong>?</p>
             <p class="text-danger"><strong>This action cannot be undone.</strong></p>
         `);
         
-        // Show the confirmation modal
+        
         $('#confirmationModal').modal('show');
     });
 
-    // Confirm Delete Button Handler
+    
     $('#confirmDeleteBtn').off('click').on('click', function() {
         let userId = $('#confirmationModal').data('userId');
         
