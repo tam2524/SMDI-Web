@@ -116,6 +116,18 @@ const reportOptionsConfig = {
     periods: ["monthly"],
     filters: ["branch", "category", "brand", "model"],
   },
+  with_tba: {
+    periods: [ "monthly"],
+    filters: ["branch", "category", "brand", "model"],
+  },
+   with_stocks: {
+    periods: [ "monthly"],
+    filters: ["branch", "category", "brand", "model"],
+  },
+   with_tba_stocks: {
+    periods: [ "monthly"],
+    filters: ["branch", "category", "brand", "model"],
+  },
   sold_units: {
     periods: ["daily", "monthly", "custom_range"],
     filters: ["branch", "category", "brand", "model", "sale_type"],
@@ -5063,6 +5075,18 @@ function generateReport() {
       
       callReportAPI(apiData, renderMotorcycleReport, reportType);
       break;
+      case "with_tba":
+      apiData.action = "get_motorcycles_with_tba_report"; 
+        callReportAPI(apiData, renderWithTbaReport, reportType);
+    break;
+    case "with_stocks":
+      apiData.action = "get_motorcycles_with_stock_report"; 
+        callReportAPI(apiData, renderWithStockReport, reportType);
+    break;
+    case "with_tba_stocks":
+      apiData.action = "get_motorcycles_with_tba_stock_report"; 
+        callReportAPI(apiData, renderWithTbaStockReport, reportType);
+    break;
     default:
       showErrorModal("Invalid report type selected.");
       $("#monthlyReportContent").empty();
@@ -5131,6 +5155,12 @@ function generateReportPDF() {
     generateReceivedReportPDF();
   } else if (currentReportType === "delivered_stocks") {
     generateDeliveredReportPDF();
+     } else if (currentReportType === "with_tba") {
+    generateWithTbaReportPDF();
+    } else if (currentReportType === "with_stocks") {
+    generateWithStockReportPDF();
+    } else if (currentReportType === "with_tba_stocks") {
+    generateWithTbaStockReportPDF();
   } else if (currentReportType === "inventory_summary") {
     generateInventorySummaryReportPDF();
   } else {
@@ -9414,6 +9444,1020 @@ function generateMotorcycleReportPDF() {
   );
 }
 
+function renderMotorcycleReport(response) {
+    const { data, date, month, start_date, end_date } = response;
+
+    let dateSubtitle = "";
+    
+    if (start_date && end_date) {
+        if (start_date === end_date) {
+            dateSubtitle = `For ${formatDate(start_date)}`;
+        } else {
+            dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
+        }
+    } else if (date) {
+        dateSubtitle = `As of ${formatDate(date)}`;
+    } else if (month) {
+        const [year, monthNum] = month.split("-");
+        const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+        dateSubtitle = `For the Month of ${monthName} ${year}`;
+    }
+
+    $("#monthlyInventoryReportModalLabel").text("Available Motorcycle Units Report");
+
+    const totalUnits = data.length;
+    const totalValue = data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+
+    let tablesHtml = "";
+    if (data.length === 0) {
+        tablesHtml = `<div class="alert alert-info text-center">No available motorcycles found for the selected criteria.</div>`;
+    } else {
+        const branches = {};
+        data.forEach((item) => {
+            const branchName = item.branch_as_of_date || item.current_branch; 
+            if (!branches[branchName]) {
+                branches[branchName] = [];
+            }
+            branches[branchName].push(item);
+        });
+
+        Object.keys(branches).sort().forEach((branchName) => {
+            const branchData = branches[branchName];
+            tablesHtml += `
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">${branchName} - ${branchData.length} unit/s</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th><th>Model</th><th>Color</th><th>Brand</th>
+                                        <th>Engine Number</th><th>Frame Number</th><th class="text-end">Inventory Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+            branchData.forEach((item, index) => {
+                tablesHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${escapeHtml(item.model)}</td>
+                        <td>${escapeHtml(item.color)}</td>
+                        <td>${escapeHtml(item.brand)}</td>
+                        <td><code>${escapeHtml(item.engine_number)}</code></td>
+                        <td><code>${escapeHtml(item.frame_number)}</code></td>
+                        <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+                    </tr>`;
+            });
+            tablesHtml += `</tbody></table></div></div></div>`;
+        });
+    }
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057;">AVAILABLE MOTORCYCLE UNITS REPORT</h5>
+            <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
+            ${buildFilterDisplayHtml()}
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL AVAILABLE UNITS</h6>
+                        <h3 class="mb-0 text-white">${totalUnits}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #198754, #157347); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY VALUE</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalValue)}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ${tablesHtml}
+        ${generateBrandSummaryHtml(data)}
+    `;
+
+    $("#monthlyReportContent").html(html);
+}
+
+function generateMotorcycleReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("l", "mm", "a4");
+
+  if (!currentReportData || currentReportType !== "motorcycle") {
+    showErrorModal("Please generate an available motorcycle units report first before exporting to PDF.");
+    return;
+  }
+
+  let dateSubtitle = "";
+  let fileNameDate = new Date().toISOString().slice(0, 10);
+
+  if (currentReportDate) {
+    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
+    fileNameDate = currentReportDate;
+  } else if (currentReportMonth && currentReportMonth.includes("-")) {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+    dateSubtitle = `For the Month of ${monthName} ${year}`;
+    fileNameDate = currentReportMonth;
+  } else if (currentReportStartDate && currentReportEndDate) {
+    if (currentReportStartDate === currentReportEndDate) {
+      dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
+      fileNameDate = currentReportStartDate;
+    } else {
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
+      fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
+    }
+  }
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLR = 10;
+  const marginBottom = 20;
+  let currentY = 15;
+
+  
+  doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
+  currentY += 10;
+  doc.setFontSize(12).setTextColor(73, 80, 87);
+  doc.text("AVAILABLE MOTORCYCLE UNITS REPORT", pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+  doc.setFontSize(10).setTextColor(0, 64, 133);
+  doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+
+  currentY = addFiltersToPdf(doc, currentY);
+  
+  const columns = [
+    { header: "QTY", dataKey: "qty" }, { header: "MODEL", dataKey: "model" },
+    { header: "COLOR", dataKey: "color" }, { header: "BRAND", dataKey: "brand" },
+    { header: "ENGINE NUMBER", dataKey: "engine_number" }, { header: "FRAME NUMBER", dataKey: "frame_number" },
+    { header: "INVENTORY COST", dataKey: "inventory_cost" },
+  ];
+const groupedData = {};
+  currentReportData.data.forEach((item) => {
+    const branchName = item.current_branch || "Unknown Branch";
+    if (!groupedData[branchName]) groupedData[branchName] = [];
+    groupedData[branchName].push(item);
+  });
+
+  function addBranchSection(branchName, items) {
+    if (currentY + 15 > pageHeight - marginBottom) {
+      doc.addPage();
+      currentY = 20;
+    }
+    doc.setFontSize(11).setTextColor(0, 64, 133).setFont("helvetica", "bold");
+    doc.text(`${branchName} - ${items.length} unit/s`, marginLR, currentY);
+    currentY += 6;
+    const rows = items.map((item) => ({
+      qty: "1", model: item.model, color: item.color, brand: item.brand,
+      engine_number: item.engine_number, frame_number: item.frame_number,
+      inventory_cost: formatCurrency(item.inventory_cost),
+    }));
+
+    doc.autoTable({
+      startY: currentY,
+      head: [columns.map((c) => c.header)],
+      body: rows.map((r) => columns.map((c) => r[c.dataKey])),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold" },
+      margin: { left: marginLR, right: marginLR },
+      theme: "striped",
+      didDrawPage: (data) => { currentY = data.cursor.y; }
+    });
+    currentY = doc.autoTable.previous.finalY + 10;
+  }
+
+  Object.keys(groupedData).sort().forEach((branchName) => {
+    addBranchSection(branchName, groupedData[branchName]);
+  });
+
+  
+  const totalUnits = currentReportData.data.length;
+  const totalValue = currentReportData.data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+  const cardHeight = 20;
+
+  if (currentY + cardHeight > pageHeight - marginBottom) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  function drawCard(x, y, width, height, title, mainValue, subValue, bgColor, textColor) {
+    doc.setFillColor(...bgColor);
+    doc.roundedRect(x, y, width, height, 3, 3, "F");
+    doc.setFontSize(8).setTextColor(...textColor).setFont("helvetica", "bold");
+    doc.text(title, x + width / 2, y + 7, { align: "center" });
+    doc.setFontSize(12).setTextColor(255, 255, 255);
+    doc.text(String(mainValue), x + width / 2, y + 15, { align: "center" });
+  }
+
+  drawCard(marginLR, currentY, cardWidth, cardHeight, "TOTAL AVAILABLE UNITS", totalUnits, "Motorcycles", [13, 110, 253], [200, 225, 255]);
+  drawCard(marginLR + cardWidth + 10, currentY, cardWidth, cardHeight, "TOTAL INVENTORY VALUE", formatCurrency(totalValue), "Total value", [25, 135, 84], [200, 255, 220]);
+  
+  currentY += cardHeight;
+  
+  
+
+  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+
+  
+  const generatedOn = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8).setTextColor(108, 117, 125);
+    doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
+  const safeBrand = (currentReportBrand || "all").replace(/\s+/g, "_");
+  const safeCategory = (currentReportCategory || "all").replace(/\s+/g, "_");
+  doc.save(`Available_Units_Report_${fileNameDate}_${safeBranch}_${safeBrand}_${safeCategory}.pdf`);
+}
+
+function renderWithTbaReport(response) {
+    const { data, date, month, start_date, end_date } = response;
+
+    let dateSubtitle = "";
+    
+    if (start_date && end_date) {
+        if (start_date === end_date) {
+            dateSubtitle = `For ${formatDate(start_date)}`;
+        } else {
+            dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
+        }
+    } else if (date) {
+        dateSubtitle = `As of ${formatDate(date)}`;
+    } else if (month) {
+        const [year, monthNum] = month.split("-");
+        const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+        dateSubtitle = `For the Month of ${monthName} ${year}`;
+    }
+
+    $("#monthlyInventoryReportModalLabel").text("Motorcycle Units With TBA Report");
+
+    
+    const tbaData = data.filter(item => item.with_tba == 1 || item.with_tba === true);
+    
+    const totalUnits = tbaData.length;
+    const totalValue = tbaData.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+
+    let tablesHtml = "";
+    if (tbaData.length === 0) {
+        tablesHtml = `<div class="alert alert-info text-center">No motorcycles with TBA found for the selected criteria.</div>`;
+    } else {
+        const branches = {};
+        tbaData.forEach((item) => {
+            const branchName = item.branch_as_of_date || item.current_branch; 
+            if (!branches[branchName]) {
+                branches[branchName] = [];
+            }
+            branches[branchName].push(item);
+        });
+
+        Object.keys(branches).sort().forEach((branchName) => {
+            const branchData = branches[branchName];
+            tablesHtml += `
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">${branchName} - ${branchData.length} unit/s with TBA</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th><th>Model</th><th>Color</th><th>Brand</th>
+                                        <th>Engine Number</th><th>Frame Number</th>
+                                        <th>TBA</th><th class="text-end">Inventory Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                branchData.forEach((item, index) => {
+                tablesHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${escapeHtml(item.model)}</td>
+                        <td>${escapeHtml(item.color)}</td>
+                        <td>${escapeHtml(item.brand)}</td>
+                        <td><code>${escapeHtml(item.engine_number)}</code></td>
+                        <td><code>${escapeHtml(item.frame_number)}</code></td>
+                        <td class="text-center"><span class="badge bg-success">✓ TBA</span></td>
+                        <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+                    </tr>`;
+            });
+            tablesHtml += `</tbody></table></div></div></div>`;
+        });
+    }
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057;">MOTORCYCLE UNITS WITH TBA REPORT</h5>
+            <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
+            ${buildFilterDisplayHtml()}
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL UNITS WITH TBA</h6>
+                        <h3 class="mb-0 text-white">${totalUnits}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #198754, #157347); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY VALUE</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalValue)}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ${tablesHtml}
+        ${generateBrandSummaryHtml(tbaData)}
+    `;
+
+    $("#monthlyReportContent").html(html);
+}
+
+function generateWithTbaReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("l", "mm", "a4");
+
+  if (!currentReportData || currentReportType !== "with_tba") {
+    showErrorModal("Please generate a motorcycle units with TBA report first before exporting to PDF.");
+    return;
+  }
+
+  
+  const tbaData = currentReportData.data.filter(item => item.with_tba == 1 || item.with_tba === true);
+
+  let dateSubtitle = "";
+  let fileNameDate = new Date().toISOString().slice(0, 10);
+
+  if (currentReportDate) {
+    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
+    fileNameDate = currentReportDate;
+  } else if (currentReportMonth && currentReportMonth.includes("-")) {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+    dateSubtitle = `For the Month of ${monthName} ${year}`;
+    fileNameDate = currentReportMonth;
+  } else if (currentReportStartDate && currentReportEndDate) {
+    if (currentReportStartDate === currentReportEndDate) {
+      dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
+      fileNameDate = currentReportStartDate;
+    } else {
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
+      fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
+    }
+  }
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLR = 10;
+  const marginBottom = 20;
+  let currentY = 15;
+
+  
+  doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
+  currentY += 10;
+  doc.setFontSize(12).setTextColor(73, 80, 87);
+  doc.text("MOTORCYCLE UNITS WITH TBA REPORT", pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+  doc.setFontSize(10).setTextColor(0, 64, 133);
+  doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+
+  currentY = addFiltersToPdf(doc, currentY);
+  
+  const columns = [
+    { header: "QTY", dataKey: "qty" }, { header: "MODEL", dataKey: "model" },
+    { header: "COLOR", dataKey: "color" }, { header: "BRAND", dataKey: "brand" },
+    { header: "ENGINE NUMBER", dataKey: "engine_number" }, { header: "FRAME NUMBER", dataKey: "frame_number" },
+    { header: "INVENTORY COST", dataKey: "inventory_cost" },
+  ];
+
+  const groupedData = {};
+  tbaData.forEach((item) => {
+    const branchName = item.current_branch || "Unknown Branch";
+    if (!groupedData[branchName]) groupedData[branchName] = [];
+    groupedData[branchName].push(item);
+  });
+
+  function addBranchSection(branchName, items) {
+    if (currentY + 15 > pageHeight - marginBottom) {
+      doc.addPage();
+      currentY = 20;
+    }
+    doc.setFontSize(11).setTextColor(0, 64, 133).setFont("helvetica", "bold");
+    doc.text(`${branchName} - ${items.length} unit/s with TBA`, marginLR, currentY);
+    currentY += 6;
+    const rows = items.map((item) => ({
+      qty: "1", model: item.model, color: item.color, brand: item.brand,
+      engine_number: item.engine_number, frame_number: item.frame_number,
+      inventory_cost: formatCurrency(item.inventory_cost),
+    }));
+
+    doc.autoTable({
+      startY: currentY,
+      head: [columns.map((c) => c.header)],
+      body: rows.map((r) => columns.map((c) => r[c.dataKey])),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold" },
+      margin: { left: marginLR, right: marginLR },
+      theme: "striped",
+      didDrawPage: (data) => { currentY = data.cursor.y; }
+    });
+    currentY = doc.autoTable.previous.finalY + 10;
+  }
+
+  Object.keys(groupedData).sort().forEach((branchName) => {
+    addBranchSection(branchName, groupedData[branchName]);
+  });
+
+  
+  const totalUnits = tbaData.length;
+  const totalValue = tbaData.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+  const cardHeight = 20;
+
+  if (currentY + cardHeight > pageHeight - marginBottom) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  function drawCard(x, y, width, height, title, mainValue, subValue, bgColor, textColor) {
+    doc.setFillColor(...bgColor);
+    doc.roundedRect(x, y, width, height, 3, 3, "F");
+    doc.setFontSize(8).setTextColor(...textColor).setFont("helvetica", "bold");
+    doc.text(title, x + width / 2, y + 7, { align: "center" });
+    doc.setFontSize(12).setTextColor(255, 255, 255);
+    doc.text(String(mainValue), x + width / 2, y + 15, { align: "center" });
+  }
+
+  drawCard(marginLR, currentY, cardWidth, cardHeight, "TOTAL UNITS WITH TBA", totalUnits, "Motorcycles", [13, 110, 253], [200, 225, 255]);
+  drawCard(marginLR + cardWidth + 10, currentY, cardWidth, cardHeight, "TOTAL INVENTORY VALUE", formatCurrency(totalValue), "Total value", [25, 135, 84], [200, 255, 220]);
+  
+  currentY += cardHeight;
+  
+  currentY = addBrandSummaryToPdf(doc, tbaData, currentY);
+
+  
+  const generatedOn = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8).setTextColor(108, 117, 125);
+    doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
+  const safeBrand = (currentReportBrand || "all").replace(/\s+/g, "_");
+  const safeCategory = (currentReportCategory || "all").replace(/\s+/g, "_");
+  doc.save(`TBA_Units_Report_${fileNameDate}_${safeBranch}_${safeBrand}_${safeCategory}.pdf`);
+}
+
+
+function renderWithStockReport(response) {
+    const { data, date, month, start_date, end_date } = response;
+
+    let dateSubtitle = "";
+    
+    if (start_date && end_date) {
+        if (start_date === end_date) {
+            dateSubtitle = `For ${formatDate(start_date)}`;
+        } else {
+            dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
+        }
+    } else if (date) {
+        dateSubtitle = `As of ${formatDate(date)}`;
+    } else if (month) {
+        const [year, monthNum] = month.split("-");
+        const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+        dateSubtitle = `For the Month of ${monthName} ${year}`;
+    }
+
+    $("#monthlyInventoryReportModalLabel").text("Motorcycle Units With Stock Report");
+
+    const totalUnits = data.length;
+    const totalValue = data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+
+    let tablesHtml = "";
+    if (data.length === 0) {
+        tablesHtml = `<div class="alert alert-info text-center">No motorcycles with stock report found for the selected criteria.</div>`;
+    } else {
+        const branches = {};
+        data.forEach((item) => {
+            const branchName = item.branch_as_of_date || item.current_branch; 
+            if (!branches[branchName]) {
+                branches[branchName] = [];
+            }
+            branches[branchName].push(item);
+        });
+
+        Object.keys(branches).sort().forEach((branchName) => {
+            const branchData = branches[branchName];
+            tablesHtml += `
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">${branchName} - ${branchData.length} unit/s with Stock Report</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th><th>Model</th><th>Color</th><th>Brand</th>
+                                        <th>Engine Number</th><th>Frame Number</th>
+                                        <th>Stock Report No.</th><th class="text-end">Inventory Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                branchData.forEach((item, index) => {
+                tablesHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${escapeHtml(item.model)}</td>
+                        <td>${escapeHtml(item.color)}</td>
+                        <td>${escapeHtml(item.brand)}</td>
+                        <td><code>${escapeHtml(item.engine_number)}</code></td>
+                        <td><code>${escapeHtml(item.frame_number)}</code></td>
+                        <td><code>${escapeHtml(item.stock_report_number || 'N/A')}</code></td>
+                        <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+                    </tr>`;
+            });
+            tablesHtml += `</tbody></table></div></div></div>`;
+        });
+    }
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057;">MOTORCYCLE UNITS WITH STOCK REPORT</h5>
+            <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
+            ${buildFilterDisplayHtml()}
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL UNITS WITH STOCK REPORT</h6>
+                        <h3 class="mb-0 text-white">${totalUnits}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #198754, #157347); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY VALUE</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalValue)}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ${tablesHtml}
+        ${generateBrandSummaryHtml(data)}
+    `;
+
+    $("#monthlyReportContent").html(html);
+}
+
+function generateWithStockReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("l", "mm", "a4");
+
+  if (!currentReportData || currentReportType !== "with_stocks") {
+    showErrorModal("Please generate a motorcycle units with stock report first before exporting to PDF.");
+    return;
+  }
+
+  let dateSubtitle = "";
+  let fileNameDate = new Date().toISOString().slice(0, 10);
+
+  if (currentReportDate) {
+    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
+    fileNameDate = currentReportDate;
+  } else if (currentReportMonth && currentReportMonth.includes("-")) {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+    dateSubtitle = `For the Month of ${monthName} ${year}`;
+    fileNameDate = currentReportMonth;
+  } else if (currentReportStartDate && currentReportEndDate) {
+    if (currentReportStartDate === currentReportEndDate) {
+      dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
+      fileNameDate = currentReportStartDate;
+    } else {
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
+      fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
+    }
+  }
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLR = 10;
+  const marginBottom = 20;
+  let currentY = 15;
+
+  
+  doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
+  currentY += 10;
+  doc.setFontSize(12).setTextColor(73, 80, 87);
+  doc.text("MOTORCYCLE UNITS WITH STOCK REPORT", pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+  doc.setFontSize(10).setTextColor(0, 64, 133);
+  doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+
+  currentY = addFiltersToPdf(doc, currentY);
+  
+  
+  const columns = [
+    { header: "QTY", dataKey: "qty" }, 
+    { header: "MODEL", dataKey: "model" },
+    { header: "COLOR", dataKey: "color" }, 
+    { header: "BRAND", dataKey: "brand" },
+    { header: "ENGINE NUMBER", dataKey: "engine_number" }, 
+    { header: "FRAME NUMBER", dataKey: "frame_number" },
+    { header: "STOCK REPORT NO.", dataKey: "stock_report_number" },
+    { header: "INVENTORY COST", dataKey: "inventory_cost" },
+  ];
+
+  
+  const groupedData = {};
+  currentReportData.data.forEach((item) => {
+    const branchName = item.current_branch || "Unknown Branch";
+    if (!groupedData[branchName]) groupedData[branchName] = [];
+    groupedData[branchName].push(item);
+  });
+
+  function addBranchSection(branchName, items) {
+    if (currentY + 15 > pageHeight - marginBottom) {
+      doc.addPage();
+      currentY = 20;
+    }
+    doc.setFontSize(11).setTextColor(0, 64, 133).setFont("helvetica", "bold");
+    doc.text(`${branchName} - ${items.length} unit/s with Stock Report`, marginLR, currentY);
+    currentY += 6;
+    
+    const rows = items.map((item) => ({
+      qty: "1", 
+      model: item.model, 
+      color: item.color, 
+      brand: item.brand,
+      engine_number: item.engine_number, 
+      frame_number: item.frame_number,
+      stock_report_number: item.stock_report_number || 'N/A',
+      inventory_cost: formatCurrency(item.inventory_cost),
+    }));
+
+    doc.autoTable({
+      startY: currentY,
+      head: [columns.map((c) => c.header)],
+      body: rows.map((r) => columns.map((c) => r[c.dataKey])),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold" },
+      margin: { left: marginLR, right: marginLR },
+      theme: "striped",
+      didDrawPage: (data) => { currentY = data.cursor.y; }
+    });
+    currentY = doc.autoTable.previous.finalY + 10;
+  }
+
+  
+  Object.keys(groupedData).sort().forEach((branchName) => {
+    addBranchSection(branchName, groupedData[branchName]);
+  });
+
+  
+  const totalUnits = currentReportData.data.length;
+  const totalValue = currentReportData.data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+  const cardHeight = 20;
+
+  if (currentY + cardHeight > pageHeight - marginBottom) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  function drawCard(x, y, width, height, title, mainValue, subValue, bgColor, textColor) {
+    doc.setFillColor(...bgColor);
+    doc.roundedRect(x, y, width, height, 3, 3, "F");
+    doc.setFontSize(8).setTextColor(...textColor).setFont("helvetica", "bold");
+    doc.text(title, x + width / 2, y + 7, { align: "center" });
+    doc.setFontSize(12).setTextColor(255, 255, 255);
+    doc.text(String(mainValue), x + width / 2, y + 15, { align: "center" });
+  }
+
+  drawCard(marginLR, currentY, cardWidth, cardHeight, "TOTAL UNITS WITH STOCK REPORT", totalUnits, "Motorcycles", [13, 110, 253], [200, 225, 255]);
+  drawCard(marginLR + cardWidth + 10, currentY, cardWidth, cardHeight, "TOTAL INVENTORY VALUE", formatCurrency(totalValue), "Total value", [25, 135, 84], [200, 255, 220]);
+  
+  currentY += cardHeight + 10;
+  
+  
+  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+
+  
+  const generatedOn = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8).setTextColor(108, 117, 125);
+    doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
+  const safeBrand = (currentReportBrand || "all").replace(/\s+/g, "_");
+  const safeCategory = (currentReportCategory || "all").replace(/\s+/g, "_");
+  doc.save(`Stock_Report_Units_${fileNameDate}_${safeBranch}_${safeBrand}_${safeCategory}.pdf`);
+}
+
+function renderWithTbaStockReport(response) {
+    const { data, date, month, start_date, end_date } = response;
+
+    let dateSubtitle = "";
+    
+    if (start_date && end_date) {
+        if (start_date === end_date) {
+            dateSubtitle = `For ${formatDate(start_date)}`;
+        } else {
+            dateSubtitle = `From ${formatDate(start_date)} to ${formatDate(end_date)}`;
+        }
+    } else if (date) {
+        dateSubtitle = `As of ${formatDate(date)}`;
+    } else if (month) {
+        const [year, monthNum] = month.split("-");
+        const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+        dateSubtitle = `For the Month of ${monthName} ${year}`;
+    }
+
+    $("#monthlyInventoryReportModalLabel").text("Motorcycle Units With TBA and Stock Report");
+
+    const totalUnits = data.length;
+    const totalValue = data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+
+    let tablesHtml = "";
+    if (data.length === 0) {
+        tablesHtml = `<div class="alert alert-info text-center">No motorcycles with TBA and stock report found for the selected criteria.</div>`;
+    } else {
+        const branches = {};
+        data.forEach((item) => {
+            const branchName = item.branch_as_of_date || item.current_branch; 
+            if (!branches[branchName]) {
+                branches[branchName] = [];
+            }
+            branches[branchName].push(item);
+        });
+
+        Object.keys(branches).sort().forEach((branchName) => {
+            const branchData = branches[branchName];
+            tablesHtml += `
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">${branchName} - ${branchData.length} unit/s with TBA & Stock Report</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th><th>Model</th><th>Color</th><th>Brand</th>
+                                        <th>Engine Number</th><th>Frame Number</th>
+                                        <th>TBA</th><th>Stock Report No.</th><th class="text-end">Inventory Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                branchData.forEach((item, index) => {
+                tablesHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${escapeHtml(item.model)}</td>
+                        <td>${escapeHtml(item.color)}</td>
+                        <td>${escapeHtml(item.brand)}</td>
+                        <td><code>${escapeHtml(item.engine_number)}</code></td>
+                        <td><code>${escapeHtml(item.frame_number)}</code></td>
+                        <td class="text-center"><span class="badge bg-success">✓ TBA</span></td>
+                        <td><code>${escapeHtml(item.stock_report_number || 'N/A')}</code></td>
+                        <td class="text-end">${formatCurrency(item.inventory_cost)}</td>
+                    </tr>`;
+            });
+            tablesHtml += `</tbody></table></div></div></div>`;
+        });
+    }
+
+    let html = `
+        <div class="report-header text-center mb-4">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <div style="width: 40px; height: 2px; background: #000f71; margin-right: 15px;"></div>
+                <h4 class="mb-0" style="color: #000f71; font-weight: 600;">SOLID MOTORCYCLE DISTRIBUTORS, INC.</h4>
+                <div style="width: 40px; height: 2px; background: #000f71; margin-left: 15px;"></div>
+            </div>
+            <h5 class="mb-2" style="color: #495057;">MOTORCYCLE UNITS WITH TBA AND STOCK REPORT</h5>
+            <h6 class="mb-2 text-muted">${dateSubtitle}</h6>
+            ${buildFilterDisplayHtml()}
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL UNITS WITH TBA & STOCK</h6>
+                        <h3 class="mb-0 text-white">${totalUnits}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm text-center h-100" style="background: linear-gradient(135deg, #198754, #157347); color: white;">
+                    <div class="card-body py-3">
+                        <h6 class="card-title mb-1 text-white-50" style="font-size: 0.9rem;">TOTAL INVENTORY VALUE</h6>
+                        <h3 class="mb-0 text-white">${formatCurrency(totalValue)}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ${tablesHtml}
+        ${generateBrandSummaryHtml(data)}
+    `;
+
+    $("#monthlyReportContent").html(html);
+}
+
+function generateWithTbaStockReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("l", "mm", "a4");
+
+  if (!currentReportData || currentReportType !== "with_tba_stocks") {
+    showErrorModal("Please generate a motorcycle units with TBA and stock report first before exporting to PDF.");
+    return;
+  }
+
+  let dateSubtitle = "";
+  let fileNameDate = new Date().toISOString().slice(0, 10);
+
+  if (currentReportDate) {
+    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
+    fileNameDate = currentReportDate;
+  } else if (currentReportMonth && currentReportMonth.includes("-")) {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
+    dateSubtitle = `For the Month of ${monthName} ${year}`;
+    fileNameDate = currentReportMonth;
+  } else if (currentReportStartDate && currentReportEndDate) {
+    if (currentReportStartDate === currentReportEndDate) {
+      dateSubtitle = `For ${formatDate(currentReportStartDate)}`;
+      fileNameDate = currentReportStartDate;
+    } else {
+      dateSubtitle = `From ${formatDate(currentReportStartDate)} to ${formatDate(currentReportEndDate)}`;
+      fileNameDate = `${currentReportStartDate}_to_${currentReportEndDate}`;
+    }
+  }
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginLR = 10;
+  const marginBottom = 20;
+  let currentY = 15;
+
+  
+  doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0, 15, 113);
+  doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
+  currentY += 10;
+  doc.setFontSize(12).setTextColor(73, 80, 87);
+  doc.text("MOTORCYCLE UNITS WITH TBA AND STOCK REPORT", pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+  doc.setFontSize(10).setTextColor(0, 64, 133);
+  doc.text(dateSubtitle, pageWidth / 2, currentY, { align: "center" });
+  currentY += 6;
+
+  currentY = addFiltersToPdf(doc, currentY);
+  
+  
+  const columns = [
+    { header: "QTY", dataKey: "qty" }, 
+    { header: "MODEL", dataKey: "model" },
+    { header: "COLOR", dataKey: "color" }, 
+    { header: "BRAND", dataKey: "brand" },
+    { header: "ENGINE NUMBER", dataKey: "engine_number" }, 
+    { header: "FRAME NUMBER", dataKey: "frame_number" },
+    { header: "STOCK REPORT NO.", dataKey: "stock_report_number" },
+    { header: "INVENTORY COST", dataKey: "inventory_cost" },
+  ];
+
+  
+  const groupedData = {};
+  currentReportData.data.forEach((item) => {
+    const branchName = item.current_branch || "Unknown Branch";
+    if (!groupedData[branchName]) groupedData[branchName] = [];
+    groupedData[branchName].push(item);
+  });
+
+  function addBranchSection(branchName, items) {
+    if (currentY + 15 > pageHeight - marginBottom) {
+      doc.addPage();
+      currentY = 20;
+    }
+    doc.setFontSize(11).setTextColor(0, 64, 133).setFont("helvetica", "bold");
+    doc.text(`${branchName} - ${items.length} unit/s with TBA & Stock Report`, marginLR, currentY);
+    currentY += 6;
+    
+    const rows = items.map((item) => ({
+      qty: "1", 
+      model: item.model, 
+      color: item.color, 
+      brand: item.brand,
+      engine_number: item.engine_number, 
+      frame_number: item.frame_number,
+      stock_report_number: item.stock_report_number || 'N/A',
+      inventory_cost: formatCurrency(item.inventory_cost),
+    }));
+
+    doc.autoTable({
+      startY: currentY,
+      head: [columns.map((c) => c.header)],
+      body: rows.map((r) => columns.map((c) => r[c.dataKey])),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [248, 249, 250], textColor: [73, 80, 87], fontStyle: "bold" },
+      margin: { left: marginLR, right: marginLR },
+      theme: "striped",
+      didDrawPage: (data) => { currentY = data.cursor.y; }
+    });
+    currentY = doc.autoTable.previous.finalY + 10;
+  }
+
+  
+  Object.keys(groupedData).sort().forEach((branchName) => {
+    addBranchSection(branchName, groupedData[branchName]);
+  });
+
+  
+  const totalUnits = currentReportData.data.length;
+  const totalValue = currentReportData.data.reduce((sum, item) => sum + (parseFloat(item.inventory_cost) || 0), 0);
+  const cardWidth = (pageWidth - 2 * marginLR - 10) / 2;
+  const cardHeight = 20;
+
+  if (currentY + cardHeight > pageHeight - marginBottom) {
+    doc.addPage();
+    currentY = 20;
+  }
+
+  function drawCard(x, y, width, height, title, mainValue, subValue, bgColor, textColor) {
+    doc.setFillColor(...bgColor);
+    doc.roundedRect(x, y, width, height, 3, 3, "F");
+    doc.setFontSize(8).setTextColor(...textColor).setFont("helvetica", "bold");
+    doc.text(title, x + width / 2, y + 7, { align: "center" });
+    doc.setFontSize(12).setTextColor(255, 255, 255);
+    doc.text(String(mainValue), x + width / 2, y + 15, { align: "center" });
+  }
+
+  drawCard(marginLR, currentY, cardWidth, cardHeight, "TOTAL UNITS WITH TBA & STOCK", totalUnits, "Motorcycles", [13, 110, 253], [200, 225, 255]);
+  drawCard(marginLR + cardWidth + 10, currentY, cardWidth, cardHeight, "TOTAL INVENTORY VALUE", formatCurrency(totalValue), "Total value", [25, 135, 84], [200, 255, 220]);
+  
+  currentY += cardHeight + 10;
+  
+  
+  currentY = addBrandSummaryToPdf(doc, currentReportData.data, currentY);
+
+  
+  const generatedOn = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8).setTextColor(108, 117, 125);
+    doc.text(`Generated on: ${generatedOn}`, 10, pageHeight - 10);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  const safeBranch = (currentReportBranch || "all").replace(/\s+/g, "_");
+  const safeBrand = (currentReportBrand || "all").replace(/\s+/g, "_");
+  const safeCategory = (currentReportCategory || "all").replace(/\s+/g, "_");
+  doc.save(`TBA_Stock_Report_Units_${fileNameDate}_${safeBranch}_${safeBrand}_${safeCategory}.pdf`);
+}
 
 
 

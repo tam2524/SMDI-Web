@@ -546,6 +546,9 @@
                             <option value='sold_units'>Summary of Sold Units Report</option>
                             <option value='scrapped'>Summary of Scrapped Units Report</option>
                             <option value='redeemed'>Summary of Redeemed Units</option>
+                            <option value='with_tba'>Summary of Units With TBA's</option>
+                            <option value='with_stocks'>Summary of Units with Stock Report</option>
+                            <option value='with_tba_stocks'>Summary of Units with TBA's and Stock Report</option>
                         </select>
                     </div>
 

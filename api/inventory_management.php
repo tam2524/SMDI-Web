@@ -235,6 +235,15 @@ switch ($action) {
     case 'get_available_motorcycles_report':
         getAvailableMotorcyclesReport();
         break;
+    case 'get_motorcycles_with_tba_report':
+        getMotorcyclesWithTBAReport();
+        break;
+    case 'get_motorcycles_with_stock_report':
+        getMotorcyclesWithStockReport();
+        break;    
+    case 'get_motorcycles_with_tba_stock_report':
+        getMotorcyclesWithTbaStockReport();
+        break;
     case 'get_sold_motorcycles_report':
         getSoldMotorcyclesReport();
         break;
@@ -3098,6 +3107,7 @@ function getMonthlyScrappedSummary() {
         'summary_by_reason' => [] 
     ]);
 }
+
 function getAvailableMotorcyclesReport()
 {
     global $conn;
@@ -3138,6 +3148,392 @@ function getAvailableMotorcyclesReport()
         $params[] = $model;
         $types .= 's';
     }
+
+    $sql = "
+        SELECT 
+            mi.*,
+            COALESCE(
+                (
+                    SELECT it.to_branch
+                    FROM inventory_transfers it
+                    WHERE it.motorcycle_id = mi.id
+                      AND it.transfer_status = 'completed'
+                      AND it.transfer_date <= ?
+                    ORDER BY it.transfer_date DESC
+                    LIMIT 1
+                ),
+                (
+                    SELECT it2.from_branch
+                    FROM inventory_transfers it2
+                    WHERE it2.motorcycle_id = mi.id
+                      AND it2.transfer_status = 'completed'
+                    ORDER BY it2.transfer_date ASC
+                    LIMIT 1
+                ),
+                mi.current_branch
+            ) AS branch_as_of_report_date
+        FROM motorcycle_inventory mi
+        WHERE mi.deleted_at IS NULL
+          AND mi.date_delivered <= ?
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_sales s
+              WHERE s.motorcycle_id = mi.id
+                AND s.sale_date <= ?
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_scraps sc
+              WHERE sc.motorcycle_id = mi.id
+                AND sc.scrap_date <= ?
+          )
+          $filters
+        ORDER BY mi.brand, mi.model, mi.engine_number
+    ";
+
+    $paramsFinal = array_merge([$reportEndDate, $reportEndDate, $reportEndDate, $reportEndDate], $params);
+    $typesFinal = 'ssss' . $types;
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
+    }
+
+    $stmt->bind_param($typesFinal, ...$paramsFinal);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    $total_cost = 0;
+    $total_units = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $effective_branch = strtoupper($row['branch_as_of_report_date'] ?? $row['current_branch']);
+
+        if (strtoupper($branch) === 'ALL' || $effective_branch === strtoupper($branch)) {
+            $row['effective_branch'] = $effective_branch; 
+            $data[] = $row;
+            $total_units++;
+            $total_cost += (float)($row['inventory_cost'] ?? 0);
+        }
+    }
+
+    $stmt->close();
+
+    echo json_encode([
+        'success' => true,
+        'month' => $reportMonth,
+        'end_date' => $reportEndDate,
+        'branch' => $branch,
+        'category' => $category,
+        'brand' => $brand,
+        'model' => $model,
+        'total_available_units' => $total_units,
+        'total_inventory_cost' => $total_cost,
+        'data' => $data
+    ]);
+}
+
+function getMotorcyclesWithTBAReport()
+{
+    global $conn;
+
+    $period_type = $_GET['period_type'] ?? 'monthly';
+    $month = $_GET['month'] ?? null;
+    $branch = $_GET['branch'] ?? 'ALL';
+    $category = strtolower($_GET['category'] ?? 'all');
+    $brand = strtolower($_GET['brand'] ?? 'all');
+    $model = $_GET['model'] ?? 'all';
+    // Force TBA filter to only show units with TBA
+    $with_tba = '1'; // Always filter for TBA units
+
+    if ($period_type === 'monthly' && !empty($month)) {
+        $reportEndDate = date('Y-m-t', strtotime($month)); 
+        $reportMonth = $month;
+    } else {
+        $reportEndDate = date('Y-m-d');
+        $reportMonth = date('Y-m', strtotime($reportEndDate));
+    }
+
+    $filters = "";
+    $params = [];
+    $types = "";
+
+    if ($category !== 'all') {
+        $filters .= " AND LOWER(mi.category) = ?";
+        $params[] = $category;
+        $types .= 's';
+    }
+
+    if ($brand !== 'all') {
+        $filters .= " AND LOWER(mi.brand) = ?";
+        $params[] = $brand;
+        $types .= 's';
+    }
+
+    if ($model !== 'all' && !empty($model)) {
+        $filters .= " AND mi.model = ?";
+        $params[] = $model;
+        $types .= 's';
+    }
+
+    // ALWAYS filter for TBA units
+    $filters .= " AND mi.with_tba = 1";
+
+    $sql = "
+        SELECT 
+            mi.*,
+            COALESCE(
+                (
+                    SELECT it.to_branch
+                    FROM inventory_transfers it
+                    WHERE it.motorcycle_id = mi.id
+                      AND it.transfer_status = 'completed'
+                      AND it.transfer_date <= ?
+                    ORDER BY it.transfer_date DESC
+                    LIMIT 1
+                ),
+                (
+                    SELECT it2.from_branch
+                    FROM inventory_transfers it2
+                    WHERE it2.motorcycle_id = mi.id
+                      AND it2.transfer_status = 'completed'
+                    ORDER BY it2.transfer_date ASC
+                    LIMIT 1
+                ),
+                mi.current_branch
+            ) AS branch_as_of_report_date
+        FROM motorcycle_inventory mi
+        WHERE mi.deleted_at IS NULL
+          AND mi.date_delivered <= ?
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_sales s
+              WHERE s.motorcycle_id = mi.id
+                AND s.sale_date <= ?
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_scraps sc
+              WHERE sc.motorcycle_id = mi.id
+                AND sc.scrap_date <= ?
+          )
+          $filters
+        ORDER BY mi.brand, mi.model, mi.engine_number
+    ";
+
+    $paramsFinal = array_merge([$reportEndDate, $reportEndDate, $reportEndDate, $reportEndDate], $params);
+    $typesFinal = 'ssss' . $types;
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
+    }
+
+    $stmt->bind_param($typesFinal, ...$paramsFinal);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    $total_cost = 0;
+    $total_units = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $effective_branch = strtoupper($row['branch_as_of_report_date'] ?? $row['current_branch']);
+
+        if (strtoupper($branch) === 'ALL' || $effective_branch === strtoupper($branch)) {
+            $row['effective_branch'] = $effective_branch; 
+            $data[] = $row;
+            $total_units++;
+            $total_cost += (float)($row['inventory_cost'] ?? 0);
+        }
+    }
+
+    $stmt->close();
+
+    echo json_encode([
+        'success' => true,
+        'month' => $reportMonth,
+        'end_date' => $reportEndDate,
+        'branch' => $branch,
+        'category' => $category,
+        'brand' => $brand,
+        'model' => $model,
+        'with_tba' => $with_tba,
+        'total_available_units' => $total_units,
+        'total_inventory_cost' => $total_cost,
+        'data' => $data
+    ]);
+}
+
+function getMotorcyclesWithStockReport()
+{
+    global $conn;
+
+    $period_type = $_GET['period_type'] ?? 'monthly';
+    $month = $_GET['month'] ?? null;
+    $branch = $_GET['branch'] ?? 'ALL';
+    $category = strtolower($_GET['category'] ?? 'all');
+    $brand = strtolower($_GET['brand'] ?? 'all');
+    $model = $_GET['model'] ?? 'all';
+
+    if ($period_type === 'monthly' && !empty($month)) {
+        $reportEndDate = date('Y-m-t', strtotime($month)); 
+        $reportMonth = $month;
+    } else {
+        $reportEndDate = date('Y-m-d');
+        $reportMonth = date('Y-m', strtotime($reportEndDate));
+    }
+
+    $filters = "";
+    $params = [];
+    $types = "";
+
+    if ($category !== 'all') {
+        $filters .= " AND LOWER(mi.category) = ?";
+        $params[] = $category;
+        $types .= 's';
+    }
+
+    if ($brand !== 'all') {
+        $filters .= " AND LOWER(mi.brand) = ?";
+        $params[] = $brand;
+        $types .= 's';
+    }
+
+    if ($model !== 'all' && !empty($model)) {
+        $filters .= " AND mi.model = ?";
+        $params[] = $model;
+        $types .= 's';
+    }
+
+    // Filter for units with stock report numbers
+    $filters .= " AND (mi.stock_report_number IS NOT NULL AND mi.stock_report_number != '')";
+
+    $sql = "
+        SELECT 
+            mi.*,
+            COALESCE(
+                (
+                    SELECT it.to_branch
+                    FROM inventory_transfers it
+                    WHERE it.motorcycle_id = mi.id
+                      AND it.transfer_status = 'completed'
+                      AND it.transfer_date <= ?
+                    ORDER BY it.transfer_date DESC
+                    LIMIT 1
+                ),
+                (
+                    SELECT it2.from_branch
+                    FROM inventory_transfers it2
+                    WHERE it2.motorcycle_id = mi.id
+                      AND it2.transfer_status = 'completed'
+                    ORDER BY it2.transfer_date ASC
+                    LIMIT 1
+                ),
+                mi.current_branch
+            ) AS branch_as_of_report_date
+        FROM motorcycle_inventory mi
+        WHERE mi.deleted_at IS NULL
+          AND mi.date_delivered <= ?
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_sales s
+              WHERE s.motorcycle_id = mi.id
+                AND s.sale_date <= ?
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM motorcycle_scraps sc
+              WHERE sc.motorcycle_id = mi.id
+                AND sc.scrap_date <= ?
+          )
+          $filters
+        ORDER BY mi.brand, mi.model, mi.engine_number
+    ";
+
+    $paramsFinal = array_merge([$reportEndDate, $reportEndDate, $reportEndDate, $reportEndDate], $params);
+    $typesFinal = 'ssss' . $types;
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
+    }
+
+    $stmt->bind_param($typesFinal, ...$paramsFinal);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    $total_cost = 0;
+    $total_units = 0;
+
+    while ($row = $result->fetch_assoc()) {
+        $effective_branch = strtoupper($row['branch_as_of_report_date'] ?? $row['current_branch']);
+
+        if (strtoupper($branch) === 'ALL' || $effective_branch === strtoupper($branch)) {
+            $row['effective_branch'] = $effective_branch; 
+            $data[] = $row;
+            $total_units++;
+            $total_cost += (float)($row['inventory_cost'] ?? 0);
+        }
+    }
+
+    $stmt->close();
+
+    echo json_encode([
+        'success' => true,
+        'month' => $reportMonth,
+        'end_date' => $reportEndDate,
+        'branch' => $branch,
+        'category' => $category,
+        'brand' => $brand,
+        'model' => $model,
+        'total_available_units' => $total_units,
+        'total_inventory_cost' => $total_cost,
+        'data' => $data
+    ]);
+}
+function getMotorcyclesWithTbaStockReport()
+{
+    global $conn;
+
+    $period_type = $_GET['period_type'] ?? 'monthly';
+    $month = $_GET['month'] ?? null;
+    $branch = $_GET['branch'] ?? 'ALL';
+    $category = strtolower($_GET['category'] ?? 'all');
+    $brand = strtolower($_GET['brand'] ?? 'all');
+    $model = $_GET['model'] ?? 'all';
+
+    if ($period_type === 'monthly' && !empty($month)) {
+        $reportEndDate = date('Y-m-t', strtotime($month)); 
+        $reportMonth = $month;
+    } else {
+        $reportEndDate = date('Y-m-d');
+        $reportMonth = date('Y-m', strtotime($reportEndDate));
+    }
+
+    $filters = "";
+    $params = [];
+    $types = "";
+
+    if ($category !== 'all') {
+        $filters .= " AND LOWER(mi.category) = ?";
+        $params[] = $category;
+        $types .= 's';
+    }
+
+    if ($brand !== 'all') {
+        $filters .= " AND LOWER(mi.brand) = ?";
+        $params[] = $brand;
+        $types .= 's';
+    }
+
+    if ($model !== 'all' && !empty($model)) {
+        $filters .= " AND mi.model = ?";
+        $params[] = $model;
+        $types .= 's';
+    }
+
+    // Filter for units with both TBA and stock report numbers
+    $filters .= " AND mi.with_tba = 1 AND (mi.stock_report_number IS NOT NULL AND mi.stock_report_number != '')";
 
     $sql = "
         SELECT 
