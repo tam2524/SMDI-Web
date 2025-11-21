@@ -2679,10 +2679,6 @@ function submitEditShipment() {
         $("#editShipmentModal").modal("hide");
         showSuccessModal(response.message || "Direct shipment updated successfully!");
         
-        
-        const currentPage = 1; 
-        const currentQuery = $("#directShipmentsSearch").val();
-        loadDirectShipments(currentPage, currentQuery);
       } else {
         showErrorModal(response.message || "Error updating shipment.");
       }
