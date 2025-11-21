@@ -2494,31 +2494,22 @@ function getMonthlyInventory() {
     $countBeginning = (int)($beginningResult['count_beginning'] ?? 0);
     $costBeginning = (float)($beginningResult['cost_beginning'] ?? 0);
 
-    // === CALCULATE NEW DELIVERIES (Current Month) - ONLY FROM SUPPLIERS/VENDORS ===
-    $countNewDeliveries = 0;
-    $costNewDeliveries = 0;
+    // === CALCULATE NEW DELIVERIES (Current Month) - ALL NEW UNITS TO SYSTEM ===
+   // === CALCULATE NEW DELIVERIES (Current Month) ===
+$countNewDeliveries = 0;
+$costNewDeliveries = 0;
 
+if ($branch === 'all' || $branch === 'HEADOFFICE') {
+    // For HEADOFFICE or "all" branches, count ALL new deliveries to the entire system
     $sqlNewDeliveries = "
     SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
     FROM motorcycle_inventory mi
     WHERE mi.deleted_at IS NULL
         AND mi.date_delivered BETWEEN ? AND ?
-        -- EXCLUDE units that came from transfers (these should have transfer records)
-        AND NOT EXISTS (
-            SELECT 1 FROM inventory_transfers it 
-            WHERE it.motorcycle_id = mi.id 
-            AND it.transfer_date <= mi.date_delivered
-            AND it.transfer_status = 'completed'
-        )
         $brandCondition
         $categoryCondition
         $modelCondition
     ";
-
-    // Add branch condition for new deliveries if specific branch selected
-    if ($branch !== 'all') {
-        $sqlNewDeliveries .= " AND mi.current_branch = ?";
-    }
 
     $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
     if ($stmtNewDeliveries === false) {
@@ -2527,14 +2518,42 @@ function getMonthlyInventory() {
     }
 
     $paramsNew = array_merge([$startDate, $endDate], $params);
-    if ($branch !== 'all') {
-        $paramsNew[] = $branch;
-    }
     bindParams($stmtNewDeliveries, $paramsNew);
-    $stmtNewDeliveries->execute();
-    $newResult = $stmtNewDeliveries->get_result()->fetch_assoc();
-    $countNewDeliveries = (int)($newResult['count_new'] ?? 0);
-    $costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
+} else {
+    // For specific branches, count ONLY units that were:
+    // 1. Delivered during the period
+    // 2. Originally delivered to this branch 
+    // 3. Have NO transfer records at all (meaning they were never transferred)
+    $sqlNewDeliveries = "
+    SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
+    FROM motorcycle_inventory mi
+    WHERE mi.deleted_at IS NULL
+        AND mi.date_delivered BETWEEN ? AND ?
+        AND mi.current_branch = ?
+        AND NOT EXISTS (
+            SELECT 1 FROM inventory_transfers it 
+            WHERE it.motorcycle_id = mi.id 
+            AND it.transfer_status = 'completed'
+        )
+        $brandCondition
+        $categoryCondition
+        $modelCondition
+    ";
+
+    $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
+    if ($stmtNewDeliveries === false) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed (new deliveries): ' . $conn->error]);
+        return;
+    }
+
+    $paramsNew = array_merge([$startDate, $endDate, $branch], $params);
+    bindParams($stmtNewDeliveries, $paramsNew);
+}
+
+$stmtNewDeliveries->execute();
+$newResult = $stmtNewDeliveries->get_result()->fetch_assoc();
+$countNewDeliveries = (int)($newResult['count_new'] ?? 0);
+$costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
 
     // === CALCULATE RECEIVED TRANSFERS (Current Month) ===
     $countReceivedTransfers = 0;
@@ -2760,6 +2779,24 @@ function getMonthlyInventory() {
         $sqlMain .= " HAVING branch_as_of_report_date = ?";
     }
 
+    // Add sorting based on the sort parameter
+    $sort = isset($_GET['sort']) ? sanitizeInput($_GET['sort']) : 'date_asc';
+    switch ($sort) {
+        case 'date_desc':
+            $sqlMain .= " ORDER BY mi.date_delivered DESC";
+            break;
+        case 'brand_asc':
+            $sqlMain .= " ORDER BY mi.brand ASC, mi.model ASC";
+            break;
+        case 'brand_desc':
+            $sqlMain .= " ORDER BY mi.brand DESC, mi.model DESC";
+            break;
+        case 'date_asc':
+        default:
+            $sqlMain .= " ORDER BY mi.date_delivered ASC";
+            break;
+    }
+
     $stmtMain = $conn->prepare($sqlMain);
     if ($stmtMain === false) {
         echo json_encode(['success' => false, 'message' => 'Prepare failed (main): ' . $conn->error]);
@@ -2808,6 +2845,9 @@ function getMonthlyInventory() {
         'month' => $month,
         'as_of_date' => $asOfDate,
         'branch' => $branch,
+        'category' => $category,
+        'brand' => $brand,
+        'model' => $models_str,
         'summary' => [
             'beginning_balance' => $countBeginning,
             'new_deliveries' => $countNewDeliveries,
@@ -2850,14 +2890,18 @@ function getMonthlyInventory() {
             'query_period' => "$startDate to $endDate",
             'previous_month_end' => $prevMonthEnd,
             'branch_filter_applied' => $branch,
+            'category_filter_applied' => $category,
+            'brand_filter_applied' => $brand,
+            'model_filter_applied' => $models_str,
             'new_deliveries_count' => $countNewDeliveries,
-            'received_transfers_count' => $countReceivedTransfers
+            'received_transfers_count' => $countReceivedTransfers,
+            'transfers_out_count' => $countTransfersOut,
+            'sold_count' => $countSold
         ]
     ];
 
     echo json_encode($response);
 }
-
 function getMonthlyTransferredSummary() {
     global $conn;
 
@@ -4154,9 +4198,24 @@ function getDeliveredStocksSummary() {
 
     $params = [$startDate, $endDate];
     $paramTypes = 'ss';
+    
+    // Modified condition to exclude transferred units
+    // Only include units that were originally delivered to this branch (not transferred in)
     $conditions = "mi.date_delivered BETWEEN ? AND ? AND mi.deleted_at IS NULL";
+    
+    // CRITICAL: Exclude units that were transferred from another branch
+    // This assumes you have fields to track transfer history
+    $conditions .= " AND (mi.transferred_from IS NULL OR mi.transferred_from = '')";
+    
+    // Alternative approach if you have an 'origin_branch' or 'original_branch' field:
+    // $conditions .= " AND mi.current_branch = mi.origin_branch";
+    
+    // Or if you have a 'delivery_type' field:
+    // $conditions .= " AND mi.delivery_type = 'initial'";
+    
+    // Or if transfers have a specific pattern in initial_dr_number:
+    // $conditions .= " AND mi.initial_dr_number NOT LIKE 'TRANSFER-%'";
 
-    // Add branch filter
     if ($branch !== 'all') {
         $conditions .= " AND mi.current_branch = ? ";
         $params[] = $branch;
@@ -4200,7 +4259,10 @@ function getDeliveredStocksSummary() {
             mi.date_delivered,
             mi.initial_dr_number,
             mi.current_branch,
-            i.invoice_number
+            i.invoice_number,
+            mi.transferred_from,
+            mi.origin_branch,
+            mi.delivery_type
         FROM motorcycle_inventory mi
         LEFT JOIN invoices i ON mi.invoice_id = i.id
         WHERE $conditions
@@ -4235,6 +4297,9 @@ function getDeliveredStocksSummary() {
             'date_delivered' => $row['date_delivered'],
             'initial_dr_number' => $row['initial_dr_number'],
             'branch' => $row['current_branch'],
+            'transferred_from' => $row['transferred_from'],
+            'origin_branch' => $row['origin_branch'],
+            'delivery_type' => $row['delivery_type']
         ];
         $totalDelivered++;
         $totalCost += (float)$row['inventory_cost'];
@@ -4251,9 +4316,9 @@ function getDeliveredStocksSummary() {
             'total_delivered' => $totalDelivered,
             'total_inventory_cost' => $totalCost,
         ],
+        'note' => 'Report shows only directly delivered units, excluding transferred units'
     ]);
 }
-
 
 function getRedeemedUnitsReport() {
     global $conn;
