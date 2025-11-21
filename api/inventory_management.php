@@ -2494,13 +2494,10 @@ function getMonthlyInventory() {
     $countBeginning = (int)($beginningResult['count_beginning'] ?? 0);
     $costBeginning = (float)($beginningResult['cost_beginning'] ?? 0);
 
-    // === CALCULATE NEW DELIVERIES (Current Month) - ALL NEW UNITS TO SYSTEM ===
-   // === CALCULATE NEW DELIVERIES (Current Month) ===
-$countNewDeliveries = 0;
-$costNewDeliveries = 0;
+    $countNewDeliveries = 0;
+    $costNewDeliveries = 0;
 
-if ($branch === 'all' || $branch === 'HEADOFFICE') {
-    // For HEADOFFICE or "all" branches, count ALL new deliveries to the entire system
+    if ($branch === 'all' || $branch === 'HEADOFFICE') {
     $sqlNewDeliveries = "
     SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
     FROM motorcycle_inventory mi
@@ -2519,11 +2516,8 @@ if ($branch === 'all' || $branch === 'HEADOFFICE') {
 
     $paramsNew = array_merge([$startDate, $endDate], $params);
     bindParams($stmtNewDeliveries, $paramsNew);
-} else {
-    // For specific branches, count ONLY units that were:
-    // 1. Delivered during the period
-    // 2. Originally delivered to this branch 
-    // 3. Have NO transfer records at all (meaning they were never transferred)
+    } else {
+
     $sqlNewDeliveries = "
     SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
     FROM motorcycle_inventory mi
@@ -2548,12 +2542,12 @@ if ($branch === 'all' || $branch === 'HEADOFFICE') {
 
     $paramsNew = array_merge([$startDate, $endDate, $branch], $params);
     bindParams($stmtNewDeliveries, $paramsNew);
-}
+    }
 
-$stmtNewDeliveries->execute();
-$newResult = $stmtNewDeliveries->get_result()->fetch_assoc();
-$countNewDeliveries = (int)($newResult['count_new'] ?? 0);
-$costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
+    $stmtNewDeliveries->execute();
+    $newResult = $stmtNewDeliveries->get_result()->fetch_assoc();
+    $countNewDeliveries = (int)($newResult['count_new'] ?? 0);
+    $costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
 
     // === CALCULATE RECEIVED TRANSFERS (Current Month) ===
     $countReceivedTransfers = 0;
