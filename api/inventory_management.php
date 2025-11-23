@@ -2494,60 +2494,71 @@ function getMonthlyInventory() {
     $countBeginning = (int)($beginningResult['count_beginning'] ?? 0);
     $costBeginning = (float)($beginningResult['cost_beginning'] ?? 0);
 
-    $countNewDeliveries = 0;
-    $costNewDeliveries = 0;
+ $countNewDeliveries = 0;
+$costNewDeliveries = 0;
 
-    if ($branch === 'all' || $branch === 'HEADOFFICE') {
-    $sqlNewDeliveries = "
-    SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
-    FROM motorcycle_inventory mi
-    WHERE mi.deleted_at IS NULL
-        AND mi.date_delivered BETWEEN ? AND ?
-        $brandCondition
-        $categoryCondition
-        $modelCondition
-    ";
-
-    $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-    if ($stmtNewDeliveries === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed (new deliveries): ' . $conn->error]);
-        return;
-    }
-
-    $paramsNew = array_merge([$startDate, $endDate], $params);
-    bindParams($stmtNewDeliveries, $paramsNew);
-    } else {
-
-    $sqlNewDeliveries = "
-    SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
-    FROM motorcycle_inventory mi
-    WHERE mi.deleted_at IS NULL
-        AND mi.date_delivered BETWEEN ? AND ?
-        AND mi.current_branch = ?
-        AND NOT EXISTS (
-            SELECT 1 FROM inventory_transfers it 
-            WHERE it.motorcycle_id = mi.id 
-            AND it.transfer_status = 'completed'
+$sqlNewDeliveries = "
+SELECT 
+    COUNT(DISTINCT mi.id) AS count_new,
+    COALESCE(SUM(DISTINCT mi.inventory_cost), 0) AS cost_new
+FROM motorcycle_inventory mi
+WHERE mi.deleted_at IS NULL
+  AND mi.date_delivered BETWEEN ? AND ?
+  $brandCondition
+  $categoryCondition
+  $modelCondition
+  -- Only include units that were delivered as new (not received from transfer)
+  AND NOT EXISTS (
+      SELECT 1
+      FROM inventory_transfers it
+      WHERE it.motorcycle_id = mi.id
+        AND it.transfer_status = 'completed'
+        AND it.to_branch = COALESCE(
+            (SELECT it2.to_branch
+             FROM inventory_transfers it2
+             WHERE it2.motorcycle_id = mi.id
+               AND it2.transfer_status = 'completed'
+             ORDER BY it2.transfer_date ASC
+             LIMIT 1),
+            mi.current_branch
         )
-        $brandCondition
-        $categoryCondition
-        $modelCondition
-    ";
+        AND it.transfer_date <= mi.date_delivered
+  )
+  -- Branch filter
+  AND (
+      ? = 'all' OR
+      COALESCE(
+          (SELECT it.from_branch
+           FROM inventory_transfers it
+           WHERE it.motorcycle_id = mi.id
+             AND it.transfer_status = 'completed'
+           ORDER BY it.transfer_date ASC
+           LIMIT 1),
+          mi.current_branch
+      ) = ?
+  )
+";
 
-    $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-    if ($stmtNewDeliveries === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed (new deliveries): ' . $conn->error]);
-        return;
-    }
+$stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
+if (!$stmtNewDeliveries) {
+    echo json_encode(['success' => false, 'message' => 'Prepare failed (new deliveries): ' . $conn->error]);
+    return;
+}
 
-    $paramsNew = array_merge([$startDate, $endDate, $branch], $params);
-    bindParams($stmtNewDeliveries, $paramsNew);
-    }
+$paramsNew = [$startDate, $endDate];
+$paramsNew = array_merge($paramsNew, $params); // brand/category/model filters
+$paramsNew[] = $branch; // for "? = 'all'"
+$paramsNew[] = $branch; // for branch filter
 
-    $stmtNewDeliveries->execute();
-    $newResult = $stmtNewDeliveries->get_result()->fetch_assoc();
-    $countNewDeliveries = (int)($newResult['count_new'] ?? 0);
-    $costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
+bindParams($stmtNewDeliveries, $paramsNew);
+
+$stmtNewDeliveries->execute();
+$newResult = $stmtNewDeliveries->get_result()->fetch_assoc();
+
+$countNewDeliveries = (int)($newResult['count_new'] ?? 0);
+$costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
+
+
 
     // === CALCULATE RECEIVED TRANSFERS (Current Month) ===
     $countReceivedTransfers = 0;
@@ -2607,40 +2618,55 @@ function getMonthlyInventory() {
         $costTransfersOut = (float)($outResult['cost_out'] ?? 0);
     }
 
-    // === CALCULATE SOLD UNITS (Current Month) ===
-    $countSold = 0;
-    $costSold = 0;
+// === CALCULATE SOLD UNITS (Current Month) ===
+$countSold = 0;
+$costSold = 0;
 
-    $sqlSold = "
-    SELECT COUNT(*) as count_sold, COALESCE(SUM(mi.inventory_cost), 0) as cost_sold
-    FROM motorcycle_sales ms
-    JOIN motorcycle_inventory mi ON ms.motorcycle_id = mi.id
-    WHERE ms.sale_date BETWEEN ? AND ?
-      $brandCondition
-      $categoryCondition
-      $modelCondition
-    ";
+$sqlSold = "
+SELECT COUNT(*) as count_sold, COALESCE(SUM(mi.inventory_cost), 0) as cost_sold
+FROM motorcycle_sales ms
+JOIN motorcycle_inventory mi ON ms.motorcycle_id = mi.id
+WHERE ms.sale_date BETWEEN ? AND ?
+  $brandCondition
+  $categoryCondition
+  $modelCondition
+";
 
-    // Add branch condition for sold units if specific branch selected
-    if ($branch !== 'all') {
-        $sqlSold .= " AND mi.current_branch = ?";
-    }
+// Fix: use historical branch as of sale date
+if ($branch !== 'all') {
+    $sqlSold .= "
+    AND (
+        COALESCE(
+            (SELECT it.to_branch
+             FROM inventory_transfers it
+             WHERE it.motorcycle_id = mi.id
+               AND it.transfer_status = 'completed'
+               AND it.transfer_date <= ms.sale_date
+             ORDER BY it.transfer_date DESC
+             LIMIT 1),
+            mi.current_branch
+        ) = ?
+    )";
+}
 
-    $stmtSold = $conn->prepare($sqlSold);
-    if ($stmtSold === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed (sold): ' . $conn->error]);
-        return;
-    }
+$stmtSold = $conn->prepare($sqlSold);
+if ($stmtSold === false) {
+    echo json_encode(['success' => false, 'message' => 'Prepare failed (sold): ' . $conn->error]);
+    return;
+}
 
-    $paramsSold = array_merge([$startDate, $endDate], $params);
-    if ($branch !== 'all') {
-        $paramsSold[] = $branch;
-    }
-    bindParams($stmtSold, $paramsSold);
-    $stmtSold->execute();
-    $soldResult = $stmtSold->get_result()->fetch_assoc();
-    $countSold = (int)($soldResult['count_sold'] ?? 0);
-    $costSold = (float)($soldResult['cost_sold'] ?? 0);
+$paramsSold = array_merge([$startDate, $endDate], $params);
+if ($branch !== 'all') {
+    $paramsSold[] = $branch;
+}
+bindParams($stmtSold, $paramsSold);
+
+$stmtSold->execute();
+$soldResult = $stmtSold->get_result()->fetch_assoc();
+
+$countSold = (int)($soldResult['count_sold'] ?? 0);
+$costSold = (float)($soldResult['cost_sold'] ?? 0);
+
 
     // === CALCULATE ENDING BALANCE (Current Month End) ===
     $countEndingActual = 0;
