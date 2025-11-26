@@ -696,3 +696,34 @@ body.modal-open {
   max-height: 500px;
   overflow-y: auto;
 }
+
+/* Real-time duplicate detection styles */
+.engine-number.border-danger, .frame-number.border-danger {
+    border: 2px solid #dc3545 !important;
+    background-color: #fff5f5 !important;
+}
+
+.engine-number.text-danger, .frame-number.text-danger {
+    color: #dc3545 !important;
+    font-weight: bold !important;
+}
+
+.engine-number.border-success, .frame-number.border-success {
+    border: 2px solid #198754 !important;
+    background-color: #f8fff9 !important;
+}
+
+.engine-number.text-success, .frame-number.text-success {
+    color: #198754 !important;
+}
+
+/* Pulse animation for new duplicates */
+@keyframes pulse-red {
+    0% { background-color: #fff5f5; }
+    50% { background-color: #ffe6e6; }
+    100% { background-color: #fff5f5; }
+}
+
+.engine-number.border-danger:focus, .frame-number.border-danger:focus {
+    animation: pulse-red 1s ease-in-out;
+}

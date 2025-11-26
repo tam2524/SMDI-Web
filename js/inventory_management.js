@@ -24,6 +24,8 @@ let currentReportCategory = null;
 let currentReportBrand = null;
 let modelCount = 0;
 let currentUserRole = "USER";
+let currentSessionEngineNumbers = new Set();
+let currentSessionFrameNumbers = new Set();
 const canAccessScrapFeature = isHeadOffice || isAdminUser;
 
 /**
@@ -229,6 +231,11 @@ $(document).on('change', '#editWithStockReport', function() {
         $('#editStockReportNumber').val('');
     }
 });
+
+  $("#reportType").on("change", function() {
+    updateBranchDropdownForReportType();
+    updateReportFilterOptions(); // Your existing function
+  });
 
 $(document).on('change', '.model-with-stock-report', function() {
     const container = $(this).closest('.model-form').find('.stock-report-number-container');
@@ -1309,11 +1316,11 @@ function updateSpecificDetailsFields(quantityInput) {
                 <div class="specific-details-row row g-3 align-items-end mb-3 border-bottom pb-3">
                     <div class="col-md-4">
                         <label class="form-label mb-1">Engine Number <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control engine-number" placeholder="Engine Number" required>
+                        <input type="text" class="form-control engine-number engine-number-input" placeholder="Engine Number" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label mb-1">Frame Number <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control frame-number" placeholder="Frame Number" required>
+                        <input type="text" class="form-control frame-number frame-number-input" placeholder="Frame Number" required>
                     </div>
                     <div class="col-md-4">
                         <!-- Options for this specific unit -->
@@ -4443,6 +4450,31 @@ function updateDatePickerVisibility() {
   }
 }
 
+function updateBranchDropdownForReportType() {
+  const selectedReport = $("#reportType").val();
+  const $branchDropdown = $("#reportBranch");
+  
+  if (selectedReport === "inventory_summary") {
+    // For Summary of Inventory report - show only "All"
+    $branchDropdown
+      .empty()
+      .append('<option value="all">ALL BRANCHES</option>')
+      .val("all")
+      .prop("disabled", false);
+  } 
+  else if (currentUserBranch === "HEADOFFICE" || ["ADMIN", "IT STAFF", "HEAD"].includes(currentUserPosition)) {
+    // For admin users on other reports - show all branches
+    populateBranchesDropdown();
+    $branchDropdown.prop("disabled", false);
+  } else {
+    // For regular users on other reports - show only their branch
+    $branchDropdown
+      .empty()
+      .append(`<option value="${currentUserBranch}">${currentUserBranch}</option>`)
+      .val(currentUserBranch)
+      .prop("disabled", true);
+  }
+}
 
 function showMonthlyReportOptions() {
   
@@ -4542,8 +4574,6 @@ function generateReport() {
     case "inventory_summary":
       
       apiData.action = "get_monthly_inventory";
-
-      
       callReportAPI(apiData, renderInventorySummaryReport, reportType);
       break;
     case "sold_units":
@@ -5155,13 +5185,11 @@ function generateInventoryReportPDF() {
     doc.save(`Monthly_Inventory_Report_${currentReportMonth || currentReportDate}_${currentReportBranch}.pdf`);
 }
 
-
 function toggleInventorySummaryDetails(element, brand, model, branch) {
   const row = $(element);
-  
+
   const detailsRowId = `details-${brand.replace(/\W/g, "")}-${model.replace(
-    /\W/g,
-    ""
+    /\W/g, ""
   )}-${branch.replace(/\W/g, "")}`;
   const existingDetailsRow = $(`#${detailsRowId}`);
   if (existingDetailsRow.length) {
@@ -5175,12 +5203,11 @@ function toggleInventorySummaryDetails(element, brand, model, branch) {
     `<tr id="${detailsRowId}" class="model-details-row"><td colspan="100%" class="p-2 bg-light"><div class="text-center"><div class="spinner-border spinner-border-sm"></div> Loading units...</div></td></tr>`
   );
 
- 
   const units = currentReportData.data.filter(
     (item) =>
       item.brand === brand &&
       item.model === model &&
-      (branch === "all" || item.current_branch === branch) 
+      (branch === "all" || item.current_branch === branch)
   );
 
   if (units.length > 0) {
@@ -5213,7 +5240,6 @@ function renderInventorySummaryReport(response) {
   const reportTitle = "Inventory Summary Report";
   let dateSubtitle = "";
 
-  
   if (currentReportDate) {
     dateSubtitle = `As of ${formatDate(currentReportDate)}`;
   } else if (currentReportMonth) {
@@ -5227,31 +5253,41 @@ function renderInventorySummaryReport(response) {
 
   $("#monthlyInventoryReportModalLabel").text(reportTitle);
 
+  // Get ALL brands from data, not just the 4 main ones
+  const allBrands = [...new Set(data.map(item => item.brand))].sort();
   const branches = [...new Set(data.map((item) => item.current_branch))].sort();
-  const brandNames = ["Suzuki", "Honda", "Yamaha", "Kawasaki"];
+  
+  // Define main brands for the main summary table
+  const mainBrandNames = ["Suzuki", "Honda", "Yamaha", "Kawasaki", "Asiastar"];
+  
+  // Initialize data structures for ALL brands
   const brands = {};
   const models_by_brand = {};
-  brandNames.forEach((b) => {
+  
+  allBrands.forEach((b) => {
     brands[b] = {};
     models_by_brand[b] = {};
   });
 
+  // Process ALL data including all brands
   for (const item of data) {
     const { brand, model, current_branch, inventory_cost } = item;
-    if (brandNames.includes(brand)) {
-      if (!brands[brand][current_branch])
-        brands[brand][current_branch] = { count: 0, cost: 0 };
-      brands[brand][current_branch].count++;
-      brands[brand][current_branch].cost += parseFloat(inventory_cost || 0);
-
-      if (!models_by_brand[brand][model]) models_by_brand[brand][model] = {};
-      if (!models_by_brand[brand][model][current_branch])
-        models_by_brand[brand][model][current_branch] = { count: 0, cost: 0 };
-      models_by_brand[brand][model][current_branch].count++;
-      models_by_brand[brand][model][current_branch].cost += parseFloat(
-        inventory_cost || 0
-      );
+    
+    // Initialize if not exists
+    if (!brands[brand][current_branch]) {
+      brands[brand][current_branch] = { count: 0, cost: 0 };
     }
+    brands[brand][current_branch].count++;
+    brands[brand][current_branch].cost += parseFloat(inventory_cost || 0);
+
+    if (!models_by_brand[brand][model]) models_by_brand[brand][model] = {};
+    if (!models_by_brand[brand][model][current_branch]) {
+      models_by_brand[brand][model][current_branch] = { count: 0, cost: 0 };
+    }
+    models_by_brand[brand][model][current_branch].count++;
+    models_by_brand[brand][model][current_branch].cost += parseFloat(
+      inventory_cost || 0
+    );
   }
 
   let mainContentHtml = `
@@ -5269,22 +5305,30 @@ function renderInventorySummaryReport(response) {
     
     let navTabsHtml = `<ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#summary-sheet" type="button">Summary</button></li>`;
-    brandNames.forEach((brand) => {
+    
+    // Only show tabs for main brands
+    mainBrandNames.forEach((brand) => {
       navTabsHtml += `<li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#${brand.toLowerCase()}-sheet" type="button">${brand}</button></li>`;
     });
     navTabsHtml += `</ul>`;
 
     let tabContentHtml = `<div class="tab-content border border-top-0 p-3">`;
+    
+    // SUMMARY TABLE - Show ALL brands with proper totals
     let summaryTable = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm table-hover"><thead><tr><th>BRAND</th>`;
     branches.forEach((b) => {
       summaryTable += `<th>${escapeHtml(b)}</th>`;
     });
     summaryTable += `<th>GRAND TOTAL</th></tr></thead><tbody>`;
+    
     const branchTotals = { count: {}, cost: {} };
     let grandTotalAll = { count: 0, cost: 0 };
-    brandNames.forEach((brand) => {
+    
+    // Show ALL brands in summary, not just main ones
+    allBrands.forEach((brand) => {
       summaryTable += `<tr><td><strong>${brand}</strong></td>`;
       let brandTotal = { count: 0, cost: 0 };
+      
       branches.forEach((branchName) => {
         const cellData = (brands[brand] && brands[brand][branchName]) || {
           count: 0,
@@ -5302,6 +5346,7 @@ function renderInventorySummaryReport(response) {
         branchTotals.cost[branchName] =
           (branchTotals.cost[branchName] || 0) + cellData.cost;
       });
+      
       summaryTable += `<td class="text-center table-primary"><strong>${
         brandTotal.count
       }<br><small>${formatCurrency(
@@ -5310,6 +5355,7 @@ function renderInventorySummaryReport(response) {
       grandTotalAll.count += brandTotal.count;
       grandTotalAll.cost += brandTotal.cost;
     });
+    
     summaryTable += `<tr class="table-primary"><td><strong>TOTAL</strong></td>`;
     branches.forEach((branchName) => {
       summaryTable += `<td class="text-center"><strong>${
@@ -5324,8 +5370,11 @@ function renderInventorySummaryReport(response) {
       grandTotalAll.cost
     )}</small></strong></td></tr>`;
     summaryTable += `</tbody></table></div>`;
+    
     tabContentHtml += `<div class="tab-pane fade show active" id="summary-sheet" role="tabpanel">${summaryTable}</div>`;
-    brandNames.forEach((brand) => {
+    
+    // BRAND DETAILS - Only for main brands
+    mainBrandNames.forEach((brand) => {
       const brandData = models_by_brand[brand] || {};
       const sortedModels = Object.keys(brandData).sort();
       let brandTable = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm table-hover"><thead><tr><th>MODEL</th>`;
@@ -5333,16 +5382,18 @@ function renderInventorySummaryReport(response) {
         brandTable += `<th>${escapeHtml(b)}</th>`;
       });
       brandTable += `<th>TOTAL</th></tr></thead><tbody>`;
+      
       const branchSubtotals = { count: {}, cost: {} };
       let brandGrandTotal = { count: 0, cost: 0 };
+      
       sortedModels.forEach((model) => {
         brandTable += `<tr class="model-row" style="cursor: pointer;" onclick="toggleInventorySummaryDetails(this, '${brand}', '${escapeHtml(
           model
         )}', 'all')"><td>${escapeHtml(model)}</td>`;
         let modelTotal = { count: 0, cost: 0 };
+        
         branches.forEach((branchName) => {
-          const cellData = (brandData[model] &&
-            brandData[model][branchName]) || { count: 0, cost: 0 };
+          const cellData = (brandData[model] && brandData[model][branchName]) || { count: 0, cost: 0 };
           brandTable += `<td class="text-center">${
             cellData.count || "-"
           } / <br><small class="text-muted">${formatCurrency(
@@ -5355,6 +5406,7 @@ function renderInventorySummaryReport(response) {
           branchSubtotals.cost[branchName] =
             (branchSubtotals.cost[branchName] || 0) + cellData.cost;
         });
+        
         brandTable += `<td class="text-center table-info"><strong>${
           modelTotal.count
         }<br><small>${formatCurrency(
@@ -5363,6 +5415,7 @@ function renderInventorySummaryReport(response) {
         brandGrandTotal.count += modelTotal.count;
         brandGrandTotal.cost += modelTotal.cost;
       });
+      
       brandTable += `<tr class="table-info"><td><strong>SUBTOTAL</strong></td>`;
       branches.forEach((branchName) => {
         brandTable += `<td class="text-center"><strong>${
@@ -5377,27 +5430,35 @@ function renderInventorySummaryReport(response) {
         brandGrandTotal.cost
       )}</small></strong></td></tr>`;
       brandTable += `</tbody></table></div>`;
+      
       tabContentHtml += `<div class="tab-pane fade" id="${brand.toLowerCase()}-sheet" role="tabpanel">${brandTable}</div>`;
     });
+    
     tabContentHtml += `</div>`;
     mainContentHtml += navTabsHtml + tabContentHtml;
   } else {
-    
+    // Branch user view - similar fixes needed here
     const branch_name = currentUserBranch;
     let navTabsHtml = `<ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#summary-sheet" type="button">Summary</button></li>`;
-    brandNames.forEach((brand) => {
+    
+    mainBrandNames.forEach((brand) => {
       navTabsHtml += `<li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#${brand.toLowerCase()}-sheet" type="button">${brand}</button></li>`;
     });
     navTabsHtml += `</ul>`;
 
     let tabContentHtml = `<div class="tab-content border border-top-0 p-3">`;
+    
+    // SUMMARY TABLE for branch - show ALL brands
     let summaryTable = `<h5 class="mt-2">Inventory Summary — ${branch_name}</h5><div class="table-responsive mt-3"><table class="table table-striped table-sm table-bordered">
             <thead><tr class="table-primary"><th>BRAND</th><th class="text-center">TOTAL UNITS</th><th class="text-end">TOTAL INVENTORY COST</th></tr></thead><tbody>`;
+    
     let grandTotalCount = 0;
     let grandTotalCost = 0;
-    brandNames.forEach((brand) => {
-      const models = data.filter((item) => item.brand === brand);
+    
+    // Use ALL brands, not just main ones
+    allBrands.forEach((brand) => {
+      const models = data.filter((item) => item.brand === brand && item.current_branch === branch_name);
       const brandTotalCount = models.length;
       const brandTotalCost = models.reduce(
         (sum, item) => sum + parseFloat(item.inventory_cost || 0),
@@ -5409,21 +5470,26 @@ function renderInventorySummaryReport(response) {
       grandTotalCount += brandTotalCount;
       grandTotalCost += brandTotalCost;
     });
+    
     summaryTable += `<tr class="table-dark"><td><strong>GRAND TOTAL</strong></td><td class="text-center"><strong>${grandTotalCount}</strong></td><td class="text-end"><strong>${formatCurrency(
       grandTotalCost
     )}</strong></td></tr>`;
     summaryTable += `</tbody></table></div>`;
+    
     tabContentHtml += `<div class="tab-pane fade show active" id="summary-sheet" role="tabpanel">${summaryTable}</div>`;
 
-    brandNames.forEach((brand) => {
-      const models_in_brand = data.filter((item) => item.brand === brand);
+    // BRAND DETAILS for branch - only for main brands
+    mainBrandNames.forEach((brand) => {
+      const models_in_brand = data.filter((item) => item.brand === brand && item.current_branch === branch_name);
       const model_groups = {};
+      
       models_in_brand.forEach((item) => {
         if (!model_groups[item.model])
           model_groups[item.model] = { count: 0, cost: 0 };
         model_groups[item.model].count++;
         model_groups[item.model].cost += parseFloat(item.inventory_cost || 0);
       });
+      
       const sortedModels = Object.keys(model_groups).sort();
 
       let tableHtml = `<h5 class="mt-2">${brand.toUpperCase()} INVENTORY — ${branch_name}</h5>`;
@@ -5433,20 +5499,20 @@ function renderInventorySummaryReport(response) {
         tableHtml += `<div class="table-responsive mt-3"><table class="table table-hover table-sm"><thead><tr><th>Model</th><th class="text-center">Unit Count</th><th class="text-end">Total Inventory Cost</th></tr></thead><tbody>`;
         let totalCount = 0;
         let totalCost = 0;
+        
         sortedModels.forEach((modelName) => {
           const item = model_groups[modelName];
           tableHtml += `<tr class="model-row" style="cursor: pointer;" onclick="toggleInventorySummaryDetails(this, '${brand}', '${escapeHtml(
             modelName
           )}', '${branch_name}')">
-                        <td>${escapeHtml(
-                          modelName
-                        )}</td><td class="text-center">${
+                        <td>${escapeHtml(modelName)}</td><td class="text-center">${
             item.count
           }</td><td class="text-end">${formatCurrency(item.cost)}</td>
                     </tr>`;
           totalCount += item.count;
           totalCost += item.cost;
         });
+        
         tableHtml += `<tr class="table-primary fw-bold"><td>TOTAL</td><td class="text-center">${totalCount}</td><td class="text-end">${formatCurrency(
           totalCost
         )}</td></tr>`;
@@ -5454,11 +5520,12 @@ function renderInventorySummaryReport(response) {
       }
       tabContentHtml += `<div class="tab-pane fade" id="${brand.toLowerCase()}-sheet" role="tabpanel">${tableHtml}</div>`;
     });
+    
     tabContentHtml += `</div>`;
     mainContentHtml += navTabsHtml + tabContentHtml;
   }
 
-  
+  // Summary cards section - this should now match the totals
   const beginningBalance = summary?.beginning_balance || 0;
   const costBeginning = summary?.inventory_cost?.beginning_balance || 0;
   const receivedTransfers = summary?.received_transfers || 0;
@@ -5500,397 +5567,555 @@ function renderInventorySummaryReport(response) {
   )}</div></div></div></div></div>
         </div>`;
 
-        mainContentHtml += generateBrandSummaryHtml(data);
+  mainContentHtml += generateBrandSummaryHtml(data);
   
   const finalHtml = `<div class="row"><div class="col-lg-8">${mainContentHtml}</div><div class="col-lg-4">${summaryCardsHtml}</div></div>`;
   $("#monthlyReportContent").html(finalHtml);
 }
 function getBranchShortcut(branchName) {
-    const shortcuts = {
-        'HEADOFFICE': 'HO', 'KINGDOM': 'KDM', 'TANQUE': 'TNQ', 'DFISHER': 'DFS',
-        'ROXAS SUZUKI': 'RXS-S', 'ROXAS HONDA': 'RXS-H', 'MAMBUSAO': 'MAM',
-        'SIGMA': 'SGM', 'PRC': 'PRC', 'BAILAN': 'BLN', 'CUARTERO': 'CTO',
-        'JAMINDAN': 'JAM', 'ANTIQUE-1': 'ANT-1', 'ANTIQUE-2': 'ANT-2',
-        'DELGADO HONDA': 'SDH', 'DELGADO SUZUKI': 'SDS', 'JARO-1': 'JAR-1', 'JARO-2': 'JAR-2',
-        'KALIBO MABINI': 'SKM', 'KALIBO SUZUKI': 'SKS', 'ALTAVAS': 'ALT', 'EMAP': 'EMP',
-        'CULASI': 'CUL', 'BACOLOD': 'BAC', 'PASSI-1': 'PAS-1', 'PASSI-2': 'PAS-2',
-        'BALASAN': 'BAL', 'GUIMARAS': 'GUI', 'PEMDI BACOLOD': 'PEMDI', 'EEMSI-GUIMARAS': 'EEMSI',
-        'INFINITY BACOLOD': 'INF', 'AJUY': 'AJY', 'MINDORO ROXAS': 'MDR', '3S MINDORO': 'M3S',
-        'MINDORO-MB': 'MB', 'MINDORO MANSALAY': 'MAN', 'K-RIDERS ROXAS': 'K-RID', 'IBAJAY': 'IBA',
-        'NUMANCIA': 'NUM', 'CFCIPRC': 'CFC'
-    };
-    return shortcuts[branchName.toUpperCase()] || branchName;
+  const shortcuts = {
+    HEADOFFICE: "HO",
+    KINGDOM: "KDM",
+    TANQUE: "TNQ",
+    DFISHER: "DFS",
+    "ROXAS SUZUKI": "RXS-S",
+    "ROXAS HONDA": "RXS-H",
+    MAMBUSAO: "MAM",
+    SIGMA: "SGM",
+    PRC: "PRC",
+    BAILAN: "BLN",
+    CUARTERO: "CTO",
+    JAMINDAN: "JAM",
+    "ANTIQUE-1": "ANT-1",
+    "ANTIQUE-2": "ANT-2",
+    "DELGADO HONDA": "SDH",
+    "DELGADO SUZUKI": "SDS",
+    "JARO-1": "JAR-1",
+    "JARO-2": "JAR-2",
+    "KALIBO MABINI": "SKM",
+    "KALIBO SUZUKI": "SKS",
+    ALTAVAS: "ALT",
+    EMAP: "EMP",
+    CULASI: "CUL",
+    BACOLOD: "BAC",
+    "PASSI-1": "PAS-1",
+    "PASSI-2": "PAS-2",
+    BALASAN: "BAL",
+    GUIMARAS: "GUI",
+    "PEMDI BACOLOD": "PEMDI",
+    "EEMSI-GUIMARAS": "EEMSI",
+    "INFINITY BACOLOD": "INF",
+    AJUY: "AJY",
+    "MINDORO ROXAS": "MDR",
+    "3S MINDORO": "M3S",
+    "MINDORO-MB": "MB",
+    "MINDORO MANSALAY": "MAN",
+    "K-RIDERS ROXAS": "K-RID",
+    IBAJAY: "IBA",
+    NUMANCIA: "NUM",
+    CFCIPRC: "CFC",
+  };
+  return shortcuts[branchName.toUpperCase()] || branchName;
 }
 
 function generateInventorySummaryReportPDF() {
-    const { jsPDF } = window.jspdf;
-    if (!currentReportData || currentReportType !== "inventory_summary") {
-        showErrorModal("Please generate an inventory summary report first.");
-        return;
+  const { jsPDF } = window.jspdf;
+  if (!currentReportData || currentReportType !== "inventory_summary") {
+    showErrorModal("Please generate an inventory summary report first.");
+    return;
+  }
+
+  const { data } = currentReportData;
+  const report_scope = isHeadOffice || isAdminUser ? "global" : "branch";
+
+  let dateSubtitle = "";
+  let fileNameDate = new Date().toISOString().slice(0, 10);
+  if (currentReportDate) {
+    dateSubtitle = `As of ${formatDate(currentReportDate)}`;
+    fileNameDate = currentReportDate;
+  } else if (currentReportMonth) {
+    const [year, monthNum] = currentReportMonth.split("-");
+    const monthName = new Date(year, monthNum - 1, 1).toLocaleString(
+      "default",
+      { month: "long" }
+    );
+    dateSubtitle = `For the Month of ${monthName} ${year}`;
+    fileNameDate = currentReportMonth;
+  }
+
+  const headerBlue = [0, 15, 113];
+  const subheaderGray = [73, 80, 87];
+  const footerGray = [108, 117, 125];
+  const tableHeaderBlue = [41, 128, 185];
+  const totalBlueLight = [231, 245, 255];
+  const grandTotalBlue = [204, 232, 255];
+  const tableHeadStyles = {
+    fillColor: tableHeaderBlue,
+    textColor: [255, 255, 255],
+    fontStyle: "bold",
+    halign: "center",
+    valign: "middle",
+    fontSize: 7,
+    cellPadding: 2,
+  };
+
+  const drawHeader = (doc, title, subtitle, filters = []) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let currentY = 25;
+    doc
+      .setFont("helvetica", "bold")
+      .setFontSize(16)
+      .setTextColor(...headerBlue);
+    doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, {
+      align: "center",
+    });
+    currentY += 15;
+    doc.setFontSize(14).setTextColor(...subheaderGray);
+    doc.text(title, pageWidth / 2, currentY, { align: "center" });
+    currentY += 12;
+    doc.setFontSize(11).setTextColor(...subheaderGray);
+    doc.text(subtitle, pageWidth / 2, currentY, { align: "center" });
+
+    if (filters.length > 0) {
+      currentY += 10;
+      doc.setFontSize(9).setTextColor(...subheaderGray);
+      filters.forEach((filter) => {
+        doc.text(filter, pageWidth / 2, currentY, { align: "center" });
+        currentY += 8;
+      });
     }
 
-    const { data } = currentReportData;
-    const report_scope = isHeadOffice || isAdminUser ? "global" : "branch";
+    return currentY + 15;
+  };
 
+  const addFooters = (doc, reportTitle) => {
+    const pageCount = doc.internal.getNumberOfPages();
+    const genTime = new Date().toLocaleString("en-US", {
+      dateStyle: "full",
+      timeStyle: "short",
+    });
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8).setTextColor(...footerGray);
+      doc.text(
+        `Generated on: ${genTime}`,
+        40,
+        doc.internal.pageSize.getHeight() - 20
+      );
+      doc.text(
+        `Page ${i} of ${pageCount} | ${reportTitle}`,
+        doc.internal.pageSize.getWidth() / 2,
+        doc.internal.pageSize.getHeight() - 20,
+        { align: "center" }
+      );
+    }
+  };
+
+  if (report_scope === "global") {
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "pt",
+      format: "legal",
+    });
+
+    const branches = [
+      ...new Set(data.map((item) => item.current_branch)),
+    ].sort();
+    const branchShortcuts = branches.map((b) => getBranchShortcut(b));
     
-    let dateSubtitle = "";
-    let fileNameDate = new Date().toISOString().slice(0, 10);
-    if (currentReportDate) {
-        dateSubtitle = `As of ${formatDate(currentReportDate)}`;
-        fileNameDate = currentReportDate;
-    } else if (currentReportMonth) {
-        const [year, monthNum] = currentReportMonth.split("-");
-        const monthName = new Date(year, monthNum - 1, 1).toLocaleString("default", { month: "long" });
-        dateSubtitle = `For the Month of ${monthName} ${year}`;
-        fileNameDate = currentReportMonth;
+    // Get ALL brands from data, not just the 4 main ones
+    const allBrands = [...new Set(data.map(item => item.brand))].sort();
+    const mainBrandNames = ["Suzuki", "Honda", "Yamaha", "Kawasaki", "Asiastar"];
+    
+    // Initialize data structures for ALL brands
+    const brands = {};
+    const models_by_brand = {};
+    
+    allBrands.forEach((b) => {
+      brands[b] = {};
+    });
+    // Only initialize models for main brands (for the detail pages)
+    mainBrandNames.forEach((b) => {
+      models_by_brand[b] = {};
+    });
+
+    // Process ALL data including all brands
+    for (const item of data) {
+      const { brand, model, current_branch, inventory_cost } = item;
+      
+      // Count for ALL brands
+      if (!brands[brand][current_branch]) {
+        brands[brand][current_branch] = { count: 0, cost: 0 };
+      }
+      brands[brand][current_branch].count++;
+      brands[brand][current_branch].cost += parseFloat(inventory_cost || 0);
+
+      // Only track models for main brands (for detail pages)
+      if (mainBrandNames.includes(brand)) {
+        if (!models_by_brand[brand][model]) models_by_brand[brand][model] = {};
+        if (!models_by_brand[brand][model][current_branch]) {
+          models_by_brand[brand][model][current_branch] = 0;
+        }
+        models_by_brand[brand][model][current_branch]++;
+      }
     }
 
-    
-    const headerBlue = [0, 15, 113];
-    const subheaderGray = [73, 80, 87];
-    const footerGray = [108, 117, 125];
-    const tableHeaderBlue = [41, 128, 185];
-    const totalBlueLight = [231, 245, 255];
-    const grandTotalBlue = [204, 232, 255];
-    const tableHeadStyles = { 
-        fillColor: tableHeaderBlue, 
-        textColor: [255, 255, 255], 
-        fontStyle: 'bold', 
-        halign: 'center', 
-        valign: 'middle',
-        fontSize: 7, 
-        cellPadding: 2 
-    };
+    let startY = drawHeader(doc, "Inventory Summary Report", dateSubtitle);
 
-    
-    const drawHeader = (doc, title, subtitle, filters = []) => {
-        const pageWidth = doc.internal.pageSize.getWidth();
-        let currentY = 25;
-        doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...headerBlue);
-        doc.text("SOLID MOTORCYCLE DISTRIBUTORS, INC.", pageWidth / 2, currentY, { align: "center" });
-        currentY += 15;
-        doc.setFontSize(14).setTextColor(...subheaderGray);
-        doc.text(title, pageWidth / 2, currentY, { align: "center" });
-        currentY += 12;
-        doc.setFontSize(11).setTextColor(...subheaderGray);
-        doc.text(subtitle, pageWidth / 2, currentY, { align: "center" });
-        
-        
-        if (filters.length > 0) {
-            currentY += 10;
-            doc.setFontSize(9).setTextColor(...subheaderGray);
-            filters.forEach(filter => {
-                doc.text(filter, pageWidth / 2, currentY, { align: "center" });
-                currentY += 8;
-            });
-        }
-        
-        return currentY + 15;
-    };
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    const availableWidth = pageWidth - 2 * margin;
+    const brandColWidth = 80;
+    const branchColWidth = Math.min(
+      35,
+      (availableWidth - brandColWidth - 60) / branches.length
+    );
+    const totalColWidth = 50;
 
-    const addFooters = (doc, reportTitle) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        const genTime = new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8).setTextColor(...footerGray);
-            doc.text(`Generated on: ${genTime}`, 40, doc.internal.pageSize.getHeight() - 20);
-            doc.text(`Page ${i} of ${pageCount} | ${reportTitle}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 20, { align: 'center' });
-        }
-    };
+    const summaryHead = [["BRAND", ...branchShortcuts, "GRAND TOTAL"]];
+    const summaryBody = [];
+    const branchTotals = { count: {}, cost: {} };
+    let grandTotalAll = { count: 0, cost: 0 };
 
-    if (report_scope === "global") {
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'legal' });
-        
-        const branches = [...new Set(data.map(item => item.current_branch))].sort();
-        const branchShortcuts = branches.map(b => getBranchShortcut(b));
-        const brandNames = ['Suzuki', 'Honda', 'Yamaha', 'Kawasaki'];
-        const brands = {};
-        const models_by_brand = {};
-        brandNames.forEach(b => { brands[b] = {}; models_by_brand[b] = {}; });
-        for (const item of data) {
-            const { brand, model, current_branch } = item;
-            if (brandNames.includes(brand)) {
-                if (!brands[brand][current_branch]) brands[brand][current_branch] = 0;
-                brands[brand][current_branch]++;
-                if (!models_by_brand[brand][model]) models_by_brand[brand][model] = {};
-                if (!models_by_brand[brand][model][current_branch]) models_by_brand[brand][model][current_branch] = 0;
-                models_by_brand[brand][model][current_branch]++;
-            }
-        }
-
-        
-        let startY = drawHeader(doc, "Inventory Summary Report", dateSubtitle);
-        
-        
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 40;
-        const availableWidth = pageWidth - (2 * margin);
-        const brandColWidth = 80; 
-        const branchColWidth = Math.min(35, (availableWidth - brandColWidth - 60) / branches.length); 
-        const totalColWidth = 50; 
-        
-        const summaryHead = [['BRAND', ...branchShortcuts, 'GRAND TOTAL']];
-        const summaryBody = [];
-        const branchTotals = {};
-        let grandTotalAll = 0;
-        
-        brandNames.forEach(brand => {
-            const rowData = [{ content: `${brand} SUB-TOTAL`, styles: { fontStyle: 'bold' } }];
-            let brandTotal = 0;
-            branches.forEach(branchName => {
-                const count = (brands[brand] && brands[brand][branchName]) || 0;
-                rowData.push(count || '');
-                brandTotal += count;
-                branchTotals[branchName] = (branchTotals[branchName] || 0) + count;
-            });
-            rowData.push(brandTotal);
-            summaryBody.push(rowData);
-            grandTotalAll += brandTotal;
-        });
-        
-        const totalRow = [{ content: 'GRAND TOTAL', styles: { fontStyle: 'bold' } }];
-        branches.forEach(branchName => { totalRow.push(branchTotals[branchName] || ''); });
-        totalRow.push(grandTotalAll);
-        summaryBody.push(totalRow);
-        
-        
-        const columnStyles = {
-            0: { 
-                halign: 'left', 
-                cellWidth: brandColWidth,
-                fontSize: 8
-            }
+    // Show ALL brands in summary
+    allBrands.forEach((brand) => {
+      const rowData = [
+        { content: `${brand}`, styles: { fontStyle: "bold" } },
+      ];
+      let brandTotal = { count: 0, cost: 0 };
+      
+      branches.forEach((branchName) => {
+        const cellData = (brands[brand] && brands[brand][branchName]) || {
+          count: 0,
+          cost: 0,
         };
-        
-        
+        rowData.push(`${cellData.count || "-"}`);
+        brandTotal.count += cellData.count;
+        brandTotal.cost += cellData.cost;
+        branchTotals.count[branchName] =
+          (branchTotals.count[branchName] || 0) + cellData.count;
+        branchTotals.cost[branchName] =
+          (branchTotals.cost[branchName] || 0) + cellData.cost;
+      });
+      
+      rowData.push(`${brandTotal.count}`);
+      summaryBody.push(rowData);
+      grandTotalAll.count += brandTotal.count;
+      grandTotalAll.cost += brandTotal.cost;
+    });
+
+    const totalRow = [
+      { content: "GRAND TOTAL", styles: { fontStyle: "bold" } },
+    ];
+    branches.forEach((branchName) => {
+      totalRow.push(`${branchTotals.count[branchName] || 0}`);
+    });
+    totalRow.push(`${grandTotalAll.count}`);
+    summaryBody.push(totalRow);
+
+    const columnStyles = {
+      0: {
+        halign: "left",
+        cellWidth: brandColWidth,
+        fontSize: 8,
+      },
+    };
+
+    branches.forEach((_, index) => {
+      columnStyles[index + 1] = {
+        halign: "center",
+        cellWidth: branchColWidth,
+        fontSize: 7,
+        cellPadding: 1,
+      };
+    });
+
+    columnStyles[branches.length + 1] = {
+      halign: "center",
+      cellWidth: totalColWidth,
+      fontSize: 8,
+      fontStyle: "bold",
+    };
+
+    doc.autoTable({
+      head: summaryHead,
+      body: summaryBody,
+      startY: startY,
+      theme: "grid",
+      headStyles: tableHeadStyles,
+      bodyStyles: {
+        fontSize: 8,
+        halign: "center",
+        cellPadding: 2,
+      },
+      columnStyles: columnStyles,
+      didParseCell: (data) => {
+        if (data.cell.section === "body") {
+          const cellContent = data.row.raw[0]?.content || data.row.raw[0];
+          if (typeof cellContent === "string") {
+            if (cellContent === "GRAND TOTAL") {
+              data.cell.styles.fillColor = grandTotalBlue;
+              data.cell.styles.fontStyle = "bold";
+            } else if (mainBrandNames.some(brand => cellContent.includes(brand))) {
+              // Highlight main brands
+              data.cell.styles.fillColor = totalBlueLight;
+            }
+          }
+        }
+      },
+    });
+
+    // Brand details - only for main brands
+    mainBrandNames.forEach((brand) => {
+      const brandData = models_by_brand[brand] || {};
+      const sortedModels = Object.keys(brandData);
+      if (sortedModels.length > 0) {
+        doc.addPage();
+        startY = drawHeader(
+          doc,
+          `${brand.toUpperCase()} INVENTORY DETAILS`,
+          dateSubtitle
+        );
+
+        const modelColWidth = 100;
+        const detailBranchColWidth = Math.min(
+          30,
+          (availableWidth - modelColWidth - 40) / branches.length
+        );
+        const modelTotalColWidth = 40;
+
+        const head = [["MODEL", ...branchShortcuts, "TOTAL"]];
+        const body = [];
+        const branchSubtotals = {};
+        let brandGrandTotal = 0;
+
+        sortedModels.sort().forEach((model) => {
+          const row = [model];
+          let modelTotal = 0;
+          branches.forEach((branchName) => {
+            const count =
+              (brandData[model] && brandData[model][branchName]) || 0;
+            row.push(count || "");
+            modelTotal += count;
+            branchSubtotals[branchName] =
+              (branchSubtotals[branchName] || 0) + count;
+          });
+          row.push(modelTotal);
+          body.push(row);
+          brandGrandTotal += modelTotal;
+        });
+
+        const subtotalRow = [
+          { content: "SUBTOTAL", styles: { fontStyle: "bold" } },
+        ];
+        branches.forEach((branchName) => {
+          subtotalRow.push(branchSubtotals[branchName] || "");
+        });
+        subtotalRow.push(brandGrandTotal);
+        body.push(subtotalRow);
+
+        const brandDetailColumnStyles = {
+          0: {
+            halign: "left",
+            cellWidth: modelColWidth,
+            fontSize: 6,
+            cellPadding: 1,
+          },
+        };
+
         branches.forEach((_, index) => {
-            columnStyles[index + 1] = {
-                halign: 'center',
-                cellWidth: branchColWidth,
-                fontSize: 7, 
-                cellPadding: 1 
-            };
+          brandDetailColumnStyles[index + 1] = {
+            halign: "center",
+            cellWidth: detailBranchColWidth,
+            fontSize: 5,
+            cellPadding: 1,
+          };
         });
-        
-        
-        columnStyles[branches.length + 1] = {
-            halign: 'center',
-            cellWidth: totalColWidth,
-            fontSize: 8,
-            fontStyle: 'bold'
+
+        brandDetailColumnStyles[branches.length + 1] = {
+          halign: "center",
+          cellWidth: modelTotalColWidth,
+          fontSize: 6,
+          fontStyle: "bold",
+          cellPadding: 1,
         };
-        
+
         doc.autoTable({
-            head: summaryHead, 
-            body: summaryBody, 
-            startY: startY, 
-            theme: 'grid',
-            headStyles: tableHeadStyles,
-            bodyStyles: { 
-                fontSize: 8, 
-                halign: 'center',
-                cellPadding: 2
-            },
-            columnStyles: columnStyles,
-            didParseCell: (data) => {
-                if (data.cell.section === 'body') {
-                    const cellContent = data.row.raw[0]?.content || data.row.raw[0];
-                    if (typeof cellContent === 'string') {
-                        if (cellContent.includes('SUB-TOTAL')) {
-                            data.cell.styles.fillColor = totalBlueLight;
-                            data.cell.styles.fontStyle = 'bold';
-                        }
-                        if (cellContent === 'GRAND TOTAL') {
-                            data.cell.styles.fillColor = grandTotalBlue;
-                            data.cell.styles.fontStyle = 'bold';
-                        }
-                    }
-                }
+          head: head,
+          body: body,
+          startY: startY,
+          theme: "grid",
+          headStyles: tableHeadStyles,
+          bodyStyles: {
+            fontSize: 5,
+            halign: "center",
+            cellPadding: 1,
+          },
+          columnStyles: brandDetailColumnStyles,
+          didParseCell: (data) => {
+            if (data.cell.section === "body") {
+              const cellContent = data.row.raw[0]?.content || data.row.raw[0];
+              if (
+                typeof cellContent === "string" &&
+                cellContent === "SUBTOTAL"
+              ) {
+                data.cell.styles.fillColor = totalBlueLight;
+                data.cell.styles.fontStyle = "bold";
+              }
             }
-        });
-
-        
-        brandNames.forEach(brand => {
-            const brandData = models_by_brand[brand] || {};
-            const sortedModels = Object.keys(brandData);
-            if (sortedModels.length > 0) {
-                doc.addPage();
-                startY = drawHeader(doc, `${brand.toUpperCase()} INVENTORY DETAILS`, dateSubtitle);
-                
-                
-                const modelColWidth = 100; 
-                const detailBranchColWidth = Math.min(30, (availableWidth - modelColWidth - 40) / branches.length); 
-                const modelTotalColWidth = 40;
-                
-                const head = [['MODEL', ...branchShortcuts, 'TOTAL']];
-                const body = [];
-                const branchSubtotals = {};
-                let brandGrandTotal = 0;
-                
-                sortedModels.sort().forEach(model => {
-                    const row = [model]; 
-                    let modelTotal = 0;
-                    branches.forEach(branchName => {
-                        const count = (brandData[model] && brandData[model][branchName]) || 0;
-                        row.push(count || '');
-                        modelTotal += count;
-                        branchSubtotals[branchName] = (branchSubtotals[branchName] || 0) + count;
-                    });
-                    row.push(modelTotal); 
-                    body.push(row);
-                    brandGrandTotal += modelTotal;
-                });
-                
-                const subtotalRow = [{ content: 'SUBTOTAL', styles: { fontStyle: 'bold' } }];
-                branches.forEach(branchName => { subtotalRow.push(branchSubtotals[branchName] || ''); });
-                subtotalRow.push(brandGrandTotal);
-                body.push(subtotalRow);
-
-                
-                const brandDetailColumnStyles = {
-                    0: { 
-                        halign: 'left', 
-                        cellWidth: modelColWidth,
-                        fontSize: 6, 
-                        cellPadding: 1
-                    }
-                };
-                
-                
-                branches.forEach((_, index) => {
-                    brandDetailColumnStyles[index + 1] = {
-                        halign: 'center',
-                        cellWidth: detailBranchColWidth,
-                        fontSize: 5, 
-                        cellPadding: 1
-                    };
-                });
-                
-                
-                brandDetailColumnStyles[branches.length + 1] = {
-                    halign: 'center',
-                    cellWidth: modelTotalColWidth,
-                    fontSize: 6,
-                    fontStyle: 'bold',
-                    cellPadding: 1
-                };
-
-                doc.autoTable({
-                    head: head, 
-                    body: body, 
-                    startY: startY, 
-                    theme: 'grid',
-                    headStyles: tableHeadStyles,
-                    bodyStyles: { 
-                        fontSize: 5, 
-                        halign: 'center',
-                        cellPadding: 1 
-                    },
-                    columnStyles: brandDetailColumnStyles,
-                    didParseCell: (data) => {
-                         if (data.cell.section === 'body') {
-                            const cellContent = data.row.raw[0]?.content || data.row.raw[0];
-                            if (typeof cellContent === 'string' && cellContent === 'SUBTOTAL') {
-                                data.cell.styles.fillColor = totalBlueLight;
-                                data.cell.styles.fontStyle = 'bold';
-                            }
-                        }
-                    },
-                    
-                    willDrawCell: (data) => {
-                        if (data.section === 'body' && data.column.index === 0) {
-                            data.cell.text = data.cell.text.join(' ');
-                        }
-                    }
-                });
+          },
+          
+          willDrawCell: (data) => {
+            if (data.section === "body" && data.column.index === 0) {
+              data.cell.text = data.cell.text.join(" ");
             }
+          },
         });
-   let lastY = doc.autoTable.previous.finalY;
-            addBrandSummaryToPdf(doc, data, lastY);
-        addFooters(doc, "Global Inventory Tally");
-        doc.save(`Global_Inventory_Tally_${fileNameDate}.pdf`);
+      }
+    });
+    let lastY = doc.autoTable.previous.finalY;
+    addBrandSummaryToPdf(doc, data, lastY);
+    addFooters(doc, "Global Inventory Tally");
+    doc.save(`Global_Inventory_Tally_${fileNameDate}.pdf`);
+  } else {
+    // Branch user view
+    const branch_name = currentUserBranch;
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "pt",
+      format: "letter",
+    });
+    
+    // Get ALL brands for branch view
+    const allBrands = [...new Set(data.map(item => item.brand))].sort();
+    const mainBrandNames = ["Suzuki", "Honda", "Yamaha", "Kawasaki", "Asiastar"];
 
-    } else { 
-        
-        const branch_name = currentUserBranch;
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
-        const brandNames = ['Suzuki', 'Honda', 'Yamaha', 'Kawasaki'];
-        
-        let startY = drawHeader(doc, "Inventory Summary Report", dateSubtitle, [`Branch: ${branch_name}`]);
-        const summaryHead = [['BRAND', 'TOTAL UNITS', 'TOTAL INVENTORY COST']];
-        const summaryBody = [];
-        let grandTotalCount = 0, grandTotalCost = 0;
-        
-        brandNames.forEach(brand => {
-            const models = data.filter(item => item.brand === brand);
-            const brandTotalCount = models.length;
-            const brandTotalCost = models.reduce((sum, item) => sum + parseFloat(item.inventory_cost || 0), 0);
-            summaryBody.push([`${brand} SUB-TOTAL`, brandTotalCount, formatCurrency(brandTotalCost)]);
-            grandTotalCount += brandTotalCount;
-            grandTotalCost += brandTotalCost;
+    let startY = drawHeader(doc, "Inventory Summary Report", dateSubtitle, [
+      `Branch: ${branch_name}`,
+    ]);
+    
+    const summaryHead = [["BRAND", "TOTAL UNITS", "TOTAL INVENTORY COST"]];
+    const summaryBody = [];
+    let grandTotalCount = 0,
+      grandTotalCost = 0;
+
+    // Show ALL brands in branch summary
+    allBrands.forEach((brand) => {
+      const models = data.filter((item) => item.brand === brand && item.current_branch === branch_name);
+      const brandTotalCount = models.length;
+      const brandTotalCost = models.reduce(
+        (sum, item) => sum + parseFloat(item.inventory_cost || 0),
+        0
+      );
+      
+      const rowStyle = mainBrandNames.includes(brand) ? { fontStyle: "bold" } : {};
+      summaryBody.push([
+        { content: brand, styles: rowStyle },
+        { content: brandTotalCount, styles: rowStyle },
+        { content: formatCurrency(brandTotalCost), styles: rowStyle },
+      ]);
+      
+      grandTotalCount += brandTotalCount;
+      grandTotalCost += brandTotalCost;
+    });
+    
+    summaryBody.push([
+      { content: "GRAND TOTAL", styles: { fontStyle: "bold" } },
+      { content: grandTotalCount, styles: { fontStyle: "bold" } },
+      {
+        content: formatCurrency(grandTotalCost),
+        styles: { fontStyle: "bold" },
+      },
+    ]);
+
+    doc.autoTable({
+      head: summaryHead,
+      body: summaryBody,
+      startY: startY,
+      theme: "grid",
+      headStyles: tableHeadStyles,
+      styles: { fontSize: 9 },
+      columnStyles: {
+        0: { halign: "left" },
+        1: { halign: "center" },
+        2: { halign: "right" },
+      },
+      didParseCell: (data) => {
+        if (data.cell.section === "body") {
+          const cellContent = data.row.raw[0]?.content || data.row.raw[0];
+          if (typeof cellContent === "string") {
+            if (mainBrandNames.includes(cellContent)) {
+              data.cell.styles.fillColor = totalBlueLight;
+            }
+            if (cellContent === "GRAND TOTAL") {
+              data.cell.styles.fillColor = grandTotalBlue;
+              data.cell.styles.fontStyle = "bold";
+            }
+          }
+        }
+      },
+    });
+
+    // Brand details - only for main brands
+    mainBrandNames.forEach((brand) => {
+      const models_in_brand = data.filter((item) => item.brand === brand && item.current_branch === branch_name);
+      if (models_in_brand.length > 0) {
+        doc.addPage();
+        startY = drawHeader(
+          doc,
+          `${brand.toUpperCase()} INVENTORY DETAILS`,
+          dateSubtitle,
+          [`Branch: ${branch_name}`]
+        );
+        const model_groups = {};
+        models_in_brand.forEach((item) => {
+          if (!model_groups[item.model])
+            model_groups[item.model] = { count: 0, cost: 0 };
+          model_groups[item.model].count++;
+          model_groups[item.model].cost += parseFloat(item.inventory_cost || 0);
         });
-        summaryBody.push([{ content: 'GRAND TOTAL', styles: { fontStyle: 'bold' } }, { content: grandTotalCount, styles: { fontStyle: 'bold' } }, { content: formatCurrency(grandTotalCost), styles: { fontStyle: 'bold' } }]);
-        
+        const sortedModels = Object.keys(model_groups).sort();
+        const detailsHead = [["Model", "Unit Count", "Total Inventory Cost"]];
+        const detailsBody = [];
+        let totalCount = 0,
+          totalCost = 0;
+        sortedModels.forEach((modelName) => {
+          const item = model_groups[modelName];
+          detailsBody.push([modelName, item.count, formatCurrency(item.cost)]);
+          totalCount += item.count;
+          totalCost += item.cost;
+        });
+        detailsBody.push([
+          { content: "TOTAL", styles: { fontStyle: "bold" } },
+          { content: totalCount, styles: { fontStyle: "bold" } },
+          { content: formatCurrency(totalCost), styles: { fontStyle: "bold" } },
+        ]);
         doc.autoTable({
-            head: summaryHead, body: summaryBody, startY: startY, theme: 'grid',
-            headStyles: tableHeadStyles, styles: { fontSize: 9 },
-            columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'center' }, 2: { halign: 'right' } },
-            didParseCell: (data) => {
-                if (data.cell.section === 'body') {
-                    const cellContent = data.row.raw[0]?.content || data.row.raw[0];
-                    if (typeof cellContent === 'string') {
-                        if (cellContent.includes('SUB-TOTAL')) data.cell.styles.fillColor = totalBlueLight;
-                        if (cellContent === 'GRAND TOTAL') data.cell.styles.fillColor = grandTotalBlue;
-                    }
-                }
+          head: detailsHead,
+          body: detailsBody,
+          startY: startY,
+          theme: "grid",
+          headStyles: tableHeadStyles,
+          styles: { fontSize: 9 },
+          columnStyles: { 1: { halign: "center" }, 2: { halign: "right" } },
+          didParseCell: (data) => {
+            if (data.cell.section === "body") {
+              const cellContent = data.row.raw[0]?.content || data.row.raw[0];
+              if (typeof cellContent === "string" && cellContent === "TOTAL") {
+                data.cell.styles.fillColor = totalBlueLight;
+              }
             }
+          },
         });
-        
-        brandNames.forEach(brand => {
-            const models_in_brand = data.filter(item => item.brand === brand);
-            if (models_in_brand.length > 0) {
-                doc.addPage();
-                startY = drawHeader(doc, `${brand.toUpperCase()} INVENTORY DETAILS`, dateSubtitle, [`Branch: ${branch_name}`]);
-                const model_groups = {};
-                models_in_brand.forEach(item => {
-                    if (!model_groups[item.model]) model_groups[item.model] = { count: 0, cost: 0 };
-                    model_groups[item.model].count++;
-                    model_groups[item.model].cost += parseFloat(item.inventory_cost || 0);
-                });
-                const sortedModels = Object.keys(model_groups).sort();
-                const detailsHead = [['Model', 'Unit Count', 'Total Inventory Cost']];
-                const detailsBody = [];
-                let totalCount = 0, totalCost = 0;
-                sortedModels.forEach(modelName => {
-                    const item = model_groups[modelName];
-                    detailsBody.push([modelName, item.count, formatCurrency(item.cost)]);
-                    totalCount += item.count;
-                    totalCost += item.cost;
-                });
-                detailsBody.push([{ content: 'TOTAL', styles: { fontStyle: 'bold' } }, { content: totalCount, styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCost), styles: { fontStyle: 'bold' } }]);
-                doc.autoTable({
-                    head: detailsHead, body: detailsBody, startY: startY, theme: 'grid',
-                    headStyles: tableHeadStyles, styles: { fontSize: 9 },
-                    columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' } },
-                    didParseCell: (data) => {
-                        if (data.cell.section === 'body') {
-                            const cellContent = data.row.raw[0]?.content || data.row.raw[0];
-                            if (typeof cellContent === 'string' && cellContent === 'TOTAL') {
-                                data.cell.styles.fillColor = totalBlueLight;
-                            }
-                        }
-                    }
-                });
-            }
-        });
-          let lastY_branch = doc.autoTable.previous.finalY;
-            addBrandSummaryToPdf(doc, data, lastY_branch);
-        addFooters(doc, `Branch Inventory Summary (${branch_name})`);
-        doc.save(`Branch_Inventory_Summary_${branch_name}_${fileNameDate}.pdf`);
-    }
+      }
+    });
+    
+    let lastY_branch = doc.autoTable.previous.finalY;
+    addBrandSummaryToPdf(doc, data, lastY_branch);
+    addFooters(doc, `Branch Inventory Summary (${branch_name})`);
+    doc.save(`Branch_Inventory_Summary_${branch_name}_${fileNameDate}.pdf`);
+  }
 }
-
 
 function renderSoldUnitsReport(response) {
   const { data, summary, branch, month, date, start_date, end_date } = response;
@@ -9043,70 +9268,85 @@ function generateWithTbaStockReportPDF() {
 }
 
 
+function isLocalDuplicate(value, selector, currentField) {
+    let duplicate = false;
+
+    $(selector).each(function () {
+        if ($(this).val().trim() === value.trim() && this !== currentField[0]) {
+            duplicate = true;
+        }
+    });
+
+    return duplicate;
+}
 
 function checkEngineNumber(engineNumber, $element, excludeId = 0) {
-  if (!engineNumber) return;
+    if (!engineNumber) return;
 
-  const data = {
-    action: "check_engine_number",
-    engine_number: engineNumber,
-  };
+    // 🔍 Check duplicates inside the modal
+    if (isLocalDuplicate(engineNumber, ".engine-number-input", $element)) {
+        showFieldError($element, "This engine number is already entered in the form");
+        return; 
+    }
 
-  if (excludeId > 0) {
-    data.exclude_id = excludeId;
-  }
+    // ✔ If no local duplicate, continue with your DB check
+    const data = {
+        action: "check_engine_number",
+        engine_number: engineNumber,
+    };
 
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "POST",
-    data: data,
-    dataType: "json",
-    success: function (response) {
-      if (response.exists) {
-        showFieldError(
-          $element,
-          "This engine number already exists in the system"
-        );
-      } else {
-        clearFieldError($element);
-      }
-    },
-    error: function () {
-      clearFieldError($element);
-    },
-  });
+    if (excludeId > 0) data.exclude_id = excludeId;
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "POST",
+        data: data,
+        dataType: "json",
+        success: function (response) {
+            if (response.exists) {
+                showFieldError($element, "This engine number already exists in the system");
+            } else {
+                clearFieldError($element);
+            }
+        },
+        error: function () {
+            clearFieldError($element);
+        }
+    });
 }
 function checkFrameNumber(frameNumber, $element, excludeId = 0) {
-  if (!frameNumber) return;
+    if (!frameNumber) return;
 
-  const data = {
-    action: "check_frame_number",
-    frame_number: frameNumber,
-  };
+    // 🔍 Check duplicates inside the modal
+    if (isLocalDuplicate(frameNumber, ".frame-number-input", $element)) {
+        showFieldError($element, "This frame number is already entered in the form");
+        return;
+    }
 
-  if (excludeId > 0) {
-    data.exclude_id = excludeId;
-  }
+    // ✔ If no local duplicate, continue with your DB check
+    const data = {
+        action: "check_frame_number",
+        frame_number: frameNumber,
+    };
 
-  $.ajax({
-    url: "../api/inventory_management.php",
-    method: "POST",
-    data: data,
-    dataType: "json",
-    success: function (response) {
-      if (response.exists) {
-        showFieldError(
-          $element,
-          "This frame number already exists in the system"
-        );
-      } else {
-        clearFieldError($element);
-      }
-    },
-    error: function () {
-      clearFieldError($element);
-    },
-  });
+    if (excludeId > 0) data.exclude_id = excludeId;
+
+    $.ajax({
+        url: "../api/inventory_management.php",
+        method: "POST",
+        data: data,
+        dataType: "json",
+        success: function (response) {
+            if (response.exists) {
+                showFieldError($element, "This frame number already exists in the system");
+            } else {
+                clearFieldError($element);
+            }
+        },
+        error: function () {
+            clearFieldError($element);
+        }
+    });
 }
 
 function showFieldError($element, message) {
@@ -9124,13 +9364,8 @@ function clearFieldError($element) {
   $element.next(".invalid-feedback").remove();
 }
 
-
-
-
-
 function populateBranchesDropdown() {
   const branches = [
-    "ALL",
     "HEADOFFICE",
     "KINGDOM",
     "TANQUE",
@@ -9301,6 +9536,7 @@ function groupByModel(items) {
     return groups;
   }, {});
 }
+
 
 function showPdfLoadingModal() {
   const modalId = "pdfLoadingModal";

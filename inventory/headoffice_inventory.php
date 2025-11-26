@@ -268,7 +268,6 @@
                                 <div class='col-md-6'>
                                     <label for='reportBranch' class='form-label'>Branch</label>
                                     <select class='form-select' id='reportBranch'>
-                                        <option value='ALL'>ALL BRANCHES</option>
                                         <!-- Options populated by JS -->
                                     </select>
                                 </div>
@@ -458,6 +457,69 @@
             </div>
         </div>
     </div>
+
+    <template id='modelFormTemplate'>
+    <div class='model-form card mb-3'>
+        <div class='card-header d-flex justify-content-between align-items-center'>
+            <span class='model-number'>Model #1</span>
+            <button type='button' class='btn btn-sm btn-danger remove-model-btn'>
+                <i class='bi bi-trash'></i> Remove
+            </button>
+        </div>
+        <div class='card-body'>
+            <!-- First Row -->
+            <div class='row'>
+                <div class='col-md-4 mb-3'>
+                    <label class='form-label'>Brand</label>
+                    <select class='form-select model-brand' required>
+                        <option value=''>Select Brand</option>
+                        <option value='Suzuki'>Suzuki</option>
+                        <option value='Honda'>Honda</option>
+                        <option value='Kawasaki'>Kawasaki</option>
+                        <option value='Yamaha'>Yamaha</option>
+                        <option value='Asiastar'>Asiastar</option>
+                    </select>
+                </div>
+                <div class='col-md-4 mb-3'>
+                    <label class='form-label'>Model Name</label>
+                    <input type='text' class='form-control model-name' required>
+                </div>
+                <div class='col-md-4 mb-3'>
+                    <label class='form-label'>Category</label>
+                    <select class='form-select model-category' required>
+                        <option value=''>Select Category</option>
+                        <option value='brandnew'>Brand New</option>
+                        <option value='repo'>Repo</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Second Row -->
+            <div class='row'>
+                <div class='col-md-4 mb-3'>
+                    <label class='form-label'>Quantity</label>
+                    <input type='number' class='form-control model-quantity' min='1' value='1' required>
+                </div>
+                <div class='col-md-4 mb-3'>
+                    <label class='form-label'>Color</label>
+                    <input type='text' class='form-control model-color' required>
+                </div>
+                <div class='col-md-4 mb-3'>
+                    <label class='form-label'>Inventory Cost</label>
+                    <input type='number' step='0.01' class='form-control model-inventoryCost'>
+                </div>
+            </div>
+
+            <!-- Specific Details Section -->
+            <div class='specific-details-container mt-3' style='display: none;'>
+                <h6 class='fw-semibold mb-3'>Specific Model Details</h6>
+                <div class='specific-details-rows'>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
 
 
     <div class='modal fade' id='editMotorcycleModal' tabindex='-1' aria-labelledby='editMotorcycleModalLabel'
@@ -1089,67 +1151,7 @@
         </div>
     </div>
 
-<template id='modelFormTemplate'>
-    <div class='model-form card mb-3'>
-        <div class='card-header d-flex justify-content-between align-items-center'>
-            <span class='model-number'>Model #1</span>
-            <button type='button' class='btn btn-sm btn-danger remove-model-btn'>
-                <i class='bi bi-trash'></i> Remove
-            </button>
-        </div>
-        <div class='card-body'>
-            <!-- First Row -->
-            <div class='row'>
-                <div class='col-md-4 mb-3'>
-                    <label class='form-label'>Brand</label>
-                    <select class='form-select model-brand' required>
-                        <option value=''>Select Brand</option>
-                        <option value='Suzuki'>Suzuki</option>
-                        <option value='Honda'>Honda</option>
-                        <option value='Kawasaki'>Kawasaki</option>
-                        <option value='Yamaha'>Yamaha</option>
-                        <option value='Asiastar'>Asiastar</option>
-                    </select>
-                </div>
-                <div class='col-md-4 mb-3'>
-                    <label class='form-label'>Model Name</label>
-                    <input type='text' class='form-control model-name' required>
-                </div>
-                <div class='col-md-4 mb-3'>
-                    <label class='form-label'>Category</label>
-                    <select class='form-select model-category' required>
-                        <option value=''>Select Category</option>
-                        <option value='brandnew'>Brand New</option>
-                        <option value='repo'>Repo</option>
-                    </select>
-                </div>
-            </div>
 
-            <!-- Second Row -->
-            <div class='row'>
-                <div class='col-md-4 mb-3'>
-                    <label class='form-label'>Quantity</label>
-                    <input type='number' class='form-control model-quantity' min='1' value='1' required>
-                </div>
-                <div class='col-md-4 mb-3'>
-                    <label class='form-label'>Color</label>
-                    <input type='text' class='form-control model-color' required>
-                </div>
-                <div class='col-md-4 mb-3'>
-                    <label class='form-label'>Inventory Cost</label>
-                    <input type='number' step='0.01' class='form-control model-inventoryCost'>
-                </div>
-            </div>
-
-            <!-- Specific Details Section -->
-            <div class='specific-details-container mt-3' style='display: none;'>
-                <h6 class='fw-semibold mb-3'>Specific Model Details</h6>
-                <div class='specific-details-rows'>
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
 
     <div class='modal fade' id='searchTransferReceiptModal' tabindex='-1'
         aria-labelledby='searchTransferReceiptModalLabel' aria-hidden='true'>
