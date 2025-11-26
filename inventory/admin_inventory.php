@@ -591,7 +591,6 @@
                                 <div class='col-md-6'>
                                     <label for='reportBranch' class='form-label'>Branch</label>
                                     <select class='form-select' id='reportBranch'>
-                                        <option value='all'>ALL BRANCHES</option>
                                         <!-- Options populated by JS -->
                                     </select>
                                 </div>

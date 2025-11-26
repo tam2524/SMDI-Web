@@ -11212,7 +11212,6 @@ function addFootersToPdf(doc, reportTitle) {
 }
 function populateBranchesDropdowns(selectors, callback) {
   const branches = [
-    "ALL",
     "HEADOFFICE",
     "KINGDOM",
     "TANQUE",
