@@ -2502,7 +2502,6 @@ function getMonthlyInventory() {
     $countBeginning = (int)($beginningResult['count_beginning'] ?? 0);
     $costBeginning = (float)($beginningResult['cost_beginning'] ?? 0);
 
-<<<<<<< HEAD
  $countNewDeliveries = 0;
 $costNewDeliveries = 0;
 
@@ -2567,60 +2566,6 @@ $newResult = $stmtNewDeliveries->get_result()->fetch_assoc();
 $countNewDeliveries = (int)($newResult['count_new'] ?? 0);
 $costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
 
-=======
-    // ... (New Deliveries, Received Transfers, Transfers Out, Sold Units calculations remain the same, as they are specific counts for the month/branch) ...
-
-    // === CALCULATE NEW DELIVERIES (Current Month) ===
-    $countNewDeliveries = 0;
-    $costNewDeliveries = 0;
-    
-    // Check uses lowercase 'all' and 'headoffice' (assuming your DB stores HEADOFFICE as that or you need a specific check)
-    if ($branch === 'all' || $branch === 'headoffice') {
-        $sqlNewDeliveries = "
-        SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
-        FROM motorcycle_inventory mi
-        WHERE mi.deleted_at IS NULL
-            AND mi.date_delivered BETWEEN ? AND ?
-            $brandCondition
-            $categoryCondition
-            $modelCondition
-        ";
-
-        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-        if ($stmtNewDeliveries === false) {
-            echo json_encode(['success' => false, 'message' => 'Prepare failed (new deliveries): ' . $conn->error]);
-            return;
-        }
-
-        $paramsNew = array_merge([$startDate, $endDate], $params);
-        bindParams($stmtNewDeliveries, $paramsNew);
-    } else { // Specific branch logic uses simpleBranchCondition
-        $sqlNewDeliveries = "
-        SELECT COUNT(*) as count_new, COALESCE(SUM(mi.inventory_cost), 0) as cost_new
-        FROM motorcycle_inventory mi
-        WHERE mi.deleted_at IS NULL
-            AND mi.date_delivered BETWEEN ? AND ?
-            AND mi.current_branch = ?
-            AND NOT EXISTS (
-                SELECT 1 FROM inventory_transfers it 
-                WHERE it.motorcycle_id = mi.id 
-                AND it.transfer_status = 'completed'
-            )
-            $brandCondition
-            $categoryCondition
-            $modelCondition
-        ";
-
-        $stmtNewDeliveries = $conn->prepare($sqlNewDeliveries);
-        if ($stmtNewDeliveries === false) {
-            echo json_encode(['success' => false, 'message' => 'Prepare failed (new deliveries): ' . $conn->error]);
-            return;
-        }
-
-        $paramsNew = array_merge([$startDate, $endDate, strtoupper($branch)], $params); // Pass uppercase branch name
-        bindParams($stmtNewDeliveries, $paramsNew);
-    }
->>>>>>> 09a56cf (feat: Load direct shipments after successful shipment update)
 
 
     // === CALCULATE RECEIVED TRANSFERS (Current Month) ===
@@ -2729,7 +2674,6 @@ $costNewDeliveries = (float)($newResult['cost_new'] ?? 0);
 $countSold = 0;
 $costSold = 0;
 
-<<<<<<< HEAD
 $sqlSold = "
 SELECT COUNT(*) as count_sold, COALESCE(SUM(mi.inventory_cost), 0) as cost_sold
 FROM motorcycle_sales ms
@@ -2776,50 +2720,6 @@ $countSold = (int)($soldResult['count_sold'] ?? 0);
 $costSold = (float)($soldResult['cost_sold'] ?? 0);
 
 
-=======
-    // FIX: Remove simpleBranchCondition for "all" branches
-    if ($branch === 'all') {
-    $sqlSold = "
-    SELECT COUNT(*) as count_sold, COALESCE(SUM(mi.inventory_cost), 0) as cost_sold
-    FROM motorcycle_sales ms
-    JOIN motorcycle_inventory mi ON ms.motorcycle_id = mi.id
-    WHERE ms.sale_date BETWEEN ? AND ?
-      $brandCondition
-      $categoryCondition
-      $modelCondition
-    ";
-    $stmtSold = $conn->prepare($sqlSold);
-    if ($stmtSold === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed (sold): ' . $conn->error]);
-        return;
-    }
-    $paramsSold = array_merge([$startDate, $endDate], $params);
-    } else {
-    $sqlSold = "
-    SELECT COUNT(*) as count_sold, COALESCE(SUM(mi.inventory_cost), 0) as cost_sold
-    FROM motorcycle_sales ms
-    JOIN motorcycle_inventory mi ON ms.motorcycle_id = mi.id
-    WHERE ms.sale_date BETWEEN ? AND ?
-      $brandCondition
-      $categoryCondition
-      $modelCondition
-      AND mi.current_branch = ?
-    ";
-    $stmtSold = $conn->prepare($sqlSold);
-    if ($stmtSold === false) {
-        echo json_encode(['success' => false, 'message' => 'Prepare failed (sold): ' . $conn->error]);
-        return;
-    }
-    $paramsSold = array_merge([$startDate, $endDate], $params);
-    $paramsSold[] = strtoupper($branch);
-    }
-
-    bindParams($stmtSold, $paramsSold);
-    $stmtSold->execute();
-    $soldResult = $stmtSold->get_result()->fetch_assoc();
-    $countSold = (int)($soldResult['count_sold'] ?? 0);
-    $costSold = (float)($soldResult['cost_sold'] ?? 0);
->>>>>>> 09a56cf (feat: Load direct shipments after successful shipment update)
     // === CALCULATE ENDING BALANCE (Current Month End) ===
     $countEndingActual = 0;
     $costEndingActual = 0;
