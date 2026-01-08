@@ -813,6 +813,7 @@
                                 <option value='DELGADO SUZUKI'>DELGADO SUZUKI</option>
                                 <option value='JARO-1'>JARO-1</option>
                                 <option value='JARO-2'>JARO-2</option>
+                                <option value='JARO-FLAGSHIP'>JARO FLAGSHIP</option>
                                 <option value='KALIBO MABINI'>KALIBO MABINI</option>
                                 <option value='KALIBO SUZUKI'>KALIBO SUZUKI</option>
                                 <option value='ALTAVAS'>ALTAVAS</option>

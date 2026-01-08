@@ -482,6 +482,7 @@
                                     <option value="SDS">DELGADO-2</option>
                                     <option value="JAR-1">JARO-1</option>
                                     <option value="JAR-2">JARO-2</option>
+                                    <option value="JAR-F">JARO FLAGSHIP</option>
                                     <option value="SKM">KALIBO-1</option>
                                     <option value="SKS">KALIBO-2</option>
                                     <option value="ALTA">ALTAVAS</option>
@@ -641,6 +642,7 @@
                                 <option value="SDS">DELGADO-2</option>
                                 <option value="JAR-1">JARO-1</option>
                                 <option value="JAR-2">JARO-2</option>
+                                <option value="JAR-F">JARO FLAGSHIP</option>
                                 <option value="SKM">KALIBO-1</option>
                                 <option value="SKS">KALIBO-2</option>
                                 <option value="ALTA">ALTAVAS</option>
