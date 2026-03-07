@@ -2011,7 +2011,7 @@ $(document).ready(function () {
         let html = `
             <div class="card border-dark-green shadow-sm overflow-hidden bg-white">
                 <div class="card-header bg-dark-green text-white text-center py-2">
-                    <h6 class="mb-0 fw-bold small text-uppercase">Summary of Quantity Per Part</h6>
+                    <h6 class="mb-0 fw-bold small text-uppercase text-white">Summary of Quantity Per Part</h6>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm mb-0 align-middle">

@@ -542,14 +542,21 @@ function getIncomingTransfers()
     global $conn, $currentBranch, $isAdmin;
     $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
 
+    // Auto-migrate schema to add status if missing
+    try {
+        @$conn->query("ALTER TABLE spareparts_transfer_items ADD COLUMN status VARCHAR(20) DEFAULT 'In-Transit'");
+    } catch (Exception $e) {
+    }
+
     // Get transfers waiting for acceptance (to this specific location)
     $where = $seeAll ? "st.status = 'In-Transit'" : "st.to_branch = ? AND st.status = 'In-Transit'";
     $sql = "SELECT st.id, st.from_branch, st.to_branch, st.transfer_date, st.status, 
                    SUM(sti.quantity) as item_count 
             FROM spareparts_transfers st
-            LEFT JOIN spareparts_transfer_items sti ON st.id = sti.transfer_id
+            LEFT JOIN spareparts_transfer_items sti ON st.id = sti.transfer_id AND (sti.status = 'In-Transit' OR sti.status IS NULL)
             WHERE $where
             GROUP BY st.id
+            HAVING item_count > 0
             ORDER BY st.transfer_date DESC, st.id DESC";
 
     $stmt = $conn->prepare($sql);
@@ -1480,6 +1487,28 @@ function deleteItem($type)
     try {
         switch ($type) {
             case 'part':
+                // First, fetch the part_no so we can delete its transaction history
+                $pStmt = $isAdmin
+                    ? $conn->prepare("SELECT part_no, current_branch FROM spareparts_inventory WHERE id = ?")
+                    : $conn->prepare("SELECT part_no, current_branch FROM spareparts_inventory WHERE id = ? AND current_branch = ?");
+
+                if ($isAdmin) {
+                    $pStmt->bind_param('i', $id);
+                } else {
+                    $pStmt->bind_param('is', $id, $currentBranch);
+                }
+                $pStmt->execute();
+                $pRes = $pStmt->get_result()->fetch_assoc();
+
+                if ($pRes) {
+                    $partNo = $pRes['part_no'];
+                    $bNo = $pRes['current_branch'];
+                    // Delete transaction history for this part in this branch
+                    $delTx = $conn->prepare("DELETE FROM spareparts_transactions WHERE part_no = ? AND (from_location = ? OR to_location = ?)");
+                    $delTx->bind_param('sss', $partNo, $bNo, $bNo);
+                    $delTx->execute();
+                }
+
                 $stmt = $isAdmin
                     ? $conn->prepare("DELETE FROM spareparts_inventory WHERE id = ?")
                     : $conn->prepare("DELETE FROM spareparts_inventory WHERE id = ? AND current_branch = ?");
@@ -1817,19 +1846,24 @@ function getInventoryBalanceReport($period, $dateVal, $branch, $brand, $category
         'total_sold' => array_sum(array_column($data, 'sold_during_month')),
         'total_out' => array_sum(array_column($data, 'inventory_out')),
         'total_end' => array_sum(array_column($data, 'ending_balance')),
-        'brand_summary' => []
+        'part_summary' => []
     ];
 
-    // Compute brand summary
-    $brands = [];
+    // Compute part summary
+    $partsSum = [];
     foreach ($data as $row) {
-        $b = $row['brand'] ?: 'Unknown';
-        if (!isset($brands[$b]))
-            $brands[$b] = 0;
-        $brands[$b] += $row['ending_balance'];
+        $key = $row['part_no'] . '|' . $row['description'];
+        if (!isset($partsSum[$key])) {
+            $partsSum[$key] = [
+                'part_no' => $row['part_no'],
+                'description' => $row['description'],
+                'quantity' => 0
+            ];
+        }
+        $partsSum[$key]['quantity'] += $row['ending_balance'];
     }
-    foreach ($brands as $name => $qty) {
-        $summary['brand_summary'][] = ['brand' => $name, 'quantity' => $qty];
+    foreach ($partsSum as $pItem) {
+        $summary['part_summary'][] = $pItem;
     }
 
     return ['success' => true, 'data' => $data, 'summary' => $summary];
@@ -2551,11 +2585,18 @@ function getCustomerLedger()
 function getIncomingTransfersDetailed()
 {
     global $conn, $currentBranch;
+
+    // Auto-migrate schema to add status if missing
+    try {
+        @$conn->query("ALTER TABLE spareparts_transfer_items ADD COLUMN status VARCHAR(20) DEFAULT 'In-Transit'");
+    } catch (Exception $e) {
+    }
+
     $sql = "SELECT ti.id as item_id, ti.id as id, ti.part_no, ti.description, ti.quantity as qty, 
                    t.transfer_date, t.from_branch, t.id as transfer_number, t.status,
                    i.brand
             FROM spareparts_transfers t
-            JOIN spareparts_transfer_items ti ON t.id = ti.transfer_id
+            JOIN spareparts_transfer_items ti ON t.id = ti.transfer_id AND (ti.status = 'In-Transit' OR ti.status IS NULL)
             LEFT JOIN spareparts_inventory i ON ti.part_no = i.part_no AND i.current_branch = t.from_branch
             WHERE t.to_branch = ? AND t.status = 'In-Transit'
             ORDER BY t.transfer_date DESC, t.id DESC";
@@ -2582,6 +2623,12 @@ function batchReceiveTransfers()
         return;
     }
 
+    // Auto-migrate schema to add status if missing
+    try {
+        @$conn->query("ALTER TABLE spareparts_transfer_items ADD COLUMN status VARCHAR(20) DEFAULT 'In-Transit'");
+    } catch (Exception $e) {
+    }
+
     $conn->begin_transaction();
     try {
         foreach ($ids as $itemId) {
@@ -2606,13 +2653,24 @@ function batchReceiveTransfers()
             $fromBranch = $item['from_branch'];
             $transferId = $item['tid'];
 
+            // Fetch brand and price from the source branch
+            $srcStmt = $conn->prepare("SELECT brand, price FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
+            $srcStmt->bind_param('ss', $part_no, $fromBranch);
+            $srcStmt->execute();
+            $srcItem = $srcStmt->get_result()->fetch_assoc();
+
+            $brand = $srcItem ? $srcItem['brand'] : '';
+            $price = $srcItem ? (float) $srcItem['price'] : 0.0;
+
             // 2. Update/Insert into inventory at current branch
-            $invStmt = $conn->prepare("INSERT INTO spareparts_inventory (part_no, description, current_stock, cost, current_branch) 
-                                      VALUES (?, ?, ?, ?, ?) 
+            $invStmt = $conn->prepare("INSERT INTO spareparts_inventory (part_no, description, brand, current_stock, cost, price, current_branch) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?) 
                                       ON DUPLICATE KEY UPDATE 
                                       current_stock = current_stock + VALUES(current_stock), 
-                                      cost = (cost + VALUES(cost)) / 2");
-            $invStmt->bind_param('ssids', $part_no, $description, $quantity, $cost, $currentBranch);
+                                      cost = (cost + VALUES(cost)) / 2,
+                                      brand = IF(brand = '' OR brand IS NULL, VALUES(brand), brand),
+                                      price = IF(price = 0 OR price IS NULL, VALUES(price), price)");
+            $invStmt->bind_param('sssidss', $part_no, $description, $brand, $quantity, $cost, $price, $currentBranch);
             $invStmt->execute();
 
             // 3. Log TRANSACTION_IN
@@ -2622,12 +2680,23 @@ function batchReceiveTransfers()
             $txStmt->bind_param('ssiddss', $part_no, $description, $quantity, $cost, $total_amount, $fromBranch, $currentBranch);
             $txStmt->execute();
 
-            // 4. Update the transfer status to Completed (for the whole transfer record for now)
-            // Note: In a more complex system, we might track per-item status, but here we'll assume receiving any item in the batch marks the transfer as completed or partially completed.
-            // For now, let's mark the parent transfer as Completed if we reach this point.
-            $updTransfer = $conn->prepare("UPDATE spareparts_transfers SET status = 'Completed', received_date = NOW() WHERE id = ?");
-            $updTransfer->bind_param('i', $transferId);
-            $updTransfer->execute();
+            // 4. Update the individual item status to Completed
+            $updItem = $conn->prepare("UPDATE spareparts_transfer_items SET status = 'Completed' WHERE id = ?");
+            $updItem->bind_param('i', $itemId);
+            $updItem->execute();
+
+            // 5. Check if any items in this transfer are still In-Transit or NULL
+            $checkStmt = $conn->prepare("SELECT COUNT(*) as pending FROM spareparts_transfer_items WHERE transfer_id = ? AND (status = 'In-Transit' OR status IS NULL)");
+            $checkStmt->bind_param('i', $transferId);
+            $checkStmt->execute();
+            $pendingResult = $checkStmt->get_result()->fetch_assoc();
+
+            if ($pendingResult['pending'] == 0) {
+                // All items received or rejected, complete the parent transfer
+                $updTransfer = $conn->prepare("UPDATE spareparts_transfers SET status = 'Completed', received_date = NOW() WHERE id = ?");
+                $updTransfer->bind_param('i', $transferId);
+                $updTransfer->execute();
+            }
         }
 
         $conn->commit();
@@ -2645,6 +2714,12 @@ function batchRejectTransfers()
     if (empty($ids)) {
         echo json_encode(['success' => false, 'message' => 'No items selected.']);
         return;
+    }
+
+    // Auto-migrate schema to add status if missing
+    try {
+        @$conn->query("ALTER TABLE spareparts_transfer_items ADD COLUMN status VARCHAR(20) DEFAULT 'In-Transit'");
+    } catch (Exception $e) {
     }
 
     $conn->begin_transaction();
@@ -2676,12 +2751,25 @@ function batchRejectTransfers()
             $invStmt->execute();
 
             // 3. Log TRANSACTION_REJECTED (optional, but good for history)
-            // For now, we'll just update the transfer status
 
-            // 4. Update the transfer status to Rejected
-            $updTransfer = $conn->prepare("UPDATE spareparts_transfers SET status = 'Rejected', received_date = NOW() WHERE id = ?");
-            $updTransfer->bind_param('i', $transferId);
-            $updTransfer->execute();
+            // 4. Update the individual item status to Rejected
+            $updItem = $conn->prepare("UPDATE spareparts_transfer_items SET status = 'Rejected' WHERE id = ?");
+            $updItem->bind_param('i', $itemId);
+            $updItem->execute();
+
+            // 5. Check if any items in this transfer are still In-Transit or NULL
+            $checkStmt = $conn->prepare("SELECT COUNT(*) as pending FROM spareparts_transfer_items WHERE transfer_id = ? AND (status = 'In-Transit' OR status IS NULL)");
+            $checkStmt->bind_param('i', $transferId);
+            $checkStmt->execute();
+            $pendingResult = $checkStmt->get_result()->fetch_assoc();
+
+            if ($pendingResult['pending'] == 0) {
+                // All items received or rejected, complete the parent transfer
+                // If all were rejected, the transfer status ideally reflects that, but 'Rejected' or 'Completed' operates the same visually. We will use 'Rejected' to match.
+                $updTransfer = $conn->prepare("UPDATE spareparts_transfers SET status = 'Rejected', received_date = NOW() WHERE id = ?");
+                $updTransfer->bind_param('i', $transferId);
+                $updTransfer->execute();
+            }
         }
 
         $conn->commit();

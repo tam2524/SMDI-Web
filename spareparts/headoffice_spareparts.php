@@ -463,7 +463,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                         id="batchRejectIncomingBtn">
                         <i class="bi bi-x-circle me-1"></i> Reject Selected
                     </button>
-                    <button type='button' class='btn btn-dark-green fw-bold px-4 d-none text-white'
+                    <button type='button' class='btn btn-success-premium fw-bold px-4 d-none'
                         id="batchAcceptIncomingBtn">
                         <i class="bi bi-check2-circle me-1"></i> Accept Selected
                     </button>
