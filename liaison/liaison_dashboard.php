@@ -8,7 +8,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
-    
+
     <link rel="icon" href="../assets/img/smdi_logosmall.png" type="image/png">
 
     <!-- Icon Font Stylesheet -->
@@ -21,10 +21,10 @@
 
     <!-- Bootstrap CSS -->
     <link href="../css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Template Stylesheet -->
     <link href="../css/style.css" rel="stylesheet">
-    
+
     <!-- PrintJS -->
     <link rel="stylesheet" href="https://printjs-4de6.kxcdn.com/print.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -32,54 +32,53 @@
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
     <script src="../js/script.js"></script>
 
-<style>
+    <style>
         .table-responsive {
             overflow-x: auto;
         }
-        
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 20px 0;
-}
 
-.pagination .page-item {
-    margin: 0 5px;
-}
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
 
-.pagination .page-link {
-    padding: 10px 15px;
-    border: 1px solid #000f71;
-    border-radius: 5px;
-    color: #000f71;
-    text-decoration: none;
-    transition: background-color 0.3s, color 0.3s;
-}
+        .pagination .page-item {
+            margin: 0 5px;
+        }
 
-.pagination .page-link:hover {
-    background-color: #000f71;
-    color: white;
-}
+        .pagination .page-link {
+            padding: 10px 15px;
+            border: 1px solid #000f71;
+            border-radius: 5px;
+            color: #000f71;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
 
-.pagination .page-item.active .page-link {
-    background-color: #000f71;
-    color: white;
-    border-color: #000f71;
-}
+        .pagination .page-link:hover {
+            background-color: #000f71;
+            color: white;
+        }
 
-.pagination .page-item.disabled .page-link {
-    color: #ccc;
-    pointer-events: none;
-    background-color: white;
-    border-color: #ccc;
-}
+        .pagination .page-item.active .page-link {
+            background-color: #000f71;
+            color: white;
+            border-color: #000f71;
+        }
 
-.pagination .page-item.disabled .page-link:hover {
-    background-color: white;
-    color: #ccc; 
-}
+        .pagination .page-item.disabled .page-link {
+            color: #ccc;
+            pointer-events: none;
+            background-color: white;
+            border-color: #ccc;
+        }
 
+        .pagination .page-item.disabled .page-link:hover {
+            background-color: white;
+            color: #ccc;
+        }
     </style>
 </head>
 
@@ -89,7 +88,8 @@
         <div class="container topbar bg-primary d-none d-lg-block">
             <div class="d-flex justify-content-between">
                 <div class="top-info ps-2">
-                    <small class="me-3"><i class="fas fa-map-marker-alt me-2 text-primary"></i> <a href="#" class="text-white">1031, Victoria Building, Roxas Avenue, Roxas City, 5800</a></small>
+                    <small class="me-3"><i class="fas fa-map-marker-alt me-2 text-primary"></i> <a href="#"
+                            class="text-white">1031, Victoria Building, Roxas Avenue, Roxas City, 5800</a></small>
                 </div>
                 <div class="top-link pe-2"></div>
             </div>
@@ -99,7 +99,8 @@
                 <a href="index.html" class="navbar-brand">
                     <img src="../assets/img/smdi_logo.jpg" alt="Company Logo" class="logo">
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+                    aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -118,15 +119,17 @@
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Records</h5>
-                <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#addRecordModal">Add New Record</button>
-                <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal" data-bs-target="#printOptionsModal">Print Documents</button>
-                 <button id="deleteSelectedButton" class="btn btn-primary text-white mb-3">Delete Selected</button>
-                 
-                
-<!-- Search and Sort Options -->
-<div class="mb-3 d-flex">
-    <input type="text" id="searchInput" class="form-control me-2" placeholder="Search...">
-    <!-- <div class="dropdown">
+                <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal"
+                    data-bs-target="#addRecordModal">Add New Record</button>
+                <button class="btn btn-primary text-white mb-3" data-bs-toggle="modal"
+                    data-bs-target="#printOptionsModal">Print Documents</button>
+                <button id="deleteSelectedButton" class="btn btn-primary text-white mb-3">Delete Selected</button>
+
+
+                <!-- Search and Sort Options -->
+                <div class="mb-3 d-flex">
+                    <input type="text" id="searchInput" class="form-control me-2" placeholder="Search...">
+                    <!-- <div class="dropdown">
         <button class="btn btn-primary text-white dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             Sort by
         </button>
@@ -136,219 +139,224 @@
             <li><a class="dropdown-item" href="#" data-sort="branch">Branch</a></li>
         </ul>
     </div> -->
-</div>
+                </div>
 
-  <!-- Table of Records -->
-        <table id="RecordTable" class="table table-striped">
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="selectAll"></th>
-                    <th>Family Name</th>
-                    <th>First Name</th>
-                    <th>Middle Name</th>
-                    <th>Plate Number</th>
-                    <th>MV File</th>
-                    <th>Branch</th>
-                    <th>Batch</th>
-                    <th>Remarks</th>
-                  
-                    
-                    <th class="no-print">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="RecordTableBody">
-                <!-- Records will be loaded here by AJAX -->
-            </tbody>
-        </table>
-        
-    </div>
-    <!-- Pagination Controls -->
-                        <nav aria-label="Page navigation">
-                            <ul id="paginationControls" class="pagination">
-                                <li id="prevPage" class="page-item">
-                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                                </li>
-                                <li id="nextPage" class="page-item">
-                                    <a class="page-link" href="#">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
+                <!-- Table of Records -->
+                <table id="RecordTable" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>Family Name</th>
+                            <th>First Name</th>
+                            <th>Middle Name</th>
+                            <th>Plate Number</th>
+                            <th>MV File</th>
+                            <th>Branch</th>
+                            <th>Batch</th>
+                            <th>Remarks</th>
+
+
+                            <th class="no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="RecordTableBody">
+                        <!-- Records will be loaded here by AJAX -->
+                    </tbody>
+                </table>
+
+            </div>
+            <!-- Pagination Controls -->
+            <nav aria-label="Page navigation">
+                <ul id="paginationControls" class="pagination">
+                    <li id="prevPage" class="page-item">
+                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                    </li>
+                    <li id="nextPage" class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 
 
-<!-- Add Record Modal -->
-<div class="modal fade" id="addRecordModal" tabindex="-1" aria-labelledby="addRecordModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addRecordModalLabel">Add Record</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
-                <div id="successMessage" class="alert alert-success" style="display: none;"></div>
-                <form id="addRecordForm" action="add_Record.php" method="post">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="familyName" class="form-label">Family Name</label>
-                            <input type="text" class="form-control" id="familyName" name="familyName" required>
+    <!-- Add Record Modal -->
+    <div class="modal fade" id="addRecordModal" tabindex="-1" aria-labelledby="addRecordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addRecordModalLabel">Add Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+                    <div id="successMessage" class="alert alert-success" style="display: none;"></div>
+                    <form id="addRecordForm" action="add_Record.php" method="post">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="familyName" class="form-label">Family Name</label>
+                                <input type="text" class="form-control" id="familyName" name="familyName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="firstName" name="firstName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="middleName" class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" id="middleName" name="middleName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="plateNumber" class="form-label">Plate Number</label>
+                                <input type="text" class="form-control" id="plateNumber" name="plateNumber" required>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="firstName" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="firstName" name="firstName" required>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="mvFile" class="form-label">MV File</label>
+                                <input type="text" class="form-control" id="mvFile" name="mvFile" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="branch" class="form-label">Branch</label>
+                                <input type="text" class="form-control" id="branch" name="branch" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="batch" class="form-label">Batch</label>
+                                <input type="text" class="form-control" id="batch" name="batch" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="remarks" class="form-label">Remarks</label>
+                                <input type="text" class="form-control" id="remarks" name="remarks" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="date_reg" class="form-label">Date Reg</label>
+                                <input type="text" class="form-control" id="date_reg" name="date_reg" required>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="middleName" class="form-label">Middle Name</label>
-                            <input type="text" class="form-control" id="middleName" name="middleName" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="plateNumber" class="form-label">Plate Number</label>
-                            <input type="text" class="form-control" id="plateNumber" name="plateNumber" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="mvFile" class="form-label">MV File</label>
-                            <input type="text" class="form-control" id="mvFile" name="mvFile" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="branch" class="form-label">Branch</label>
-                            <input type="text" class="form-control" id="branch" name="branch" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="batch" class="form-label">Batch</label>
-                            <input type="text" class="form-control" id="batch" name="batch" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="remarks" class="form-label">Remarks</label>
-                            <input type="text" class="form-control" id="remarks" name="remarks" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="date_reg" class="form-label">Date Reg</label>
-                            <input type="text" class="form-control" id="date_reg" name="date_reg" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary text-white">Add Record</button>
-                </form> 
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Edit Modal -->
-<div class="modal fade" id="editRecordModal" tabindex="-1" aria-labelledby="editRecordModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editRecordModalLabel">Edit Record</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="editRecordForm" action="edit_Record.php" method="post">
-                    <input type="hidden" id="editRecordId" name="Record_id">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="editFamilyName" class="form-label">Family Name</label>
-                            <input type="text" class="form-control" id="editFamilyName" name="familyName" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="editFirstName" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="editFirstName" name="firstName" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="editMiddleName" class="form-label">Middle Name</label>
-                            <input type="text" class="form-control" id="editMiddleName" name="middleName" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="editPlateNumber" class="form-label">Plate Number</label>
-                            <input type="text" class="form-control" id="editPlateNumber" name="plateNumber" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="editMvFile" class="form-label">MV File</label>
-                            <input type="text" class="form-control" id="editMvFile" name="mvFile" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="editBranch" class="form-label">Branch</label>
-                            <input type="text" class="form-control" id="editBranch" name="branch" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="editBatch" class="form-label">Batch</label>
-                            <input type="text" class="form-control" id="editBatch" name="batch" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="editRemarks" class="form-label">Remarks</label>
-                            <input type="text" class="form-control" id="editRemarks" name="remarks" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="editDatereg" class="form-label">DateReg</label>
-                            <input type="text" class="form-control" id="editDateReg" name="date_reg" required>
-                         </div>
-                    </div>
-                    <button type="submit" class="btn text-white btn-primary ">Save Changes</button>
-               </form> 
+                        <button type="submit" class="btn btn-primary text-white">Add Record</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Print Options Modal -->
-<div class="modal fade" id="printOptionsModal" tabindex="-1" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="printOptionsModalLabel">Print Options</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="printOptionsForm">
-                    <div class="mb-3">
-                        <label for="documentType" class="form-label">Document Type</label>
-                        <select class="form-select" id="documentType">
-                            <option value="masterlists">Masterlists</option>
-                            <option value="labels">Labels</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="sortBy" class="form-label">Sort Document By</label>
-                        <select class="form-select" id="sortBy">
-                            <option value="all">All</option>
-                            <option value="customerBatchRange">Customer Batch Range</option>
-                            <option value="familyName">Family Name</option> 
-                        </select>
-                    </div>
-                    <div class="mb-3" id="batchRange" style="display: none;">
-                        <label for="fromBatch" class="form-label">From:</label>
-                        <input type="text" class="form-control" id="fromBatch">
-                        <label for="toBatch" class="form-label">To:</label>
-                        <input type="text" class="form-control" id="toBatch">
-                    </div>
-                    <div class="mb-3" id="familyNameRange" style="display: none;">
-                    <label for="nameRange" class="form-label">Ex: A-B = Show All Records with Family Name starting with A only</label>
-                    <label for="fromLetter" class="form-label">From Letter:</label>
-    <input type="text" class="form-control" id="fromLetter" placeholder="Enter starting letter">
-    <label for="toLetter" class="form-label">To Letter:</label>
-    <input type="text" class="form-control" id="toLetter" placeholder="Enter ending letter">
-</div>
-                    <div class="mb-3">
-                        <label for="outputFormat" class="form-label">Output Format</label>
-                        <select class="form-select" id="outputFormat">
-                            <option value="pdf">PDF</option>
-                            <option value="excel">Excel</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary text-white" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary text-white" id="confirmPrint">Print</button>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editRecordModal" tabindex="-1" aria-labelledby="editRecordModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRecordModalLabel">Edit Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="errorMessageEdit" class="alert alert-danger" style="display: none;"></div>
+                    <form id="editRecordForm" action="edit_Record.php" method="post">
+                        <input type="hidden" id="editRecordId" name="Record_id">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editFamilyName" class="form-label">Family Name</label>
+                                <input type="text" class="form-control" id="editFamilyName" name="familyName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editFirstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="editFirstName" name="firstName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editMiddleName" class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" id="editMiddleName" name="middleName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editPlateNumber" class="form-label">Plate Number</label>
+                                <input type="text" class="form-control" id="editPlateNumber" name="plateNumber"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editMvFile" class="form-label">MV File</label>
+                                <input type="text" class="form-control" id="editMvFile" name="mvFile" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="editBranch" class="form-label">Branch</label>
+                                <input type="text" class="form-control" id="editBranch" name="branch" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="editBatch" class="form-label">Batch</label>
+                                <input type="text" class="form-control" id="editBatch" name="batch" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editRemarks" class="form-label">Remarks</label>
+                                <input type="text" class="form-control" id="editRemarks" name="remarks" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editDatereg" class="form-label">DateReg</label>
+                                <input type="text" class="form-control" id="editDateReg" name="date_reg" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn text-white btn-primary ">Save Changes</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Print Options Modal -->
+    <div class="modal fade" id="printOptionsModal" tabindex="-1" aria-labelledby="printOptionsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printOptionsModalLabel">Print Options</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="printOptionsForm">
+                        <div class="mb-3">
+                            <label for="documentType" class="form-label">Document Type</label>
+                            <select class="form-select" id="documentType">
+                                <option value="masterlists">Masterlists</option>
+                                <option value="labels">Labels</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sortBy" class="form-label">Sort Document By</label>
+                            <select class="form-select" id="sortBy">
+                                <option value="all">All</option>
+                                <option value="customerBatchRange">Customer Batch Range</option>
+                                <option value="familyName">Family Name</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="batchRange" style="display: none;">
+                            <label for="fromBatch" class="form-label">From:</label>
+                            <input type="text" class="form-control" id="fromBatch">
+                            <label for="toBatch" class="form-label">To:</label>
+                            <input type="text" class="form-control" id="toBatch">
+                        </div>
+                        <div class="mb-3" id="familyNameRange" style="display: none;">
+                            <label for="nameRange" class="form-label">Ex: A-B = Show All Records with Family Name
+                                starting with A only</label>
+                            <label for="fromLetter" class="form-label">From Letter:</label>
+                            <input type="text" class="form-control" id="fromLetter" placeholder="Enter starting letter">
+                            <label for="toLetter" class="form-label">To Letter:</label>
+                            <input type="text" class="form-control" id="toLetter" placeholder="Enter ending letter">
+                        </div>
+                        <div class="mb-3">
+                            <label for="outputFormat" class="form-label">Output Format</label>
+                            <select class="form-select" id="outputFormat">
+                                <option value="pdf">PDF</option>
+                                <option value="excel">Excel</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary text-white" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary text-white" id="confirmPrint">Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Success Modal -->
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
@@ -365,7 +373,8 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -382,39 +391,41 @@
             </div>
         </div>
     </div>
-<!-- Duplicate Error Modal -->
-<div class="modal fade" id="duplicateErrorModal" tabindex="-1" aria-labelledby="duplicateErrorModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="duplicateErrorModalLabel">Duplicate Record!</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p id="duplicateErrorMessage">A record with this name already exists.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary text-white" data-bs-dismiss="modal">Close</button>
+    <!-- Duplicate Error Modal -->
+    <div class="modal fade" id="duplicateErrorModal" tabindex="-1" aria-labelledby="duplicateErrorModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="duplicateErrorModalLabel">Duplicate Record!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="duplicateErrorMessage">A record with this name already exists.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary text-white" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Warning Modal -->
-<div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="warningModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="warningModalLabel">Warning</h5>
-       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Warning Modal -->
+    <div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="warningModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalLabel">Warning</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 
-      </div>
-      <div class="modal-body">
-        <p id="warningMessage"></p>
-      </div>
+                </div>
+                <div class="modal-body">
+                    <p id="warningMessage"></p>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
 
 </body>

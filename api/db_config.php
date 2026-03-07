@@ -4,7 +4,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$servername = "localhost";
+$servername = "localhost:3308";
 $dbusername = "mbc-smdi";
 $dbpassword = "mbccreations0331";
 $dbname = "smdi_website_db";
@@ -14,4 +14,5 @@ $conn = new mysqli($servername, $dbusername, $dbpassword, $dbname);
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
+$conn->set_charset("utf8mb4");
 ?>

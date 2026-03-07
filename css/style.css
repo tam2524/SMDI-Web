@@ -1,3 +1,31 @@
+:root {
+    --bs-font-sans-serif: 'Segoe UI', Arial, sans-serif !important;
+    --bs-body-font-family: 'Segoe UI', Arial, sans-serif !important;
+    --bs-font-monospace: 'Segoe UI', Arial, sans-serif !important;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+span:not(.fa):not(.bi):not(.badge):not(.icon),
+button,
+input,
+select,
+textarea,
+table,
+th,
+td,
+label,
+div {
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
 /*** Spinner Start ***/
 #spinner {
     opacity: 0;
@@ -203,8 +231,9 @@
     .motorcycle-section {
         padding: 2rem 0;
     }
+
     .branch-mapview iframe {
-        height: 250px; 
+        height: 250px;
         object-fit: cover;
     }
 }
@@ -315,20 +344,23 @@
     .carousel-caption h1 {
         font-size: 3rem;
     }
+
     .carousel {
         margin-top: 100px;
         margin-left: auto;
         margin-right: auto;
         width: 90%;
-        
+
     }
 
     .carousel-inner img {
-        height: 200px; /* Adjust height based on preference */
+        height: 200px;
+        /* Adjust height based on preference */
         object-fit: cover;
     }
+
     .carousel-inner {
-        height: 200px; 
+        height: 200px;
     }
 }
 
@@ -649,17 +681,17 @@
 }
 
 /* About Page */
-.about{
+.about {
     width: 100%;
     padding: 100px 0px;
     background-color: rgb(0, 0, 112);
 }
 
-.about-text{
+.about-text {
     width: 1250px;
 }
 
-.main{
+.main {
     width: 1000000px;
     max-width: 100%;
     margin: 0 auto;
@@ -669,7 +701,7 @@
     justify-content: space-around;
 }
 
-.about-text h2{
+.about-text h2 {
     color: white;
     text-align: center;
     font-size: 30px;
@@ -677,7 +709,7 @@
     margin-bottom: 20px;
 }
 
-.about-text h3{
+.about-text h3 {
     text-shadow: 2px 2px 4px #000000;
     color: white;
     text-align: center;
@@ -687,14 +719,14 @@
 }
 
 
-.about-text p1{
+.about-text p1 {
     color: white;
     text-align: justify;
     font-size: 18px;
     margin-bottom: 20px;
 }
 
-.about-text p2{
+.about-text p2 {
     color: white;
     font-weight: bold;
     text-align: justify;
@@ -702,7 +734,7 @@
     margin-bottom: 20px;
 }
 
-.about-text h4{
+.about-text h4 {
     color: white;
     text-align: justify;
     font-size: 18px;
@@ -710,17 +742,17 @@
 }
 
 
-.about1{
+.about1 {
     width: 100%;
     padding: 100px 0px;
     background-color: rgb(196, 217, 255);
 }
 
-.about-text{
+.about-text {
     width: 1250px;
 }
 
-.main1{
+.main1 {
     width: 1000000px;
     max-width: 100%;
     margin: 0 auto;
@@ -731,7 +763,7 @@
 }
 
 
-.about1-text h3{
+.about1-text h3 {
     color: rgb(0, 0, 0);
     text-shadow: 2px 2px 4px #ffffff;
     text-align: center;
@@ -740,7 +772,7 @@
     margin-bottom: 20px;
 }
 
-.about1-text li{
+.about1-text li {
     color: rgb(0, 0, 0);
     text-align: justify;
     font-size: 18px;
@@ -748,18 +780,18 @@
 }
 
 
-.about2{
-   
+.about2 {
+
     width: 100%;
     padding: 100px 0px;
     background-color: rgb(0, 0, 112);
 }
 
-.about2-text{
+.about2-text {
     width: 1250px;
 }
 
-.main2{
+.main2 {
     width: 1000000px;
     max-width: 100%;
     margin: 0 auto;
@@ -770,7 +802,7 @@
 }
 
 
-.about2-text h3{
+.about2-text h3 {
     color: rgb(255, 255, 255);
     text-shadow: 2px 2px 4px #000000;
     text-align: center;
@@ -780,7 +812,7 @@
     margin-bottom: 20px;
 }
 
-.about2-text h5{
+.about2-text h5 {
     color: rgb(255, 255, 255);
     text-align: center;
     font-size: 18px;
@@ -788,7 +820,7 @@
     margin-bottom: 20px;
 }
 
-.about2-text h4{
+.about2-text h4 {
     color: rgb(255, 255, 255);
     text-align: center;
     text-shadow: 2px 2px 4px #000000;
@@ -798,14 +830,14 @@
     margin-bottom: 20px;
 }
 
-.about2-text p1{
+.about2-text p1 {
     color: rgb(255, 255, 255);
     font-size: 18px;
     margin-top: 20px;
     margin-bottom: 20px;
 }
 
-.about2-text li{
+.about2-text li {
     color: rgb(255, 255, 255);
     text-align: center;
     font-weight: bold;
@@ -813,17 +845,17 @@
     margin-bottom: 20px;
 }
 
-.about3{
+.about3 {
     width: 100%;
     padding: 100px 0px;
     background-color: rgb(196, 217, 255);
 }
 
-.about3-text{
+.about3-text {
     width: 1250px;
 }
 
-.main3{
+.main3 {
     width: 1000000px;
     max-width: 100%;
     margin: 0 auto;
@@ -834,7 +866,7 @@
 }
 
 
-.about3-text h3{
+.about3-text h3 {
     color: rgb(0, 0, 0);
     text-shadow: 2px 2px 4px #ffffff;
     text-align: center;
@@ -843,7 +875,7 @@
     margin-bottom: 20px;
 }
 
-.about3-text h5{
+.about3-text h5 {
     color: rgb(0, 0, 0);
     text-align: center;
     font-size: 18px;
@@ -904,56 +936,74 @@
 }
 
 form {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .form-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between; /* Ensures space between elements */
-            gap: 10px; /* Adjusts the space between fields and button */
-            flex-wrap: wrap; /* Allows fields to wrap on smaller screens */
-        }
-        .form-group {
-            flex: 1; /* Takes up equal space */
-            min-width: 200px; /* Ensures a minimum width for responsiveness */
-            margin-right: 10px;
-        }
-        .form-group:last-child {
-            margin-right: 0;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: navy;
-            color: #fff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            flex-shrink: 0;
-            align-self: flex-end; 
-        }
-        .result {
-            margin-top: 20px;
-            font-size: 1.5rem; /* Increase font size */
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            text-align: center; /* Center-align the text */
-        }
-        .result h4 {
-            margin-bottom: 15px;
-            font-size: 2rem; /* Larger font size for headings */
-        }
-        .result p {
-            font-size: 1.25rem; /* Larger font size for paragraphs */
-        }
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Ensures space between elements */
+    gap: 10px;
+    /* Adjusts the space between fields and button */
+    flex-wrap: wrap;
+    /* Allows fields to wrap on smaller screens */
+}
+
+.form-group {
+    flex: 1;
+    /* Takes up equal space */
+    min-width: 200px;
+    /* Ensures a minimum width for responsiveness */
+    margin-right: 10px;
+}
+
+.form-group:last-child {
+    margin-right: 0;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: navy;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    align-self: flex-end;
+}
+
+.result {
+    margin-top: 20px;
+    font-size: 1.5rem;
+    /* Increase font size */
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    text-align: center;
+    /* Center-align the text */
+}
+
+.result h4 {
+    margin-bottom: 15px;
+    font-size: 2rem;
+    /* Larger font size for headings */
+}
+
+.result p {
+    font-size: 1.25rem;
+    /* Larger font size for paragraphs */
+}

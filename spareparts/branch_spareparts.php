@@ -11,14 +11,15 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
 ?>
 <script>
     window.canDelete = <?php echo $canDelete ? 'true' : 'false'; ?>;
+    window.isBranchPage = true;
+    window.currentBranch = "<?php echo $currentBranch; ?>";
 </script>
-?>
 <!DOCTYPE html>
 <html lang='en'>
 
 <head>
     <meta charset='utf-8'>
-    <title>RCSM - SPARE PARTS INVENTORY</title>
+    <title>RCSM - BRANCH SPARE PARTS INVENTORY</title>
     <meta content='width=device-width, initial-scale=1.0' name='viewport'>
     <link rel='icon' href='../assets/img/smdi_logosmall.png' type='image/png'>
     <link rel='stylesheet' href='https://use.fontawesome.com/releases/v5.15.4/css/all.css' />
@@ -96,122 +97,6 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
         .modal-header.bg-primary {
             background-color: var(--smdi-green) !important;
             color: white !important;
-        }
-
-        .modal-header.bg-dark {
-            background-color: #343a40 !important;
-            color: white !important;
-            border-bottom: 3px solid #6c757d !important;
-        }
-
-        @media print {
-            @page {
-                size: landscape;
-                margin: 0.5cm;
-            }
-
-            /* HIDE EVERYTHING BY DEFAULT */
-            body>*:not(#inventoryPreviewModal),
-            .sidebar,
-            .navbar,
-            .modal-header,
-            .modal-footer,
-            .no-print,
-            .btn,
-            .btn-close,
-            main,
-            footer {
-                display: none !important;
-            }
-
-            /* SHOW ONLY THE MODAL AND ITS CONTENT */
-            #inventoryPreviewModal {
-                display: block !important;
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                visibility: visible !important;
-                background: white !important;
-            }
-
-            #inventoryPreviewModal *,
-            .print-only,
-            .print-only * {
-                visibility: visible !important;
-                font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
-                font-size: 10pt !important;
-            }
-
-            .modal-dialog,
-            .modal-content,
-            .modal-body {
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-
-            .print-only {
-                display: block !important;
-            }
-
-            table {
-                width: 100% !important;
-                table-layout: auto !important;
-                border-collapse: collapse !important;
-                margin-top: 10px !important;
-            }
-
-            th,
-            td {
-                border: 1px solid #333 !important;
-                padding: 4px !important;
-                word-wrap: break-word !important;
-                vertical-align: middle !important;
-                font-size: 10pt !important;
-            }
-
-            /* Force narrow widths for numeric columns */
-            th.text-center,
-            td.text-center {
-                width: 40px !important;
-            }
-
-            th.text-end,
-            td.text-end {
-                width: 80px !important;
-            }
-
-            .table-responsive {
-                overflow: visible !important;
-                max-height: none !important;
-            }
-        }
-
-        /* Sales Module Specific Styling */
-        #sales .table thead th {
-            background-color: #343a40;
-            color: white;
-            border-bottom: none;
-        }
-
-        #salesSubTabs .nav-link {
-            transition: all 0.3s ease;
-        }
-
-        #salesSubTabs .nav-link.active {
-            background-color: #343a40 !important;
-            color: white !important;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        #salesTable tbody tr:hover {
-            background-color: rgba(52, 58, 64, 0.05);
         }
 
         .modal-title i {
@@ -377,13 +262,12 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
             height: 18px;
             cursor: pointer;
         }
-
-        #inventoryPreviewModal .modal-body {
-            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-            font-size: 12pt;
-        }
     </style>
-    <script>window.canDelete = <?php echo $canDelete ? 'true' : 'false'; ?>;</script>
+    <script>
+        window.canDelete = <?php echo $canDelete ? 'true' : 'false'; ?>;
+        window.isBranchPage = true;
+        window.currentBranch = "<?php echo $currentBranch; ?>";
+    </script>
 </head>
 
 <body>
@@ -420,50 +304,51 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
     <div class='modal fade' id='viewIncomingTransferModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog modal-xl modal-dialog-centered'>
             <div class='modal-content border-0 shadow-lg'>
-                <div class='modal-header bg-dark-green text-white py-3'>
-                    <h5 class='modal-title fw-bold text-white'><i class="bi bi-box-arrow-in-down me-2"></i>Incoming
-                        Spare Parts
-                        Transferred to Your Location</h5>
+                <div class='modal-header bg-navy text-white py-3'>
+                    <h5 class='modal-title fw-bold'><i class="bi bi-box-arrow-in-down me-2"></i>Incoming Spare Parts
+                        Transferred to Your Branch</h5>
                     <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
                 </div>
                 <div class='modal-body p-0'>
+                    <!-- Selection Summary Bar -->
                     <div class="d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="selectAllIncoming">
                             <label class="form-check-label fw-bold text-muted" for="selectAllIncoming">Select
                                 All</label>
                         </div>
-                        <div id="incomingSelectionCount" class="badge rounded-pill bg-dark-green px-3 py-2 d-none">
+                        <div id="incomingSelectionCount" class="badge rounded-pill bg-cyan px-3 py-2 d-none">
                             <span id="incomingSelectedNum">0</span> selected
                         </div>
                     </div>
 
                     <div class='table-responsive'>
                         <table class='table table-hover align-middle mb-0' id="incomingTransferTable">
-                            <thead class="bg-dark-green text-white">
+                            <thead class="bg-dark-grey text-white">
                                 <tr>
                                     <th class="ps-4" style="width: 40px;"></th>
-                                    <th class="text-white">Part No</th>
-                                    <th class="text-white">Part Name</th>
-                                    <th class="text-white">Brand</th>
-                                    <th class="text-center text-white">Qty</th>
-                                    <th class="text-center text-white">Transfer Date</th>
-                                    <th class="text-center text-white">From</th>
-                                    <th class="text-center text-white">Status</th>
+                                    <th>Part No</th>
+                                    <th>Part Name</th>
+                                    <th>Brand</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-center">Transfer Date</th>
+                                    <th class="text-center">From</th>
+                                    <th class="text-center">Status</th>
                                 </tr>
                             </thead>
-                            <tbody id='incomingTransferDetailsBody'></tbody>
+                            <tbody id='incomingTransferDetailsBody'>
+                                <!-- Populated via JS -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
                 <div class='modal-footer border-0 p-4'>
-                    <button type='button' class='btn btn-outline-dark-green fw-bold px-4'
-                        data-bs-dismiss='modal'>Close</button>
-                    <button type='button' class='btn btn-outline-danger fw-bold px-4 d-none'
+                    <button type='button' class='btn btn-warning fw-bold px-4' data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-outline-warning fw-bold px-4 d-none'
                         id="batchRejectIncomingBtn">
                         <i class="bi bi-x-circle me-1"></i> Reject Selected
                     </button>
-                    <button type='button' class='btn btn-dark-green fw-bold px-4 d-none text-white'
+                    <button type='button' class='btn btn-success-premium fw-bold px-4 d-none'
                         id="batchAcceptIncomingBtn">
                         <i class="bi bi-check2-circle me-1"></i> Accept Selected
                     </button>
@@ -473,6 +358,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
     </div>
 
     <div class='container-fluid fixed-top bg-white'>
+
         <div class='container topbar bg-primary d-none d-lg-block'>
             <div class='d-flex justify-content-between'>
                 <div class='top-info ps-2'>
@@ -488,7 +374,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                     data-bs-target='#navbarCollapse'><span class='navbar-toggler-icon'></span></button>
                 <div class='collapse navbar-collapse' id='navbarCollapse'>
                     <div class='navbar-nav'>
-                        <a href='headoffice_spareparts.php' class='nav-item nav-link active'>Home</a>
+                        <a href='branch_spareparts.php' class='nav-item nav-link active'>Home</a>
                         <a href='../api/logout.php' class='nav-item nav-link'>Logout</a>
                         <?php if (isset($_SESSION['username'])): ?>
                             <span class='nav-item nav-link' style='cursor: default; color: #dc3545;'><i
@@ -502,36 +388,150 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
 
     <main class='container-fluid py-5' style='margin-top: 110px;'>
         <div class='card shadow-sm mb-4'>
-            <div class='card-header bg-light border-bottom'>
-                <h1 class='h5 mb-0 fw-semibold'>Spare Parts Inventory Management</h1>
+            <div class='card-header bg-white'>
+                <h1 class='h5 mb-0'>Branch Spare Parts Inventory Management</h1>
             </div>
             <div class='card-body p-4'>
-                <ul class='nav nav-tabs mb-4' id='mainTabs' role='tablist'>
+                <ul class='nav nav-tabs mb-4 align-items-center' id='mainTabs' role='tablist'>
                     <li class='nav-item' role='presentation'><button class='nav-link active' id='dashboard-tab'
                             data-bs-toggle='tab' data-bs-target='#dashboard' type='button'><i
-                                class="bi bi-bar-chart-line-fill me-2"></i>Dashboard</button></li>
-                    <li class='nav-item' role='presentation'><button class='nav-link' id='inventory-tab'
-                            data-bs-toggle='tab' data-bs-target='#inventory' type='button'><i
-                                class="bi bi-box-seam me-2"></i>Inventory</button></li>
-                    <li class='nav-item' role='presentation'><button class='nav-link' id='sales-tab'
-                            data-bs-toggle='tab' data-bs-target='#sales' type='button'><i
-                                class="bi bi-receipt me-2"></i>Sales</button></li>
-                    <li class='nav-item' role='presentation'><button class='nav-link' id='payments-tab'
-                            data-bs-toggle='tab' data-bs-target='#payments' type='button'><i
-                                class="bi bi-cash-coin me-2"></i>Payments</button></li>
-                    <li class='nav-item' role='presentation'><button class='nav-link' id='transfer-tab'
-                            data-bs-toggle='tab' data-bs-target='#transfers' type='button'><i
-                                class="bi bi-truck me-2"></i>Transfers</button></li>
-                    <li class='nav-item' role='presentation'><button class='nav-link' id='global-transfer-tab'
-                            data-bs-toggle='tab' data-bs-target='#global-transfers' type='button'><i
-                                class="bi bi-globe me-2"></i>Global Transfer History</button></li>
+                                class="bi bi-bar-chart-line-fill me-2"></i>Overview</button></li>
+                    <li class='nav-item' role='presentation'><button class='nav-link' id='find-tab' data-bs-toggle='tab'
+                            data-bs-target='#find' type='button'><i class="bi bi-search me-2"></i>Find</button></li>
+
+                    <li class="nav-item ms-auto" role="presentation">
+                        <button class="nav-link fw-bold" id="inventory-tab" data-bs-toggle="tab"
+                            data-bs-target="#sub-stock" type="button" role="tab"><i
+                                class="bi bi-box-seam me-2"></i>Inventory</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="sales-tab" data-bs-toggle="tab" data-bs-target="#sub-sales"
+                            type="button" role="tab"><i class="bi bi-receipt me-2"></i>Sales</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="payments-tab" data-bs-toggle="tab"
+                            data-bs-target="#sub-payments" type="button" role="tab"><i
+                                class="bi bi-cash-coin me-2"></i>Payments</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="transfer-out-tab" data-bs-toggle="tab"
+                            data-bs-target="#sub-transfer-out" type="button" role="tab"><i
+                                class="bi bi-truck me-2"></i>Transfers (Out)</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold position-relative" id="transfer-in-tab" data-bs-toggle="tab"
+                            data-bs-target="#sub-transfer-in" type="button" role="tab">
+                            <i class="bi bi-box-arrow-in-down me-2"></i>Transfers (In)
+                            <span id="incoming-badge"
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                0
+                            </span>
+                        </button>
+                    </li>
                 </ul>
 
                 <div class='tab-content' id='mainTabContent'>
-                    <!-- INVENTORY TAB -->
-                    <div class="tab-pane fade" id="inventory" role="tabpanel">
+                    <!-- OVERVIEW TAB -->
+                    <div class='tab-pane fade show active' id='dashboard' role='tabpanel'>
+                        <h4 class="mb-4">Branch Statistics Overview</h4>
+                        <div id="dashboard-loader" class="text-center p-5">
+                            <div class="spinner-border text-primary" role="status"><span
+                                    class="visually-hidden">Loading...</span></div>
+                        </div>
+                        <div id="dashboard-content" class="d-none">
+                            <div class='row g-4'>
+                                <div class='col-lg-2 col-md-4'>
+                                    <div class='card stat-card h-100 border-start border-4 border-primary'>
+                                        <div class='card-body'>
+                                            <h6 class='card-title text-muted small text-uppercase fw-bold'>Total
+                                                Inventory</h6>
+                                            <h4 class='card-text fw-bold' id='stat-total-qty'>-</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class='col-lg-2 col-md-4'>
+                                    <div class='card stat-card h-100 border-start border-4 border-info'>
+                                        <div class='card-body'>
+                                            <h6 class='card-title text-muted small text-uppercase fw-bold'>Inventory
+                                                Value</h6>
+                                            <h4 class='card-text fw-bold' id='stat-inventory-value'>-</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class='col-lg-2 col-md-4'>
+                                    <div class='card stat-card h-100 border-start border-4 border-success'>
+                                        <div class='card-body'>
+                                            <h6 class='card-title text-muted small text-uppercase fw-bold'>Sales (ML)
+                                            </h6>
+                                            <h4 class='card-text fw-bold' id='stat-monthly-sales'>-</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class='col-lg-2 col-md-4'>
+                                    <div class='card stat-card h-100 border-start border-4 border-secondary'>
+                                        <div class='card-body'>
+                                            <h6 class='card-title text-muted small text-uppercase fw-bold'>Sales (YL)
+                                            </h6>
+                                            <h4 class='card-text fw-bold' id='stat-yearly-sales'>-</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class='col-lg-2 col-md-4'>
+                                    <div class='card stat-card h-100 border-start border-4 border-danger'>
+                                        <div class='card-body'>
+                                            <h6 class='card-title text-muted small text-uppercase fw-bold'>Outstanding
+                                            </h6>
+                                            <h4 class='card-text fw-bold' id='stat-outstanding-balance'>-</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class='col-lg-2 col-md-4'>
+                                    <div class='card stat-card h-100 border-start border-4 border-warning'>
+                                        <div class='card-body'>
+                                            <h6 class='card-title text-muted small text-uppercase fw-bold'>Total
+                                                Accounts</h6>
+                                            <h4 class='card-text fw-bold' id='stat-total-accounts'>-</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FIND TAB -->
+                    <div class="tab-pane fade" id="find" role="tabpanel">
+                        <div class="container-fluid py-4">
+                            <div class="row g-4">
+                                <div class="col-md-12">
+                                    <h4 class="mb-4">Find Spare Parts in Other Branches</h4>
+                                    <!-- Search Bar -->
+                                    <div class="search-container mb-4">
+                                        <div class="input-group">
+                                            <input type="text" id="searchPart" class="form-control"
+                                                placeholder="Search part number or description...">
+                                            <button class="btn btn-primary text-white" id="searchPartBtn">
+                                                <i class="bi bi-search"></i> Search
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Available Inventory List -->
+                                    <div id="partList" class="model-list mt-3">
+                                        <div class="text-center text-muted py-5">
+                                            <i class="bi bi-search" style="font-size: 3rem;"></i>
+                                            <p class="mt-3">Search for spare parts to see availability across branches
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STOCK MANAGEMENT -->
+                    <div class="tab-pane fade" id="sub-stock" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Inventory Management</h4>
+                            <h4 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Inventory Management
+                            </h4>
                             <div class="d-flex gap-3 align-items-center">
                                 <div id="inventoryStats" class="small text-muted fw-bold border-end pe-3"></div>
                                 <div class="btn-group shadow-sm">
@@ -553,17 +553,35 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                             </div>
                         </div>
 
-                        <!-- Removed Floating Batch Action Bar -->
+                        <!-- Floating Batch Action Bar -->
+                        <div id="inventoryBatchBar">
+                            <span class="selection-count"><span id="selectedCount">0</span> Items
+                                Selected</span>
+                            <button class="btn btn-outline-primary batch-btn" id="batchPrintBtn">
+                                <i class="bi bi-printer"></i>Preview & Print
+                            </button>
+                            <button class="btn btn-outline-success batch-btn" id="batchExportBtn">
+                                <i class="bi bi-file-earmark-excel"></i>Export CSV
+                            </button>
+                            <?php if ($canDelete): ?>
+                                <button class="btn btn-outline-danger batch-btn" id="batchDeleteBtn">
+                                    <i class="bi bi-trash"></i>Delete Selected
+                                </button>
+                            <?php endif; ?>
+                            <button class="btn btn-link text-muted p-0 ms-2" id="clearSelectionBtn">Clear</button>
+                        </div>
 
                         <div class='table-responsive'>
-                            <table class='table table-hover' id='inventoryTable'>
+                            <table class='table table-hover align-middle' id='inventoryTable'>
                                 <thead>
                                     <tr>
-                                        <!-- Removed checkbox headers -->
+                                        <th style="width: 40px;" class="text-center">
+                                            <input class="form-check-input" type="checkbox" id="selectAllInventory">
+                                        </th>
                                         <th>Brand</th>
                                         <th>Part No</th>
                                         <th>Part Name</th>
-                                        <th class="text-center">Branch</th>
+
                                         <th class="text-center">Stock</th>
                                         <th class="text-end">Cost</th>
                                         <th class="text-end">Price</th>
@@ -577,92 +595,10 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                         </div>
                     </div>
 
-                    <!-- DASHBOARD -->
-                    <div class='tab-pane fade show active' id='dashboard' role='tabpanel'>
-                        <h4 class="mb-4">Branch Statistics Overview</h4>
-                        <div id="dashboard-loader" class="text-center p-5">
-                            <div class="spinner-border text-primary" role="status"><span
-                                    class="visually-hidden">Loading...</span></div>
-                        </div>
-                        <div id="dashboard-content" class="d-none">
-                            <div class='row g-4'>
-                                <div class='col-lg-2 col-md-4'>
-                                    <div class='card stat-card h-100 border-start border-4 border-primary'>
-                                        <div class='card-body'>
-                                            <h6 class='card-title text-muted'>Total Qty of Inventory</h6>
-                                            <h4 class='card-text fw-bold' id='stat-total-qty'>-</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class='col-lg-2 col-md-4'>
-                                    <div class='card stat-card h-100 border-start border-4 border-info'>
-                                        <div class='card-body'>
-                                            <h6 class='card-title text-muted'>Total Inventory Value</h6>
-                                            <h4 class='card-text fw-bold' id='stat-inventory-value'>-</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class='col-lg-2 col-md-4'>
-                                    <div class='card stat-card h-100 border-start border-4 border-success'>
-                                        <div class='card-body'>
-                                            <h6 class='card-title text-muted'>Sales (This Month)</h6>
-                                            <h4 class='card-text fw-bold' id='stat-monthly-sales'>-</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class='col-lg-2 col-md-4'>
-                                    <div class='card stat-card h-100 border-start border-4 border-secondary'>
-                                        <div class='card-body'>
-                                            <h6 class='card-title text-muted'>Sales (This Year)</h6>
-                                            <h4 class='card-text fw-bold' id='stat-yearly-sales'>-</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class='col-lg-2 col-md-4'>
-                                    <div class='card stat-card h-100 border-start border-4 border-danger'>
-                                        <div class='card-body'>
-                                            <h6 class='card-title text-muted'>Outstanding Balance</h6>
-                                            <h4 class='card-text fw-bold' id='stat-outstanding-balance'>-</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class='col-lg-2 col-md-4'>
-                                    <div class='card stat-card h-100 border-start border-4 border-warning'>
-                                        <div class='card-body'>
-                                            <h6 class='card-title text-muted'>Total Accounts</h6>
-                                            <h4 class='card-text fw-bold' id='stat-total-accounts'>-</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SALES TAB -->
-                    <div class="tab-pane fade" id="sales" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold"><i class="bi bi-receipt me-2"></i>Sales Transactions</h4>
-                            <div class="d-flex gap-3 align-items-center">
-                                <div id="salesStats" class="small text-muted fw-bold border-end pe-3"></div>
-                                <div class="btn-group shadow-sm">
-                                    <button class='btn btn-sm btn-success fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#sellPartsOutModal'>
-                                        <i class='bi bi-cart-plus me-1'></i>Record Sale
-                                    </button>
-                                    <button class='btn btn-sm btn-dark fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#generateSalesReportModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
-                                    </button>
-                                </div>
-                                <input type='text' id='salesSearch' class='form-control form-control-sm'
-                                    style="width: 250px;" placeholder='Search customer or OR...' autocomplete="off">
-                            </div>
-                        </div>
-
-                        <!-- SALES SUB-TABS -->
-                        <div class="mb-4">
-                            <ul class="nav nav-pills bg-light p-1 rounded shadow-sm d-inline-flex" id="salesSubTabs"
-                                role="tablist">
+                    <!-- SALES -->
+                    <div class="tab-pane fade" id="sub-sales" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-start mb-4 mt-2">
+                            <ul class="nav nav-pills bg-light p-1 rounded shadow-sm" id="salesSubTabs" role="tablist">
                                 <li class="nav-item">
                                     <button class="nav-link active py-2 px-4 fw-bold" id="all-sales-tab"
                                         data-bs-toggle="pill" data-type="all" type="button">All
@@ -674,17 +610,53 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                                 </li>
                                 <li class="nav-item">
                                     <button class="nav-link py-2 px-4 fw-bold" id="charge-sales-tab"
-                                        data-bs-toggle="pill" data-type="charge" type="button">Charge Sales</button>
+                                        data-bs-toggle="pill" data-type="charge" type="button">Charge</button>
                                 </li>
                             </ul>
+                            <div class="btn-group shadow-sm">
+                                <button class='btn btn-sm btn-success fw-bold px-3' data-bs-toggle='modal'
+                                    data-bs-target='#sellPartsOutModal'>
+                                    <i class='bi bi-cart-plus me-1'></i>Record Sale
+                                </button>
+                                <button class='btn btn-sm btn-dark fw-bold px-3' data-bs-toggle='modal'
+                                    data-bs-target='#generateSalesReportModal'>
+                                    <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                            <h4 class="mb-0 fw-bold"><i class="bi bi-receipt me-2"></i>Sales Transactions</h4>
+                            <div class="d-flex gap-3 align-items-center">
+                                <div id="salesStats" class="small text-muted fw-bold border-end pe-3"></div>
+                                <input type='text' id='salesSearch'
+                                    class='form-control form-control-sm border shadow-sm' style="width: 250px;"
+                                    placeholder='Search customer or OR...' autocomplete="off">
+                            </div>
+                        </div>
+
+                        <!-- Floating Sales Batch Action Bar -->
+                        <div id="salesBatchBar" class="batch-action-bar">
+                            <span class="selection-count"><span id="salesSelectedCount">0</span> Sales Selected</span>
+                            <button class="btn btn-outline-success batch-btn" id="batchExportSalesBtn">
+                                <i class="bi bi-file-earmark-excel"></i>Export CSV
+                            </button>
+                            <?php if ($canDelete): ?>
+                                <button class="btn btn-outline-danger batch-btn" id="batchDeleteSalesBtn">
+                                    <i class="bi bi-trash"></i>Delete Selected
+                                </button>
+                            <?php endif; ?>
+                            <button class="btn btn-link text-muted p-0 ms-2" id="clearSalesSelectionBtn">Clear</button>
                         </div>
 
                         <div class='table-responsive'>
                             <table class='table table-hover align-middle' id='salesTable'>
                                 <thead class="bg-light">
                                     <tr>
+                                        <th style="width: 40px;" class="text-center">
+                                            <input class="form-check-input" type="checkbox" id="selectAllSales">
+                                        </th>
                                         <th>Date</th>
-                                        <th>Branch</th>
+
                                         <th>Customer</th>
                                         <th>OR #</th>
                                         <th class="text-end">Total Amount</th>
@@ -693,41 +665,34 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="salesTableBody"></tbody>
+                                <tbody id='salesTableBody'></tbody>
                             </table>
                         </div>
-                    </div> <!-- End of Sales Tab Pane -->
+                    </div>
 
-                    <!-- PAYMENTS TAB -->
-                    <div class="tab-pane fade" id="payments" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold"><i class="bi bi-cash-coin me-2"></i>Payment Management</h4>
-                            <div class="d-flex gap-3 align-items-center">
-                                <div id="paymentsStats" class="small text-muted fw-bold border-end pe-3"></div>
-                                <div class="btn-group shadow-sm">
-                                    <button class='btn btn-sm btn-info text-dark fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#paymentsAgingModal'>
-                                        <i class='bi bi-clock-history me-1'></i>Aging View
-                                    </button>
-                                    <button class='btn btn-sm btn-primary text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#recordPaymentModal'>
-                                        <i class='bi bi-cash-coin me-1'></i>Record Payment
-                                    </button>
-                                    <button class='btn btn-sm btn-success text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#paymentReportsModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
-                                    </button>
-                                </div>
-                                <input type='text' id='paymentsSearch' class='form-control form-control-sm'
-                                    style="width: 250px;" placeholder='Search by customer or OR...' autocomplete="off">
+                    <!-- PAYMENTS -->
+                    <div class="tab-pane fade" id="sub-payments" role="tabpanel">
+                        <div class='d-flex justify-content-between align-items-center mb-3'>
+                            <h4 class='mb-0 fw-bold'><i class="bi bi-cash-coin me-2"></i>Payment Management</h4>
+                            <div>
+                                <button class='btn btn-outline-info text-dark me-2 fw-bold px-3' data-bs-toggle='modal'
+                                    data-bs-target='#paymentsAgingModal'><i class='bi bi-clock-history me-1'></i>Aging
+                                    View</button>
+                                <button class='btn btn-outline-secondary fw-bold px-3' id="printPaymentsBtn"><i
+                                        class='bi bi-printer me-2'></i>Print</button>
+                                <button class='btn btn-primary text-white fw-bold px-3' data-bs-toggle='modal'
+                                    data-bs-target='#recordPaymentModal'><i class='bi bi-cash-coin me-2'></i>Record
+                                    Payment</button>
                             </div>
                         </div>
+                        <input type='text' id='paymentsSearch' class='form-control mb-3' style="max-width: 300px;"
+                            placeholder='Search by customer or OR...'>
                         <div class='table-responsive'>
-                            <table class='table table-hover' id='paymentsTable'>
-                                <thead>
+                            <table class='table table-hover align-middle' id='paymentsTable'>
+                                <thead class="bg-light">
                                     <tr>
                                         <th>Date</th>
-                                        <th>Branch</th>
+
                                         <th>Customer</th>
                                         <th class="text-end">Amount Paid</th>
                                         <th>Receipt #</th>
@@ -739,35 +704,37 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                         </div>
                     </div>
 
-                    <!-- TRANSFERS OUT TAB -->
-                    <div class="tab-pane fade" id="transfers" role="tabpanel">
+                    <!-- TRANSFERS OUT -->
+                    <div class="tab-pane fade" id="sub-transfer-out" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold"><i class="bi bi-truck me-2"></i>Outgoing Transfers</h4>
+                            <h4 class="mb-0 fw-bold"><i class="bi bi-truck me-2"></i>Outgoing Inventory
+                                Transfers</h4>
                             <div class="d-flex gap-3 align-items-center">
                                 <div class="btn-group shadow-sm">
                                     <button class='btn btn-sm btn-warning text-dark fw-bold px-3' data-bs-toggle='modal'
                                         data-bs-target='#transferPartsModal'>
                                         <i class='bi bi-truck me-1'></i>New Transfer
                                     </button>
-                                    <button class="btn btn-primary btn-sm fw-bold px-3 btn-transfer-report text-white"
-                                        data-bs-toggle="modal" data-bs-target="#transferReportsModal">
-                                        <i class="bi bi-file-earmark-bar-graph me-1"></i> Reports
+                                    <button class='btn btn-sm btn-secondary text-white fw-bold px-3'
+                                        id="printTransfersBtn">
+                                        <i class='bi bi-printer me-1'></i>Print
                                     </button>
                                 </div>
                                 <input type='text' id='transfersSearch' class='form-control form-control-sm'
-                                    style="width: 250px;" placeholder='Search transfers...' autocomplete="off">
+                                    style="width: 250px;" placeholder='Search by part no or branch...'
+                                    autocomplete="off">
                             </div>
                         </div>
                         <div class='table-responsive'>
-                            <table class='table table-hover' id='transfersTable'>
-                                <thead>
+                            <table class='table table-hover align-middle' id='transfersTable'>
+                                <thead class="bg-light">
                                     <tr>
                                         <th>Date</th>
-                                        <th>Items</th>
-                                        <th>From Branch</th>
+                                        <th class="text-center">Items</th>
+
                                         <th>To Branch</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id='transfersTableBody'></tbody>
@@ -775,78 +742,35 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                         </div>
                     </div>
 
-                    <!-- GLOBAL TRANSFER HISTORY TAB -->
-                    <div class="tab-pane fade" id="global-transfers" role="tabpanel">
+                    <!-- TRANSFERS IN -->
+                    <div class="tab-pane fade" id="sub-transfer-in" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold"><i class="bi bi-globe me-2"></i>Global Transfer History</h4>
-                            <div class="d-flex gap-3 align-items-center">
-                                <div class="btn-group shadow-sm">
-                                    <button
-                                        class="btn btn-dark-green btn-sm fw-bold px-3 btn-transfer-report text-white"
-                                        data-bs-toggle="modal" data-bs-target="#transferReportsModal">
-                                        <i class="bi bi-file-earmark-bar-graph me-1"></i> Reports
-                                    </button>
-                                </div>
-                                <input type='text' id='globalTransfersSearch' class='form-control form-control-sm'
-                                    style="width: 250px;" placeholder='Search all transfers...' autocomplete="off">
+                            <div>
+                                <h4 class="mb-0 fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i>Incoming
+                                    Inventory Transfers</h4>
+                                <p class="text-muted small mb-0 mt-1">These are items transferred to your branch
+                                    that are awaiting your confirmation to be added to your inventory.</p>
                             </div>
                         </div>
+                        <div class='table-responsive'>
+                            <table class='table table-hover align-middle' id='incomingTransfersTable'>
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th class="text-center">Items</th>
+                                        <th>From Branch</th>
 
-                        <!-- 3-Column Card Layout -->
-                        <div class='row g-4'>
-                            <div class='col-lg-4'>
-                                <div class='card border-0 shadow-sm bg-light h-100' style="min-height: 600px;">
-                                    <div
-                                        class='card-header bg-dark-green text-white d-flex justify-content-between align-items-center border-0 py-3 rounded-top'>
-                                        <h6 class='mb-0 fw-bold text-white'><i class="bi bi-truck me-2"></i>IN-TRANSIT
-                                        </h6>
-                                        <span class='badge rounded-pill px-3 bg-white text-dark-green'
-                                            id='count-in-transit'>0</span>
-                                    </div>
-                                    <div class='card-body p-3' id='col-in-transit'
-                                        style="max-height: 75vh; overflow-y: auto;">
-                                        <!-- Cards will be rendered here -->
-                                    </div>
-                                </div>
-                            </div>
-                            <div class='col-lg-4'>
-                                <div class='card border-0 shadow-sm bg-light h-100' style="min-height: 600px;">
-                                    <div
-                                        class='card-header bg-dark-green text-white d-flex justify-content-between align-items-center border-0 py-3 rounded-top'>
-                                        <h6 class='mb-0 fw-bold text-white'><i
-                                                class="bi bi-check-circle me-2"></i>COMPLETED</h6>
-                                        <span class='badge rounded-pill px-3 bg-white text-dark-green'
-                                            id='count-completed'>0</span>
-                                    </div>
-                                    <div class='card-body p-3' id='col-completed'
-                                        style="max-height: 75vh; overflow-y: auto;">
-                                        <!-- Cards will be rendered here -->
-                                    </div>
-                                </div>
-                            </div>
-                            <div class='col-lg-4'>
-                                <div class='card border-0 shadow-sm bg-light h-100' style="min-height: 600px;">
-                                    <div
-                                        class='card-header bg-dark-green text-white d-flex justify-content-between align-items-center border-0 py-3 rounded-top'>
-                                        <h6 class='mb-0 fw-bold text-white'><i class="bi bi-x-circle me-2"></i>REJECTED
-                                        </h6>
-                                        <span class='badge rounded-pill px-3 bg-white text-dark-green'
-                                            id='count-rejected'>0</span>
-                                    </div>
-                                    <div class='card-body p-3' id='col-rejected'
-                                        style="max-height: 75vh; overflow-y: auto;">
-                                        <!-- Cards will be rendered here -->
-                                    </div>
-                                </div>
-                            </div>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id='incomingTransfersTableBody'></tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-            </div>
-
-        </div> <!-- End of .tab-content -->
-        </div>
-        </div>
+                </div> <!-- End mainTabContent -->
+            </div> <!-- End card-body -->
+        </div> <!-- End card shadow-sm -->
     </main>
 
     <div class='modal fade' id='addPartsInModal' tabindex='-1' aria-hidden='true'>
@@ -1356,7 +1280,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
     <div class='modal fade' id='transferPartsModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog modal-lg modal-dialog-scrollable'>
             <form id='transferPartsForm' class='modal-content border-0 shadow-lg'>
-                <div class='modal-header bg-dark-green text-white border-0'>
+                <div class='modal-header bg-dark text-white border-0'>
                     <h5 class='modal-title fw-bold text-white'><i class="bi bi-arrow-left-right me-2"></i>Transfer Spare
                         Parts</h5>
                     <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
@@ -1388,15 +1312,14 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                         </div>
                     </div>
 
-                    <h6 class="fw-bold mb-3 small text-muted text-uppercase text-dark-green"><i
-                            class="bi bi-list-ul me-2"></i>Items to Transfer</h6>
+                    <h6 class="fw-bold mb-3 small text-muted text-uppercase">Items to Transfer</h6>
                     <div class="table-responsive border rounded">
-                        <table class="table table-hover table-sm mb-0">
-                            <thead class="bg-dark-green text-white">
+                        <table class="table table-striped table-sm mb-0">
+                            <thead class="bg-dark text-white">
                                 <tr>
-                                    <th class="ps-3 py-2 text-white">Part Details</th>
-                                    <th class="text-center py-2 text-white" style="width: 120px;">Qty</th>
-                                    <th class="text-center py-2 text-white" style="width: 60px;">Action</th>
+                                    <th class="ps-3 py-2">Part Details</th>
+                                    <th class="text-center py-2" style="width: 120px;">Qty</th>
+                                    <th class="text-center py-2" style="width: 60px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="partsToTransferList">
@@ -1411,8 +1334,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                     </div>
                 </div>
                 <div class='modal-footer border-0 p-4 pt-0'>
-                    <button type='button' class='btn btn-outline-dark-green fw-bold px-4'
-                        data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-light fw-bold px-4' data-bs-dismiss='modal'>Cancel</button>
                     <button type='submit' class='btn btn-dark fw-bold px-4'>Initiate Transfer</button>
                 </div>
             </form>
@@ -1536,7 +1458,6 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
         </div>
     </div>
 
-
     <div class='modal fade' id='viewHistoryModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog modal-lg modal-dialog-centered'>
             <div class='modal-content border-0'>
@@ -1546,7 +1467,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                 </div>
                 <div class='modal-body p-4'>
                     <div class="mb-3">
-                        <h5 class="fw-bold mb-1 text-success" id="historyPartDescription">Yamaha MIOAEROXD541</h5>
+                        <h5 class="fw-bold mb-1 text-success" id="historyPartDescription"></h5>
                         <div class="text-muted small">
                             Brand: <span id="historyPartBrand"></span> | Part #: <span id="historyPartNumber"></span>
                         </div>
@@ -1593,7 +1514,20 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
             </div>
         </div>
     </div>
-    <!-- Removed duplicate viewIncomingTransferModal -->
+    <div class='modal fade' id='viewIncomingTransferModal' tabindex='-1'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header bg-dark text-white'>
+                    <h5 class='modal-title text-white'>Incoming Transfer Details</h5><button type='button'
+                        class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+                <div class='modal-body p-4' id='incomingTransferDetailsBody'></div>
+                <div class='modal-footer'><button type='button' class='btn btn-secondary'
+                        data-bs-dismiss='modal'>Cancel</button><button type='button' class='btn btn-success'
+                        id="confirmReceiveBtn">Confirm and Receive Items</button></div>
+            </div>
+        </div>
+    </div>
 
     <div class='modal fade' id='successModal' tabindex='-1'>
         <div class='modal-dialog'>
@@ -1626,6 +1560,70 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
         </div>
     </div>
 
+
+    <div class='modal fade' id='transferPartsModal' tabindex='-1' aria-hidden='true'>
+        <div class='modal-dialog modal-lg modal-dialog-scrollable'>
+            <form id='transferPartsForm' class='modal-content border-0 shadow-lg'>
+                <div class='modal-header bg-success text-white border-0'>
+                    <h5 class='modal-title fw-bold text-white'><i class="bi bi-arrow-left-right me-2"></i>Transfer Spare
+                        Parts</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+                <div class='modal-body p-4'>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class='form-label fw-bold small text-muted text-uppercase'>Transfer Date</label>
+                            <input type='date' class='form-control border-0 bg-light fw-bold' id='transfer_date'
+                                name='transfer_date' required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class='form-label fw-bold small text-muted text-uppercase'>Destination Branch</label>
+                            <select class='form-select border-0 bg-light fw-bold' id='to_branch' name='to_branch'
+                                required>
+                                <option value="" disabled selected>Select destination...</option>
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Search Part to
+                            Transfer</label>
+                        <input type="text" id="transferPartSearchInput" class="form-control"
+                            placeholder="Enter Part No. or Part Name to add items..." autocomplete="off">
+                        <div id="transferPartSearchResults" class="list-group border rounded shadow-sm mt-1"
+                            style="max-height: 200px; overflow-y: auto; position: absolute; width: 95%; z-index: 1051; display: none;">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-3 small text-muted text-uppercase">Items to Transfer</h6>
+                    <div class="table-responsive border rounded">
+                        <table class="table table-striped table-sm mb-0">
+                            <thead class="bg-dark text-white">
+                                <tr>
+                                    <th class="ps-3 py-2">Part Details</th>
+                                    <th class="text-center py-2" style="width: 120px;">Qty</th>
+                                    <th class="text-center py-2" style="width: 60px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partsToTransferList">
+                                <tr id="emptyTransferListRow">
+                                    <td colspan="3" class="text-center text-muted p-5">
+                                        <i class="bi bi-search d-block fs-3 mb-2 opacity-25"></i>
+                                        Use the search bar above to add items
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class='modal-footer border-0 p-4 pt-0'>
+                    <button type='button' class='btn btn-light fw-bold px-4' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='submit' class='btn btn-dark-green fw-bold px-4'>Initiate Transfer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div class='modal fade' id='salesPreviewModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog modal-xl'>
@@ -1718,40 +1716,23 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
     </div>
 
 
-
-    <script src='https://code.jquery.com/jquery-3.7.1.min.js'></script>
-    <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-    <script>
-        window.canDelete = <?php echo json_encode($canDelete); ?>;
-        window.currentBranch = '<?php echo htmlspecialchars($currentBranch); ?>';
-        window.isBranchPage = false;
-    </script>
-    <script src='../js/spareparts_inventory.js?v=<?php echo time(); ?>'></script>
-
-
     <!-- VIEW TRANSFER MODAL -->
     <div class='modal fade' id='viewTransferDetailsModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog modal-lg'>
             <div class='modal-content border-0 shadow'>
-                <div class='modal-header bg-dark -green text-white border-0'>
-                    <h5 class='modal-title text-white'><i class="bi bi-info-circle me-2"></i>Transfer Details</h5>
+                <div class='modal-header bg-dark text-white border-0'>
+                    <h5 class='modal-title'><i class="bi bi-info-circle me-2"></i>Transfer Details</h5>
                     <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
                 </div>
                 <div class='modal-body p-4' id="transferDetailsBody">
                     <div class="text-center p-4">
-                        <div class="spinner-border text-dark-green"></div>
+                        <div class="spinner-border text-primary"></div>
                     </div>
                 </div>
                 <div class='modal-footer border-0 bg-light'>
-                    <button type='button' class='btn btn-outline-dark-green fw-bold px-4'
-                        data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
                     <button type='button' class='btn btn-danger d-none' id="rejectTransferBtn">Reject Transfer</button>
-                    <button type='button' class='btn btn-dark-green d-none text-white' id="confirmReceiveBtn">Receive
-                        Items</button>
+                    <button type='button' class='btn btn-success d-none' id="confirmReceiveBtn">Receive Items</button>
                 </div>
             </div>
         </div>
@@ -1821,7 +1802,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                                 </div>
                             </div>
                         </div>
-                        <div class="mb-3" id="inv_report_branch_container">
+                        <div class="mb-3 d-none" id="inv_report_branch_container">
                             <label class="form-label fw-bold small text-muted text-uppercase">Branch</label>
                             <select class="form-select border-0 bg-light fw-bold" id="inv_report_branch">
                                 <option value="all">All Branches</option>
@@ -1918,7 +1899,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                             </div>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-3 d-none">
                             <label class="form-label fw-bold small text-uppercase text-muted">Filter by Branch</label>
                             <select class="form-select border-2" id="t_report_branch" name="branch">
                                 <option value="all">All Branches</option>
@@ -2088,7 +2069,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                             <input type="number" class="form-control border-0 bg-light fw-bold" id="sales_report_year"
                                 min="2000" max="2099">
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 d-none">
                             <label class="form-label fw-bold small text-muted text-uppercase">Branch</label>
                             <select class="form-select border-0 bg-light fw-bold" id="sales_report_branch">
                                 <option value="all">All Branches</option>
@@ -2159,7 +2140,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                             <input type="number" class="form-control border-0 bg-light fw-bold" id="payment_report_year"
                                 min="2000" max="2099">
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 d-none">
                             <label class="form-label fw-bold small text-muted text-uppercase">Branch</label>
                             <select class="form-select border-0 bg-light fw-bold" id="payment_report_branch">
                                 <option value="all">All Branches</option>
@@ -2219,7 +2200,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                 </div>
                 <div class="modal-body bg-light">
                     <div class="row mb-3 align-items-end aging-branch-filter-container">
-                        <div class="col-md-3">
+                        <div class="col-md-3 d-none">
                             <label class="form-label fw-bold small text-muted">Filter by Branch</label>
                             <select id="agingBranchFilter" class="form-select border-secondary">
                                 <option value="All">All Branches</option>
@@ -2242,7 +2223,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                             <thead class="bg-light border-bottom border-2">
                                 <tr>
                                     <th style="width: 40px;"></th>
-                                    <th>Branch</th>
+
                                     <th>Customer</th>
                                     <th class="text-end">0-30 Days</th>
                                     <th class="text-end">31-60 Days</th>
@@ -2282,6 +2263,17 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
             </div>
         </div>
     </div>
+
+    <script>
+        window.isBranchPage = true;
+        window.canDelete = <?php echo json_encode($canDelete); ?>;
+        window.currentBranch = '<?php echo htmlspecialchars($currentBranch); ?>';
+    </script>
+    <script src='https://code.jquery.com/jquery-3.7.1.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src='../js/spareparts_inventory.js?v=<?php echo time(); ?>'></script>
 </body>
 
 </html>

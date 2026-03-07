@@ -4,9 +4,23 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
     margin: 0;
     padding: 0;
+}
+
+table,
+th,
+td,
+input,
+select,
+button,
+textarea,
+.table,
+.form-control,
+.form-select,
+.btn {
+    font-family: 'Segoe UI', Arial, sans-serif !important;
 }
 
 /* Spinner/Loading styles */
@@ -94,15 +108,9 @@ body {
     box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
 }
 
-/* Modal styles */
-.modal.fade.show {
-    display: block !important;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-backdrop.fade.show {
-    opacity: 0.5 !important;
-}
+/* Modal styles (Handled by Bootstrap) */
+/* .modal.fade.show { display: block !important; } */
+/* .modal-backdrop.fade.show { opacity: 0.5 !important; } */
 
 /* Responsive layout */
 @media (min-width: 1200px) {
@@ -165,22 +173,22 @@ body {
     .no-print {
         display: none !important;
     }
-    
+
     .modal-header,
     .modal-footer {
         display: none !important;
     }
-    
+
     .modal-body {
         padding: 0;
         display: block !important;
     }
-    
+
     .modal-dialog {
         max-width: 100% !important;
         margin: 0 !important;
     }
-    
+
     .modal-content {
         border: none !important;
         box-shadow: none !important;
@@ -410,6 +418,7 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -547,7 +556,7 @@ body {
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .brand-header .badge {
         align-self: flex-end;
     }
@@ -600,55 +609,18 @@ body {
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .brand-header .badge {
         align-self: flex-end;
     }
 }
 
-/* Modal scrolling fixes */
-.modal {
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-
-.modal-dialog {
-    margin: 1.75rem auto;
-    max-height: calc(100vh - 3.5rem);
-    display: flex;
-    align-items: center;
-}
-
-.modal-content {
-    max-height: calc(100vh - 3.5rem);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
+/* Bootstrap 5 handling for modals preferred */
 .modal-body {
-    overflow-y: auto;
-    overflow-x: hidden;
-    flex: 1 1 auto;
-    padding: 1rem;
+    padding: 1.5rem;
 }
 
-/* Ensure modal backdrop doesn't interfere */
-.modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1040;
-    width: 100vw;
-    height: 100vh;
-    background-color: #000;
-}
-
-/* Fix for nested modals */
-.modal.show {
-    display: block !important;
-}
-
+/* Standard Bootstrap modal handling preferred */
 /* Specific fixes for large modals */
 .modal-xl .modal-dialog {
     max-width: 95%;
@@ -657,39 +629,6 @@ body {
 
 .modal-lg .modal-dialog {
     max-width: 90%;
-}
-
-/* Fix for table containers in modals */
-.modal .table-responsive {
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-/* Fix for form containers in modals */
-.modal .form-container {
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-/* Ensure proper z-index stacking */
-.modal {
-    z-index: 1050;
-}
-
-.modal-backdrop {
-    z-index: 1040;
-}
-
-/* Fix for Bootstrap 5 modal issues */
-body.modal-open {
-    overflow: hidden;
-    padding-right: 0 !important;
-}
-
-/* Fix scrollbar issues */
-.modal-open .modal {
-    overflow-x: hidden;
-    overflow-y: auto;
 }
 
 /* Custom Styles for Professional Modals */
@@ -703,14 +642,98 @@ body.modal-open {
 .item-list-table {
     border: 1px solid #dee2e6;
     border-radius: .5rem;
-    overflow: hidden; /* Ensures rounded corners are visible */
+    overflow: hidden;
+    /* Ensures rounded corners are visible */
 }
 
 .item-list-table thead {
     background-color: #e9ecef;
 }
 
-.modal-footer {
-    background-color: #f8f9fa;
-    border-top: 1px solid #dee2e6;
+/* Premium Modal Styling */
+.bg-navy {
+    background-color: #000080 !important;
+}
+
+.bg-dark-grey {
+    background-color: #4a5568 !important;
+}
+
+.bg-cyan {
+    background-color: #0dcaf0 !important;
+    color: white;
+}
+
+.btn-success-premium {
+    background-color: #63b395 !important;
+    border-color: #63b395 !important;
+    color: white !important;
+}
+
+.btn-success-premium:hover {
+    background-color: #52a284 !important;
+    border-color: #52a284 !important;
+}
+
+.status-badge-in-transit {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+    font-weight: bold;
+    padding: 0.35em 0.65em;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+}
+
+.branch-badge {
+    background-color: #0dcaf0 !important;
+    color: white !important;
+    font-weight: bold;
+    padding: 0.35em 0.65em;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+}
+
+.engine-no-premium {
+    color: #d63384;
+    font-weight: 500;
+}
+
+.frame-no-premium {
+    color: #d63384;
+    font-weight: 500;
+}
+
+/* Modal Stacking Fixes */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal {
+    z-index: 1050 !important;
+}
+
+#incomingTransferAlertModal {
+    z-index: 2000 !important;
+}
+
+#viewIncomingTransferModal {
+    z-index: 2000 !important;
+}
+
+/* Report Theme: Dark Green and White */
+.bg-dark-green {
+    background-color: #1a4d2e !important;
+    color: white !important;
+}
+
+.text-dark-green {
+    color: #1a4d2e !important;
+}
+
+.border-dark-green {
+    border-color: #1a4d2e !important;
+}
+
+.bg-dark-green-light {
+    background-color: rgba(26, 77, 46, 0.05) !important;
 }

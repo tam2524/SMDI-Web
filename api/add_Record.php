@@ -13,22 +13,39 @@ $dateReg = $_POST['date_reg'];
 
 
 if ($plateNumber === "ND") {
-  
-    $checkDuplicateQuery = "SELECT * FROM records WHERE mv_file = ?";
+    $checkDuplicateQuery = "SELECT mv_file, plate_number FROM records WHERE mv_file = ?";
     $checkStmt = mysqli_prepare($conn, $checkDuplicateQuery);
     mysqli_stmt_bind_param($checkStmt, "s", $mvFile);
 } else {
-  
-    $checkDuplicateQuery = "SELECT * FROM records WHERE plate_number = ? OR mv_file = ?";
+    $checkDuplicateQuery = "SELECT mv_file, plate_number FROM records WHERE plate_number = ? OR mv_file = ?";
     $checkStmt = mysqli_prepare($conn, $checkDuplicateQuery);
     mysqli_stmt_bind_param($checkStmt, "ss", $plateNumber, $mvFile);
 }
 
 mysqli_stmt_execute($checkStmt);
-mysqli_stmt_store_result($checkStmt);
+$result = mysqli_stmt_get_result($checkStmt);
 
-if (mysqli_stmt_num_rows($checkStmt) > 0) {
-    echo json_encode(['status' => 'duplicate', 'message' => 'Duplicate MV File or Plate Number found.']);
+$duplicatePlate = false;
+$duplicateMV = false;
+
+while ($row = mysqli_fetch_assoc($result)) {
+    if (isset($row['plate_number']) && $row['plate_number'] === $plateNumber && $plateNumber !== "ND") {
+        $duplicatePlate = true;
+    }
+    if (isset($row['mv_file']) && $row['mv_file'] === $mvFile) {
+        $duplicateMV = true;
+    }
+}
+
+if ($duplicatePlate || $duplicateMV) {
+    if ($duplicatePlate && $duplicateMV) {
+        $msg = 'Duplicate MV File and Plate Number found.';
+    } elseif ($duplicatePlate) {
+        $msg = 'Duplicate Plate Number found.';
+    } else {
+        $msg = 'Duplicate MV File found.';
+    }
+    echo json_encode(['status' => 'duplicate', 'message' => $msg]);
 } else {
     $sql = "INSERT INTO records (family_name, first_name, middle_name, plate_number, mv_file, branch, batch, remarks, date_reg) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";

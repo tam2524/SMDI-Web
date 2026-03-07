@@ -1,31 +1,31 @@
-$(document).ready(function() {
+$(document).ready(function () {
     let selectedRecordIds = [];
     let RecordIdToDelete = null;
     let currentPage = 1;
     let totalPages = 1;
 
-    
-    $('#addRecordForm input[type="text"], #editRecordForm input[type="text"]').on('keyup input', function() {
+
+    $('#addRecordForm input[type="text"], #editRecordForm input[type="text"]').on('keyup input', function () {
         $(this).val($(this).val().toUpperCase());
     });
 
-    
+
     function loadRecords(query = '', page = 1) {
         $.ajax({
             url: '../api/fetch_Records.php',
             method: 'GET',
             data: { query: query, page: page },
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 $('#RecordTableBody').html(response.html);
                 currentPage = response.pagination.currentPage;
                 totalPages = response.pagination.totalPages;
                 updatePaginationControls();
-                updateSelectedRecords(); 
+                updateSelectedRecords();
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error("Error loading records:", error);
-                
+
                 if (xhr.responseText) {
                     $('#RecordTableBody').html(xhr.responseText);
                 }
@@ -33,182 +33,185 @@ $(document).ready(function() {
         });
     }
 
-    
+
     function updatePaginationControls() {
         let paginationHtml = '';
-        
-        
+
+
         paginationHtml += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" id="prevPage">Previous</a>
         </li>`;
-        
-        
+
+
         const startPage = Math.max(1, currentPage - 2);
         const endPage = Math.min(totalPages, currentPage + 2);
-        
+
         if (startPage > 1) {
             paginationHtml += `<li class="page-item"><a class="page-link page-number" href="#" data-page="1">1</a></li>`;
             if (startPage > 2) {
                 paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
-        
+
         for (let i = startPage; i <= endPage; i++) {
             paginationHtml += `<li class="page-item ${i === currentPage ? 'active' : ''}">
                 <a class="page-link page-number" href="#" data-page="${i}">${i}</a>
             </li>`;
         }
-        
+
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) {
                 paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
             paginationHtml += `<li class="page-item"><a class="page-link page-number" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
         }
-        
-        
+
+
         paginationHtml += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
             <a class="page-link" href="#" id="nextPage">Next</a>
         </li>`;
-        
+
         $('#paginationControls').html(paginationHtml);
     }
 
-    
+
     loadRecords();
-    
-    
-    $(document).on('click', '#prevPage', function(e) {
+
+
+    $(document).on('click', '#prevPage', function (e) {
         e.preventDefault();
         if (currentPage > 1) {
             loadRecords($('#searchInput').val(), currentPage - 1);
         }
     });
 
-    $(document).on('click', '#nextPage', function(e) {
+    $(document).on('click', '#nextPage', function (e) {
         e.preventDefault();
         if (currentPage < totalPages) {
             loadRecords($('#searchInput').val(), currentPage + 1);
         }
     });
 
-    $(document).on('click', '.page-number', function(e) {
+    $(document).on('click', '.page-number', function (e) {
         e.preventDefault();
         const page = $(this).data('page');
         loadRecords($('#searchInput').val(), page);
     });
 
-    
-    $('#searchInput').on('input', function() {
-        currentPage = 1; 
+
+    $('#searchInput').on('input', function () {
+        currentPage = 1;
         loadRecords($(this).val());
     });
 
-    
+
     function updateSelectedRecords() {
         selectedRecordIds = [];
-        $('#RecordTableBody input[name="recordCheckbox"]:checked').each(function() {
+        $('#RecordTableBody input[name="recordCheckbox"]:checked').each(function () {
             selectedRecordIds.push($(this).closest('tr').data('id'));
         });
     }
 
-    
-    $('#selectAll').on('change', function() {
+
+    $('#selectAll').on('change', function () {
         const isChecked = $(this).is(':checked');
         $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', isChecked);
         updateSelectedRecords();
     });
 
-$('#RecordTableBody').on('click', '.delete-button', function() {
-    RecordIdToDelete = $(this).closest('tr').data('id');
-    selectedRecordIds = [RecordIdToDelete]; 
-    
-    $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', false);
-    $(this).closest('tr').find('input[name="recordCheckbox"]').prop('checked', true);
-    $('#confirmationModal').modal('show');
-});
+    $('#RecordTableBody').on('click', '.delete-button', function () {
+        RecordIdToDelete = $(this).closest('tr').data('id');
+        selectedRecordIds = [RecordIdToDelete];
 
-
-$('#deleteSelectedButton').on('click', function() {
-    updateSelectedRecords(); 
-    if (selectedRecordIds.length > 0) {
-        RecordIdToDelete = null; 
+        $('#RecordTableBody input[name="recordCheckbox"]').prop('checked', false);
+        $(this).closest('tr').find('input[name="recordCheckbox"]').prop('checked', true);
         $('#confirmationModal').modal('show');
-    } else {
-        showWarningModal('No records selected for deletion.');
-    }
-});
+    });
 
 
-$('#confirmDeleteBtn').on('click', function() {
-    const idsToDelete = selectedRecordIds.length > 0 ? selectedRecordIds : 
-                       (RecordIdToDelete ? [RecordIdToDelete] : []);
-    
-    if (idsToDelete.length === 0) {
-        showWarningModal('No records selected for deletion.');
-        return;
-    }
-
-    $.ajax({
-        url: '../api/delete_Record.php',
-        method: 'POST',
-        data: { ids: idsToDelete },
-        dataType: 'json',
-        success: function(response) {
-            if (response.status === 'success') {
-                loadRecords($('#searchInput').val(), currentPage);
-                showSuccessModal(response.message);
-            } else {
-                showErrorModal(response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("Error deleting records:", error);
-            showErrorModal('Failed to delete records. Please try again.');
-        },
-        complete: function() {
-            $('#confirmationModal').modal('hide');
-            selectedRecordIds = [];
+    $('#deleteSelectedButton').on('click', function () {
+        updateSelectedRecords();
+        if (selectedRecordIds.length > 0) {
             RecordIdToDelete = null;
-            $('#selectAll').prop('checked', false);
+            $('#confirmationModal').modal('show');
+        } else {
+            showWarningModal('No records selected for deletion.');
         }
     });
-});
 
-    
-    $('#addRecordForm').on('submit', function(e) {
+
+    $('#confirmDeleteBtn').on('click', function () {
+        const idsToDelete = selectedRecordIds.length > 0 ? selectedRecordIds :
+            (RecordIdToDelete ? [RecordIdToDelete] : []);
+
+        if (idsToDelete.length === 0) {
+            showWarningModal('No records selected for deletion.');
+            return;
+        }
+
+        $.ajax({
+            url: '../api/delete_Record.php',
+            method: 'POST',
+            data: { ids: idsToDelete },
+            dataType: 'json',
+            success: function (response) {
+                if (response.status === 'success') {
+                    loadRecords($('#searchInput').val(), currentPage);
+                    showSuccessModal(response.message);
+                } else {
+                    showErrorModal(response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("Error deleting records:", error);
+                showErrorModal('Failed to delete records. Please try again.');
+            },
+            complete: function () {
+                $('#confirmationModal').modal('hide');
+                selectedRecordIds = [];
+                RecordIdToDelete = null;
+                $('#selectAll').prop('checked', false);
+            }
+        });
+    });
+
+
+    $('#addRecordForm').on('submit', function (e) {
         e.preventDefault();
         $.ajax({
             url: '../api/add_Record.php',
             method: 'POST',
             data: $(this).serialize(),
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     loadRecords($('#searchInput').val(), currentPage);
                     $('#addRecordModal').modal('hide');
                     showSuccessModal(response.message);
                     $('#addRecordForm')[0].reset();
                     $('#addRecordForm input[type="text"]').val('');
+                } else if (response.status === 'duplicate') {
+                    $('#duplicateErrorMessage').text(response.message);
+                    $('#duplicateErrorModal').modal('show');
                 } else {
                     showErrorModal(response.message);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error("Error adding record:", error);
             }
         });
     });
 
-    
-    $('#RecordTableBody').on('click', '.edit-button', function() {
+
+    $('#RecordTableBody').on('click', '.edit-button', function () {
         let recordId = $(this).closest('tr').data('id');
 
         $.ajax({
             url: '../api/get_Record.php',
             method: 'GET',
             data: { id: recordId },
-            success: function(response) {
+            success: function (response) {
                 let record = JSON.parse(response);
 
                 $('#editRecordId').val(record.record_id);
@@ -224,38 +227,45 @@ $('#confirmDeleteBtn').on('click', function() {
 
                 $('#editRecordModal').modal('show');
             },
-            error: function() {
+            error: function () {
                 alert('Error fetching the record');
             }
         });
     });
 
-    
-    $('#editRecordForm').on('submit', function(e) {
+
+    $('#editRecordForm').on('submit', function (e) {
         e.preventDefault();
         $.ajax({
             url: '../api/edit_Record.php',
             method: 'POST',
             data: $(this).serialize(),
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     loadRecords($('#searchInput').val(), currentPage);
                     $('#editRecordModal').modal('hide');
                     showSuccessModal(response.message);
+                } else if (response.status === 'duplicate') {
+                    $('#duplicateErrorMessage').text(response.message);
+                    $('#duplicateErrorModal').modal('show');
                 } else {
-                    showErrorModal(response.message);
+                    $('#errorMessageEdit').text(response.message);
+                    $('#errorMessageEdit').show();
+                    setTimeout(() => {
+                        $('#errorMessageEdit').hide();
+                    }, 3000);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error("Error editing Record:", error);
             }
         });
     });
 
 
-    
-    $('.dropdown-item').on('click', function(e) {
+
+    $('.dropdown-item').on('click', function (e) {
         e.preventDefault();
         const sortOption = $(this).data('sort');
         let sortColumn;
@@ -274,17 +284,17 @@ $('#confirmDeleteBtn').on('click', function() {
                 return;
         }
 
-        currentPage = 1; 
+        currentPage = 1;
         loadRecords($('#searchInput').val(), currentPage, sortColumn);
     });
 
-    
-    $('#printButton').on('click', function() {
+
+    $('#printButton').on('click', function () {
         $('#printOptionsModal').modal('show');
     });
 
-    
-    $('#sortBy').on('change', function() {
+
+    $('#sortBy').on('change', function () {
         const selectedValue = $(this).val();
         $('#batchRange').hide();
         $('#familyNameRange').hide();
@@ -296,8 +306,8 @@ $('#confirmDeleteBtn').on('click', function() {
         }
     });
 
-    
-    $('#confirmPrint').on('click', function() {
+
+    $('#confirmPrint').on('click', function () {
         const documentType = $('#documentType').val();
         const sortBy = $('#sortBy').val();
         const fromBatch = $('#fromBatch').val();
@@ -334,7 +344,7 @@ $('#confirmDeleteBtn').on('click', function() {
         }
     });
 
-    
+
     function showSuccessModal(message) {
         $('#successMessage').text(message);
         $('#successModal').modal('show');

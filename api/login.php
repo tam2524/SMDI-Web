@@ -1,7 +1,7 @@
 <?php
 include 'db_config.php';
 
-$username = $_POST['username'];
+$username = trim($_POST['username']);
 $password = $_POST['password'];
 
 $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
@@ -14,19 +14,19 @@ if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
 
     if (password_verify($password, $user['password'])) {
-         $_SESSION['user_id'] = $user['id']; 
+        $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        $_SESSION['position'] = $user['position']; 
+        $_SESSION['position'] = $user['position'];
         $_SESSION['user_branch'] = $user['branch'];
         $position = trim($user['position']);
 
         switch ($position) {
-            case 'IT Staff':   
-            case 'Admin': 
+            case 'IT Staff':
+            case 'Admin':
                 // header("Location: ../under_repair.html");
                 header("Location: ../admin/admin_dashboard.php");
                 break;
-            case 'Head':   
+            case 'Head':
             case 'Branch Manager':
                 header("Location: ../staff/staff_dashboard.html");
                 break;
@@ -44,17 +44,23 @@ if ($result->num_rows > 0) {
                 header("Location: ../inventory/headoffice_inventory.php");
                 // header("Location: ../under_repair.html");
                 break;
-             case 'Admin Inventory':
+            case 'Admin Inventory':
                 header("Location: ../inventory/admin_inventory.php");
                 // header("Location: ../under_repair.html");
-                break;           
+                break;
             case 'Spareparts':
                 header("Location: ../spareparts/headoffice_spareparts.php");
-                break;  
+                break;
+            case 'Admin Spareparts':
+                header("Location: ../spareparts/admin_spareparts.php");
+                break;
+            case 'Spareparts-Branch':
+                header("Location: ../spareparts/branch_spareparts.php");
+                break;
             case 'Disable':
                 // header("Location: ../inventory/headoffice_inventory.php");
                 header("Location: ../under_repair.html");
-                break;             
+                break;
             default:
                 // Fallback if no matching case
                 header("Location: ../login.html");
@@ -63,13 +69,13 @@ if ($result->num_rows > 0) {
         exit();
     } else {
         echo '<script>
-            alert("Invalid username or password");
+            alert("Invalid password");
             window.location.href = "../login.html";
         </script>';
     }
 } else {
     echo '<script>
-        alert("Invalid username or password");
+        alert("User not found");
         window.location.href = "../login.html";
     </script>';
 }
