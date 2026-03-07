@@ -2829,26 +2829,27 @@ $(document).ready(function () {
     function renderIncomingTransfers(transfers) {
         let html = '';
         transfers.forEach(t => {
+            let statusBadge = '';
+            switch (t.status) {
+                case 'Completed': statusBadge = '<span class="badge bg-success text-white">Completed</span>'; break;
+                case 'In-Transit': statusBadge = '<span class="badge bg-warning text-dark">In-Transit</span>'; break;
+                case 'Rejected': statusBadge = '<span class="badge bg-danger text-white">Rejected</span>'; break;
+                default: statusBadge = `<span class="badge bg-secondary text-white">${t.status}</span>`;
+            }
+
             html += `
                 <tr class="align-middle">
-                    <td><div class="fw-bold">${t.part_no}</div></td>
-                    <td>${t.description}</td>
-                    <td>${t.brand}</td>
-                    <td class="text-center fw-bold">${t.qty}</td>
-                    <td class="text-center">${t.transfer_date}</td>
-                    <td class="text-center"><span class="badge bg-light text-dark-green border border-dark-green">${t.from_branch}</span></td>
+                    <td><div class="fw-bold">${t.transfer_date}</div></td>
+                    <td class="text-center"><span class="badge bg-light text-dark border px-3">${t.item_count || 0} Items</span></td>
+                    <td><span class="badge bg-light text-success border border-success">${escapeHtml(t.from_branch)}</span></td>
+                    <td class="text-center">${statusBadge}</td>
                     <td class="text-center">
-                        <button class="btn btn-sm btn-dark-green text-white view-incoming-btn" data-id="${t.id}">View</button>
+                        <button class="btn btn-sm btn-outline-primary view-transfer-btn" data-id="${t.id}">View</button>
                     </td>
                 </tr>
             `;
         });
-        $('#incomingTransfersTableBody').html(html || '<tr><td colspan="7" class="text-center py-4 text-muted">No pending transfers found.</td></tr>');
-
-        $('.view-incoming-btn').off('click').on('click', function () {
-            $('#viewIncomingTransferModal').modal('show');
-            loadIncomingTransferDetails();
-        });
+        $('#incomingTransfersTableBody').html(html || '<tr><td colspan="5" class="text-center py-4 text-muted">No pending transfers found.</td></tr>');
     }
 
     function loadGlobalTransfers() {

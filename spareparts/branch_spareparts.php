@@ -305,7 +305,8 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
         <div class='modal-dialog modal-xl modal-dialog-centered'>
             <div class='modal-content border-0 shadow-lg'>
                 <div class='modal-header bg-navy text-white py-3'>
-                    <h5 class='modal-title fw-bold'><i class="bi bi-box-arrow-in-down me-2"></i>Incoming Spare Parts
+                    <h5 class='modal-title fw-bold text-white'><i class="bi bi-box-arrow-in-down me-2"></i>Incoming
+                        Spare Parts
                         Transferred to Your Branch</h5>
                     <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
                 </div>

@@ -2694,28 +2694,18 @@ function batchRejectTransfers()
 
 function searchPartsGlobal()
 {
-    global $conn, $currentBranch, $isAdmin;
-    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    global $conn;
     $term = sanitizeInput($_GET['term'] ?? '');
     $searchTerm = "%{$term}%";
-
-    // Search specifically for a part across all branches
-    // Grouping by branch to show where it is available
-    $whereBranch = $seeAll ? "" : " AND current_branch = ?";
 
     $stmt = $conn->prepare("SELECT brand, part_no, description, current_stock, price, current_branch
                             FROM spareparts_inventory 
                             WHERE (part_no LIKE ? OR description LIKE ? OR brand LIKE ?) 
                             AND current_stock > 0
-                            $whereBranch
                             ORDER BY current_branch ASC, part_no ASC
                             LIMIT 50");
 
-    if ($seeAll) {
-        $stmt->bind_param('sss', $searchTerm, $searchTerm, $searchTerm);
-    } else {
-        $stmt->bind_param('ssss', $searchTerm, $searchTerm, $searchTerm, $currentBranch);
-    }
+    $stmt->bind_param('sss', $searchTerm, $searchTerm, $searchTerm);
 
     $stmt->execute();
     $result = $stmt->get_result();
