@@ -19,7 +19,10 @@ $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM records
         OR plate_number LIKE ? 
         OR mv_file LIKE ? 
         OR branch LIKE ? 
-        OR batch LIKE ?";
+        OR batch LIKE ?
+        OR CONCAT(first_name, ' ', family_name) LIKE ?
+        OR CONCAT(first_name, ' ', middle_name, ' ', family_name) LIKE ?
+        OR CONCAT(family_name, ', ', first_name) LIKE ?";
 
 // Add sorting
 if ($sort) {
@@ -44,10 +47,11 @@ if (!$stmt) {
 }
 
 $searchTerm = "%$query%";
-mysqli_stmt_bind_param($stmt, "sssssssii", 
+mysqli_stmt_bind_param($stmt, "ssssssssssii", 
     $searchTerm, $searchTerm, $searchTerm,
     $searchTerm, $searchTerm, $searchTerm,
-    $searchTerm, $recordsPerPage, $offset);
+    $searchTerm, $searchTerm, $searchTerm, $searchTerm,
+    $recordsPerPage, $offset);
 
 if (!mysqli_stmt_execute($stmt)) {
     die(json_encode(['error' => 'Query execution failed']));

@@ -74,6 +74,8 @@ $(document).ready(function() {
     });
 
     
+    let userTotalPages = 1;
+
     function loadUsers(page = 1, search = '') {
         $.ajax({
             url: '../api/user_management.php?action=get_users',
@@ -82,6 +84,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $('#usersTableBody').empty();
+                    userTotalPages = response.total_pages;
                     
                     if (response.users && response.users.length > 0) {
                         response.users.forEach(function(user) {
@@ -114,6 +117,20 @@ $(document).ready(function() {
         });
     }
 
+    $(document).on('click', '#jumpToUsersPageBtn', function () {
+        const page = parseInt($('#jumpToUsersPageInput').val());
+        if (page >= 1 && page <= userTotalPages) {
+            loadUsers(page, $('#searchUserInput').val());
+        } else {
+            showWarningModal('Please enter a valid page number between 1 and ' + userTotalPages);
+        }
+    });
+
+    $(document).on('keypress', '#jumpToUsersPageInput', function (e) {
+        if (e.which == 13) {
+            $('#jumpToUsersPageBtn').click();
+        }
+    });
     
     function updateUserPagination(currentPage, totalPages) {
         $('#usersPaginationControls').empty();

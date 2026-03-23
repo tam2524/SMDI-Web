@@ -166,16 +166,23 @@
 
             </div>
             <!-- Pagination Controls -->
-            <nav aria-label="Page navigation">
-                <ul id="paginationControls" class="pagination">
-                    <li id="prevPage" class="page-item">
-                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                    </li>
-                    <li id="nextPage" class="page-item">
-                        <a class="page-link" href="#">Next</a>
-                    </li>
-                </ul>
-            </nav>
+            <div class="d-flex flex-column align-items-center">
+                <nav aria-label="Page navigation">
+                    <ul id="paginationControls" class="pagination mb-2">
+                        <li id="prevPage" class="page-item">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                        </li>
+                        <li id="nextPage" class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="d-flex align-items-center mb-3">
+                    <span class="me-2">Go to page:</span>
+                    <input type="number" id="jumpToPageInput" class="form-control form-control-sm me-2" style="width: 80px;" min="1">
+                    <button id="jumpToPageBtn" class="btn btn-sm btn-primary text-white">Go</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -359,14 +366,16 @@
     </div>
 
     <!-- Success Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal fade premium-modal" id="successModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p id="successMessage">Successful!</p>
+                <div class="modal-body text-center">
+                    <div class="icon-box success">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <h2 class="modal-title">Success</h2>
+                    <p class="modal-text" id="successMessageText">Successful!</p>
+                    <button type="button" class="btn btn-premium" data-bs-dismiss="modal">OK</button>
                 </div>
             </div>
         </div>
@@ -392,36 +401,48 @@
         </div>
     </div>
     <!-- Duplicate Error Modal -->
-    <div class="modal fade" id="duplicateErrorModal" tabindex="-1" aria-labelledby="duplicateErrorModalLabel"
-        aria-hidden="true">
+    <div class="modal fade premium-modal" id="duplicateErrorModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="duplicateErrorModalLabel">Duplicate Record!</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-body text-center">
+                    <div class="icon-box error">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <h2 class="modal-title">Duplicate!</h2>
+                    <p class="modal-text" id="duplicateErrorMessage">A record with this name already exists.</p>
+                    <button type="button" class="btn btn-premium" data-bs-dismiss="modal">Close</button>
                 </div>
-                <div class="modal-body">
-                    <p id="duplicateErrorMessage">A record with this name already exists.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary text-white" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade premium-modal" id="errorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="icon-box error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2 class="modal-title">Error</h2>
+                    <p class="modal-text" id="errorMessageText">Something went wrong.</p>
+                    <button type="button" class="btn btn-premium" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Warning Modal -->
-    <div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="warningModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
+    <div class="modal fade premium-modal" id="warningModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="warningModalLabel">Warning</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-
-                </div>
-                <div class="modal-body">
-                    <p id="warningMessage"></p>
+                <div class="modal-body text-center">
+                    <div class="icon-box warning">
+                        <i class="fas fa-exclamation"></i>
+                    </div>
+                    <h2 class="modal-title">Warning</h2>
+                    <p class="modal-text" id="warningMessageText"></p>
+                    <button type="button" class="btn btn-premium" data-bs-dismiss="modal">OK</button>
                 </div>
             </div>
         </div>

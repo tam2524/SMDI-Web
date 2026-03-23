@@ -12,12 +12,13 @@ $batch = $_POST['batch'];
 $remarks = $_POST['remarks'];
 $dateReg = $_POST['date_reg'];
 
-if ($plateNumber === "ND") {
-    $checkDuplicateQuery = "SELECT mv_file, plate_number FROM records WHERE mv_file = ? AND record_id != ?";
+if (empty($plateNumber) || $plateNumber === "ND") {
+    $checkDuplicateQuery = "SELECT mv_file, plate_number FROM records WHERE mv_file = ? AND record_id != ? AND mv_file != '' AND mv_file IS NOT NULL";
     $checkStmt = mysqli_prepare($conn, $checkDuplicateQuery);
     mysqli_stmt_bind_param($checkStmt, "si", $mvFile, $recordId);
 } else {
-    $checkDuplicateQuery = "SELECT mv_file, plate_number FROM records WHERE (plate_number = ? OR mv_file = ?) AND record_id != ?";
+    $checkDuplicateQuery = "SELECT mv_file, plate_number FROM records WHERE ((plate_number = ? AND plate_number != '' AND plate_number IS NOT NULL AND plate_number != 'ND') 
+                            OR (mv_file = ? AND mv_file != '' AND mv_file IS NOT NULL)) AND record_id != ?";
     $checkStmt = mysqli_prepare($conn, $checkDuplicateQuery);
     mysqli_stmt_bind_param($checkStmt, "ssi", $plateNumber, $mvFile, $recordId);
 }
@@ -29,10 +30,10 @@ $duplicatePlate = false;
 $duplicateMV = false;
 
 while ($row = mysqli_fetch_assoc($result)) {
-    if (isset($row['plate_number']) && $row['plate_number'] === $plateNumber && $plateNumber !== "ND") {
+    if (!empty($plateNumber) && $plateNumber !== "ND" && isset($row['plate_number']) && $row['plate_number'] === $plateNumber) {
         $duplicatePlate = true;
     }
-    if (isset($row['mv_file']) && $row['mv_file'] === $mvFile) {
+    if (!empty($mvFile) && isset($row['mv_file']) && $row['mv_file'] === $mvFile) {
         $duplicateMV = true;
     }
 }

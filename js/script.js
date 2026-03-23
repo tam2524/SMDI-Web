@@ -105,6 +105,22 @@ $(document).ready(function () {
     });
 
 
+    $(document).on('click', '#jumpToPageBtn', function () {
+        const page = parseInt($('#jumpToPageInput').val());
+        if (page >= 1 && page <= totalPages) {
+            loadRecords($('#searchInput').val(), page);
+        } else {
+            showWarningModal('Please enter a valid page number between 1 and ' + totalPages);
+        }
+    });
+
+    $(document).on('keypress', '#jumpToPageInput', function (e) {
+        if (e.which == 13) {
+            $('#jumpToPageBtn').click();
+        }
+    });
+
+
     function updateSelectedRecords() {
         selectedRecordIds = [];
         $('#RecordTableBody input[name="recordCheckbox"]:checked').each(function () {
@@ -345,24 +361,23 @@ $(document).ready(function () {
     });
 
 
-    function showSuccessModal(message) {
-        $('#successMessage').text(message);
+    window.showSuccessModal = function(message) {
+        $('#successMessageText').text(message);
         $('#successModal').modal('show');
         setTimeout(() => {
             $('#successModal').modal('hide');
         }, 2000);
     }
 
-    function showErrorModal(message) {
-        $('#errorMessage').text(message);
-        $('#errorMessage').show();
-        setTimeout(() => {
-            $('#errorMessage').hide();
-        }, 3000);
+    window.showErrorModal = function(message) {
+        $('#errorMessageText').text(message);
+        $('#errorModal').modal('show');
     }
 
-    function showWarningModal(message) {
-        $('#warningMessage').text(message);
+    window.showWarningModal = function(message) {
+        // Handle both ID styles for backwards compatibility if any
+        const msgText = $('#warningMessageText').length ? $('#warningMessageText') : $('#warningMessage');
+        msgText.text(message);
         $('#warningModal').modal('show');
         setTimeout(() => {
             $('#warningModal').modal('hide');
