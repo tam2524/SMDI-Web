@@ -414,7 +414,8 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
-                    <?php endif; ?>
+                    <?php
+endif; ?>
 
                 </div>
             </div>

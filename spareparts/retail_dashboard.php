@@ -368,6 +368,24 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
+                    <a href="retail_sales_spareparts.php?tab=employees" class="module-card">
+                        <div class="module-icon-wrap"><i class="bi bi-person-badge"></i></div>
+                        <div>
+                            <div class="module-title">Employees</div>
+                            <div class="module-desc">Manage branch sales force</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
+                    <a href="retail_sales_spareparts.php?tab=pricelists" class="module-card">
+                        <div class="module-icon-wrap"><i class="bi bi-tags"></i></div>
+                        <div>
+                            <div class="module-title">Pricelist</div>
+                            <div class="module-desc">Set prices per customer rank</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
                     <a href="master_reports.php" class="module-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
@@ -386,7 +404,8 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
-                    <?php endif; ?>
+                    <?php
+endif; ?>
 
                 </div>
             </div>
