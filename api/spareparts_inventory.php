@@ -51,6 +51,102 @@ function getPartColumnName($table)
     return ($check && $check->num_rows > 0) ? 'part_no' : 'part_number';
 }
 
+function getModuleSettings()
+{
+    global $conn;
+    
+    // Ensure table exists
+    $conn->query("CREATE TABLE IF NOT EXISTS spareparts_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(100) UNIQUE NOT NULL,
+        setting_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+    
+    // Ensure default setting exists
+    $conn->query("INSERT IGNORE INTO spareparts_settings (setting_key, setting_value) VALUES ('beginning_inventory_enabled', 'true')");
+
+    $result = $conn->query("SELECT * FROM spareparts_settings");
+    $settings = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $settings[$row['setting_key']] = $row['setting_value'];
+        }
+    }
+    echo json_encode(['success' => true, 'data' => $settings]);
+}
+
+function updateModuleSetting()
+{
+    global $conn;
+    $key = sanitizeInput($_POST['key']);
+    $val = sanitizeInput($_POST['value']);
+
+    $stmt = $conn->prepare("UPDATE spareparts_settings SET setting_value = ? WHERE setting_key = ?");
+    $stmt->bind_param('ss', $val, $key);
+    if ($stmt->execute()) {
+        addAuditLog('UPDATE', 'spareparts_settings', $key, "Updated setting $key to $val");
+        echo json_encode(['success' => true, 'message' => 'Setting updated successfully.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to update setting.']);
+    }
+}
+
+function saveBeginningInventory()
+{
+    global $conn, $currentBranch;
+    $items = json_decode($_POST['items'], true);
+    $branch = sanitizeInput($_POST['branch'] ?? $currentBranch);
+
+    if (empty($items)) {
+        echo json_encode(['success' => false, 'message' => 'No items provided.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+    try {
+        foreach ($items as $item) {
+            $part_no = sanitizeInput($item['part_no']);
+            $brand = sanitizeInput($item['brand']);
+            $description = sanitizeInput($item['description']);
+            $qty = (int) $item['qty'];
+            $cost = (float) $item['cost'];
+            $price = $cost * 1.30; 
+
+            // Check if already exists in this branch
+            $checkStmt = $conn->prepare("SELECT id FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
+            $checkStmt->bind_param('ss', $part_no, $branch);
+            $checkStmt->execute();
+            $res = $checkStmt->get_result();
+
+            if ($res->num_rows > 0) {
+                // Update existing
+                $stmt = $conn->prepare("UPDATE spareparts_inventory SET current_stock = current_stock + ?, cost = ?, brand = ?, description = ? WHERE part_no = ? AND current_branch = ?");
+                $stmt->bind_param('idssss', $qty, $cost, $brand, $description, $part_no, $branch);
+            } else {
+                // Insert new
+                $stmt = $conn->prepare("INSERT INTO spareparts_inventory (brand, part_no, description, current_stock, cost, price, current_branch) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param('sssidds', $brand, $part_no, $description, $qty, $cost, $price, $branch);
+            }
+            $stmt->execute();
+
+            // Log AS BEGINNING INVENTORY
+            $log = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, status, reason) 
+                                   VALUES (CURDATE(), 'IN', ?, ?, ?, ?, ?, 'BEGINNING_INV', ?, 'Completed', 'Beginning Inventory Entry')");
+            $total = $qty * $cost;
+            $log->bind_param('ssidds', $part_no, $description, $qty, $cost, $total, $branch);
+            $log->execute();
+        }
+
+        $conn->commit();
+        addAuditLog('INSERT', 'spareparts_inventory', 'BEGINNING_INV', "Recorded beginning inventory for " . count($items) . " items in $branch branch.");
+        echo json_encode(['success' => true, 'message' => 'Beginning inventory successfully saved and recorded.']);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Failed to save beginning inventory: ' . $e->getMessage()]);
+    }
+}
+
 $action = $_REQUEST['action'] ?? '';
 
 switch ($action) {
@@ -232,6 +328,15 @@ switch ($action) {
         break;
     case 'get_rank_price':
         getRankPrice();
+        break;
+    case 'save_beginning_inventory':
+        saveBeginningInventory();
+        break;
+    case 'get_module_settings':
+        getModuleSettings();
+        break;
+    case 'update_module_setting':
+        updateModuleSetting();
         break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);

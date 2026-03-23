@@ -8,6 +8,14 @@ $username = $_SESSION['username'];
 $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 $greeting = 'Welcome back, ' . htmlspecialchars($username) . '!';
 $today = date('l, F j, Y');
+
+// Check if module is enabled
+require_once '../api/db_config.php';
+$checkSetting = $conn->query("SELECT setting_value FROM spareparts_settings WHERE setting_key = 'beginning_inventory_enabled'");
+$beginningInvEnabled = true;
+if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
+    $beginningInvEnabled = ($row['setting_value'] === 'true');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -425,6 +433,17 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+
+                    <?php if ($beginningInvEnabled): ?>
+                    <a href="beginning_inventory.php" class="module-card" id="beginning-inventory-card">
+                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i></div>
+                        <div>
+                            <div class="module-title">Beginning Inventory</div>
+                            <div class="module-desc">Enter initial stock levels (Excel-style)</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+                    <?php endif; ?>
 
                 </div>
             </div>

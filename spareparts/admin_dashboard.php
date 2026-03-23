@@ -396,6 +396,9 @@ $today = date('l, F j, Y');
                     <div style="font-size:0.7rem;opacity:0.7;"><?php echo htmlspecialchars($branch); ?></div>
                 </div>
             </div>
+            <a href="javascript:void(0)" onclick="openModuleSettings()" class="text-white text-decoration-none me-3" title="Module Settings">
+                <i class="bi bi-gear-fill fs-5"></i>
+            </a>
             <a href="../api/logout.php" class="btn-logout">Logout</a>
         </div>
     </nav>
@@ -500,6 +503,15 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
+                    <a href="beginning_inventory.php" class="module-card" id="beginning-inventory-card">
+                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i></div>
+                        <div>
+                            <div class="module-title">Beginning Inventory</div>
+                            <div class="module-desc">Enter initial stock levels (Excel-style)</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
                 </div>
             </div>
 
@@ -567,9 +579,67 @@ $today = date('l, F j, Y');
         SMDI Spare Parts Management System &copy; <?php echo date('Y'); ?>
     </div>
 
+    <div class="modal fade" id="moduleSettingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-gear-fill me-2"></i>Module Settings</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-1">Beginning Inventory Module</h6>
+                            <p class="text-muted small mb-0">Toggle visibility of the initial stock entry module.</p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="beginningInventoryToggle" checked onchange="toggleModule('beginning_inventory_enabled', this.checked)">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../js/spareparts_dashboard.js"></script>
     <script>
+        function openModuleSettings() {
+            $.get('../api/spareparts_inventory.php?action=get_module_settings', function(response) {
+                if (response.success) {
+                    $('#beginningInventoryToggle').prop('checked', response.data.beginning_inventory_enabled === 'true');
+                    new bootstrap.Modal(document.getElementById('moduleSettingsModal')).show();
+                } else {
+                    Swal.fire('Error', 'Failed to load settings.', 'error');
+                }
+            });
+        }
+
+        function toggleModule(key, enabled) {
+            $.post('../api/spareparts_inventory.php', {
+                action: 'update_module_setting',
+                key: key,
+                value: enabled ? 'true' : 'false'
+            }, function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             updateConsolidatedSummary();
             updateInventorySummaryByBranch();
