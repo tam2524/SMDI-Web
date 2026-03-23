@@ -1,60 +1,120 @@
 $(document).ready(function () {
     let inventoryData = [], salesData = [], paymentsData = [], transfersData = [], incomingTransfersData = [], activityLogData = [], globalTransfersData = [], paymentsAgingData = [];
     let saleCart = [], transferCart = [];
-    const isBranchPage = typeof window.isBranchPage !== 'undefined' ? window.isBranchPage : window.location.pathname.includes('branch_spareparts');
+    const isBranchPage = typeof window.isBranchPage !== 'undefined' ? window.isBranchPage : window.location.pathname.includes('warehouse_spareparts');
     const isAdminPage = window.location.pathname.includes('admin_spareparts') || window.location.pathname.includes('headoffice_spareparts');
     const canDelete = typeof window.canDelete !== 'undefined' ? window.canDelete : false;
+    const PAGE_SIZE = 10;
 
     // Utility Functions
     function formatCurrency(amount) { return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function formatDateTime(dateStr) { if (!dateStr) return 'N/A'; const d = new Date(dateStr); return d.toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
     function escapeHtml(text) { const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }; return String(text || '').replace(/[&<>"']/g, m => map[m]); }
     function filterData(data, query, fields) { if (!query) return data; const q = query.toLowerCase(); return data.filter(item => fields.some(field => item[field] && String(item[field]).toLowerCase().includes(q))); }
-    function showSuccessModal(message) { $('#successMessage').text(message); $('#successModal').modal('show'); }
-    function showErrorModal(message) { $('#errorMessage').text(message); $('#errorModal').modal('show'); }
 
-    function showConfirmModal(message, onConfirm) {
-        try {
-            $('#confirmModalMessage').text(message);
-            const modalEl = document.getElementById('customConfirmModal');
+    // Auto-fill all date pickers with today's date
+    function autoFillDates(container = document) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        let mm = today.getMonth() + 1;
+        let dd = today.getDate();
+        if (dd < 10) dd = '0' + dd;
+        if (mm < 10) mm = '0' + mm;
+        const formattedDate = `${yyyy}-${mm}-${dd}`;
 
-            // Recreate the button to cleanly remove all old event listeners
-            const oldBtn = document.getElementById('confirmModalNext');
-            const newBtn = oldBtn.cloneNode(true);
-            oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-
-            // Get or create Bootstrap modal instance
-            let modalObj = bootstrap.Modal.getInstance(modalEl);
-            if (!modalObj) {
-                modalObj = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
-            }
-
-            // When user confirms, hide modal and execute callback
-            newBtn.addEventListener('click', function () {
-                modalObj.hide();
-                if (typeof onConfirm === 'function') onConfirm();
-            });
-
-            // Force z-index of the modal directly just in case
-            modalEl.style.zIndex = "2150";
-            modalObj.show();
-
-            // Give it 100ms to inject the backdrop, then force the backdrop's z-index to 2140
-            setTimeout(() => {
-                const backdrops = document.querySelectorAll('.modal-backdrop');
-                if (backdrops.length > 0) {
-                    // Pick the last backdrop added (which should belong to the top modal)
-                    backdrops[backdrops.length - 1].style.zIndex = "2140";
+        $(container).find('input[type="date"], input[type="datetime-local"]').each(function () {
+            if (!$(this).val()) {
+                if ($(this).attr('type') === 'date') {
+                    $(this).val(formattedDate);
+                } else if ($(this).attr('type') === 'datetime-local') {
+                    let hh = today.getHours();
+                    let min = today.getMinutes();
+                    if (hh < 10) hh = '0' + hh;
+                    if (min < 10) min = '0' + min;
+                    $(this).val(`${formattedDate}T${hh}:${min}`);
                 }
-            }, 100);
-        } catch (e) {
-            console.error("showConfirmModal failed:", e);
-            // Fallback to native browser confirm if Bootstrap logic completely fails
-            if (confirm(message)) {
-                if (typeof onConfirm === 'function') onConfirm();
+            }
+        });
+    }
+
+    // Initial call and hook for dynamic content (modals)
+    autoFillDates();
+    $(document).on('shown.bs.modal', function (e) {
+        autoFillDates(e.target);
+    });
+
+    function renderPagination(pagId, infoId, totalItems, currentPage, onChangePage) {
+        const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+        const pag = document.getElementById(pagId);
+        const info = document.getElementById(infoId);
+        if (!pag || !info) return;
+
+        const start = totalItems === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+        const end = Math.min(currentPage * PAGE_SIZE, totalItems);
+        info.textContent = totalItems === 0 ? 'No items found' : `Showing ${start}-${end} of ${totalItems} items`;
+
+        pag.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const mkItem = (label, pageNumber, disabled, active) => {
+            const li = document.createElement('li');
+            li.className = `page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
+            const a = document.createElement('a');
+            a.className = `page-link rounded-pill px-3 ${active ? 'text-white' : ''}`;
+            a.href = '#';
+            a.dataset.page = pageNumber;
+            a.style.cssText = active ? 'background:var(--smdi-green);border-color:var(--smdi-green);' : 'border-color:#dee2e6;';
+            a.innerHTML = label;
+            li.appendChild(a);
+            return li;
+        };
+
+        pag.appendChild(mkItem('<i class="bi bi-chevron-left"></i>', currentPage - 1, currentPage === 1, false));
+
+        const delta = 2;
+        const rangeStart = Math.max(1, currentPage - delta);
+        const rangeEnd = Math.min(totalPages, currentPage + delta);
+
+        if (rangeStart > 1) {
+            pag.appendChild(mkItem('1', 1, false, false));
+            if (rangeStart > 2) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                pag.appendChild(li);
             }
         }
+
+        for (let p = rangeStart; p <= rangeEnd; p++) {
+            pag.appendChild(mkItem(p, p, false, p === currentPage));
+        }
+
+        if (rangeEnd < totalPages) {
+            if (rangeEnd < totalPages - 1) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                pag.appendChild(li);
+            }
+            pag.appendChild(mkItem(totalPages, totalPages, false, false));
+        }
+
+        pag.appendChild(mkItem('<i class="bi bi-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false));
+
+        $(pag).off('click', '.page-link').on('click', '.page-link', function (e) {
+            e.preventDefault();
+            const pg = parseInt($(this).data('page'));
+            if (pg && pg >= 1 && pg <= totalPages && pg !== currentPage) {
+                onChangePage(pg);
+            }
+        });
     }
+
+
+
+
+
+
 
     // Core Loading Logic
     function loadApiData(endpoint, successCallback, tableBodyId = null, data = {}) {
@@ -82,15 +142,13 @@ $(document).ready(function () {
 
     function setupEventListeners() {
         // Main Navigation Tabs
-        $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        $('button[data-bs-toggle="tab"], button[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
             const targetTab = this.id || $(e.target).attr('id');
             const targetPane = $(e.target).attr('data-bs-target');
 
             switch (targetTab) {
-                case 'dashboard-tab': loadDashboardStats(); break;
-                case 'find-tab': /* Logic for find already handled by search buttons */ break;
-                // Branch-specific flattened tabs
-                case 'inventory-tab': loadInventory(); break;
+                case 'inventory-tab':
+                case 'sc-profile-tab': loadInventory(); break;
                 case 'sales-tab': loadSales(); break;
                 case 'payments-tab': loadPayments(); break;
                 case 'transfer-tab':
@@ -106,6 +164,7 @@ $(document).ready(function () {
             // Also handle by target pane just in case ID is inconsistent
             if (!targetTab) {
                 switch (targetPane) {
+                    case '#sc-profile': /* Landing page */ break;
                     case '#sub-stock': loadInventory(); break;
                     case '#sub-sales': loadSales(); break;
                     case '#sub-payments': loadPayments(); break;
@@ -115,11 +174,23 @@ $(document).ready(function () {
             }
         });
 
+        // Landing Page Search Handler
+        $('#landingStockSearchBtn').on('click', function () {
+            const val = $('#landingStockSearch').val().trim();
+            if (val && typeof showStockCard === 'function') showStockCard(val);
+        });
+
+        $('#landingStockSearch').on('keypress', function (e) {
+            if (e.which === 13) {
+                const val = $(this).val().trim();
+                if (val && typeof showStockCard === 'function') showStockCard(val);
+            }
+        });
+
         // Search Handlers
-        $('#inventorySearch').on('input', e => renderInventory(filterData(inventoryData, $(e.target).val(), ['part_no', 'description', 'brand'])));
-        $('#salesSearch').on('input', e => renderSales(filterData(salesData, $(e.target).val(), ['customer_name', 'or_number'])));
-        $('#paymentsSearch').on('input', e => renderPayments(filterData(paymentsData, $(e.target).val(), ['customer_name', 'or_number'])));
-        $('#transfersSearch').on('input', e => renderTransfers(filterData(transfersData, $(e.target).val(), ['from_branch', 'to_branch'])));
+        $('#salesSearch').on('input', e => { salesCurrentPage = 1; renderSales(filterData(salesData, $(e.target).val(), ['customer_name', 'or_number'])); });
+        $('#paymentsSearch').on('input', e => { paymentsCurrentPage = 1; renderPayments(filterData(paymentsData, $(e.target).val(), ['customer_name', 'or_number'])); });
+        $('#transfersSearch').on('input', e => { transfersCurrentPage = 1; renderTransfers(filterData(transfersData, $(e.target).val(), ['from_branch', 'to_branch'])); });
         $('#paymentsAgingSearch').on('input', () => loadAging());
         $('#agingBranchFilter').on('change', () => loadAging());
 
@@ -141,7 +212,22 @@ $(document).ready(function () {
         // Sales Sub-tabs filtering
         $('#salesSubTabs button').on('click', function () {
             const type = $(this).data('type');
+            salesCurrentPage = 1; // Reset to page 1 on filter change
             renderSales(salesData, type);
+        });
+
+        // Sales New Filters
+        $('#applySalesFiltersBtn').on('click', function () {
+            salesCurrentPage = 1;
+            loadSales();
+        });
+
+        $('#resetSalesFiltersBtn').on('click', function () {
+            $('#salesFilterBranch').val('all');
+            $('#salesFilterDateFrom').val('');
+            $('#salesFilterDateTo').val('');
+            salesCurrentPage = 1;
+            loadSales();
         });
 
         // Populating Branches
@@ -163,7 +249,7 @@ $(document).ready(function () {
                         reportHtml += `<option value="${branch}">${branch}</option>`;
                     });
 
-                    const reportSelectors = '#inv_report_branch, #sales_report_branch, #payment_report_branch, #t_report_branch';
+                    const reportSelectors = '#inv_report_branch, #sales_report_branch, #payment_report_branch, #t_report_branch, #salesFilterBranch';
                     $(reportSelectors).html(reportHtml);
 
                     // If branch page, lock the selection to the current branch
@@ -184,15 +270,30 @@ $(document).ready(function () {
             $('#edit_branch').val(item.current_branch);
             $('#edit_brand').val(item.brand);
             $('#edit_part_no').val(item.part_no);
-            $('#edit_stock').val(item.current_stock);
+            $('#edit_stock').val(item.current_stock).data('initial', item.current_stock);
             $('#edit_description').val(item.description);
             $('#edit_cost').val(item.cost);
             $('#edit_price').val(item.price);
             $('#edit_min_stock').val(item.min_stock);
+            $('#edit_bin_location').val(item.bin_location || '');
             $('#edit_invoice_no').val(item.invoice_no || '');
             $('#edit_change_reason').val('');
+            $('#edit_part_image').val(''); // Clear old file selection
 
-            $('#editPartModal').modal('show');
+            $('#edit_reason_container').hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editPartModal')).show();
+        });
+
+        $(document).on('input', '#edit_stock', function () {
+            const initial = $(this).data('initial');
+            const current = $(this).val();
+            if (initial != current) {
+                $('#edit_reason_container').slideDown();
+                $('#edit_change_reason').prop('required', true);
+            } else {
+                $('#edit_reason_container').slideUp();
+                $('#edit_change_reason').prop('required', false);
+            }
         });
 
         $(document).on('click', '.view-history-btn', function () {
@@ -204,11 +305,17 @@ $(document).ready(function () {
             $('#historyPartBrand').text(item.brand);
             $('#historyPartNumber').text(item.part_no);
             $('#historyTableBody').html('<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Loading...</td></tr>');
-            $('#viewHistoryModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('viewHistoryModal')).show();
 
             loadApiData('get_inventory_history', data => {
                 renderInventoryHistory(data);
             }, 'historyTableBody', { id: id });
+        });
+
+        $(document).on('click', '.show-stock-card-btn', function () {
+            const partNo = $(this).data('part-no');
+            const branch = $(this).data('branch');
+            showStockCard(partNo, branch);
         });
 
         $(document).on('click', '.delete-part-btn', function () {
@@ -225,60 +332,211 @@ $(document).ready(function () {
             });
         });
 
+        let editSaleCart = [];
+
         $(document).on('click', '.edit-sale-btn', function () {
             const or = $(this).data('or');
             const branch = $(this).data('branch');
-            const sale = salesData.find(s => s.or_number == or && s.from_location == branch);
-            if (!sale) return;
 
-            // Populate hidden identifiers for the update query
-            $('#edit_sale_original_or').val(sale.or_number);
-            $('#edit_sale_original_branch').val(sale.from_location);
-
-            // Populate display-only identity info
-            $('#edit_sale_or_display').text(sale.or_number);
-            $('#edit_sale_branch_display').text(sale.from_location);
-
-            // Populate editable fields
-            $('#edit_sale_or').val(sale.or_number);
-            $('#edit_sale_customer').val(sale.customer_name);
-            $('#edit_sale_date').val(sale.sale_date);
-            $('#edit_sale_amount').val(sale.total_amount);
-            $('#edit_sale_type').val(sale.transaction_type);
+            // Clear previous data
+            $('#editSaleItemsBody').empty();
             $('#edit_sale_reason').val('');
+            $('#edit_sale_total_display').text('₱0.00');
+            $('#editSaleItemSearch').val('');
+            $('#edit_sale_sales_force').val('');
 
-            // Populate branch select if not already populated
-            const branchSelect = $('#edit_sale_branch');
-            if (branchSelect.find('option').length <= 0) {
-                // Assuming you have a list of branches available, or fetch them
-                $.get('../api/spareparts_inventory.php?action=get_branches', response => {
-                    if (response.success) {
-                        let html = '';
-                        response.data.forEach(b => {
-                            html += `<option value="${b}">${b}</option>`;
-                        });
-                        branchSelect.html(html).val(sale.from_location);
+            // Show loading state or modal immediately
+            const editModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editSaleModal'));
+            editModal.show();
+
+            $.get('../api/spareparts_inventory.php?action=get_sale_details', { or_number: or, branch: branch }, response => {
+                if (response.success) {
+                    const data = response.data;
+
+                    // Populate meta
+                    $('#edit_sale_original_or').val(data.or_number);
+                    $('#edit_sale_original_branch').val(data.branch);
+                    $('#edit_sale_or').val(data.or_number);
+                    $('#edit_sale_customer').val(data.customer_name);
+                    $('#edit_sale_date').val(data.sale_date);
+                    $('#edit_sale_type').val(data.transaction_type);
+                    $('#edit_sale_sales_force').val(data.sales_force || '');
+
+                    // Populate branch select
+                    const branchSelect = $('#edit_sale_branch');
+                    if (branchSelect.find('option').length <= 0) {
+                        $.get('../api/spareparts_inventory.php?action=get_branches', res => {
+                            if (res.success) {
+                                let html = '';
+                                res.data.forEach(b => html += `<option value="${b}">${b}</option>`);
+                                branchSelect.html(html).val(data.branch);
+                            }
+                        }, 'json');
+                    } else {
+                        branchSelect.val(data.branch);
                     }
-                }, 'json');
+
+                    // Populate items
+                    editSaleCart = data.items.map(item => ({
+                        part_no: item.part_no,
+                        description: item.description,
+                        quantity: parseInt(item.quantity),
+                        price: parseFloat(item.price)
+                    }));
+                    renderEditSaleItems();
+                } else {
+                    showErrorModal(response.message);
+                    editModal.hide();
+                }
+            }, 'json');
+        });
+
+        function renderEditSaleItems() {
+            const tbody = $('#editSaleItemsBody');
+            tbody.empty();
+            let total = 0;
+
+            if (editSaleCart.length === 0) {
+                tbody.html('<tr><td colspan="5" class="text-center text-muted py-4">No items in this sale.</td></tr>');
             } else {
-                branchSelect.val(sale.from_location);
+                editSaleCart.forEach((item, index) => {
+                    const subtotal = item.quantity * item.price;
+                    total += subtotal;
+                    tbody.append(`
+                        <tr>
+                            <td class="ps-3 py-2">
+                                <div class="fw-bold">${escapeHtml(item.part_no)}</div>
+                                <div class="small text-muted">${escapeHtml(item.description)}</div>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm text-center edit-item-qty" 
+                                    data-index="${index}" value="${item.quantity}" min="1">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" class="form-control form-control-sm text-end edit-item-price" 
+                                    data-index="${index}" value="${item.price}">
+                            </td>
+                            <td class="text-end fw-bold">₱${formatCurrency(subtotal)}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-edit-item" data-index="${index}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
             }
 
-            $('#editSaleModal').modal('show');
+            $('#edit_sale_total_display').text(`₱${formatCurrency(total)}`);
+            $('#edit_sale_total_input').val(total);
+        }
+
+        // Handle item qty/price change in edit modal
+        $(document).on('change', '.edit-item-qty', function () {
+            const idx = $(this).data('index');
+            editSaleCart[idx].quantity = parseInt($(this).val()) || 1;
+            renderEditSaleItems();
+        });
+
+        $(document).on('change', '.edit-item-price', function () {
+            const idx = $(this).data('index');
+            editSaleCart[idx].price = parseFloat($(this).val()) || 0;
+            renderEditSaleItems();
+        });
+
+        $(document).on('click', '.remove-edit-item', function () {
+            const idx = $(this).data('index');
+            editSaleCart.splice(idx, 1);
+            renderEditSaleItems();
+        });
+
+        // Search items to add to edit sale
+        $('#editSaleItemSearch').on('input', function () {
+            const query = $(this).val();
+            if (query.length < 2) { $('#editSaleItemResults').hide(); return; }
+            $.get('../api/spareparts_inventory.php?action=search_inventory_parts', { term: query }, res => {
+                if (res.success && res.data.length > 0) {
+                    let html = '';
+                    res.data.forEach(item => {
+                        html += `<button type="button" class="list-group-item list-group-item-action add-item-to-edit" 
+                            data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}'>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div><strong>${item.part_no}</strong><br><small>${item.description}</small></div>
+                                <div class="text-end small">Stock: <span class="badge bg-light text-dark border">${item.current_stock}</span></div>
+                            </div>
+                        </button>`;
+                    });
+                    $('#editSaleItemResults').html(html).show();
+                } else {
+                    $('#editSaleItemResults').hide();
+                }
+            }, 'json');
+        });
+
+        $(document).on('click', '.add-item-to-edit', function () {
+            const item = $(this).data('item');
+            const existing = editSaleCart.find(i => i.part_no === item.part_no);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                editSaleCart.push({
+                    part_no: item.part_no,
+                    description: item.description,
+                    quantity: 1,
+                    price: parseFloat(item.price)
+                });
+            }
+            $('#editSaleItemResults').hide();
+            $('#editSaleItemSearch').val('');
+            renderEditSaleItems();
+        });
+
+        // Search Sales Force in edit modal
+        $('#edit_sale_sales_force').on('input focus', function () {
+            const query = $(this).val();
+            $.get('../api/spareparts_inventory.php?action=get_sales_force', res => {
+                if (res.success) {
+                    let filtered = res.data;
+                    if (query) {
+                        filtered = res.data.filter(e => e.employee_name.toLowerCase().includes(query.toLowerCase()));
+                    }
+                    if (filtered.length > 0) {
+                        let html = '';
+                        filtered.forEach(e => {
+                            html += `<button type="button" class="list-group-item list-group-item-action select-sf-edit" 
+                                data-name="${escapeHtml(e.employee_name)}">${escapeHtml(e.employee_name)}</button>`;
+                        });
+                        $('#editSaleForceResults').html(html).show();
+                    } else {
+                        $('#editSaleForceResults').hide();
+                    }
+                }
+            }, 'json');
+        });
+
+        $(document).on('click', '.select-sf-edit', function () {
+            $('#edit_sale_sales_force').val($(this).data('name'));
+            $('#editSaleForceResults').hide();
+        });
+
+        // Hide search results when clicking outside
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('#editSaleItemSearch, #editSaleItemResults').length) $('#editSaleItemResults').hide();
+            if (!$(e.target).closest('#edit_sale_sales_force, #editSaleForceResults').length) $('#editSaleForceResults').hide();
         });
 
         $(document).on('click', '.view-sale-btn', function () {
             const or = $(this).data('or');
             const branch = $(this).data('branch');
             $('#saleDetailsContent').html('<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2">Loading sale details...</p></div>');
-            $('#viewSaleDetailsModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('viewSaleDetailsModal')).show();
 
             $.get('../api/spareparts_inventory.php?action=get_sale_details', { or_number: or, branch: branch }, response => {
                 if (response.success) {
                     renderSaleDetails(response.data);
                 } else {
                     showErrorModal(response.message);
-                    $('#viewSaleDetailsModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewSaleDetailsModal')).hide();
                 }
             }, 'json');
         });
@@ -319,20 +577,59 @@ $(document).ready(function () {
         });
 
         // FORM SUBMISSIONS
+        // ADD PART LOGIC
+        $('#addPartForm').on('submit', function (e) {
+            e.preventDefault();
+            const btn = $(this).find('button[type="submit"]');
+            const originalText = btn.html();
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
+
+            const formData = new FormData(this);
+            $.ajax({
+                url: '../api/spareparts_inventory.php?action=add_part',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function (res) {
+                    btn.prop('disabled', false).html(originalText);
+                    if (res.success) {
+                        $('#addPartModal').modal('hide');
+                        $('#addPartForm')[0].reset();
+                        showSuccessModal('Part registered successfully!');
+                        loadInventory(); // Reload the table
+                    } else {
+                        showErrorModal(res.message || 'Error occurred.');
+                    }
+                },
+                error: function () {
+                    btn.prop('disabled', false).html(originalText);
+                    showErrorModal('Connection error.');
+                }
+            });
+        });
+
         $('#editPartForm').on('submit', function (e) {
             e.preventDefault();
-            const formData = $(this).serialize();
+            const formData = new FormData(this);
             $.ajax({
                 url: '../api/spareparts_inventory.php?action=edit_parts',
                 method: 'POST',
                 data: formData,
+                processData: false,
+                contentType: false,
                 success: response => {
-                    if (response.success) {
-                        $('#editPartModal').modal('hide');
+                    let res = response;
+                    if (typeof response === 'string') {
+                        try { res = JSON.parse(response); } catch (e) { }
+                    }
+                    if (res.success) {
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('editPartModal')).hide();
                         showSuccessModal('Part updated successfully.');
                         loadInventory();
                     } else {
-                        showErrorModal(response.message);
+                        showErrorModal(res.message);
                     }
                 }
             });
@@ -340,18 +637,28 @@ $(document).ready(function () {
 
         $('#editSaleForm').on('submit', function (e) {
             e.preventDefault();
+            if (editSaleCart.length === 0) {
+                showErrorModal('Sale must have at least one item.');
+                return;
+            }
+
             const btn = $(this).find('button[type="submit"]');
+            const originalHtml = btn.html();
             btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
 
-            $.post('../api/spareparts_inventory.php?action=edit_sale', $(this).serialize(), response => {
+            const formData = $(this).serializeArray();
+            formData.push({ name: 'items', value: JSON.stringify(editSaleCart) });
+
+            $.post('../api/spareparts_inventory.php?action=edit_sale', formData, response => {
                 if (response.success) {
-                    $('#editSaleModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('editSaleModal')).hide();
                     showSuccessModal(response.message);
                     loadSales();
+                    loadInventory(); // Reload inventory as levels might have shifted
                 } else {
                     showErrorModal(response.message);
                 }
-            }, 'json').always(() => btn.prop('disabled', false).html('<i class="bi bi-check2-circle me-1"></i>Save Changes'));
+            }, 'json').always(() => btn.prop('disabled', false).html(originalHtml));
         });
 
         // ADD STOCK LOGIC (Parts In)
@@ -480,7 +787,7 @@ $(document).ready(function () {
                 },
                 success: response => {
                     if (response.success) {
-                        $('#addPartsInModal').modal('hide');
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('addPartsInModal')).hide();
                         showSuccessModal('Inventory updated successfully.');
                         partsInCart = [];
                         renderPartsInCart();
@@ -530,7 +837,7 @@ $(document).ready(function () {
             if (existing) {
                 if (existing.quantity < item.current_stock) existing.quantity++;
             } else {
-                transferCart.push({ ...item, quantity: 1 });
+                transferCart.push({ ...item, quantity: 1, cost: item.cost || 0 });
             }
             renderTransferCart();
         }
@@ -545,7 +852,7 @@ $(document).ready(function () {
             const tbody = $('#partsToTransferList');
             tbody.empty();
             if (transferCart.length === 0) {
-                tbody.html('<tr id="emptyTransferListRow"><td colspan="3" class="text-center text-muted p-5">Cart is empty</td></tr>');
+                tbody.html('<tr id="emptyTransferListRow"><td colspan="4" class="text-center text-muted p-5">Cart is empty</td></tr>');
             } else {
                 transferCart.forEach((item, index) => {
                     tbody.append(`
@@ -557,6 +864,13 @@ $(document).ready(function () {
                             <td>
                                 <input type="number" class="form-control form-control-sm text-center transfer-qty-input" 
                                     data-index="${index}" value="${item.quantity}" min="1" max="${item.current_stock}">
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-end transfer-cost-input" 
+                                        data-index="${index}" value="${item.cost}" min="0">
+                                </div>
                             </td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-transfer-item" data-index="${index}">
@@ -571,10 +885,18 @@ $(document).ready(function () {
 
         $(document).on('change', '.transfer-qty-input', function () {
             const index = $(this).data('index');
-            const qty = parseInt($(this).val());
+            let qty = parseInt($(this).val());
             const max = parseInt($(this).attr('max'));
-            if (qty > max) $(this).val(max);
-            transferCart[index].quantity = parseInt($(this).val());
+            if (qty > max) { qty = max; $(this).val(max); }
+            if (qty < 1 || isNaN(qty)) { qty = 1; $(this).val(1); }
+            transferCart[index].quantity = qty;
+        });
+
+        $(document).on('change', '.transfer-cost-input', function () {
+            const index = $(this).data('index');
+            let cost = parseFloat($(this).val());
+            if (cost < 0 || isNaN(cost)) { cost = 0; $(this).val(0); }
+            transferCart[index].cost = cost;
         });
 
         $('#transferPartsForm').on('submit', function (e) {
@@ -588,14 +910,16 @@ $(document).ready(function () {
             $.post('../api/spareparts_inventory.php?action=transfer_multiple_parts', {
                 transfer_date: $('#transfer_date').val(),
                 to_branch: $('#to_branch').val(),
+                transfer_no: $('#transfer_no').val() || '',
                 items: JSON.stringify(transferCart.map(p => ({
                     part_no: p.part_no,
                     description: p.description,
-                    quantity: p.quantity
+                    quantity: p.quantity,
+                    cost: p.cost
                 })))
             }, response => {
                 if (response.success) {
-                    $('#transferPartsModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('transferPartsModal')).hide();
                     showSuccessModal('Transfer initiated successfully.');
                     transferCart = [];
                     renderTransferCart();
@@ -612,46 +936,122 @@ $(document).ready(function () {
             const id = $(this).data('id');
             currentViewingTransferId = id;
             $('#transferDetailsBody').html('<div class="text-center p-4"><div class="spinner-border text-primary"></div></div>');
-            $('#viewTransferDetailsModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).show();
 
             $.get('../api/spareparts_inventory.php?action=get_transfer_details', { id: id }, response => {
                 if (response.success) {
                     renderTransferDetails(response.data);
                 } else {
                     showErrorModal(response.message);
-                    $('#viewTransferDetailsModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
                 }
             }, 'json');
         });
 
         function renderTransferDetails(data) {
+            const getStatusBadge = (status) => {
+                if (!status) return '<span class="badge bg-secondary">UNKNOWN</span>';
+                const colors = {
+                    'In-Transit': 'bg-warning text-dark',
+                    'Completed': 'bg-success text-white',
+                    'Rejected': 'bg-danger text-white',
+                    'Pending': 'bg-info text-white'
+                };
+                return `<span class="badge ${colors[status] || 'bg-secondary'} px-3 py-2 rounded-pill shadow-sm fw-bold border border-white border-opacity-25">${status.toUpperCase()}</span>`;
+            };
+
             let itemsHtml = '';
             data.items.forEach(item => {
                 itemsHtml += `
                     <tr>
-                        <td>${item.part_no}<br><small>${item.description}</small></td>
-                        <td class="text-center">${item.quantity}</td>
+                        <td class="ps-4 py-3">
+                            <div class="fw-bold text-dark-green mb-1">${item.part_no}</div>
+                            <div class="small text-muted fw-500">${item.description || 'No description provided'}</div>
+                        </td>
+                        <td class="text-center fw-bold align-middle ps-0 pe-4" style="width: 120px; color: var(--sp-green);">
+                            <div class="bg-light rounded-3 py-2 border shadow-sm fs-5">${item.quantity}</div>
+                        </td>
                     </tr>`;
             });
 
             $('#transferDetailsBody').html(`
-                <div class="row mb-3">
-                    <div class="col-6"><strong>From:</strong> ${data.from_branch}</div>
-                    <div class="col-6 text-end"><strong>To:</strong> ${data.to_branch}</div>
-                    <div class="col-6 text-muted small">Date: ${data.transfer_date}</div>
-                    <div class="col-6 text-end"><span class="badge bg-primary">${data.status}</span></div>
+                <div class="bg-white border-bottom shadow-sm overflow-hidden">
+                    <div class="bg-dark-green text-white p-4 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                             <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-file-earmark-text fs-4 text-white-50"></i>
+                                <div>
+                                    <h4 class="fw-bold mb-0 text-white ls-1">TRANSFER RECORD</h4>
+                                    <div class="small text-white-50 fw-bold">REF No. ${data.id.toString().padStart(6, '0')} ${data.transfer_no ? `| <span class="text-white">NO. ${data.transfer_no}</span>` : ''}</div>
+                                </div>
+                             </div>
+                             ${getStatusBadge(data.status)}
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-light bg-opacity-50">
+                        <div class="row g-4 align-items-stretch">
+                            <div class="col-md-5">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden border-start border-4" style="border-color: var(--sp-green-light) !important;">
+                                    <div class="card-body p-3">
+                                        <div class="small fw-bold text-muted text-uppercase mb-2"><i class="bi bi-geo-alt-fill me-1" style="color: var(--sp-green-light);"></i>From Branch</div>
+                                        <div class="h5 mb-0 fw-bold text-dark">${data.from_branch}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 d-none d-md-flex align-items-center justify-content-center">
+                                <div class="bg-white rounded-circle shadow-sm border p-2">
+                                    <i class="bi bi-arrow-right-short fs-2" style="color: var(--sp-green);"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="card h-100 border-0 shadow-sm overflow-hidden border-start border-4 border-success">
+                                    <div class="card-body p-3 text-md-end">
+                                        <div class="small fw-bold text-muted text-uppercase mb-2"><i class="bi bi-geo-fill me-1 text-success"></i>Destination</div>
+                                        <h5 class="mb-0 fw-bold text-dark">${data.to_branch}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="px-4 py-3 bg-white border-top border-bottom">
+                         <div class="row align-items-center">
+                            <div class="col-sm-6 border-end text-center text-sm-start">
+                                <span class="text-muted small fw-bold text-uppercase d-block mb-1">Date of Transfer</span>
+                                <span class="fw-bold h6 mb-0 text-dark"><i class="bi bi-calendar-check me-2" style="color: var(--sp-green);"></i>${data.transfer_date}</span>
+                            </div>
+                            <div class="col-sm-6 text-center text-sm-end">
+                                <span class="text-muted small fw-bold text-uppercase d-block mb-1">Inventory Impact</span>
+                                <span class="fw-bold h6 mb-0" style="color: var(--sp-green);"><i class="bi bi-box-seam me-2"></i>${data.items ? data.items.length : 0} Unique Parts</span>
+                            </div>
+                         </div>
+                    </div>
                 </div>
-                <table class="table table-sm table-bordered">
-                    <thead class="table-light"><tr><th>Item</th><th class="text-center">Qty</th></tr></thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
+
+                <div class="p-0">
+                    <div class="bg-dark-green text-white p-2 px-4 small fw-bold text-uppercase d-flex justify-content-between border-bottom" style="opacity: 0.9;">
+                        <span class="ls-1">Dispatched Item Details</span>
+                        <span class="ls-1">Quantity</span>
+                    </div>
+                    <div class="table-responsive border-bottom" style="max-height: 480px;">
+                        <table class="table table-hover align-middle mb-0 border-0">
+                            <tbody id="transferItemsList" class="bg-white">
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             `);
 
-            // Only show actions for In-Transit transfers to the current branch
+            // Only show actions for In-Transit transfers based on branch
+            $('#rejectTransferBtn, #confirmReceiveBtn, #cancelTransferBtn').addClass('d-none');
             if (data.status === 'In-Transit') {
-                $('#rejectTransferBtn, #confirmReceiveBtn').removeClass('d-none');
-            } else {
-                $('#rejectTransferBtn, #confirmReceiveBtn').addClass('d-none');
+                if (data.to_branch === window.currentBranch) {
+                    $('#rejectTransferBtn, #confirmReceiveBtn').removeClass('d-none');
+                } else if (data.from_branch === window.currentBranch) {
+                    $('#cancelTransferBtn').removeClass('d-none');
+                }
             }
         }
 
@@ -659,7 +1059,7 @@ $(document).ready(function () {
             showConfirmModal('Are you sure you want to receive these items?', function () {
                 $.post('../api/spareparts_inventory.php?action=accept_transfer', { id: currentViewingTransferId }, response => {
                     if (response.success) {
-                        $('#viewTransferDetailsModal').modal('hide');
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
                         showSuccessModal('Transfer accepted and inventory updated.');
                         loadInventory();
                         loadTransfers();
@@ -676,7 +1076,7 @@ $(document).ready(function () {
             if (reason === null) return;
             $.post('../api/spareparts_inventory.php?action=reject_transfer', { id: currentViewingTransferId, reason: reason }, response => {
                 if (response.success) {
-                    $('#viewTransferDetailsModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
                     showSuccessModal('Transfer rejected.');
                     loadTransfers();
                     loadIncomingTransfers();
@@ -701,7 +1101,24 @@ $(document).ready(function () {
             });
         });
 
+        $('#cancelTransferBtn').on('click', function () {
+            if (!currentViewingTransferId) return;
+            showConfirmModal('Cancel this transfer? Inventory will be returned to your branch.', function () {
+                $.post('../api/spareparts_inventory.php?action=delete_transfer', { id: currentViewingTransferId }, response => {
+                    if (response.success) {
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
+                        showSuccessModal('Transfer cancelled successfully.');
+                        loadInventory();
+                        loadTransfers();
+                    } else {
+                        showErrorModal(response.message);
+                    }
+                }, 'json');
+            });
+        });
+
         // POS LOGIC (Sales Out)
+        let currentCustomerRank = 'Standard';
         $('#out_customer_name').on('input', function () {
             const val = $(this).val().toLowerCase().trim();
             const resultsBox = $('#saleCustomerSearchResults');
@@ -716,12 +1133,13 @@ $(document).ready(function () {
                 if (response.success && response.data.length > 0) {
                     let html = '';
                     response.data.forEach(item => {
-                        // Assuming the API returns an array of strings
-                        const custName = typeof item === 'string' ? item : (item.customer_name || '');
+                        const custName = item.customer_name;
+                        const rank = item.rank_level || 'Standard';
                         if (!custName) return;
                         html += `<button type="button" class="list-group-item list-group-item-action fw-bold fill-sale-customer" 
-                                    data-name="${escapeHtml(custName)}">
+                                    data-name="${escapeHtml(custName)}" data-rank="${rank}">
                                     <i class="bi bi-person text-secondary me-2"></i>${escapeHtml(custName)}
+                                    <span class="badge bg-light text-dark border ms-2 small fw-normal">${rank}</span>
                                  </button>`;
                     });
                     resultsBox.html(html).show();
@@ -732,9 +1150,25 @@ $(document).ready(function () {
         });
 
         $(document).on('click', '.fill-sale-customer', function () {
-            $('#out_customer_name').val($(this).data('name'));
+            const name = $(this).data('name');
+            const rank = $(this).data('rank');
+            $('#out_customer_name').val(name);
+            currentCustomerRank = rank;
             $('#saleCustomerSearchResults').hide();
+            updateCartPricesForRank();
         });
+
+        function updateCartPricesForRank() {
+            if (saleCart.length === 0) return;
+            saleCart.forEach(item => {
+                $.get('../api/spareparts_inventory.php?action=get_rank_price', { part_no: item.part_no, rank_level: currentCustomerRank }, function (res) {
+                    if (res.success) {
+                        item.price = parseFloat(res.price);
+                        renderSaleCart();
+                    }
+                }, 'json');
+            });
+        }
 
         $(document).on('click', function (e) {
             if (!$(e.target).closest('#out_customer_name, #saleCustomerSearchResults').length) {
@@ -757,6 +1191,40 @@ $(document).ready(function () {
             setTimeout(() => {
                 $('#out_transaction_type').trigger('change');
             }, 50);
+            // Clear sales force field on new sale
+            $('#out_sales_force').val('');
+            $('#salesForceSearchResults').hide();
+        });
+
+        // ---- SALES FORCE AUTOCOMPLETE ----
+        $('#out_sales_force').on('input', function () {
+            const term = $(this).val().trim();
+            const $results = $('#salesForceSearchResults');
+            if (term.length < 1) { $results.hide(); return; }
+            $.get('../api/spareparts_inventory.php?action=search_sales_force', { term }, function (res) {
+                $results.empty();
+                if (res.success && res.data.length > 0) {
+                    res.data.forEach(emp => {
+                        $results.append(`<button type="button" class="list-group-item list-group-item-action sf-pick" data-name="${emp.employee_name}">
+                            <i class="bi bi-person me-2 text-success"></i>${emp.employee_name}
+                        </button>`);
+                    });
+                    $results.show();
+                } else {
+                    $results.hide();
+                }
+            }, 'json');
+        });
+
+        $(document).on('click', '.sf-pick', function () {
+            $('#out_sales_force').val($(this).data('name'));
+            $('#salesForceSearchResults').hide();
+        });
+
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('#out_sales_force, #salesForceSearchResults').length) {
+                $('#salesForceSearchResults').hide();
+            }
         });
 
         // saleCart is already declared at the top of the file
@@ -789,13 +1257,34 @@ $(document).ready(function () {
         });
 
         function addPartToSaleCart(item) {
-            const existing = saleCart.find(p => p.id === item.id);
+            const existing = saleCart.find(p => String(p.id) === String(item.id));
             if (existing) {
-                if (existing.quantity < item.current_stock) existing.quantity++;
+                if (existing.quantity < item.current_stock) {
+                    existing.quantity++;
+                    renderSaleCart();
+                }
             } else {
-                saleCart.push({ ...item, quantity: 1 });
+                // Instantly add to cart with default price for better UX
+                const newItem = { ...item, quantity: 1 };
+                saleCart.push(newItem);
+                renderSaleCart();
+
+                // Then fetch rank-based price if available
+                $.get('../api/spareparts_inventory.php?action=get_rank_price', {
+                    part_no: item.part_no,
+                    rank_level: currentCustomerRank || 'Standard'
+                }, function (res) {
+                    if (res.success) {
+                        const updated = saleCart.find(p => String(p.id) === String(item.id));
+                        if (updated) {
+                            updated.price = parseFloat(res.price);
+                            renderSaleCart();
+                        }
+                    }
+                }, 'json').fail(function () {
+                    console.warn("Could not fetch rank price for " + item.part_no);
+                });
             }
-            renderSaleCart();
         }
 
         $(document).on('click', '.remove-sale-item', function () {
@@ -822,8 +1311,14 @@ $(document).ready(function () {
                                 <input type="number" class="form-control form-control-sm text-center sale-qty-input" 
                                     data-index="${index}" value="${item.quantity}" min="1" max="${item.current_stock}">
                             </td>
-                            <td class="text-end">${formatCurrency(item.price)}</td>
-                            <td class="text-end fw-bold">${formatCurrency(subtotal)}</td>
+                            <td>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-end sale-price-input" 
+                                        data-index="${index}" value="${parseFloat(item.price).toFixed(2)}">
+                                </div>
+                            </td>
+                            <td class="text-end fw-bold">₱${formatCurrency(subtotal)}</td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-sale-item" data-index="${index}">
                                     <i class="bi bi-trash"></i></button>
@@ -837,10 +1332,19 @@ $(document).ready(function () {
 
         $(document).on('change', '.sale-qty-input', function () {
             const index = $(this).data('index');
-            const qty = parseInt($(this).val());
+            let qty = parseInt($(this).val());
             const max = parseInt($(this).attr('max'));
-            if (qty > max) $(this).val(max);
-            saleCart[index].quantity = parseInt($(this).val());
+            if (qty > max) { qty = max; $(this).val(max); }
+            if (qty < 1 || isNaN(qty)) { qty = 1; $(this).val(1); }
+            saleCart[index].quantity = qty;
+            renderSaleCart();
+        });
+
+        $(document).on('change', '.sale-price-input', function () {
+            const index = $(this).data('index');
+            let price = parseFloat($(this).val());
+            if (price < 0 || isNaN(price)) { price = 0; $(this).val(0); }
+            saleCart[index].price = price;
             renderSaleCart();
         });
 
@@ -856,13 +1360,18 @@ $(document).ready(function () {
                 customer_name: $('#out_customer_name').val(),
                 date: $('#out_date').val(),
                 transaction_type: $('#out_transaction_type').val(),
+                sales_force: $('#out_sales_force').val().trim(),
                 items: JSON.stringify(saleCart.map(p => ({ id: p.id, part_no: p.part_no, description: p.description, quantity: p.quantity, price: p.price })))
             };
 
             $.post('../api/spareparts_inventory.php?action=sell_multiple_parts_out', saleData, response => {
                 if (response.success) {
-                    $('#sellPartsOutModal').modal('hide');
-                    showSuccessModal('Sale recorded successfully.');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('sellPartsOutModal')).hide();
+
+                    // Generate and show receipt
+                    renderSaleReceipt(saleData, saleCart);
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('receiptModal')).show();
+
                     saleCart = [];
                     renderSaleCart();
                     loadDashboardStats();
@@ -872,6 +1381,96 @@ $(document).ready(function () {
                     showErrorModal(response.message);
                 }
             }, 'json').always(() => btn.prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i>Confirm Sale'));
+        });
+
+        function renderSaleReceipt(data, items) {
+            let grandTotal = 0;
+            let itemsHtml = '';
+            items.forEach(item => {
+                const subtotal = item.quantity * item.price;
+                grandTotal += subtotal;
+                itemsHtml += `
+                    <tr>
+                        <td style="padding: 5px 0;">
+                            <div style="font-weight: bold;">${item.part_no}</div>
+                            <div style="font-size: 0.8rem; color: #666;">${item.description}</div>
+                        </td>
+                        <td style="text-align: center; padding: 5px 0;">${item.quantity}</td>
+                        <td style="text-align: right; padding: 5px 0;">₱${formatCurrency(item.price)}</td>
+                        <td style="text-align: right; padding: 5px 0; font-weight: bold;">₱${formatCurrency(subtotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const html = `
+                <div style="font-family: 'Courier New', Courier, monospace; color: #000;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h4 style="margin: 0; font-weight: bold;">Roxas City Solid Merchandising</h4>
+                        <p style="margin: 5px 0; font-size: 0.9rem;">Sales Invoice</p>
+                        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px; font-size: 0.9rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>SI NO:</span>
+                            <span style="font-weight: bold;">${data.or_number}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Customer:</span>
+                            <span style="font-weight: bold;">${data.customer_name || '-'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Date:</span>
+                            <span>${data.date}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Payment:</span>
+                            <span style="text-transform: uppercase;">${data.transaction_type}</span>
+                        </div>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 15px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #000; text-align: left;">
+                                <th style="padding-bottom: 5px;">Item</th>
+                                <th style="text-align: center; padding-bottom: 5px;">Qty</th>
+                                <th style="text-align: right; padding-bottom: 5px;">Price</th>
+                                <th style="text-align: right; padding-bottom: 5px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <div style="border-top: 1px dashed #000; padding-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold;">
+                            <span>GRAND TOTAL:</span>
+                            <span>₱${formatCurrency(grandTotal)}</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center; font-size: 0.8rem;">
+                        <p style="margin: 5px 0;">Thank you for your order!</p>
+                        <div style="margin-top: 15px;">
+                            <p style="margin: 0; border-top: 1px solid #000; display: inline-block; padding-top: 5px; width: 150px;">Customer Signature</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#receiptContent').html(html);
+        }
+
+        $('#btnPrintReceipt').on('click', function () {
+            const content = $('#receiptContent').html();
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write('<html><head><title>Print Receipt</title>');
+            printWindow.document.write('<style>body { font-family: "Courier New", Courier, monospace; padding: 20px; } @media print { body { padding: 0; } .no-print { display: none; } }</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(content);
+            printWindow.document.write('<script>window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); };</script>');
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
         });
 
         // PAYMENT LOGIC
@@ -904,13 +1503,13 @@ $(document).ready(function () {
 
                 // If it's from the Aging modal, close it first
                 if ($('#paymentsAgingModal').hasClass('show')) {
-                    $('#paymentsAgingModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('paymentsAgingModal')).hide();
                 }
             } else {
                 return;
             }
 
-            $('#recordPaymentModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('recordPaymentModal')).show();
         });
 
         // Customer Search Autocomplete Logic
@@ -1001,7 +1600,7 @@ $(document).ready(function () {
             btn.prop('disabled', true).text('Recording...');
             $.post('../api/spareparts_inventory.php?action=record_payment', $(this).serialize(), response => {
                 if (response.success) {
-                    $('#recordPaymentModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('recordPaymentModal')).hide();
                     showSuccessModal('Payment recorded successfully.');
 
                     // Reset fields
@@ -1070,7 +1669,7 @@ $(document).ready(function () {
             $('#edit_payment_bank_name').val(p.bank_name || '');
             $('#edit_payment_reference_number').val(p.reference_number || '');
 
-            $('#editPaymentModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editPaymentModal')).show();
         });
 
         $('#editPaymentForm').on('submit', function (e) {
@@ -1080,7 +1679,7 @@ $(document).ready(function () {
 
             $.post('../api/spareparts_inventory.php?action=edit_payment', $(this).serialize(), response => {
                 if (response.success) {
-                    $('#editPaymentModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('editPaymentModal')).hide();
                     showSuccessModal(response.message);
                     loadPayments();
                     if ($('#paymentsAgingModal').hasClass('show')) {
@@ -1237,31 +1836,9 @@ $(document).ready(function () {
                 console.log("Found incoming transfers:", response.count);
                 $('#incoming-badge').text(response.count).removeClass('d-none');
 
-                // Auto-show alert modal on first load if transfers found
+                // Only showing badge here as dashboard modal handles the alert
                 if (!hasShownAlert) {
-                    const modalEl = document.getElementById('incomingTransferAlertModal');
-                    console.log("Checking for alert modal existence:", !!modalEl);
-                    if (modalEl) {
-                        $('#alert-incoming-count').text(response.count);
-                        try {
-                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                                // Cleanup any stale backdrops first
-                                $('.modal-backdrop').remove();
-                                $('body').removeClass('modal-open').css('padding-right', '');
-
-                                const alertModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                                alertModal.show();
-                                hasShownAlert = true;
-                            } else {
-                                $(modalEl).modal('show');
-                                hasShownAlert = true;
-                            }
-                        } catch (err) {
-                            console.error("Modal initiation failed, trying jQuery fallback:", err);
-                            $(modalEl).modal('show');
-                            hasShownAlert = true;
-                        }
-                    }
+                     hasShownAlert = true; // Still mark as alert shown so we don't repeat badge logging
                 }
             } else {
                 $('#incoming-badge').addClass('d-none');
@@ -1272,7 +1849,7 @@ $(document).ready(function () {
     // Modal populate logic for Incoming Transfers
     function loadIncomingTransferDetails() {
         console.log("Loading incoming transfer details...");
-        $('#incomingTransferDetailsBody').html('<tr><td colspan="9" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>');
+        $('#incomingTransferDetailsBody').html('<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>');
 
         $.get('../api/spareparts_inventory.php?action=get_incoming_transfers_detailed', response => {
             console.log("Incoming details response:", response);
@@ -1280,11 +1857,11 @@ $(document).ready(function () {
                 renderIncomingTransferDetails(response.data);
             } else {
                 console.error("Failed to load incoming details:", response.message);
-                $('#incomingTransferDetailsBody').html(`<tr><td colspan="9" class="text-center text-danger py-4">${response.message}</td></tr>`);
+                $('#incomingTransferDetailsBody').html(`<tr><td colspan="8" class="text-center text-danger py-4">${response.message}</td></tr>`);
             }
         }).fail(xhr => {
             console.error("API Error loading incoming details:", xhr.responseText);
-            $('#incomingTransferDetailsBody').html('<tr><td colspan="9" class="text-center text-danger py-4">Error connecting to server.</td></tr>');
+            $('#incomingTransferDetailsBody').html('<tr><td colspan="8" class="text-center text-danger py-4">Error connecting to server.</td></tr>');
         });
     }
 
@@ -1292,31 +1869,62 @@ $(document).ready(function () {
         let html = '';
         if (!data || data.length === 0) {
             html = '<tr><td colspan="8" class="text-center py-4 text-muted">No pending transfers found.</td></tr>';
+            $('#incomingSelectionCount').addClass('d-none');
+            $('#batchAcceptIncomingBtn, #batchRejectIncomingBtn').addClass('d-none');
+            $('#selectAllIncoming').prop('checked', false).prop('disabled', true);
         } else {
+            $('#selectAllIncoming').prop('disabled', false).prop('checked', false);
+            $('#incomingSelectionCount').addClass('d-none');
+            $('#batchAcceptIncomingBtn, #batchRejectIncomingBtn').addClass('d-none');
+            $('#incomingSelectedNum').text('0');
+
             data.forEach(t => {
                 html += `
                     <tr>
-                        <td class="ps-4">
-                            <input type="checkbox" class="form-check-input incoming-checkbox" data-id="${t.id}" data-item-id="${t.item_id}">
+                        <td class="text-center">
+                            <input class="form-check-input incoming-checkbox" type="checkbox" value="${t.id}" data-id="${t.id}">
                         </td>
                         <td><div class="fw-bold text-dark-green">${t.part_no}</div></td>
                         <td>${t.description}</td>
                         <td>${t.brand}</td>
                         <td class="text-center fw-bold">${t.qty}</td>
                         <td class="text-center">${t.transfer_date}</td>
-                        <td class="text-center"><span class="badge bg-light text-dark-green border border-dark-green">${t.from_branch}</span></td>
+                        <td class="text-center"><span class="badge bg-dark-green-light text-dark-green border border-dark-green">${t.from_branch}</span></td>
                         <td class="text-center">
-                            <span class="badge bg-warning text-dark">Pending</span>
+                            <span class="badge bg-secondary text-white">Pending</span>
                         </td>
                     </tr>
                 `;
             });
         }
         $('#incomingTransferDetailsBody').html(html);
-        updateIncomingBatchButtons();
+        attachIncomingCheckboxListeners();
     }
 
-    function updateIncomingBatchButtons() {
+    function attachIncomingCheckboxListeners() {
+        $('#selectAllIncoming').off('change').on('change', function () {
+            const isChecked = $(this).is(':checked');
+            $('.incoming-checkbox').prop('checked', isChecked);
+            updateIncomingSelection();
+        });
+
+        $('.incoming-checkbox').off('change').on('change', function () {
+            const totalCheckboxes = $('.incoming-checkbox').length;
+            const checkedCheckboxes = $('.incoming-checkbox:checked').length;
+            $('#selectAllIncoming').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
+            updateIncomingSelection();
+        });
+
+        $('#batchAcceptIncomingBtn').off('click').on('click', function () {
+            submitBatchIncoming('accept');
+        });
+
+        $('#batchRejectIncomingBtn').off('click').on('click', function () {
+            submitBatchIncoming('reject');
+        });
+    }
+
+    function updateIncomingSelection() {
         const selectedCount = $('.incoming-checkbox:checked').length;
         $('#incomingSelectedNum').text(selectedCount);
 
@@ -1329,48 +1937,49 @@ $(document).ready(function () {
         }
     }
 
-    function updateInventoryBatchButtons() {
-        const selectedCount = $('.inventory-checkbox:checked').length;
-        $('#selectedCount').text(selectedCount);
-        if (selectedCount > 0) {
-            $('#inventoryBatchBar').css('display', 'flex');
-        } else {
-            $('#inventoryBatchBar').css('display', 'none');
-        }
+    function submitBatchIncoming(action) {
+        const selectedIds = [];
+        $('.incoming-checkbox:checked').each(function () {
+            selectedIds.push($(this).val());
+        });
+
+        if (selectedIds.length === 0) return;
+
+        const actionText = action === 'accept' ? 'accept' : 'reject';
+
+        Swal.fire({
+            title: `Are you sure you want to ${actionText} ${selectedIds.length} selected transfer(s)?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: action === 'accept' ? '#26a69a' : '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: `Yes, ${actionText}!`
+        }).then((result) => {
+            if (result.isConfirmed) {
+                executeBatchIncoming(selectedIds, action);
+            }
+        });
     }
 
-    function updateSalesBatchButtons() {
-        const selectedCount = $('.sales-checkbox:checked').length;
-        $('#salesSelectedCount').text(selectedCount);
-        if (selectedCount > 0) {
-            $('#salesBatchBar').css('display', 'flex');
-        } else {
-            $('#salesBatchBar').css('display', 'none');
-        }
+    function executeBatchIncoming(ids, action) {
+        let endpoint = action === 'accept' ? 'batch_receive_transfers' : 'batch_reject_transfers';
+
+        $.post(`../api/spareparts_inventory.php?action=${endpoint}`, { transfer_ids: ids }, response => {
+            if (response.success) {
+                Swal.fire('Success', response.message || `Successfully processed transfers.`, 'success');
+                loadIncomingTransferDetails(); // Refresh list inside modal
+                if (typeof loadIncomingTransfersTable === 'function') {
+                    loadIncomingTransfersTable(); // Refresh the table behind modal if exists
+                }
+                checkIncomingTransfers(); // Update red alert badge
+            } else {
+                Swal.fire('Error', response.message || 'Action failed.', 'error');
+            }
+        }, 'json').fail(xhr => {
+            console.error("Batch processing error:", xhr.responseText);
+            Swal.fire('Error', 'Server processing error.', 'error');
+        });
     }
-
-    // Event listeners for batch selections
-    $(document).on('change', '.inventory-checkbox', updateInventoryBatchButtons);
-    $(document).on('change', '.sales-checkbox', updateSalesBatchButtons);
-    $(document).on('change', '.incoming-checkbox', updateIncomingBatchButtons);
-
-    $('#selectAllInventory').on('change', function () {
-        $('.inventory-checkbox').prop('checked', $(this).is(':checked'));
-        updateInventoryBatchButtons();
-    });
-
-    $('#selectAllSales').on('change', function () {
-        $('.sales-checkbox').prop('checked', $(this).is(':checked'));
-        updateSalesBatchButtons();
-    });
-
-    // Event listeners for incoming transfers
-    $(document).on('change', '.incoming-checkbox', updateIncomingBatchButtons);
-
-    $('#selectAllIncoming').on('change', function () {
-        $('.incoming-checkbox').prop('checked', this.checked);
-        updateIncomingBatchButtons();
-    });
 
     // Global Search (Find Tab)
     $('#searchPartBtn').on('click', function () {
@@ -1465,8 +2074,8 @@ $(document).ready(function () {
     }
 
     $('#viewIncomingFromAlert').on('click', function () {
-        $('#incomingTransferAlertModal').modal('hide');
-        $('#viewIncomingTransferModal').modal('show');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('incomingTransferAlertModal')).hide();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('viewIncomingTransferModal')).show();
         loadIncomingTransferDetails();
     });
 
@@ -1474,7 +2083,7 @@ $(document).ready(function () {
     $('#transfer-in-tab, #incoming-transfer-tab').on('click', function (e) {
         // If it's a link or button that should show the modal
         if ($(this).attr('id') === 'transfer-in-tab' || $(this).attr('id') === 'incoming-transfer-tab') {
-            $('#viewIncomingTransferModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('viewIncomingTransferModal')).show();
             loadIncomingTransferDetails();
         }
     });
@@ -1544,8 +2153,6 @@ $(document).ready(function () {
 
     let currentReportData = [];
     let currentReportSummary = null;
-    let currentReportTitle = '';
-    let lastAction = '';
     let currentMatrixData = null;
     let currentBranches = null;
     let currentParts = null;
@@ -1559,7 +2166,7 @@ $(document).ready(function () {
         $('#reportSummarySidebar').empty();
         $('#reportBrandSummaryArea').empty();
         $('#reportSummaryTabsArea').empty().addClass('d-none');
-        $('#inventoryPreviewModal').modal('show');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('inventoryPreviewModal')).show();
 
         $.post(`../api/spareparts_inventory.php?action=${action}`, data, response => {
             if (response.success) {
@@ -1633,8 +2240,8 @@ $(document).ready(function () {
                     config.formatters = { amount: formatCurrency };
                     break;
                 case 'generate_transfer_report':
-                    config.headers = ['Date', 'Ref #', 'From', 'To', 'Part No', 'Qty', 'Status'];
-                    config.keys = ['transfer_date', 'transfer_number', 'from_branch', 'to_branch', 'part_no', 'quantity', 'status'];
+                    config.headers = ['Date', 'Ref #', 'Transfer No', 'From', 'To', 'Part No', 'Qty', 'Status'];
+                    config.keys = ['transfer_date', 'transfer_number', 'transfer_no', 'from_branch', 'to_branch', 'part_no', 'quantity', 'status'];
                     config.showFooter = false;
                     break;
             }
@@ -2076,6 +2683,11 @@ $(document).ready(function () {
                     eventText = 'Sold';
                     toText = escapeHtml(h.customer_name || 'Customer');
                     break;
+                case 'RETURN':
+                    eventText = 'Returned (CM)';
+                    fromText = escapeHtml(h.customer_name || 'Customer');
+                    toText = escapeHtml(h.from_location || '-'); // usually returned back to branch
+                    break;
                 case 'TRANSFER_IN':
                 case 'TRANSFER_OUT':
                     eventText = 'Transferred';
@@ -2474,6 +3086,9 @@ $(document).ready(function () {
         printWindow.document.close();
     }
 
+    // Expose globally for other scripts (e.g., sales_spareparts.js)
+    window.printIndividualAging = printIndividualAging;
+
     // Placeholder functions to prevent errors during Phase 1
     function loadDashboardStats() {
         $('#dashboard-loader').removeClass('d-none');
@@ -2492,73 +3107,155 @@ $(document).ready(function () {
         });
     }
 
+    // ——— INVENTORY PAGINATION —————————————————————————————————————————————————
+    let inventoryCurrentPage = 1;
+    let inventoryFilteredData = [];
+
     function loadInventory() {
         loadApiData('get_inventory_list', data => {
             inventoryData = data;
-            renderInventory(data);
+            inventoryFilteredData = data;
+            inventoryCurrentPage = 1;
+            renderInventory();
         }, 'inventoryTableBody');
     }
 
-    function renderInventory(data) {
+    function applyInventorySearch(query) {
+        const q = query.trim().toLowerCase();
+        if (!q) {
+            inventoryFilteredData = inventoryData;
+        } else {
+            inventoryFilteredData = inventoryData.filter(item =>
+                (item.part_no || '').toLowerCase().includes(q) ||
+                (item.description || '').toLowerCase().includes(q) ||
+                (item.brand || '').toLowerCase().includes(q) ||
+                (item.bin_location || '').toLowerCase().includes(q)
+            );
+        }
+        inventoryCurrentPage = 1;
+        renderInventory();
+    }
+
+    // Wire up the search input (live, debounced)
+    let inventorySearchTimer;
+    $(document).on('input', '#inventorySearch', function () {
+        clearTimeout(inventorySearchTimer);
+        inventorySearchTimer = setTimeout(() => applyInventorySearch($(this).val()), 280);
+    });
+
+    function renderInventory() {
         const tbody = $('#inventoryTableBody');
         tbody.empty();
 
+        const data = inventoryFilteredData;
+
         if (!data || data.length === 0) {
-            tbody.html('<tr><td colspan="10" class="text-center text-muted py-4">No inventory items found.</td></tr>');
+            tbody.html('<tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2"></i>No inventory items found.</td></tr>');
+            if ($('#inventoryPageInfo').length) renderPagination('inventoryPagination', 'inventoryPageInfo', 0, 1, () => { });
             return;
         }
 
-        data.forEach(item => {
+        const totalItems = data.length;
+        const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+        if (inventoryCurrentPage > totalPages) inventoryCurrentPage = totalPages;
+
+        const startIdx = (inventoryCurrentPage - 1) * PAGE_SIZE;
+        const endIdx = Math.min(startIdx + PAGE_SIZE, totalItems);
+        const pageData = data.slice(startIdx, endIdx);
+
+        // Render rows
+        pageData.forEach(item => {
             const stockLevel = Number(item.current_stock);
             const minStock = Number(item.min_stock || 0);
-            const stockClass = stockLevel <= minStock ? 'text-danger fw-bold' : '';
-            const statusBadge = stockLevel <= minStock ? '<span class="badge bg-danger">Low Stock</span>' : '<span class="badge bg-success">In Stock</span>';
-            const totalValue = stockLevel * Number(item.cost);
+            const isLowStock = stockLevel <= minStock;
+            const stockClass = isLowStock ? 'text-danger fw-bold' : 'fw-bold text-dark';
+            const statusBadge = isLowStock
+                ? '<span class="badge rounded-pill bg-danger">Low Stock</span>'
+                : '<span class="badge rounded-pill bg-primary">In Stock</span>';
+            const totalValue = formatCurrency(stockLevel * Number(item.cost || 0));
+            const isBranchPage = window.isBranchPage === true;
 
-            tbody.append(`
-            <tr class="align-middle">
-                ${window.isBranchPage ? `
-                <td class="text-center">
-                    <input type="checkbox" class="form-check-input inventory-checkbox" data-id="${item.id}">
-                </td>` : ''}
-                <td><span class="badge bg-light text-dark border">${escapeHtml(item.brand)}</span></td>
-                <td><div class="fw-bold">${escapeHtml(item.part_no)}</div></td>
-                <td>${escapeHtml(item.description)}</td>
-                ${!isBranchPage ? `<td class="text-center"><span class="badge bg-secondary">${escapeHtml(item.current_branch)}</span></td>` : ''}
-                <td class="text-center ${stockClass}">${stockLevel}</td>
-                <td class="text-end ">${formatCurrency(item.cost)}</td>
-                <td class="text-end fw-bold text-success ">${formatCurrency(item.price)}</td>
-                <td class="text-end ">${formatCurrency(totalValue)}</td>
-                <td class="text-center">${statusBadge}</td>
-                <td class="text-center">
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-outline-primary edit-part-btn" data-id="${item.id}" title="Edit Part">
-                            <i class="bi bi-pencil"></i>
+            const branchCol = !isBranchPage
+                ? '<td class="text-center py-3"><span class="badge bg-light text-dark border fw-semibold px-2 py-1" style="font-size:0.75rem;"><i class="bi bi-building me-1 text-primary" style="font-size:0.7rem;"></i>' + escapeHtml(item.current_branch || 'N/A') + '</span></td>'
+                : '<td class="text-center py-3"><span class="badge bg-light text-dark border fw-semibold px-2 py-1" style="font-size:0.75rem;"><i class="bi bi-geo-alt-fill me-1 text-primary" style="font-size:0.7rem;"></i>' + escapeHtml(item.bin_location || 'N/A') + '</span></td>';
+
+            const totalValueCol = !isBranchPage
+                ? '<td class="text-end py-3 fw-bold text-success" style="font-size:0.875rem;">' + totalValue + '</td>'
+                : '';
+
+            const deleteBtn = canDelete
+                ? '<button class="btn btn-sm delete-part-btn border-start" data-id="' + item.id + '" title="Delete" style="background:#fff;"><i class="bi bi-trash text-danger"></i></button>'
+                : '';
+
+            let rowHtml = `
+            <tr class="align-middle border-bottom">
+                <td class="ps-4 py-3">
+                    <div class="fw-bold text-dark" style="font-size:0.875rem;">${escapeHtml(item.part_no)}</div>
+                    <div class="small text-muted">${escapeHtml(item.brand)}</div>
+                </td>
+                <td class="py-3" style="max-width: 260px;">
+                    <div class="small text-dark" style="line-height:1.4;">${escapeHtml(item.description)}</div>
+                </td>
+                ${branchCol}
+                <td class="text-center py-3">
+                    <span class="${stockClass}" style="font-size:1rem;">${stockLevel}</span>
+                </td>
+                <td class="text-end py-3 text-muted" style="font-size:0.875rem;">${formatCurrency(item.cost)}</td>
+                <td class="text-end py-3 fw-bold text-primary" style="font-size:0.875rem;">${formatCurrency(item.price)}</td>
+                ${totalValueCol}
+                <td class="text-center py-3">${statusBadge}</td>
+                <td class="text-center pe-4 py-3">
+                    <div class="btn-group border rounded overflow-hidden" style="box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+                        <button class="btn btn-sm show-stock-card-btn" data-part-no="${item.part_no}" data-branch="${item.current_branch}" title="Stock Card" style="background:#fff;">
+                            <i class="bi bi-card-list text-primary"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-info view-history-btn" data-id="${item.id}" title="View History">
-                            <i class="bi bi-clock-history"></i>
+                        <button class="btn btn-sm edit-part-btn border-start" data-id="${item.id}" title="Edit Part" style="background:#fff;">
+                            <i class="bi bi-pencil text-secondary"></i>
                         </button>
-                        ${canDelete ? `
-                        <button class="btn btn-sm btn-outline-danger delete-part-btn" data-id="${item.id}" title="Delete Part">
-                            <i class="bi bi-trash"></i>
-                        </button>` : ''}
+                        ${deleteBtn}
                     </div>
                 </td>
-            </tr>
-            `);
+            </tr>`;
+            tbody.append(rowHtml);
         });
-        updateInventoryBatchButtons();
+
+        if ($('#inventoryPageInfo').length) {
+            renderPagination('inventoryPagination', 'inventoryPageInfo', totalItems, inventoryCurrentPage, (pg) => {
+                inventoryCurrentPage = pg;
+                renderInventory();
+                document.getElementById('inventoryTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
     }
 
-    function loadSales() {
+    // ——————————————————————————————————————————————————————————————————————————
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+    window.loadSales = function () {
+        const branch = $('#salesFilterBranch').val() || 'all';
+        const dateFrom = $('#salesFilterDateFrom').val() || '';
+        const dateTo = $('#salesFilterDateTo').val() || '';
+
+        const filterParams = {
+            branch: branch,
+            date_from: dateFrom,
+            date_to: dateTo
+        };
+
         loadApiData('get_sales_list', data => {
             salesData = data;
             renderSales(data);
-        }, 'salesTableBody');
+        }, 'salesTableBody', filterParams);
     }
+
+    let salesCurrentPage = 1;
+    let salesFilteredData = [];
+    let salesCurrentTypeFilter = 'all';
 
     function renderSales(data, typeFilter = 'all') {
         salesData = data;
+        salesCurrentTypeFilter = typeFilter;
         const tbody = $('#salesTableBody');
         tbody.empty();
 
@@ -2566,13 +3263,18 @@ $(document).ready(function () {
         if (typeFilter !== 'all') {
             filtered = data.filter(s => s.transaction_type && s.transaction_type.toLowerCase() === typeFilter.toLowerCase());
         }
+        salesFilteredData = filtered;
 
         if (!filtered || filtered.length === 0) {
-            tbody.html('<tr><td colspan="8" class="text-center text-muted py-4">No sales records found.</td></tr>');
+            tbody.html('<tr><td colspan="10" class="text-center text-muted py-4">No sales records found.</td></tr>');
+            if ($('#salesPageInfo').length) renderPagination('salesPagination', 'salesPageInfo', 0, 1, () => { });
             return;
         }
 
-        filtered.forEach(s => {
+        const page = salesCurrentPage;
+        const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+        paged.forEach(s => {
             const typeBadge = s.transaction_type === 'charge' ? 'bg-info text-dark' : 'bg-success text-white';
             const balanceVal = Number(s.balance || 0);
             const balanceText = s.transaction_type === 'charge' ? formatCurrency(balanceVal) : '-';
@@ -2586,10 +3288,11 @@ $(document).ready(function () {
                 <td><div class="fw-bold">${s.sale_date}</div></td>
                 ${!isBranchPage ? `<td><span class="badge bg-light text-dark border">${escapeHtml(s.from_location)}</span></td>` : ''}
                 <td><div class="fw-bold">${escapeHtml(s.customer_name)}</div></td>
-                <td><div class="small text-muted ">${escapeHtml(s.or_number)}</div></td>
+                <td><div class="small text-muted">${escapeHtml(s.or_number)}</div></td>
+                <td><div class="small text-muted">${escapeHtml(s.sales_force || 'N/A')}</div></td>
                 <td class="text-end fw-bold">${formatCurrency(s.total_amount)}</td>
                 <td class="text-center"><span class="badge ${typeBadge}">${escapeHtml(s.transaction_type.toUpperCase())}</span></td>
-                <td class="text-end  ${balanceVal > 0 ? 'text-danger' : ''}">${balanceText}</td>
+                <td class="text-end ${balanceVal > 0 ? 'text-danger' : ''}">${balanceText}</td>
                 <td class="text-center">
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-primary view-sale-btn" data-id="${s.id}" data-or="${s.or_number}" data-branch="${s.from_location}" title="View Sale">
@@ -2607,33 +3310,48 @@ $(document).ready(function () {
             </tr>
             `);
         });
-        updateSalesBatchButtons();
+
+        if ($('#salesPageInfo').length) {
+            renderPagination('salesPagination', 'salesPageInfo', filtered.length, page, (pg) => {
+                salesCurrentPage = pg;
+                renderSales(salesData, salesCurrentTypeFilter);
+                document.getElementById('salesTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
     }
 
-    function loadPayments() {
+    window.loadPayments = function () {
         loadApiData('get_payments_list', data => {
             paymentsData = data;
             renderPayments(data);
         }, 'paymentsTableBody');
     }
 
+    let paymentsCurrentPage = 1;
+    let paymentsAllData = [];
+
     function renderPayments(data) {
         const tbody = $('#paymentsTableBody');
         tbody.empty();
+        paymentsAllData = data || [];
 
         if (!data || data.length === 0) {
             tbody.html('<tr><td colspan="6" class="text-center text-muted py-4">No payment records found.</td></tr>');
+            if ($('#paymentsPageInfo').length) renderPagination('paymentsPagination', 'paymentsPageInfo', 0, 1, () => { });
             return;
         }
 
-        data.forEach(p => {
+        const page = paymentsCurrentPage;
+        const paged = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+        paged.forEach(p => {
             tbody.append(`
             <tr class="align-middle">
                 <td><div class="fw-bold">${p.transaction_date}</div></td>
                 ${!isBranchPage ? `<td><span class="badge bg-secondary">${escapeHtml(p.from_location)}</span></td>` : ''}
                 <td><div class="fw-bold">${escapeHtml(p.customer_name)}</div></td>
-                <td class="text-end fw-bold text-success">₱${formatCurrency(p.amount)}</td>
-                <td class="text-center"><span class="badge bg-light text-dark border ">${escapeHtml(p.or_number)}</span></td>
+                <td class="text-end fw-bold text-success">&#8369;${formatCurrency(p.amount)}</td>
+                <td class="text-center"><span class="badge bg-light text-dark border">${escapeHtml(p.or_number)}</span></td>
                 <td class="text-center">
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-warning edit-payment-btn" data-id="${p.id}" title="Edit Payment">
@@ -2651,6 +3369,14 @@ $(document).ready(function () {
             </tr>
             `);
         });
+
+        if ($('#paymentsPageInfo').length) {
+            renderPagination('paymentsPagination', 'paymentsPageInfo', data.length, page, (pg) => {
+                paymentsCurrentPage = pg;
+                renderPayments(paymentsAllData);
+                document.getElementById('paymentsTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
     }
 
     function loadAging() {
@@ -2755,7 +3481,9 @@ $(document).ready(function () {
                 } else {
                     response.data.forEach(l => {
                         const balanceClass = l.balance > 0 ? 'text-danger fw-bold' : 'text-success fw-bold';
-                        const typeIcon = l.type === 'OUT' ? '<i class="bi bi-cart me-2 text-primary"></i>' : '<i class="bi bi-cash-coin me-2 text-success"></i>';
+                        let typeIcon = '<i class="bi bi-cash-coin me-2 text-success"></i>';
+                        if (l.type === 'OUT') typeIcon = '<i class="bi bi-cart me-2 text-primary"></i>';
+                        else if (l.type === 'RETURN') typeIcon = '<i class="bi bi-arrow-return-left me-2 text-danger"></i>';
                         html += `
                             <tr>
                                 <td>${l.date}</td>
@@ -2781,9 +3509,25 @@ $(document).ready(function () {
         }, 'transfersTableBody');
     }
 
+    let transfersCurrentPage = 1;
+    let transfersAllData = [];
+
     function renderTransfers(transfers) {
+        transfersAllData = transfers || [];
         let html = '';
-        transfers.forEach(t => {
+        const showFromBranch = $('#transfersTable thead th').length >= 6;
+        const colCount = $('#transfersTable thead th').length || 6;
+
+        if (!transfers || transfers.length === 0) {
+            $('#transfersTableBody').html(`<tr><td colspan="${colCount}" class="text-center text-muted py-4">No outgoing transfers found.</td></tr>`);
+            if ($('#transfersPageInfo').length) renderPagination('transfersPagination', 'transfersPageInfo', 0, 1, () => { });
+            return;
+        }
+
+        const page = transfersCurrentPage;
+        const paged = transfers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+        paged.forEach(t => {
             let statusBadge = '';
             switch (t.status) {
                 case 'Completed': statusBadge = '<span class="badge bg-dark-green text-white">Completed</span>'; break;
@@ -2794,9 +3538,12 @@ $(document).ready(function () {
 
             html += `
                 <tr class="align-middle">
-                    <td><div class="fw-bold">${t.transfer_date}</div></td>
+                    <td>
+                        <div class="fw-bold">${t.transfer_date}</div>
+                        ${t.transfer_no ? `<div class="small text-primary fw-bold" style="font-size:0.75rem">${t.transfer_no}</div>` : ''}
+                    </td>
                     <td class="text-center"><span class="badge bg-light text-dark border px-3">${t.item_count} Items</span></td>
-                    <td><span class="badge bg-light text-dark-green border border-dark-green">${escapeHtml(t.from_branch)}</span></td>
+                    ${showFromBranch ? `<td><span class="badge bg-light text-dark-green border border-dark-green">${escapeHtml(t.from_branch)}</span></td>` : ''}
                     <td><span class="badge bg-light text-dark-green border border-dark-green">${escapeHtml(t.to_branch)}</span></td>
                     <td class="text-center">${statusBadge}</td>
                     <td class="text-center">
@@ -2807,17 +3554,21 @@ $(document).ready(function () {
                         <button class="btn btn-sm btn-outline-danger cancel-transfer-btn" data-id="${t.id}" title="Cancel Transfer">
                             <i class="bi bi-x-circle"></i>
                         </button>` : ''}
-                    </div>
-                </td>
-            </tr>
+                    </td>
+                </tr>
             `;
         });
-        $('#transfersTableBody').html(html || '<tr><td colspan="6" class="text-center text-muted py-4">No outgoing transfers found.</td></tr>');
+        $('#transfersTableBody').html(html);
 
-        // Add Listener
-        $('.view-transfer-btn').off('click').on('click', function () {
-            loadTransferDetails($(this).data('id'));
-        });
+        if ($('#transfersPageInfo').length) {
+            renderPagination('transfersPagination', 'transfersPageInfo', transfers.length, page, (pg) => {
+                transfersCurrentPage = pg;
+                renderTransfers(transfersAllData);
+                document.getElementById('transfersTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // Listeners for view-transfer-btn are handled via the global delegated listener at line 935
     }
 
     function loadIncomingTransfers() {
@@ -2826,9 +3577,23 @@ $(document).ready(function () {
         }, 'incomingTransfersTableBody');
     }
 
+    let incomingTransfersCurrentPage = 1;
+    let incomingTransfersAllData = [];
+
     function renderIncomingTransfers(transfers) {
+        incomingTransfersAllData = transfers || [];
         let html = '';
-        transfers.forEach(t => {
+
+        if (!transfers || transfers.length === 0) {
+            $('#incomingTransfersTableBody').html('<tr><td colspan="5" class="text-center py-4 text-muted">No pending transfers found.</td></tr>');
+            if ($('#incomingTransfersPageInfo').length) renderPagination('incomingTransfersPagination', 'incomingTransfersPageInfo', 0, 1, () => { });
+            return;
+        }
+
+        const page = incomingTransfersCurrentPage;
+        const paged = transfers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+        paged.forEach(t => {
             let statusBadge = '';
             switch (t.status) {
                 case 'Completed': statusBadge = '<span class="badge bg-success text-white">Completed</span>'; break;
@@ -2839,7 +3604,10 @@ $(document).ready(function () {
 
             html += `
                 <tr class="align-middle">
-                    <td><div class="fw-bold">${t.transfer_date}</div></td>
+                    <td>
+                        <div class="fw-bold">${t.transfer_date}</div>
+                        ${t.transfer_no ? `<div class="small text-primary fw-bold" style="font-size:0.75rem">${t.transfer_no}</div>` : ''}
+                    </td>
                     <td class="text-center"><span class="badge bg-light text-dark border px-3">${t.item_count || 0} Items</span></td>
                     <td><span class="badge bg-light text-success border border-success">${escapeHtml(t.from_branch)}</span></td>
                     <td class="text-center">${statusBadge}</td>
@@ -2849,7 +3617,15 @@ $(document).ready(function () {
                 </tr>
             `;
         });
-        $('#incomingTransfersTableBody').html(html || '<tr><td colspan="5" class="text-center py-4 text-muted">No pending transfers found.</td></tr>');
+        $('#incomingTransfersTableBody').html(html);
+
+        if ($('#incomingTransfersPageInfo').length) {
+            renderPagination('incomingTransfersPagination', 'incomingTransfersPageInfo', transfers.length, page, (pg) => {
+                incomingTransfersCurrentPage = pg;
+                renderIncomingTransfers(incomingTransfersAllData);
+                document.getElementById('incomingTransfersTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
     }
 
     function loadGlobalTransfers() {
@@ -2857,13 +3633,6 @@ $(document).ready(function () {
             globalTransfersData = data;
             renderGlobalTransfers(data);
         });
-    }
-
-    function loadActivityLog() {
-        loadApiData('get_activity_log', data => {
-            activityLogData = data;
-            renderActivityLog(data);
-        }, 'activityLogTableBody');
     }
 
     function renderGlobalTransfers(data) {
@@ -2881,7 +3650,10 @@ $(document).ready(function () {
             <div class="card mb-3 border-start border-4 ${borderColor} shadow-sm">
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold text-dark-green">REF #${t.id}</span>
+                        <div>
+                            <span class="fw-bold text-dark-green">REF #${t.id}</span>
+                            ${t.transfer_no ? `<span class="ms-2 badge bg-primary small fw-normal" style="font-size: 0.65rem;">${t.transfer_no}</span>` : ''}
+                        </div>
                         <span class="small text-muted"><i class="bi bi-calendar-event me-1"></i>${t.transfer_date}</span>
                     </div>
                     <div class="mb-2">
@@ -2893,7 +3665,7 @@ $(document).ready(function () {
                         </div>
                     </div>
                     <div class="d-flex justify-content-between align-items-end">
-                        <div class="small fw-bold text-uppercase text-muted" style="font-size: 0.7rem;">Items : <span class="badge bg-light text-dark border">${t.item_count}</span></div>
+                        <div class="small fw-bold text-uppercase text-muted" style="font-size: 0.7rem;">Items : <span class="badge bg-light text-dark border">${t.item_count || 0}</span></div>
                         <button class="btn btn-sm btn-link text-decoration-none p-0 text-dark-green fw-bold view-global-transfer-btn" data-id="${t.id}">
                             Details <i class="bi bi-chevron-right"></i>
                         </button>
@@ -2907,97 +3679,10 @@ $(document).ready(function () {
         $('#count-completed').text(data.filter(t => t.status === 'Completed').length);
         $('#count-rejected').text(data.filter(t => t.status === 'Rejected').length);
 
-        // Add Listener
-        $('.view-global-transfer-btn').off('click').on('click', function () {
-            loadTransferDetails($(this).data('id'));
-        });
+        // Listener for view-global-transfer-btn is already handled by the global delegated listener at line 903
     }
 
-    function loadTransferDetails(transactionId) {
-        const modal = new bootstrap.Modal(document.getElementById('viewTransferDetailsModal'));
-        const body = $('#transferDetailsBody');
 
-        body.html('<div class="text-center p-5"><div class="spinner-border text-dark-green"></div><p class="mt-2">Loading details...</p></div>');
-        modal.show();
-
-        loadApiData('get_transfer_details&id=' + transactionId, data => {
-            if (!data || data.length === 0) {
-                body.html('<div class="alert alert-warning">No items found for this transfer.</div>');
-                return;
-            }
-
-            const info = data[0];
-            let statusClass = 'bg-warning';
-            if (info.status === 'Completed') statusClass = 'bg-dark-green';
-            if (info.status === 'Rejected') statusClass = 'bg-danger';
-
-            let html = `
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light rounded-3">
-                            <div class="small text-muted text-uppercase fw-bold mb-1">Origin Branch</div>
-                            <div class="fw-bold fs-5 text-dark-green">${info.from_branch}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light rounded-3 h-100">
-                            <div class="small text-muted text-uppercase fw-bold mb-1">Destination Branch</div>
-                            <div class="fw-bold fs-5 text-dark-green">${info.to_branch}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">ITEMS LIST</h6>
-                    <span class="badge ${statusClass} px-3 py-2 text-white">${info.status}</span>
-                </div>
-                
-                <div class="table-responsive border rounded">
-                    <table class="table table-hover table-sm mb-0">
-                        <thead class="bg-dark-green text-white">
-                            <tr>
-                                <th class="ps-3 py-2 text-white">Part Details</th>
-                                <th class="text-center py-2 text-white">Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            data.forEach(item => {
-                html += `
-                    <tr>
-                        <td class="ps-3">
-                            <div class="fw-bold">${item.part_no}</div>
-                            <div class="small text-muted">${item.description} | ${item.brand}</div>
-                        </td>
-                        <td class="text-center fw-bold fs-6">${item.qty}</td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            body.html(html);
-
-            // Handle Buttons based on status and branch
-            const rejectBtn = $('#rejectTransferBtn');
-            const receiveBtn = $('#confirmReceiveBtn');
-
-            rejectBtn.addClass('d-none');
-            receiveBtn.addClass('d-none');
-
-            // If user is at destination branch and status is In-Transit, show receive/reject
-            // (Note: in HO we might just want to view, but if it's HO's transfer, they can receive)
-            if (info.status === 'In-Transit' && info.to_branch === window.currentBranch) {
-                rejectBtn.removeClass('d-none');
-                receiveBtn.removeClass('d-none');
-            }
-        });
-    }
 
     // Global Transfers search
     $('#globalTransfersSearch').on('keyup', function () {
@@ -3013,6 +3698,11 @@ $(document).ready(function () {
             );
             renderGlobalTransfers(filtered);
         }
+    });
+
+    // Global Transfers search button
+    $('#globalTransfersSearchBtn').on('click', function () {
+        $('#globalTransfersSearch').trigger('keyup');
     });
 
     // Global Transfers refresh btn
@@ -3034,26 +3724,31 @@ $(document).ready(function () {
         tbody.empty();
 
         if (!data || data.length === 0) {
-            tbody.html('<tr><td colspan="5" class="text-center text-muted py-4">No activity logs found.</td></tr>');
+            tbody.html('<tr><td colspan="5" class="text-center text-muted py-4">No spareparts activity logs found.</td></tr>');
             return;
         }
 
         data.forEach(log => {
             let actionBadge = '';
-            switch (log.action_type.toLowerCase()) {
+            const actionType = (log.action_type || '').toLowerCase();
+            switch (actionType) {
                 case 'insert': actionBadge = '<span class="badge bg-success">CREATE</span>'; break;
                 case 'update': actionBadge = '<span class="badge bg-primary">UPDATE</span>'; break;
                 case 'delete': actionBadge = '<span class="badge bg-danger">DELETE</span>'; break;
-                default: actionBadge = `<span class="badge bg-secondary">${log.action_type}</span>`;
+                default: actionBadge = `<span class="badge bg-secondary">${escapeHtml(log.action_type || 'â€“')}</span>`;
             }
+
+            // Handle both action_timestamp and created_at column names
+            const ts = log.action_timestamp || log.created_at || '';
+            const table = (log.table_name || '').replace('spareparts_', '');
 
             tbody.append(`
             <tr class="align-middle">
-                <td><div class="small fw-bold">${formatDateTime(log.action_timestamp)}</div></td>
-                <td><span class="badge bg-light text-dark border">${escapeHtml(log.username)}</span></td>
+                <td><div class="small fw-bold">${ts ? formatDateTime(ts) : 'â€“'}</div></td>
+                <td><span class="badge bg-light text-dark border">${escapeHtml(log.username || 'â€“')}</span></td>
                 <td class="text-center">${actionBadge}</td>
-                <td><div class="small fw-bold text-muted text-uppercase">${escapeHtml(log.table_name.replace('spareparts_', ''))}</div></td>
-                <td><div class="small">${escapeHtml(log.action_details)}</div></td>
+                <td><div class="small fw-bold text-muted text-uppercase">${escapeHtml(table)}</div></td>
+                <td><div class="small">${escapeHtml(log.action_details || log.details || 'â€“')}</div></td>
             </tr>
             `);
         });
@@ -3073,12 +3768,16 @@ $(document).ready(function () {
 
         $('#saleDetailsContent').html(`
             <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="text-muted small text-uppercase fw-bold">Customer</div>
                 <div class="fs-5 fw-bold">${escapeHtml(data.customer_name)}</div>
-                <div class="text-muted small mt-1">OR #: <span class="">${escapeHtml(data.or_number)}</span></div>
+                <div class="text-muted small mt-1">SI #: <span class="fw-bold fs-6">${escapeHtml(data.or_number)}</span></div>
             </div>
-            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+            <div class="col-md-4">
+                <div class="text-muted small text-uppercase fw-bold">Sales Force</div>
+                <div class="fs-5 fw-bold text-success"><i class="bi bi-person-badge me-2"></i>${escapeHtml(data.sales_force || 'N/A')}</div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <div class="text-muted small text-uppercase fw-bold">Transaction Details</div>
                 <div>Date: <strong>${data.sale_date}</strong></div>
                 <div>Type: <span class="badge ${data.transaction_type === 'charge' ? 'bg-info text-dark' : 'bg-success'}">${data.transaction_type.toUpperCase()}</span></div>
@@ -3306,8 +4005,157 @@ $(document).ready(function () {
         printWindow.document.close();
     }
 
+    function applyRoleRestrictions() {
+        if (typeof window.userRole === 'undefined') return;
+
+        const role = window.userRole;
+        const filter = window.filterType;
+
+        // Role-based Tab Visibility
+        if (role === 'Spareparts-Warehouse') {
+            $('#sales-tab, #payments-tab, #dashboard-tab').hide();
+            // Default to inventory if not specified
+            if (!$('.nav-link.active').is(':visible')) {
+                $('#inventory-tab').tab('show');
+            }
+        } else if (role === 'Spareparts-Retail') {
+            // Restrict Sales to Cash Only
+            if (filter === 'cash') {
+                $('#charge-sales-tab, #all-sales-tab').hide();
+                $('#cash-sales-tab').tab('show');
+                // Hide components that might allow switching or seeing charge sales
+                $('.col-balance').hide(); // Hide balance column
+            }
+        } else if (role === 'Spareparts-Admin' || role === 'Spareparts-Owner') {
+            // These roles have full visibility in this module
+            $('#inventory-tab, #sales-tab, #payments-tab, #dashboard-tab, #global-transfer-tab, #activity-log-tab').show();
+        } else if (role === 'Spareparts-Sales') {
+            // Sales role can see everything but maybe we want to hide certain admin things
+        }
+
+        // Handle specific landing tab from URL query parameter or hash
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (tabParam) {
+            const tabEl = $(`#${tabParam}-tab`);
+            if (tabEl.length) {
+                tabEl.tab('show');
+                // Ensure data loads if shown.bs.tab wasn't bound early enough
+                setTimeout(() => { tabEl.trigger('shown.bs.tab'); }, 100);
+            }
+        } else {
+            const hash = window.location.hash;
+            if (hash) {
+                $(`.nav-link[data-bs-target="${hash}"]`).tab('show');
+            }
+        }
+    }
+
     // Initial Load
-    loadDashboardStats();
-    loadInventory(); // Always load inventory (API handles filtering)
+    applyRoleRestrictions();
     setupEventListeners();
+
+    // Contextual Initial Load — determine which tab is active (server-side or default)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    const activeTabOnLoad = tabParam || ($('.nav-link.active[data-bs-toggle="tab"]').attr('data-bs-target') || '#dashboard').replace('#', '');
+
+    // Always load dashboard stats if the element exists (lightweight)
+    if ($('#dashboard-stats-container').length || $('.stat-card').length) loadDashboardStats();
+
+    // Load data for whichever tab is active on page load
+    switch (activeTabOnLoad) {
+        case 'inventory': if ($('#inventoryTableBody').length) loadInventory(); break;
+        case 'sales': if ($('#salesTableBody').length) loadSales(); break;
+        case 'payments': if ($('#paymentsTableBody').length) loadPayments(); break;
+        case 'transfers':
+        case 'sub-transfer-out':
+        case 'transfer-out': if ($('#transfersTableBody').length) loadTransfers(); break;
+        case 'transfers-in':
+        case 'sub-transfer-in':
+        case 'transfer-in': if ($('#incomingTransfersTableBody').length) loadIncomingTransfers(); break;
+        case 'global-transfer': if ($('#global-transfer-tab').length || $('#global-transfer').length) loadGlobalTransfers(); break;
+        case 'activityLog':
+        case 'activity-log': if ($('#activityLogTableBody').length) loadActivityLog(); break;
+        default: /* dashboard — stats already loaded above */ break;
+    }
+
+    // For non-admin/branch pages (older modules without the tabbed dashboard), load all relevant data upfront
+    if (!$('#dashboard-tab').length && !tabParam && !$('.nav-tabs').length) {
+        if ($('#inventoryTableBody').length) loadInventory();
+        if ($('#transfersTableBody').length) loadTransfers();
+        if ($('#incomingTransfersTableBody').length) loadIncomingTransfers();
+        if ($('#salesTableBody').length) loadSales();
+        if ($('#paymentsTableBody').length) loadPayments();
+    }
+
+    if ($('#returnsTableBody').length && typeof loadReturns === 'function') loadReturns();
+    if ($('#pricelistsTableBody').length) typeof loadPricelistsTable === 'function' && loadPricelistsTable();
+    if ($('#employeesTableBody').length) typeof loadEmployeesTable === 'function' && loadEmployeesTable();
+
+    // Audit Log CSV export
+    $(document).on('click', '#exportAuditLogBtn', function () {
+        loadApiData('get_activity_log', function (data) {
+            if (!data || data.length === 0) { showErrorModal('No audit log data to export.'); return; }
+            const headers = ['Timestamp', 'Username', 'Action', 'Record ID', 'Details'];
+            const rows = data.map(r => [
+                `"${r.created_at || ''}"`,
+                `"${r.username || ''}"`,
+                `"${r.action || ''}"`,
+                `"${r.record_id || ''}"`,
+                `"${(r.details || '').replace(/"/g, '""')}"`
+            ].join(','));
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    });
+
+    // If filterType is cash, ensure sales are loaded as cash only
+    if (window.filterType === 'cash') {
+        setTimeout(() => {
+            if ($('#cash-sales-tab').length) $('#cash-sales-tab').trigger('click');
+        }, 500);
+    }
 });
+
+// Global Utility Functions (Now using SweetAlert2)
+window.showSuccessModal = function (message) {
+    Swal.fire({
+        title: 'Success',
+        text: message,
+        icon: 'success',
+        confirmButtonText: 'OK'
+    });
+};
+
+window.showErrorModal = function (message) {
+    Swal.fire({
+        title: 'Error',
+        text: message,
+        icon: 'error',
+        confirmButtonText: 'OK'
+    });
+};
+
+window.showConfirmModal = function (message, onConfirm) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: message,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#7367f0', // Premium Purple
+        cancelButtonColor: '#ff4d4f',
+        confirmButtonText: 'Yes, proceed',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            if (typeof onConfirm === 'function') onConfirm();
+        }
+    });
+};

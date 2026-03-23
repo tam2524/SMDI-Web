@@ -48,17 +48,22 @@ if ($result->num_rows > 0) {
                 header("Location: ../inventory/admin_inventory.php");
                 // header("Location: ../under_repair.html");
                 break;
-            case 'Spareparts':
-                header("Location: ../spareparts/headoffice_spareparts.php");
+            case 'Spareparts-Warehouse':
+                header("Location: ../spareparts/warehouse_dashboard.php");
                 break;
-            case 'Admin Spareparts':
-                header("Location: ../spareparts/admin_spareparts.php");
+            case 'Spareparts-Sales':
+                header("Location: ../spareparts/sales_dashboard.php");
                 break;
-            case 'Spareparts-Branch':
-                header("Location: ../spareparts/branch_spareparts.php");
+            case 'Spareparts-Retail':
+                header("Location: ../spareparts/retail_dashboard.php");
+                break;
+            case 'Spareparts-Owner':
+                header("Location: ../spareparts/owner_dashboard.php");
+                break;
+            case 'Spareparts-Admin':
+                header("Location: ../spareparts/admin_dashboard.php");
                 break;
             case 'Disable':
-                // header("Location: ../inventory/headoffice_inventory.php");
                 header("Location: ../under_repair.html");
                 break;
             default:
@@ -67,13 +72,15 @@ if ($result->num_rows > 0) {
                 break;
         }
         exit();
-    } else {
+    }
+    else {
         echo '<script>
             alert("Invalid password");
             window.location.href = "../login.html";
         </script>';
     }
-} else {
+}
+else {
     echo '<script>
         alert("User not found");
         window.location.href = "../login.html";

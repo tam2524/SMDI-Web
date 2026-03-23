@@ -1,0 +1,129 @@
+/* Dashboard Box Menus */
+.dashboard-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0, 77, 64, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    cursor: pointer;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none !important;
+    color: inherit;
+}
+
+.dashboard-box:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #004d40;
+}
+
+.dashboard-box i {
+    font-size: 2.5rem;
+    color: #004d40;
+    margin-bottom: 15px;
+    transition: transform 0.3s ease;
+}
+
+.dashboard-box:hover i {
+    transform: scale(1.1);
+}
+
+.dashboard-box .box-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 5px;
+}
+
+.dashboard-box .box-desc {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Sidebar Summary Widgets */
+.summary-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border-left: 5px solid #004d40;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.summary-header {
+    background: #004d40;
+    color: #ffffff;
+    padding: 12px 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-body {
+    padding: 20px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-size: 0.85rem;
+    color: #555;
+    font-weight: 500;
+}
+
+.summary-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #004d40;
+}
+
+.summary-total {
+    background: #f8fdfc;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid #e0f2f1;
+}
+
+.total-label {
+    font-weight: 800;
+    color: #333;
+}
+
+.total-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #004d40;
+}
+
+/* Layout Utilities */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.sidebar-sticky {
+    position: sticky;
+    top: 130px;
+    height: calc(100vh - 150px);
+    overflow-y: auto;
+}

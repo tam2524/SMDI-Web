@@ -7,15 +7,48 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 
-$currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
+$currentBranch = trim($_SESSION['user_branch'] ?? 'HEADOFFICE');
 $userRole = $_SESSION['position'] ?? $_SESSION['user_role'] ?? 'user';
-$adminRoles = ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts'];
+$adminRoles = ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-Admin', 'Spareparts-Owner'];
 $isAdmin = in_array(strtolower(trim($userRole)), array_map('strtolower', $adminRoles));
 $canDelete = $isAdmin;
+
+// Auto-repair tools removed to prevent PHP exceptions from halting script execution
+try {
+    $conn->query("ALTER TABLE spareparts_transfers ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER id");
+} catch (Exception $e) {
+}
 
 function sanitizeInput($data)
 {
     return htmlspecialchars(strip_tags(trim($data)));
+}
+
+function addAuditLog($action_type, $table_name, $record_id, $details)
+{
+    global $conn;
+    $user_id = $_SESSION['user_id'] ?? 0; // Ensure user_id is in session
+    
+    // If user_id is missing, try to find it by username
+    if ($user_id === 0 && isset($_SESSION['username'])) {
+        $uStmt = $conn->prepare("SELECT id FROM users WHERE username = ? LIMIT 1");
+        $uStmt->bind_param('s', $_SESSION['username']);
+        $uStmt->execute();
+        $user_id = $uStmt->get_result()->fetch_assoc()['id'] ?? 0;
+        $_SESSION['user_id'] = $user_id;
+    }
+
+    $stmt = $conn->prepare("INSERT INTO audit_log (user_id, action_type, table_name, record_id, action_details) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param('issss', $user_id, $action_type, $table_name, $record_id, $details);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function getPartColumnName($table)
+{
+    global $conn;
+    $check = $conn->query("SHOW COLUMNS FROM $table LIKE 'part_no'");
+    return ($check && $check->num_rows > 0) ? 'part_no' : 'part_number';
 }
 
 $action = $_REQUEST['action'] ?? '';
@@ -111,6 +144,9 @@ switch ($action) {
     case 'edit_parts':
         editPart();
         break;
+    case 'add_part':
+        addPart();
+        break;
     case 'edit_sale':
         editSale();
         break;
@@ -120,6 +156,9 @@ switch ($action) {
     case 'edit_payment':
         editPayment();
         break; // NEW
+    case 'get_stock_card_data':
+        getStockCardData();
+        break;
 
     // DELETE (WITH AUTH)
     case 'delete_part':
@@ -157,6 +196,43 @@ switch ($action) {
         getBranches();
         break;
 
+    case 'get_sales_force':
+        getSalesForce();
+        break;
+    case 'add_sales_force':
+        addSalesForce();
+        break;
+    case 'delete_sales_force':
+        deleteSalesForce();
+        break;
+    case 'search_sales_force':
+        searchSalesForce();
+        break;
+
+    case 'get_part_details_with_compatibility':
+        getPartDetailsWithCompatibility();
+        break;
+    case 'get_price_history':
+        getPriceHistory();
+        break;
+    case 'search_parts_for_in':
+        searchPartsForIn();
+        break;
+    case 'get_pricelists':
+        getPricelists();
+        break;
+    case 'save_pricelist':
+        savePricelist();
+        break;
+    case 'save_bulk_pricelists':
+        saveBulkPricelists();
+        break;
+    case 'delete_pricelist':
+        deletePricelist();
+        break;
+    case 'get_rank_price':
+        getRankPrice();
+        break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);
         break;
@@ -167,8 +243,12 @@ switch ($action) {
 // ===================================================================
 function getBranches()
 {
-    global $conn, $currentBranch, $isAdmin;
-    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    global $conn, $currentBranch, $isAdmin, $userRole;
+    
+    $allowedRoles = ['spareparts-warehouse', 'spareparts-sales', 'spareparts-retail'];
+    $isSparepartsRole = in_array(strtolower(trim($userRole)), $allowedRoles);
+    
+    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice' || $isSparepartsRole;
 
     if (!$seeAll) {
         // Only allow branch users to see Head Office (for transfers)
@@ -176,7 +256,8 @@ function getBranches()
         return;
     }
 
-    $sql = "SELECT DISTINCT branch FROM users WHERE position = 'Spareparts-Branch' AND branch IS NOT NULL AND branch != '' ORDER BY branch ASC";
+
+    $sql = "SELECT DISTINCT branch FROM users WHERE position IN ('Spareparts-Sales', 'Spareparts-Warehouse', 'Spareparts-Retail') AND branch IS NOT NULL AND branch != '' ORDER BY branch ASC";
     $result = $conn->query($sql);
 
     $branches = ['HEADOFFICE'];
@@ -258,6 +339,161 @@ function getActivityLog()
             'itemsPerPage' => $limit
         ]
     ]);
+}
+
+function getPartDetailsWithCompatibility()
+{
+    global $conn, $currentBranch;
+    $part_no = sanitizeInput($_GET['part_no'] ?? '');
+
+    if (empty($part_no)) {
+        echo json_encode(['success' => false, 'message' => 'Part number is required.']);
+        return;
+    }
+
+    // We want to fetch the part details regardless of which branch it's currently in,
+    // so we can use its master details (description, cost, price) for stock in.
+    $stmt = $conn->prepare("SELECT * FROM spareparts_inventory WHERE part_no = ? LIMIT 1");
+    $stmt->bind_param('s', $part_no);
+    $stmt->execute();
+    $part = $stmt->get_result()->fetch_assoc();
+
+    if ($part) {
+        // Fetch Compatibility
+        $compStmt = $conn->prepare("SELECT model_name FROM spareparts_compatibility WHERE part_no = ?");
+        $compStmt->bind_param('s', $part_no);
+        $compStmt->execute();
+        $compRes = $compStmt->get_result();
+        $compatibility = [];
+        while ($row = $compRes->fetch_assoc()) {
+            $compatibility[] = $row['model_name'];
+        }
+        $part['compatibility'] = $compatibility;
+
+        echo json_encode(['success' => true, 'data' => $part]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Part not found.']);
+    }
+}
+
+function getPriceHistory()
+{
+    global $conn;
+    $part_no = sanitizeInput($_GET['part_no'] ?? '');
+
+    if (empty($part_no)) {
+        echo json_encode(['success' => false, 'message' => 'Part number is required.']);
+        return;
+    }
+
+    $stmt = $conn->prepare("SELECT * FROM spareparts_price_history WHERE part_no = ? ORDER BY transaction_date DESC");
+    $stmt->bind_param('s', $part_no);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
+function getStockCardData()
+{
+    global $conn, $currentBranch, $isAdmin;
+    
+    try {
+        $part_no = sanitizeInput($_GET['part_no'] ?? '');
+        
+        // Allow overriding branch for Admin/HO viewing other branches
+        $targetBranch = sanitizeInput($_GET['branch'] ?? $currentBranch);
+        $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+        if (!$seeAll) {
+            $targetBranch = $currentBranch; // Enforce current branch for non-admins
+        }
+
+        if (empty($part_no)) {
+            echo json_encode(['success' => false, 'message' => 'Part number is required.']);
+            return;
+        }
+
+        // 1. Core Inventory Info
+        $stmt = $conn->prepare("SELECT * FROM spareparts_inventory WHERE part_no = ? AND current_branch = ? LIMIT 1");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Query preparation failed (Inventory): ' . $conn->error]);
+            return;
+        }
+        $stmt->bind_param('ss', $part_no, $targetBranch);
+        $stmt->execute();
+        $inventory = $stmt->get_result()->fetch_assoc();
+
+        if (!$inventory) {
+            echo json_encode(['success' => false, 'message' => 'Part not found in inventory for branch ' . $targetBranch]);
+            return;
+        }
+
+        // 2. Compatibility (Dynamic column detection)
+        $compCol = getPartColumnName('spareparts_compatibility');
+        $compStmt = $conn->prepare("SELECT model_name FROM spareparts_compatibility WHERE $compCol = ?");
+        if (!$compStmt) {
+            echo json_encode(['success' => false, 'message' => "Query preparation failed (Compatibility on $compCol): " . $conn->error]);
+            return;
+        }
+        $compStmt->bind_param('s', $part_no);
+        $compStmt->execute();
+        $compRes = $compStmt->get_result();
+        $compatibility = [];
+        while ($row = $compRes->fetch_assoc()) { $compatibility[] = $row['model_name']; }
+        $inventory['compatibility'] = $compatibility;
+
+        // 3. Movement Log (Uses part_no consistently in this table)
+        $txStmt = $conn->prepare("
+            SELECT * FROM spareparts_transactions 
+            WHERE part_no = ? 
+              AND (
+                  (from_location = ? AND type NOT IN ('IN', 'TRANSFER_IN', 'RETURN', 'ADJUSTMENT_IN')) 
+                  OR 
+                  (to_location = ? AND type NOT IN ('OUT', 'TRANSFER_OUT', 'SALE', 'ADJUSTMENT_OUT'))
+              )
+            ORDER BY transaction_date DESC, id DESC LIMIT 50
+        ");
+        if (!$txStmt) {
+            echo json_encode(['success' => false, 'message' => 'Query preparation failed (Transactions): ' . $conn->error]);
+            return;
+        }
+        $txStmt->bind_param('sss', $part_no, $targetBranch, $targetBranch);
+        $txStmt->execute();
+        $transactions = $txStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        // 4. Cost History (Dynamic column detection)
+        $histCol = getPartColumnName('spareparts_price_history');
+        $histStmt = $conn->prepare("SELECT * FROM spareparts_price_history WHERE $histCol = ? ORDER BY transaction_date DESC LIMIT 50");
+        if (!$histStmt) {
+            echo json_encode(['success' => false, 'message' => "Query preparation failed (History on $histCol): " . $conn->error]);
+            return;
+        }
+        $histStmt->bind_param('s', $part_no);
+        $histStmt->execute();
+        $history = $histStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'inventory' => $inventory,
+                'transactions' => $transactions,
+                'price_history' => $history
+            ]
+        ]);
+    } catch (mysqli_sql_exception $e) {
+        $msg = $e->getMessage();
+        if (strpos($msg, "doesn't exist") !== false) {
+            echo json_encode(['success' => false, 'message' => 'Database tables are missing. Please run the migration script: api/migrate_spareparts.php']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $msg]);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'Internal error: ' . $e->getMessage()]);
+    }
 }
 
 function getDashboardStats()
@@ -369,17 +605,57 @@ function searchInventory()
 function getSalesList()
 {
     global $conn, $currentBranch, $isAdmin;
+    
+    $branch = sanitizeInput($_GET['branch'] ?? 'all');
+    $dateFrom = sanitizeInput($_GET['date_from'] ?? '');
+    $dateTo = sanitizeInput($_GET['date_to'] ?? '');
+
     $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
-    $where = $seeAll ? "t.type = 'OUT'" : "t.type = 'OUT' AND t.from_location = ?";
-    $sql = "SELECT t.id, t.transaction_date as sale_date, t.customer_name, t.or_number, t.transaction_type, SUM(t.total_amount) as total_amount, a.balance, t.from_location
+    
+    $whereClauses = ["t.type = 'OUT'"];
+    $params = [];
+    $types = "";
+
+    if (!$seeAll) {
+        $whereClauses[] = "t.from_location = ?";
+        $params[] = $currentBranch;
+        $types .= "s";
+    } elseif ($branch !== 'all') {
+        $whereClauses[] = "t.from_location = ?";
+        $params[] = $branch;
+        $types .= "s";
+    }
+
+    if (!empty($dateFrom)) {
+        $whereClauses[] = "t.transaction_date >= ?";
+        $params[] = $dateFrom;
+        $types .= "s";
+    }
+    if (!empty($dateTo)) {
+        $whereClauses[] = "t.transaction_date <= ?";
+        $params[] = $dateTo . " 23:59:59";
+        $types .= "s";
+    }
+
+    $whereStr = implode(" AND ", $whereClauses);
+
+    $sql = "SELECT t.id, t.transaction_date as sale_date, t.customer_name, t.or_number, t.transaction_type, SUM(t.total_amount) as total_amount, a.balance, t.from_location, t.sales_force
             FROM spareparts_transactions t
             LEFT JOIN spareparts_aging a ON t.or_number = a.or_number AND t.from_location = a.branch
-            WHERE $where
+            WHERE $whereStr
             GROUP BY t.or_number, t.from_location
             ORDER BY t.id DESC";
+            
     $stmt = $conn->prepare($sql);
-    if (!$seeAll)
-        $stmt->bind_param('s', $currentBranch);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        return;
+    }
+    
+    if (!empty($types)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
     $stmt->execute();
     $result = $stmt->get_result();
     $data = [];
@@ -433,6 +709,8 @@ function getSaleDetails()
         $balance = (float) $agingRes['balance'];
     }
 
+    $sales_force = !empty($items) ? ($items[0]['sales_force'] ?? '') : '';
+
     echo json_encode([
         'success' => true,
         'data' => [
@@ -443,6 +721,7 @@ function getSaleDetails()
             'total_amount' => $total_amount,
             'balance' => $balance,
             'branch' => $branch,
+            'sales_force' => $sales_force,
             'items' => $items
         ]
     ]);
@@ -452,14 +731,14 @@ function getTransfersList()
 {
     global $conn, $currentBranch, $isAdmin;
 
-    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    $seeAll = $isAdmin; // Only Admin can see everything, regular users (even at headoffice) see their own
     $where = $seeAll ? "1=1" : "st.from_branch = ?";
-    $sql = "SELECT st.id, st.from_branch, st.to_branch, st.transfer_date, st.status, 
-                   SUM(sti.quantity) as item_count 
+    $sql = "SELECT st.id, st.transfer_no, st.from_branch, st.to_branch, st.transfer_date, st.status, 
+                   COALESCE(SUM(sti.quantity), 0) as item_count 
             FROM spareparts_transfers st
             LEFT JOIN spareparts_transfer_items sti ON st.id = sti.transfer_id
             WHERE $where
-            GROUP BY st.id
+            GROUP BY st.id, st.transfer_no, st.from_branch, st.to_branch, st.transfer_date, st.status
             ORDER BY st.transfer_date DESC, st.id DESC";
 
     $stmt = $conn->prepare($sql);
@@ -540,7 +819,8 @@ function getPaymentsList()
 function getIncomingTransfers()
 {
     global $conn, $currentBranch, $isAdmin;
-    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    $seeAll = $isAdmin;
+
 
     // Auto-migrate schema to add status if missing
     try {
@@ -550,12 +830,12 @@ function getIncomingTransfers()
 
     // Get transfers waiting for acceptance (to this specific location)
     $where = $seeAll ? "st.status = 'In-Transit'" : "st.to_branch = ? AND st.status = 'In-Transit'";
-    $sql = "SELECT st.id, st.from_branch, st.to_branch, st.transfer_date, st.status, 
+    $sql = "SELECT st.id, st.transfer_no, st.from_branch, st.to_branch, st.transfer_date, st.status, 
                    SUM(sti.quantity) as item_count 
             FROM spareparts_transfers st
             LEFT JOIN spareparts_transfer_items sti ON st.id = sti.transfer_id AND (sti.status = 'In-Transit' OR sti.status IS NULL)
             WHERE $where
-            GROUP BY st.id
+            GROUP BY st.id, st.transfer_no, st.from_branch, st.to_branch, st.transfer_date, st.status
             HAVING item_count > 0
             ORDER BY st.transfer_date DESC, st.id DESC";
 
@@ -588,14 +868,13 @@ function getGlobalTransfers()
 {
     global $conn, $currentBranch, $isAdmin;
     $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
-
     $where = $seeAll ? "" : "WHERE st.from_branch = ? OR st.to_branch = ?";
-    $sql = "SELECT st.id, st.from_branch, st.to_branch, st.transfer_date, st.received_date, st.status, 
-                   SUM(sti.quantity) as item_count 
+    $sql = "SELECT st.id, st.transfer_no, st.from_branch, st.to_branch, st.transfer_date, st.received_date, st.status, 
+                   COALESCE(SUM(sti.quantity), 0) as item_count 
             FROM spareparts_transfers st
             LEFT JOIN spareparts_transfer_items sti ON st.id = sti.transfer_id
             $where
-            GROUP BY st.id
+            GROUP BY st.id, st.transfer_no
             ORDER BY st.transfer_date DESC, st.id DESC";
 
     $stmt = $conn->prepare($sql);
@@ -649,24 +928,35 @@ function searchUniqueCustomers()
     $term = sanitizeInput($_GET['term'] ?? '');
     $searchTerm = "%{$term}%";
 
+    // 1. Search in spareparts_customers table (priority for rank info)
+    $sql_cust = "SELECT name AS customer_name, rank_level FROM spareparts_customers WHERE name LIKE ? " . ($seeAll ? "" : "AND branch = ?") . " LIMIT 10";
+    $stmt_cust = $conn->prepare($sql_cust);
+    if ($seeAll) $stmt_cust->bind_param('s', $searchTerm);
+    else $stmt_cust->bind_param('ss', $searchTerm, $currentBranch);
+    $stmt_cust->execute();
+    $res_cust = $stmt_cust->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // 2. Search in transactions for historical names
     $whereBranch = $seeAll ? "" : "AND from_location = ?";
+    $stmt_trans = $conn->prepare("SELECT DISTINCT customer_name FROM spareparts_transactions WHERE customer_name LIKE ? $whereBranch LIMIT 5");
+    if ($seeAll) $stmt_trans->bind_param('s', $searchTerm);
+    else $stmt_trans->bind_param('ss', $searchTerm, $currentBranch);
+    $stmt_trans->execute();
+    $res_trans = $stmt_trans->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    // Search in transactions to find historical customers
-    $stmt = $conn->prepare("SELECT DISTINCT customer_name FROM spareparts_transactions WHERE customer_name LIKE ? $whereBranch LIMIT 5");
-
-    if ($seeAll) {
-        $stmt->bind_param('s', $searchTerm);
-    } else {
-        $stmt->bind_param('ss', $searchTerm, $currentBranch);
+    $names = [];
+    $final = [];
+    foreach ($res_cust as $c) {
+        $names[] = strtolower($c['customer_name']);
+        $final[] = $c;
+    }
+    foreach ($res_trans as $t) {
+        if (!in_array(strtolower($t['customer_name']), $names)) {
+            $final[] = ['customer_name' => $t['customer_name'], 'rank_level' => 'Standard'];
+        }
     }
 
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $data = [];
-    while ($row = $result->fetch_assoc()) {
-        $data[] = $row['customer_name'];
-    }
-    echo json_encode(['success' => true, 'data' => $data]);
+    echo json_encode(['success' => true, 'data' => $final]);
 }
 
 function checkOrExists()
@@ -750,6 +1040,7 @@ function transferMultipleParts()
     global $conn, $currentBranch;
     $transferDate = sanitizeInput($_POST['transfer_date']);
     $toBranch = sanitizeInput($_POST['to_branch']);
+    $transferNo = sanitizeInput($_POST['transfer_no'] ?? '');
     $items = json_decode($_POST['items'], true);
 
     if (empty($items)) {
@@ -759,8 +1050,8 @@ function transferMultipleParts()
 
     $conn->begin_transaction();
     try {
-        $transferStmt = $conn->prepare("INSERT INTO spareparts_transfers (from_branch, to_branch, transfer_date, status) VALUES (?, ?, ?, 'In-Transit')");
-        $transferStmt->bind_param('sss', $currentBranch, $toBranch, $transferDate);
+        $transferStmt = $conn->prepare("INSERT INTO spareparts_transfers (from_branch, to_branch, transfer_date, status, transfer_no) VALUES (?, ?, ?, 'In-Transit', ?)");
+        $transferStmt->bind_param('ssss', $currentBranch, $toBranch, $transferDate, $transferNo);
         if (!$transferStmt->execute())
             throw new Exception('Failed to create transfer record.');
         $transferId = $conn->insert_id;
@@ -769,12 +1060,17 @@ function transferMultipleParts()
             $pno = sanitizeInput($item['part_no']);
             $qty = (int) $item['quantity'];
             $desc = sanitizeInput($item['description']);
+            $provided_cost = isset($item['cost']) ? (float)$item['cost'] : null;
 
-            $costStmt = $conn->prepare("SELECT cost FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
-            $costStmt->bind_param('ss', $pno, $currentBranch);
-            $costStmt->execute();
-            $costRow = $costStmt->get_result()->fetch_assoc();
-            $cost = $costRow ? (float) $costRow['cost'] : 0;
+            if ($provided_cost !== null) {
+                $cost = $provided_cost;
+            } else {
+                $costStmt = $conn->prepare("SELECT cost FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
+                $costStmt->bind_param('ss', $pno, $currentBranch);
+                $costStmt->execute();
+                $costRow = $costStmt->get_result()->fetch_assoc();
+                $cost = $costRow ? (float) $costRow['cost'] : 0;
+            }
 
             $updStmt = $conn->prepare("UPDATE spareparts_inventory SET current_stock = current_stock - ? WHERE part_no = ? AND current_branch = ?");
             $updStmt->bind_param('iss', $qty, $pno, $currentBranch);
@@ -791,6 +1087,7 @@ function transferMultipleParts()
             $txStmt->execute();
         }
         $conn->commit();
+        addAuditLog('INSERT', 'spareparts_transfers', $transferId, "Initiated Transfer ID $transferId (No: $transferNo): $currentBranch -> $toBranch with " . count($items) . " items");
         echo json_encode(['success' => true, 'message' => 'Transfer initiated successfully.']);
     } catch (Exception $e) {
         $conn->rollback();
@@ -884,6 +1181,7 @@ function cancelTransfer()
         }
 
         $conn->commit();
+        addAuditLog('UPDATE', 'spareparts_transfers', $transfer_id, "Cancelled Transfer ID $transfer_id at $currentBranch");
         echo json_encode(['success' => true, 'message' => 'Transfer cancelled successfully. Items returned to inventory.']);
     } catch (Exception $e) {
         $conn->rollback();
@@ -937,9 +1235,9 @@ function acceptTransfer()
                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
                                     ON DUPLICATE KEY UPDATE 
                                     current_stock = current_stock + VALUES(current_stock), 
-                                    cost = (cost + VALUES(cost)) / 2,
-                                    price = VALUES(price),
-                                    brand = VALUES(brand)");
+                                    cost = VALUES(cost),
+                                    price = IF(VALUES(price) > 0, VALUES(price), price),
+                                    brand = IF(VALUES(brand) != '', VALUES(brand), brand)");
             $stmt->bind_param('sssidds', $brand, $part_no, $description, $quantity, $cost, $price, $min_stock, $currentBranch);
             $stmt->execute();
 
@@ -957,6 +1255,7 @@ function acceptTransfer()
         $updateStmt->execute();
 
         $conn->commit();
+        addAuditLog('UPDATE', 'spareparts_transfers', $transferId, "Accepted Transfer ID $transferId at $currentBranch from $from_branch");
         echo json_encode(['success' => true, 'message' => 'Transfer accepted and items added to inventory.']);
     } catch (Exception $e) {
         $conn->rollback();
@@ -1008,6 +1307,7 @@ function rejectTransfer()
         }
 
         $conn->commit();
+        addAuditLog('UPDATE', 'spareparts_transfers', $transferId, "Rejected Transfer ID $transferId at $currentBranch (from $transfer[from_branch])");
         echo json_encode(['success' => true, 'message' => 'Transfer rejected. Items returned to origin branch stock.']);
     } catch (Exception $e) {
         $conn->rollback();
@@ -1020,54 +1320,164 @@ function addMultiplePartsIn()
     global $conn, $currentBranch;
     $items = json_decode($_POST['items'], true);
     $date = sanitizeInput($_POST['date_in'] ?? date('Y-m-d'));
-    $reference = sanitizeInput($_POST['reference_no'] ?? '');
     $invoice_no = sanitizeInput($_POST['invoice_no'] ?? '');
-    $supplier = sanitizeInput($_POST['supplier_source'] ?? 'HEADOFFICE');
+    $supplier = sanitizeInput($_POST['supplier_source'] ?? 'SUPPLIER');
+    $hikes = [];
+
+    // Auto-create table if missing
+    try {
+        $conn->query("CREATE TABLE IF NOT EXISTS spareparts_price_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            part_no VARCHAR(100) NOT NULL,
+            cost DECIMAL(10,2) NOT NULL,
+            supplier VARCHAR(255),
+            invoice_no VARCHAR(100),
+            transaction_date DATE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch(Exception $e) {}
 
     $conn->begin_transaction();
     try {
         foreach ($items as $item) {
-            $brand = sanitizeInput($item['brand'] ?? '');
-            $part_no = sanitizeInput($item['part_no']);
+            $brand       = sanitizeInput($item['brand'] ?? '');
+            $part_no     = sanitizeInput($item['part_no']);
             $description = sanitizeInput($item['description']);
-            $quantity = (int) $item['quantity'];
-            $cost = (float) $item['cost'];
-            $price = (float) $item['price'];
+            $quantity    = (int) $item['quantity'];
+            $new_cost    = (float) $item['cost'];
+            $price       = (float) ($item['price'] ?? 0);
+            $is_new      = !empty($item['isNew']);
 
-            // Update or Insert inventory
-            $stmt = $conn->prepare("INSERT INTO spareparts_inventory (brand, part_no, description, current_stock, cost, price, current_branch) 
-                                    VALUES (?, ?, ?, ?, ?, ?, ?) 
-                                    ON DUPLICATE KEY UPDATE 
-                                    current_stock = current_stock + VALUES(current_stock), 
-                                    cost = (cost + VALUES(cost)) / 2, 
-                                    price = VALUES(price)");
-            $stmt->bind_param('sssidds', $brand, $part_no, $description, $quantity, $cost, $price, $currentBranch);
+            // Fetch Previous Cost from master inventory
+            $prevStmt = $conn->prepare("SELECT cost FROM spareparts_inventory WHERE part_no = ? LIMIT 1");
+            $prevStmt->bind_param('s', $part_no);
+            $prevStmt->execute();
+            $prevRes = $prevStmt->get_result()->fetch_assoc();
+            $old_cost = $prevRes ? (float) $prevRes['cost'] : 0;
+
+            // Price Hike Detection
+            if (!$is_new && $old_cost > 0 && $new_cost > $old_cost) {
+                $increase = (($new_cost - $old_cost) / $old_cost) * 100;
+                $hikes[] = [
+                    'part_no'  => $part_no,
+                    'old_cost' => $old_cost,
+                    'new_cost' => $new_cost,
+                    'increase' => round($increase, 2)
+                ];
+            }
+
+            // UPSERT inventory:
+            // - Always use new cost as the primary cost (master cost update)
+            // - Add to stock for this branch
+            $stmt = $conn->prepare(
+                "INSERT INTO spareparts_inventory (brand, part_no, description, current_stock, cost, price, current_branch)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE
+                     current_stock = current_stock + VALUES(current_stock),
+                     cost          = VALUES(cost),
+                     price         = IF(VALUES(price) > 0, VALUES(price), price),
+                     brand         = IF(VALUES(brand) != '' AND VALUES(brand) != 'N/A', VALUES(brand), brand),
+                     description   = IF(VALUES(description) != '', VALUES(description), description)"
+            );
+            $stmt->bind_param('sssidds', $brand, $part_no, $description, $quantity, $new_cost, $price, $currentBranch);
             $stmt->execute();
 
-            // Log transaction
-            $log = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, or_number, status) 
-                                   VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, 'Completed')");
-            $total = $quantity * $cost;
-            // from_location is supplier, to_location is branch, or_number is invoice_no
-            $log->bind_param('sssiddsss', $date, $part_no, $description, $quantity, $cost, $total, $supplier, $currentBranch, $invoice_no);
+            // Always log cost history (provides full audit trail)
+            // Try with part_no column name (check both common schema variants)
+            $histCheck = $conn->query("SHOW COLUMNS FROM spareparts_price_history LIKE 'part_no'");
+            if ($histCheck && $histCheck->num_rows > 0) {
+                $histStmt = $conn->prepare(
+                    "INSERT INTO spareparts_price_history (part_no, cost, supplier, invoice_no, transaction_date) VALUES (?, ?, ?, ?, ?)"
+                );
+            } else {
+                $histStmt = $conn->prepare(
+                    "INSERT INTO spareparts_price_history (part_number, cost, supplier, invoice_no, transaction_date) VALUES (?, ?, ?, ?, ?)"
+                );
+            }
+            $histStmt->bind_param('sdsss', $part_no, $new_cost, $supplier, $invoice_no, $date);
+            $histStmt->execute();
+
+            // Log IN transaction
+            $total = $quantity * $new_cost;
+            $log = $conn->prepare(
+                "INSERT INTO spareparts_transactions
+                    (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, or_number, status)
+                 VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, 'Completed')"
+            );
+            $log->bind_param('sssiddsss', $date, $part_no, $description, $quantity, $new_cost, $total, $supplier, $currentBranch, $invoice_no);
             $log->execute();
         }
+
         $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Stock added successfully.']);
+        addAuditLog(
+            'INSERT', 'spareparts_inventory',
+            $invoice_no ?: 'MULTIPLE',
+            "Stock IN: " . count($items) . " part(s) via Invoice: $invoice_no | Supplier: $supplier | Branch: $currentBranch"
+        );
+        echo json_encode(['success' => true, 'message' => 'Stock received and inventory updated.', 'hikes' => $hikes]);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['success' => false, 'message' => 'Failed to add stock: ' . $e->getMessage()]);
     }
 }
 
+function searchPartsForIn()
+{
+    global $conn, $currentBranch, $isAdmin;
+    $query = sanitizeInput($_GET['query'] ?? '');
+
+    if (strlen($query) < 1) {
+        echo json_encode(['success' => true, 'data' => []]);
+        return;
+    }
+
+    $searchTerm = "%$query%";
+    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    $whereBranch = $seeAll ? "" : " AND current_branch = ?";
+
+    // Search specifically within the branch if not Head Office/Admin
+    $sql = "SELECT part_no, description, brand, cost, price,
+                SUM(current_stock) as current_stock
+         FROM spareparts_inventory
+         WHERE (part_no LIKE ? OR description LIKE ? OR brand LIKE ?) $whereBranch
+         GROUP BY part_no
+         ORDER BY
+             CASE WHEN part_no LIKE ? THEN 0 ELSE 1 END,
+             part_no ASC
+         LIMIT 15";
+         
+    $stmt = $conn->prepare($sql);
+    if ($seeAll) {
+        $stmt->bind_param('ssss', $searchTerm, $searchTerm, $searchTerm, $searchTerm);
+    } else {
+        $stmt->bind_param('sssss', $searchTerm, $searchTerm, $searchTerm, $currentBranch, $searchTerm);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+    $stmt->close();
+
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
 function sellMultiplePartsOut()
 {
     global $conn, $currentBranch;
+
+    // Auto-migrate: add sales_force column if missing
+    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS sales_force VARCHAR(150) DEFAULT NULL");
+
     $items = json_decode($_POST['items'], true);
     $or_number = sanitizeInput($_POST['or_number']);
     $customer_name = sanitizeInput($_POST['customer_name']);
     $date = sanitizeInput($_POST['date']);
     $transaction_type = sanitizeInput($_POST['transaction_type']);
+    $sales_force = sanitizeInput($_POST['sales_force'] ?? '');
 
     // Check if OR already exists
     $checkStmt = $conn->prepare("SELECT or_number FROM spareparts_transactions WHERE or_number = ? LIMIT 1");
@@ -1098,9 +1508,9 @@ function sellMultiplePartsOut()
                 throw new Exception("Part $part_no not found or insufficient stock.");
 
             // Log transaction
-            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location) 
-                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssssidds', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch);
+            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force) 
+                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssssiddss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force);
             $stmt->execute();
         }
 
@@ -1113,12 +1523,210 @@ function sellMultiplePartsOut()
         }
 
         $conn->commit();
+        addAuditLog('INSERT', 'spareparts_transactions', $or_number, "Recorded Sale: OR $or_number, Customer: $customer_name, Type: $transaction_type, Sales Force: $sales_force, Total: $total_sale_amount");
         echo json_encode(['success' => true, 'message' => 'Sale recorded successfully.']);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['success' => false, 'message' => 'Failed to record sale: ' . $e->getMessage()]);
     }
 }
+
+// ===================== SALES FORCE CRUD =====================
+function getSalesForce()
+{
+    global $conn, $currentBranch;
+    // Auto-create table if missing
+    $conn->query("CREATE TABLE IF NOT EXISTS spareparts_sales_force (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        branch VARCHAR(100) NOT NULL,
+        employee_name VARCHAR(150) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_emp_branch (branch, employee_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Auto-migrate: add sales_force column to transactions if missing
+    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS sales_force VARCHAR(150) DEFAULT NULL");
+
+    // Join with transactions to count unique sales (OR numbers)
+    $stmt = $conn->prepare("
+        SELECT 
+            sf.id, 
+            sf.employee_name, 
+            sf.created_at,
+            COUNT(DISTINCT t.or_number) as total_sales
+        FROM spareparts_sales_force sf
+        LEFT JOIN spareparts_transactions t ON sf.employee_name = t.sales_force AND sf.branch = t.from_location AND t.type = 'OUT'
+        WHERE sf.branch = ?
+        GROUP BY sf.id, sf.employee_name, sf.created_at
+        ORDER BY sf.employee_name ASC
+    ");
+    $stmt->bind_param('s', $currentBranch);
+    $stmt->execute();
+    $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
+function addSalesForce()
+{
+    global $conn, $currentBranch;
+    $conn->query("CREATE TABLE IF NOT EXISTS spareparts_sales_force (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        branch VARCHAR(100) NOT NULL,
+        employee_name VARCHAR(150) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_emp_branch (branch, employee_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $name = sanitizeInput($_POST['employee_name'] ?? '');
+    if (empty($name)) {
+        echo json_encode(['success' => false, 'message' => 'Employee name is required.']);
+        return;
+    }
+    $stmt = $conn->prepare("INSERT IGNORE INTO spareparts_sales_force (branch, employee_name) VALUES (?, ?)");
+    $stmt->bind_param('ss', $currentBranch, $name);
+    $stmt->execute();
+    if ($stmt->affected_rows > 0) {
+        echo json_encode(['success' => true, 'message' => 'Employee added.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Employee already exists in this branch.']);
+    }
+}
+
+function deleteSalesForce()
+{
+    global $conn, $currentBranch;
+    $id = (int) ($_POST['id'] ?? 0);
+    if (!$id) { echo json_encode(['success' => false, 'message' => 'Invalid ID.']); return; }
+    $stmt = $conn->prepare("DELETE FROM spareparts_sales_force WHERE id = ? AND branch = ?");
+    $stmt->bind_param('is', $id, $currentBranch);
+    $stmt->execute();
+    echo json_encode(['success' => $stmt->affected_rows > 0, 'message' => $stmt->affected_rows > 0 ? 'Deleted.' : 'Not found.']);
+}
+
+function searchSalesForce()
+{
+    global $conn, $currentBranch;
+    $conn->query("CREATE TABLE IF NOT EXISTS spareparts_sales_force (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        branch VARCHAR(100) NOT NULL,
+        employee_name VARCHAR(150) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_emp_branch (branch, employee_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $term = '%' . sanitizeInput($_GET['term'] ?? '') . '%';
+    $stmt = $conn->prepare("SELECT id, employee_name FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? ORDER BY employee_name ASC LIMIT 10");
+    $stmt->bind_param('ss', $currentBranch, $term);
+    $stmt->execute();
+    $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
+// ===================== PRICELIST MANAGEMENT =====================
+function getPricelists()
+{
+    global $conn, $currentBranch;
+    // Auto-create table if missing
+    $conn->query("CREATE TABLE IF NOT EXISTS spareparts_pricelists (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        part_no VARCHAR(100) NOT NULL,
+        rank_level VARCHAR(50) NOT NULL,
+        price DECIMAL(15,2) NOT NULL,
+        branch VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY part_rank_branch (part_no, rank_level, branch)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $query = sanitizeInput($_GET['query'] ?? '');
+    $searchTerm = "%$query%";
+    // Robustness: ensure column exists if table was already created
+    $chk = $conn->query("SHOW COLUMNS FROM spareparts_pricelists LIKE 'updated_at'");
+    if ($chk && $chk->num_rows == 0) {
+        $conn->query("ALTER TABLE spareparts_pricelists ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+    }
+
+    $searchTerm = "%" . sanitizeInput($_GET['query'] ?? '') . "%";
+    
+    $sql = "SELECT p.*, i.description, i.brand 
+            FROM spareparts_pricelists p
+            JOIN spareparts_inventory i ON p.part_no = i.part_no AND p.branch = i.current_branch
+            WHERE p.branch = ? AND (p.part_no LIKE ? OR i.description LIKE ? OR p.rank_level LIKE ? OR i.brand LIKE ?)
+            ORDER BY p.updated_at DESC, p.part_no ASC";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sssss', $currentBranch, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
+    $stmt->execute();
+    $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    echo json_encode(['success' => true, 'data' => $data]);
+}
+
+function savePricelist()
+{
+    global $conn, $currentBranch;
+    $part_no = sanitizeInput($_POST['part_no'] ?? '');
+    $rank_level = sanitizeInput($_POST['rank_level'] ?? '');
+    $price = (float) ($_POST['price'] ?? 0);
+
+    if (empty($part_no) || empty($rank_level) || $price <= 0) {
+        echo json_encode(['success' => false, 'message' => 'All fields are required and price must be greater than 0.']);
+        return;
+    }
+
+    $stmt = $conn->prepare("INSERT INTO spareparts_pricelists (part_no, rank_level, price, branch) 
+                            VALUES (?, ?, ?, ?) 
+                            ON DUPLICATE KEY UPDATE price = VALUES(price), updated_at = CURRENT_TIMESTAMP");
+    $stmt->bind_param('ssds', $part_no, $rank_level, $price, $currentBranch);
+    $stmt->execute();
+    
+    addAuditLog('SAVE_PRICELIST', 'spareparts_pricelists', $part_no, "Set Price for $part_no Rank $rank_level at $currentBranch: $price");
+    
+    echo json_encode(['success' => true, 'message' => "Price for $part_no rank $rank_level saved!"]);
+}
+
+function deletePricelist()
+{
+    global $conn, $currentBranch;
+    $id = (int) ($_POST['id'] ?? 0);
+    if (!$id) { echo json_encode(['success' => false, 'message' => 'Invalid ID.']); return; }
+    $stmt = $conn->prepare("DELETE FROM spareparts_pricelists WHERE id = ? AND branch = ?");
+    $stmt->bind_param('is', $id, $currentBranch);
+    $stmt->execute();
+    echo json_encode(['success' => $stmt->affected_rows > 0, 'message' => $stmt->affected_rows > 0 ? 'Deleted.' : 'Not found.']);
+}
+
+function saveBulkPricelists()
+{
+    global $conn, $currentBranch;
+    $rank_level = sanitizeInput($_POST['rank_level'] ?? '');
+    $items = $_POST['items'] ?? []; // Array of objects {part_no, price}
+
+    if (empty($rank_level) || empty($items)) {
+        echo json_encode(['success' => false, 'message' => 'Rank and at least one item are required.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+    try {
+        foreach ($items as $item) {
+            $part_no = sanitizeInput($item['part_no']);
+            $price = (float)$item['price'];
+
+            $stmt = $conn->prepare("INSERT INTO spareparts_pricelists (part_no, rank_level, price, branch) 
+                                    VALUES (?, ?, ?, ?) 
+                                    ON DUPLICATE KEY UPDATE price = VALUES(price), updated_at = CURRENT_TIMESTAMP");
+            $stmt->bind_param('ssds', $part_no, $rank_level, $price, $currentBranch);
+            $stmt->execute();
+            addAuditLog('SAVE_PRICELIST', 'spareparts_pricelists', $part_no, "Bulk Set Price for $part_no Rank $rank_level at $currentBranch: $price");
+        }
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => count($items) . ' rank prices saved successfully!']);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
 
 function recordPayment()
 {
@@ -1186,6 +1794,7 @@ function recordPayment()
         }
 
         $conn->commit();
+        addAuditLog('INSERT', 'spareparts_transactions', $receipt_no, "Recorded Payment: Receipt $receipt_no, Customer: $customerToLog, Amount: $amount for OR(s): $or_number at $branch");
         echo json_encode(['success' => true, 'message' => 'Payment recorded successfully.', 'customer_name' => $customerToLog]);
     } catch (Exception $e) {
         $conn->rollback();
@@ -1256,6 +1865,7 @@ function editPayment()
         }
 
         $conn->commit();
+        addAuditLog('UPDATE', 'spareparts_transactions', $payment_id, "Updated Payment ID $payment_id: Receipt $new_receipt, New Amount: $new_amount");
         echo json_encode(['success' => true, 'message' => 'Payment edited successfully.']);
     } catch (Exception $e) {
         $conn->rollback();
@@ -1282,15 +1892,85 @@ function getPaymentHistory()
     echo json_encode(['success' => true, 'data' => $data]);
 }
 
+function addPart()
+{
+    global $conn, $currentBranch;
+
+    // Auto-migrate: add part_image column if missing
+    $conn->query("ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS part_image VARCHAR(255) DEFAULT NULL");
+
+    $part_no = sanitizeInput($_POST['part_no'] ?? '');
+    $description = sanitizeInput($_POST['description'] ?? '');
+    $brand = sanitizeInput($_POST['brand'] ?? '');
+    $stock = (int) ($_POST['stock'] ?? 0);
+    $min_stock = (int) ($_POST['min_stock'] ?? 5);
+    $cost = (float) ($_POST['cost'] ?? 0);
+    $price = (float) ($_POST['price'] ?? 0);
+    $bin_location = sanitizeInput($_POST['bin_location'] ?? '');
+
+    if (empty($part_no) || empty($description)) {
+        echo json_encode(['success' => false, 'message' => 'Part Number and Description are required.']);
+        return;
+    }
+
+    // Check if part already exists in THIS branch
+    $check = $conn->prepare("SELECT id FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
+    $check->bind_param('ss', $part_no, $currentBranch);
+    $check->execute();
+    if ($check->get_result()->num_rows > 0) {
+        echo json_encode(['success' => false, 'message' => "Part $part_no already exists in $currentBranch."]);
+        return;
+    }
+
+    $image_path = null;
+    if (isset($_FILES['part_image']) && $_FILES['part_image']['error'] == 0) {
+        $target_dir = '../uploads/parts_images/';
+        if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
+        $file_ext = pathinfo($_FILES['part_image']['name'], PATHINFO_EXTENSION);
+        $file_name = $part_no . '_' . time() . '.' . $file_ext;
+        $image_path = 'uploads/parts_images/' . $file_name;
+        move_uploaded_file($_FILES['part_image']['tmp_name'], $target_dir . $file_name);
+    }
+
+    $sql = "INSERT INTO spareparts_inventory (part_no, description, brand, current_stock, min_stock, cost, price, bin_location, current_branch, part_image) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sssiiddsss', $part_no, $description, $brand, $stock, $min_stock, $cost, $price, $bin_location, $currentBranch, $image_path);
+    
+    if ($stmt->execute()) {
+        $new_id = $stmt->insert_id;
+        
+        // --- Added: Log initial stock into transactions history so it reflects in stock cards ---
+        if ($stock > 0) {
+            $total = $stock * $cost;
+            $username = $_SESSION['username'] ?? 'System';
+            $log = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, or_number, status) VALUES (CURDATE(), 'IN', ?, ?, ?, ?, ?, 'Initial Encoding', ?, 'ENCODE', 'Completed')");
+            $log->bind_param('ssidds', $part_no, $description, $stock, $cost, $total, $currentBranch);
+            $log->execute();
+        }
+        
+        addAuditLog('INSERT', 'spareparts_inventory', $part_no, "Added New Part: $part_no ($description) with initial stock $stock");
+        echo json_encode(['success' => true, 'message' => 'Part registered successfully!', 'id' => $new_id]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+    }
+}
+
 function editPart()
 {
     global $conn, $currentBranch, $isAdmin;
+    
+    // Auto-create columns if missing
+    try { $conn->query("ALTER TABLE spareparts_inventory ADD COLUMN image_url VARCHAR(255) DEFAULT NULL"); } catch(Exception $e) {}
+    try { $conn->query("ALTER TABLE spareparts_inventory ADD COLUMN bin_location VARCHAR(100) DEFAULT NULL"); } catch(Exception $e) {}
+    
     $id = (int) $_POST['id'];
     $description = sanitizeInput($_POST['description']);
     $cost = (float) $_POST['cost'];
     $price = (float) $_POST['price'];
     $min_stock = (int) $_POST['min_stock'];
     $invoice_no = sanitizeInput($_POST['invoice_no'] ?? '');
+    $bin_location = sanitizeInput($_POST['bin_location'] ?? '');
 
     $brand = sanitizeInput($_POST['brand'] ?? '');
     $part_no = sanitizeInput($_POST['part_no'] ?? '');
@@ -1302,6 +1982,23 @@ function editPart()
     }
 
     $change_reason = sanitizeInput($_POST['change_reason'] ?? '');
+    
+    // Handle Image Upload
+    $image_url = null;
+    if (isset($_FILES['part_image']) && $_FILES['part_image']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = '../assets/img/parts/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+        
+        $filename = time() . '_' . preg_replace("/[^a-zA-Z0-9.\-_]/", "", basename($_FILES['part_image']['name']));
+        $uploadFile = $uploadDir . $filename;
+        
+        $check = getimagesize($_FILES["part_image"]["tmp_name"]);
+        if ($check !== false) {
+            if (move_uploaded_file($_FILES['part_image']['tmp_name'], $uploadFile)) {
+                $image_url = 'assets/img/parts/' . $filename;
+            }
+        }
+    }
 
     $conn->begin_transaction();
     try {
@@ -1315,14 +2012,25 @@ function editPart()
         $oldStock = $partRes ? (int) $partRes['current_stock'] : 0;
         $originBranch = $partRes ? $partRes['current_branch'] : $branch;
 
-        $stmt = $isAdmin
-            ? $conn->prepare("UPDATE spareparts_inventory SET description = ?, cost = ?, price = ?, min_stock = ?, brand = ?, part_no = ?, current_stock = ?, current_branch = ?, invoice_no = ? WHERE id = ?")
-            : $conn->prepare("UPDATE spareparts_inventory SET description = ?, cost = ?, price = ?, min_stock = ?, brand = ?, part_no = ?, current_stock = ?, invoice_no = ? WHERE id = ? AND current_branch = ?");
-
+        // Build base SQL and params based on whether image is updated
+        $imgSql = $image_url ? ", image_url = ?" : "";
+        
         if ($isAdmin) {
-            $stmt->bind_param('sddississi', $description, $cost, $price, $min_stock, $brand, $part_no, $stock, $branch, $invoice_no, $id);
+            $sql = "UPDATE spareparts_inventory SET description = ?, cost = ?, price = ?, min_stock = ?, brand = ?, part_no = ?, current_stock = ?, current_branch = ?, invoice_no = ?, bin_location = ? $imgSql WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            if ($image_url) {
+                $stmt->bind_param('sddississssi', $description, $cost, $price, $min_stock, $brand, $part_no, $stock, $branch, $invoice_no, $bin_location, $image_url, $id);
+            } else {
+                $stmt->bind_param('sddississsi', $description, $cost, $price, $min_stock, $brand, $part_no, $stock, $branch, $invoice_no, $bin_location, $id);
+            }
         } else {
-            $stmt->bind_param('sddissisis', $description, $cost, $price, $min_stock, $brand, $part_no, $stock, $invoice_no, $id, $currentBranch);
+            $sql = "UPDATE spareparts_inventory SET description = ?, cost = ?, price = ?, min_stock = ?, brand = ?, part_no = ?, current_stock = ?, invoice_no = ?, bin_location = ? $imgSql WHERE id = ? AND current_branch = ?";
+            $stmt = $conn->prepare($sql);
+            if ($image_url) {
+                $stmt->bind_param('sddississsis', $description, $cost, $price, $min_stock, $brand, $part_no, $stock, $invoice_no, $bin_location, $image_url, $id, $currentBranch);
+            } else {
+                $stmt->bind_param('sddississis', $description, $cost, $price, $min_stock, $brand, $part_no, $stock, $invoice_no, $bin_location, $id, $currentBranch);
+            }
         }
 
         if (!$stmt->execute()) {
@@ -1334,7 +2042,7 @@ function editPart()
             $qtyDiff = $stock - $oldStock;
             $adjStmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, transaction_type, type, brand, part_no, description, quantity, price, total_amount, from_location, reason) VALUES (CURDATE(), 'Manual Adjustment', 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?, ?)");
             $tAmount = $qtyDiff * $price;
-            $adjStmt->bind_param('sssiddds', $brand, $part_no, $description, $qtyDiff, $price, $tAmount, $originBranch, $change_reason);
+            $adjStmt->bind_param('sssiddss', $brand, $part_no, $description, $qtyDiff, $price, $tAmount, $originBranch, $change_reason);
             if (!$adjStmt->execute()) {
                 throw new Exception("Failed to log inventory adjustment.");
             }
@@ -1353,6 +2061,7 @@ function editPart()
         $updHist->execute();
 
         $conn->commit();
+        addAuditLog('UPDATE', 'spareparts_inventory', $id, "Updated Part $part_no ($description) at $branch" . ($stock !== null ? " (Stock Adj: $oldStock -> $stock)" : ""));
         echo json_encode(['success' => true, 'message' => 'Part updated successfully.']);
     } catch (Exception $e) {
         $conn->rollback();
@@ -1370,88 +2079,103 @@ function editSale()
     $new_branch = sanitizeInput($_POST['from_location'] ?? $original_branch);
     $customer_name = sanitizeInput($_POST['customer_name']);
     $sale_date = sanitizeInput($_POST['sale_date']);
-    $total_amount = floatval($_POST['total_amount'] ?? 0);
     $transaction_type = sanitizeInput($_POST['transaction_type'] ?? 'cash');
+    $sales_force = sanitizeInput($_POST['sales_force'] ?? '');
     $reason = sanitizeInput($_POST['reason'] ?? '');
+    $items = json_decode($_POST['items'], true);
 
     if (empty($reason)) {
         echo json_encode(['success' => false, 'message' => 'A reason for revision is required.']);
         return;
     }
 
+    if (empty($items)) {
+        echo json_encode(['success' => false, 'message' => 'Sale must have at least one item.']);
+        return;
+    }
+
     $conn->begin_transaction();
     try {
-        // 1. Get count and total for distribution calculation
-        $stmt = $conn->prepare("SELECT COUNT(*) as item_count, SUM(total_amount) as current_total FROM spareparts_transactions WHERE or_number = ? AND from_location = ? AND type = 'OUT'");
+        // 1. Check for duplicate SI# if changed
+        if ($new_or !== $original_or) {
+            $stmt = $conn->prepare("SELECT id FROM spareparts_transactions WHERE or_number = ? AND from_location = ? AND type = 'OUT' LIMIT 1");
+            $stmt->bind_param('ss', $new_or, $new_branch);
+            $stmt->execute();
+            if ($stmt->get_result()->num_rows > 0) {
+                throw new Exception("Duplicate SI # already exists in this branch: $new_or");
+            }
+        }
+
+        // 2. Return stock for old items
+        $stmt = $conn->prepare("SELECT part_no, quantity FROM spareparts_transactions WHERE or_number = ? AND from_location = ? AND type = 'OUT'");
         $stmt->bind_param('ss', $original_or, $original_branch);
         $stmt->execute();
-        $res = $stmt->get_result()->fetch_assoc();
-        $item_count = $res['item_count'] ?? 0;
-        $old_total = $res['current_total'] ?? 0;
-
-        if ($item_count > 0) {
-            $new_per_item = $total_amount / $item_count;
-            $diff = $total_amount - $old_total;
-
-            // 2. Update transaction records (metadata AND redistributed amount)
-            $stmt = $conn->prepare("UPDATE spareparts_transactions SET 
-                or_number = ?, 
-                from_location = ?, 
-                customer_name = ?, 
-                transaction_date = ?, 
-                transaction_type = ?,
-                total_amount = ?,
-                reason = ?
-                WHERE or_number = ? AND from_location = ? AND type = 'OUT'");
-            $stmt->bind_param('sssssdsss', $new_or, $new_branch, $customer_name, $sale_date, $transaction_type, $new_per_item, $reason, $original_or, $original_branch);
-            $stmt->execute();
-        } else {
-            $diff = 0; // Should not happen if editing a valid sale
+        $old_items_res = $stmt->get_result();
+        while ($old_item = $old_items_res->fetch_assoc()) {
+            $refill = $conn->prepare("UPDATE spareparts_inventory SET current_stock = current_stock + ? WHERE part_no = ? AND current_branch = ?");
+            $refill->bind_param('iss', $old_item['quantity'], $old_item['part_no'], $original_branch);
+            $refill->execute();
         }
 
-        // 3. Update or Handle Aging record
-        if ($transaction_type === 'charge') {
-            $stmt = $conn->prepare("SELECT * FROM spareparts_aging WHERE or_number = ? AND branch = ?");
-            $stmt->bind_param('ss', $original_or, $original_branch);
-            $stmt->execute();
-            $aging = $stmt->get_result()->fetch_assoc();
-
-            if ($aging) {
-                // Update existing aging record with new balance
-                $new_balance = $aging['balance'] + $diff;
-                $stmt = $conn->prepare("UPDATE spareparts_aging SET 
-                    or_number = ?, 
-                    branch = ?, 
-                    customer_name = ?, 
-                    sale_date = ?, 
-                    total_amount = ?, 
-                    balance = ? 
-                    WHERE or_number = ? AND branch = ?");
-                $stmt->bind_param('ssssddss', $new_or, $new_branch, $customer_name, $sale_date, $total_amount, $new_balance, $original_or, $original_branch);
-                $stmt->execute();
-            } else {
-                // Was likely cash, now charge? Create aging
-                $stmt = $conn->prepare("INSERT INTO spareparts_aging (or_number, branch, customer_name, sale_date, total_amount, balance) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param('ssssdd', $new_or, $new_branch, $customer_name, $sale_date, $total_amount, $total_amount);
-                $stmt->execute();
-            }
-        } else {
-            // Delete aging if changed to cash
-            $stmt = $conn->prepare("DELETE FROM spareparts_aging WHERE or_number = ? AND branch = ?");
-            $stmt->bind_param('ss', $original_or, $original_branch);
-            $stmt->execute();
-        }
-
-        // 4. Update payments if identification changed
-        $stmt = $conn->prepare("UPDATE spareparts_payments SET or_number = ?, branch = ? WHERE or_number = ? AND branch = ?");
-        $stmt->bind_param('ssss', $new_or, $new_branch, $original_or, $original_branch);
+        // 3. Delete old transaction records
+        $stmt = $conn->prepare("DELETE FROM spareparts_transactions WHERE or_number = ? AND from_location = ? AND type = 'OUT'");
+        $stmt->bind_param('ss', $original_or, $original_branch);
         $stmt->execute();
 
+        // 4. Process new items
+        $total_sale_amount = 0;
+        foreach ($items as $item) {
+            $pno = sanitizeInput($item['part_no']);
+            $qty = (int)$item['quantity'];
+            $price = (float)$item['price'];
+            $desc = sanitizeInput($item['description'] ?? '');
+            $subtotal = $qty * $price;
+            $total_sale_amount += $subtotal;
+
+            // Deduct stock for new item
+            $deduct = $conn->prepare("UPDATE spareparts_inventory SET current_stock = current_stock - ? WHERE part_no = ? AND current_branch = ?");
+            $deduct->bind_param('iss', $qty, $pno, $new_branch);
+            $deduct->execute();
+
+            // Insert new transaction record
+            $ins = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, transaction_type, or_number, customer_name, part_no, description, quantity, price, total_amount, from_location, sales_force, reason) 
+                                   VALUES (?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $ins->bind_param('ssssssiddsss', $sale_date, $transaction_type, $new_or, $customer_name, $pno, $desc, $qty, $price, $subtotal, $new_branch, $sales_force, $reason);
+            $ins->execute();
+        }
+
+        // 5. Update Aging record
+        // - Delete old aging if it exists
+        $conn->query("DELETE FROM spareparts_aging WHERE or_number = '$original_or' AND branch = '$original_branch'");
+
+        // - Create new if charge
+        if ($transaction_type === 'charge') {
+            // Check if there are payments already for this OR (if OR was same but type became charge)
+            $stmt = $conn->prepare("SELECT SUM(amount_paid) as total_paid FROM spareparts_payments WHERE (or_number = ? AND branch = ?) OR (or_number = ? AND branch = ?)");
+            $stmt->bind_param('ssss', $new_or, $new_branch, $original_or, $original_branch);
+            $stmt->execute();
+            $paid_res = $stmt->get_result()->fetch_assoc();
+            $total_paid = (float)($paid_res['total_paid'] ?? 0);
+            
+            // If OR changed, update payments to point to new OR
+            if ($new_or !== $original_or) {
+                $upd_pay = $conn->prepare("UPDATE spareparts_payments SET or_number = ? WHERE or_number = ? AND branch = ?");
+                $upd_pay->bind_param('sss', $new_or, $original_or, $original_branch);
+                $upd_pay->execute();
+            }
+
+            $balance = $total_sale_amount - $total_paid;
+            $stmt = $conn->prepare("INSERT INTO spareparts_aging (or_number, branch, customer_name, sale_date, total_amount, balance) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssdd', $new_or, $new_branch, $customer_name, $sale_date, $total_sale_amount, $balance);
+            $stmt->execute();
+        }
+
         $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Sale updated successfully with all adjustments.']);
+        addAuditLog('UPDATE', 'spareparts_sales', $new_or, "Revised sale $original_or ($original_branch) to $new_or. New total: $total_sale_amount. Reason: $reason");
+        echo json_encode(['success' => true, 'message' => 'Sale transaction revised successfully. Inventory levels updated.']);
     } catch (Exception $e) {
         $conn->rollback();
-        echo json_encode(['success' => false, 'message' => 'Failed to update sale: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Failed to revise sale: ' . $e->getMessage()]);
     }
 }
 
@@ -1636,6 +2360,7 @@ function deleteItem($type)
                 break;
         }
         $conn->commit();
+        addAuditLog('DELETE', 'spareparts', $id, "Deleted $type ID/REF $id from $targetBranch");
         echo json_encode(['success' => true, 'message' => ucfirst($type) . ' deleted successfully.']);
     } catch (Exception $e) {
         $conn->rollback();
@@ -2272,6 +2997,33 @@ function getLegacyInventoryReport($type, $period, $dateVal, $branch, $brand)
     return ['success' => true, 'data' => $data];
 }
 
+function getRankPrice()
+{
+    global $conn, $currentBranch;
+    $part_no = sanitizeInput($_GET['part_no'] ?? '');
+    $rank_level = sanitizeInput($_GET['rank_level'] ?? 'Standard');
+
+    $price = null;
+    // 1. Check Pricelist table
+    $stmt = $conn->prepare("SELECT price FROM spareparts_pricelists WHERE part_no = ? AND rank_level = ? AND branch = ?");
+    $stmt->bind_param('sss', $part_no, $rank_level, $currentBranch);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    
+    if ($res) {
+        $price = $res['price'];
+    } else {
+        // 2. Fallback to Spareparts Inventory
+        $stmt = $conn->prepare("SELECT price FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
+        $stmt->bind_param('ss', $part_no, $currentBranch);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        if ($res) $price = $res['price'];
+    }
+
+    echo json_encode(['success' => (null !== $price), 'price' => $price]);
+}
+
 function searchInventoryParts()
 {
     global $conn, $currentBranch, $isAdmin;
@@ -2282,7 +3034,7 @@ function searchInventoryParts()
     // If Admin/HeadOffice, show parts from all branches
     $whereBranch = $seeAll ? "" : " AND LOWER(current_branch) = LOWER(?)";
 
-    $stmt = $conn->prepare("SELECT id, brand, part_no, description, current_stock, price, current_branch
+    $stmt = $conn->prepare("SELECT id, brand, part_no, description, current_stock, price, cost, current_branch
                             FROM spareparts_inventory 
                             WHERE (part_no LIKE ? OR description LIKE ? OR brand LIKE ?) 
                             $whereBranch
@@ -2304,8 +3056,8 @@ function searchInventoryParts()
 
 function getSparepartsBranches()
 {
-    global $conn, $currentBranch, $isAdmin;
-    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    global $conn, $currentBranch, $isAdmin, $userRole;
+    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice' || strtolower(trim($userRole)) === 'spareparts-warehouse';
 
     if (!$seeAll) {
         // Only allow branch users to see Head Office (for transfers)
@@ -2313,7 +3065,7 @@ function getSparepartsBranches()
         return;
     }
 
-    $query = "SELECT DISTINCT branch FROM users WHERE position = 'Spareparts-Branch' AND branch IS NOT NULL AND branch != '' ORDER BY branch ASC";
+    $query = "SELECT DISTINCT branch FROM users WHERE position IN ('Spareparts-Sales', 'Spareparts-Warehouse', 'Spareparts-Retail') AND branch IS NOT NULL AND branch != '' ORDER BY branch ASC";
     $result = $conn->query($query);
     $branches = [];
     while ($row = $result->fetch_assoc()) {
@@ -2465,7 +3217,7 @@ function generateTransferReport()
         $whereSql = "WHERE " . implode(' AND ', $whereClauses);
     }
 
-    $sql = "SELECT t.transfer_date, t.id as transfer_number, t.from_branch, t.to_branch, t.status,
+    $sql = "SELECT t.transfer_date, t.id as transfer_number, t.transfer_no, t.from_branch, t.to_branch, t.status,
                    ti.part_no, ti.description, ti.quantity,
                    (SELECT brand FROM spareparts_inventory WHERE part_no = ti.part_no LIMIT 1) as brand
             FROM spareparts_transfers t
@@ -2593,7 +3345,7 @@ function getIncomingTransfersDetailed()
     }
 
     $sql = "SELECT ti.id as item_id, ti.id as id, ti.part_no, ti.description, ti.quantity as qty, 
-                   t.transfer_date, t.from_branch, t.id as transfer_number, t.status,
+                   t.transfer_date, t.from_branch, t.id as transfer_number, t.transfer_no, t.status,
                    i.brand
             FROM spareparts_transfers t
             JOIN spareparts_transfer_items ti ON t.id = ti.transfer_id AND (ti.status = 'In-Transit' OR ti.status IS NULL)
@@ -2667,7 +3419,7 @@ function batchReceiveTransfers()
                                       VALUES (?, ?, ?, ?, ?, ?, ?) 
                                       ON DUPLICATE KEY UPDATE 
                                       current_stock = current_stock + VALUES(current_stock), 
-                                      cost = (cost + VALUES(cost)) / 2,
+                                      cost = IF(VALUES(cost) > cost, VALUES(cost), cost),
                                       brand = IF(brand = '' OR brand IS NULL, VALUES(brand), brand),
                                       price = IF(price = 0 OR price IS NULL, VALUES(price), price)");
             $invStmt->bind_param('sssidss', $part_no, $description, $brand, $quantity, $cost, $price, $currentBranch);
@@ -2783,7 +3535,13 @@ function batchRejectTransfers()
 function searchPartsGlobal()
 {
     global $conn;
-    $term = sanitizeInput($_GET['term'] ?? '');
+    $term = sanitizeInput($_GET['term'] ?? $_GET['search'] ?? '');
+    
+    if (empty($term)) {
+        echo json_encode(['success' => true, 'data' => []]);
+        exit();
+    }
+
     $searchTerm = "%{$term}%";
 
     $stmt = $conn->prepare("SELECT brand, part_no, description, current_stock, price, current_branch

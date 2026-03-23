@@ -1,5 +1,5 @@
 <?php
-require_once 'db_config.php';
+require_once '../api/db_config.php';
 
 header('Content-Type: application/json');
 
@@ -8,9 +8,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$action = $_GET['action'] ?? '';
+// Only Spareparts-Admin and Spareparts-Owner can access this API
+if (!isset($_SESSION['position']) || !in_array($_SESSION['position'], ['Spareparts-Admin', 'Spareparts-Owner'])) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
+}
 
-// Change to handle both POST form data and JSON
+$action = $_GET['action'] ?? '';
 $data = json_decode(file_get_contents('php://input'), true);
 if ($data === null) {
     $data = $_POST;
@@ -52,21 +56,25 @@ function getUsers($conn)
     $perPage = 10;
     $offset = ($page - 1) * $perPage;
 
-    $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
+    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $searchTerm = "%$search%";
 
-    $sql = "SELECT id, username, fullName, position, branch FROM users WHERE 1=1";
-    $countSql = "SELECT COUNT(*) as total FROM users WHERE 1=1";
+    // STRICTLY ONLY SPAREPARTS USERS - Use parentheses for OR conditions to ensure AND search applies correctly
+    $baseQuery = " FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f')";
+    
+    $sql = "SELECT id, username, fullName, position, branch" . $baseQuery;
+    $countSql = "SELECT COUNT(*) as total" . $baseQuery;
 
     if (!empty($search)) {
-        $searchTerm = "%$search%";
-        $sql .= " AND (username LIKE ? OR fullName LIKE ?)";
-        $countSql .= " AND (username LIKE ? OR fullName LIKE ?)";
+        $sql .= " AND (username LIKE ? OR fullName LIKE ? OR position LIKE ? OR branch LIKE ?)";
+        $countSql .= " AND (username LIKE ? OR fullName LIKE ? OR position LIKE ? OR branch LIKE ?)";
     }
-    $sql .= " LIMIT ? OFFSET ?";
+    
+    $sql .= " ORDER BY id DESC LIMIT ? OFFSET ?";
 
     $stmt = $conn->prepare($countSql);
     if (!empty($search)) {
-        $stmt->bind_param("sss", $searchTerm, $searchTerm, $searchTerm);
+        $stmt->bind_param("ssss", $searchTerm, $searchTerm, $searchTerm, $searchTerm);
     }
     $stmt->execute();
     $total = $stmt->get_result()->fetch_assoc()['total'];
@@ -74,7 +82,7 @@ function getUsers($conn)
 
     $stmt = $conn->prepare($sql);
     if (!empty($search)) {
-        $stmt->bind_param("sssii", $searchTerm, $searchTerm, $searchTerm, $perPage, $offset);
+        $stmt->bind_param("ssssii", $searchTerm, $searchTerm, $searchTerm, $searchTerm, $perPage, $offset);
     } else {
         $stmt->bind_param("ii", $perPage, $offset);
     }
@@ -103,27 +111,36 @@ function getUser($conn)
     }
 
     $id = intval($_GET['id']);
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch FROM users WHERE id = ?");
+    // Ensure we only fetch spareparts users
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows === 0) {
-        throw new Exception('User not found');
+        throw new Exception('User not found or unauthorized');
     }
 
     $user = $result->fetch_assoc();
     echo json_encode(['success' => true, 'user' => $user]);
 }
 
+function enforceSparepartsRole($position) {
+    if (strpos($position, 'Spareparts-') !== 0 && $position !== 'f') {
+        throw new Exception("You are only allowed to assign 'Spareparts-' roles.");
+    }
+}
+
 function addUser($conn, $data)
 {
-    $required = ['username', 'password', 'confirmPassword'];
+    $required = ['username', 'password', 'confirmPassword', 'position'];
     foreach ($required as $field) {
         if (empty($data[$field])) {
             throw new Exception("Field '$field' is required");
         }
     }
+
+    enforceSparepartsRole($data['position']);
 
     if ($data['password'] !== $data['confirmPassword']) {
         throw new Exception('Passwords do not match');
@@ -139,7 +156,7 @@ function addUser($conn, $data)
     $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
     $fullName = $data['fullName'] ?? null;
-    $position = $data['position'] ?? null;
+    $position = $data['position'];
     $branch = $data['branch'] ?? null;
 
     $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password) 
@@ -163,19 +180,18 @@ function addUser($conn, $data)
 
 function editUser($conn, $data)
 {
-
     if (empty($data['id'])) {
         throw new Exception('User ID is required');
     }
 
     $id = intval($data['id']);
 
-
-    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ?");
+    // Ensure they are only editing a spareparts user
+    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     if ($stmt->get_result()->num_rows === 0) {
-        throw new Exception('User not found');
+        throw new Exception('User not found or unauthorized');
     }
 
     if (!empty($data['username'])) {
@@ -206,6 +222,7 @@ function editUser($conn, $data)
     }
 
     if (isset($data['position'])) {
+        enforceSparepartsRole($data['position']);
         $updates[] = "position = ?";
         $params[] = $data['position'];
         $types .= "s";
@@ -217,8 +234,10 @@ function editUser($conn, $data)
         $types .= "s";
     }
 
-
     if (!empty($data['password'])) {
+        if ($data['password'] !== ($data['confirmPassword'] ?? '')) {
+            throw new Exception('Passwords do not match');
+        }
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
         $updates[] = "password = ?";
         $params[] = $hashedPassword;
@@ -251,15 +270,14 @@ function deleteUser($conn, $data)
 
     $id = intval($data['id']);
 
-
-    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ?");
+    $stmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     if ($stmt->get_result()->num_rows === 0) {
-        throw new Exception('User not found');
+        throw new Exception('User not found or unauthorized');
     }
 
-    $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+    $stmt = $conn->prepare("DELETE FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
     $stmt->bind_param("i", $id);
 
     if ($stmt->execute()) {

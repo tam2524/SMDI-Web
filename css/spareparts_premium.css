@@ -1,0 +1,920 @@
+/* =============================================================
+   SMDI Spareparts Premium Design System
+   Color Scheme: Green & White
+   ============================================================= */
+
+/* ── CSS Variables (Token System) ── */
+:root {
+    --sp-green: #004d40;
+    --sp-green-dark: #00251a;
+    --sp-green-light: #00695c;
+    --sp-green-bg: #e0f2f1;
+    --sp-green-hover: #00332c;
+    --sp-green-50: rgba(0, 77, 64, 0.05);
+    --sp-green-10: rgba(0, 77, 64, 0.1);
+    --sp-green-20: rgba(0, 77, 64, 0.2);
+    --sp-white: #ffffff;
+    --sp-off-white: #f4f7f6;
+    --sp-body-bg: #f4f7f6;
+    --sp-card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    --sp-card-radius: 12px;
+    --sp-font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --sp-text-dark: #1a1a2e;
+    --sp-text-muted: #64748b;
+    --sp-border: #e2e8f0;
+    --sp-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Base ── */
+body {
+    background-color: var(--sp-body-bg) !important;
+    font-family: var(--sp-font) !important;
+    color: var(--sp-text-dark);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Bootstrap Overrides (Green Theme) ── */
+.bg-primary { background-color: var(--sp-green) !important; }
+.bg-dark { background-color: var(--sp-green) !important; }
+.text-primary { color: var(--sp-green) !important; }
+
+.btn-primary {
+    background-color: var(--sp-green) !important;
+    border-color: var(--sp-green) !important;
+    font-weight: 600;
+    transition: var(--sp-transition);
+}
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+    background-color: var(--sp-green-hover) !important;
+    border-color: var(--sp-green-hover) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--sp-green-20);
+}
+
+.btn-outline-primary {
+    color: var(--sp-green) !important;
+    border-color: var(--sp-green) !important;
+    font-weight: 600;
+    transition: var(--sp-transition);
+}
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+    background-color: var(--sp-green) !important;
+    border-color: var(--sp-green) !important;
+    color: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--sp-green-20);
+}
+
+.btn-success {
+    background-color: var(--sp-green-light) !important;
+    border-color: var(--sp-green-light) !important;
+    font-weight: 600;
+}
+.btn-success:hover {
+    background-color: var(--sp-green) !important;
+    border-color: var(--sp-green) !important;
+}
+
+/* ── Premium Navbar ── */
+.navbar-custom,
+.navbar.navbar-dark.bg-dark,
+.navbar-expand-lg.navbar-dark.bg-dark {
+    background: linear-gradient(135deg, var(--sp-green), var(--sp-green-dark)) !important;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 0;
+    border-bottom: 3px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+}
+
+.navbar-custom .navbar-brand,
+.navbar.navbar-dark .navbar-brand {
+    color: white !important;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.navbar-custom .back-btn,
+.navbar .back-btn {
+    color: white !important;
+    font-size: 1.25rem;
+    margin-right: 1rem;
+    text-decoration: none;
+    transition: var(--sp-transition);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+}
+.navbar-custom .back-btn:hover,
+.navbar .back-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.navbar-custom .user-info,
+.navbar .user-info {
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.navbar-custom .btn-logout,
+.navbar .btn-logout,
+.navbar .btn-outline-light {
+    border: 1px solid rgba(255,255,255,0.4) !important;
+    color: white !important;
+    background: rgba(255,255,255,0.08) !important;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--sp-transition);
+    letter-spacing: 0.3px;
+}
+.navbar-custom .btn-logout:hover,
+.navbar .btn-logout:hover,
+.navbar .btn-outline-light:hover {
+    background: rgba(255,255,255,0.2) !important;
+    border-color: rgba(255,255,255,0.6) !important;
+}
+
+/* ── Premium Cards ── */
+.card {
+    border: 1px solid var(--sp-border);
+    border-radius: var(--sp-card-radius);
+    box-shadow: var(--sp-card-shadow);
+    overflow: hidden;
+}
+
+.stat-card {
+    border: none;
+    border-radius: var(--sp-card-radius);
+    box-shadow: var(--sp-card-shadow);
+    transition: var(--sp-transition);
+    background: white;
+    overflow: hidden;
+}
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+.stat-card .card-body {
+    padding: 1.25rem;
+}
+.stat-card .card-title {
+    color: var(--sp-text-muted) !important;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+}
+.stat-card .card-text {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--sp-text-dark);
+}
+
+/* ── Premium Tables ── */
+.table thead th {
+    background-color: var(--sp-green) !important;
+    color: #fff !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    border: none !important;
+    padding: 14px 16px;
+    white-space: nowrap;
+}
+.table tbody tr {
+    transition: background-color 0.15s ease;
+}
+.table tbody tr:hover {
+    background-color: var(--sp-green-50) !important;
+}
+.table tbody td {
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f0f4f3;
+    padding: 12px 16px;
+    vertical-align: middle;
+}
+
+/* ── Premium Tabs ── */
+.nav-tabs .nav-link {
+    color: var(--sp-text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 10px 18px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    transition: var(--sp-transition);
+    background: transparent;
+}
+.nav-tabs .nav-link:hover {
+    color: var(--sp-green);
+    border-bottom-color: var(--sp-green-10);
+}
+.nav-tabs .nav-link.active {
+    background-color: var(--sp-green) !important;
+    color: white !important;
+    border-color: var(--sp-green) !important;
+    border-radius: 6px 6px 0 0;
+    font-weight: 700;
+}
+
+/* Custom flat tabs (used in warehouse etc.) */
+.custom-tabs {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background: transparent;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.custom-tabs .nav-link {
+    color: var(--sp-text-muted) !important;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: white;
+    transition: var(--sp-transition);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.custom-tabs .nav-link:hover {
+    color: var(--sp-green) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    border-color: var(--sp-green-10);
+}
+.custom-tabs .nav-link.active {
+    color: var(--sp-green) !important;
+    background-color: var(--sp-green-bg) !important;
+    box-shadow: 0 2px 8px rgba(0,77,64,0.12);
+    border-color: var(--sp-green);
+    border-width: 1px;
+}
+
+/* Sales Sub-tabs */
+#salesSubTabs .nav-link.active {
+    background-color: var(--sp-green) !important;
+    color: white !important;
+    box-shadow: 0 4px 10px var(--sp-green-20);
+}
+
+/* ── Back to Dashboard Button ── */
+.btn-premium-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #004d40;
+    color: #ffffff !important;
+    padding: 8px 24px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 77, 64, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-premium-back i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-premium-back:hover {
+    background: #00332c;
+    box-shadow: 0 6px 20px rgba(0, 77, 64, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-premium-back:hover i {
+    transform: translateX(-3px);
+}
+
+/* ── Premium Modals ── */
+.modal-content {
+    border: none;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    overflow: hidden !important;
+    padding: 0 !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 1.25rem 1.5rem;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+}
+.modal-header.bg-primary,
+.modal-header.bg-dark,
+.modal-header.bg-success {
+    background: linear-gradient(135deg, var(--sp-green), var(--sp-green-dark)) !important;
+    color: white !important;
+}
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+.modal-header.bg-info {
+    background: linear-gradient(135deg, var(--sp-green-light), var(--sp-green)) !important;
+    color: white !important;
+}
+.modal-header.bg-warning {
+    background: linear-gradient(135deg, var(--sp-green-light), var(--sp-green)) !important;
+    color: white !important;
+}
+
+.modal-title {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 1.1rem;
+    color: white !important;
+}
+
+.modal-body {
+    padding: 1.5rem 1.75rem;
+}
+
+.modal-footer {
+    background-color: #f8fafc;
+    border-top: 1px solid var(--sp-border);
+    padding: 1.25rem 1.75rem;
+}
+
+/* ── Premium Forms ── */
+.form-label {
+    font-weight: 600;
+    color: var(--sp-text-muted);
+    font-size: 0.82rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--sp-border);
+    background-color: #f8fafc;
+    transition: var(--sp-transition);
+    font-size: 0.9rem;
+}
+.form-control:focus, .form-select:focus {
+    background-color: white;
+    border-color: var(--sp-green);
+    box-shadow: 0 0 0 4px var(--sp-green-10);
+}
+
+.input-group-text {
+    background-color: #f1f5f9;
+    border-color: var(--sp-border);
+    color: var(--sp-text-muted);
+    font-weight: 600;
+    border-radius: 10px 0 0 10px;
+}
+
+/* ── Premium Buttons ── */
+.btn-premium-save {
+    background: linear-gradient(135deg, var(--sp-green), var(--sp-green-dark));
+    color: white;
+    border: none;
+    padding: 0.7rem 1.75rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: var(--sp-transition);
+    box-shadow: 0 4px 15px var(--sp-green-20);
+}
+.btn-premium-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 77, 64, 0.35);
+    color: white;
+}
+
+.btn-premium-cancel {
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--sp-transition);
+}
+.btn-premium-cancel:hover {
+    background: #cbd5e1;
+    color: #1e293b;
+}
+
+.btn-success-premium {
+    background: linear-gradient(135deg, var(--sp-green-light), var(--sp-green)) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600;
+    transition: var(--sp-transition);
+}
+.btn-success-premium:hover {
+    box-shadow: 0 4px 12px var(--sp-green-20);
+    transform: translateY(-1px);
+}
+
+/* ── Alert / Notification Badges ── */
+.badge.bg-info, .badge.bg-warning:not(.text-dark) {
+    background-color: var(--sp-green-light) !important;
+    color: #fff !important;
+}
+.badge.bg-primary {
+    background-color: var(--sp-green) !important;
+}
+
+/* ── Pagination ── */
+.pagination .page-link {
+    color: var(--sp-green);
+    border-radius: 8px;
+    border: 1px solid var(--sp-border);
+    margin: 0 2px;
+    transition: var(--sp-transition);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.pagination .page-link:hover {
+    background-color: var(--sp-green);
+    color: white;
+    border-color: var(--sp-green);
+}
+.pagination .page-item.active .page-link {
+    background-color: var(--sp-green);
+    border-color: var(--sp-green);
+    color: white;
+    box-shadow: 0 2px 8px var(--sp-green-20);
+}
+
+/* ── Transfer Cards ── */
+.transfer-overview-card {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--sp-border);
+    transition: var(--sp-transition);
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+.transfer-overview-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.transfer-card-btn:hover {
+    background: var(--sp-green) !important;
+    color: white !important;
+    border-color: var(--sp-green) !important;
+}
+
+/* ── Green Column Headers for Transfers ── */
+.global-transfer-col-header {
+    background: linear-gradient(135deg, var(--sp-green), var(--sp-green-dark)) !important;
+    color: white !important;
+    border-bottom: 3px solid rgba(255,255,255,0.15) !important;
+}
+.global-transfer-col-header .badge {
+    background: rgba(255,255,255,0.95) !important;
+    color: var(--sp-green) !important;
+    font-weight: 700;
+}
+
+/* ── Batch Action Bar ── */
+#inventoryBatchBar,
+#salesBatchBar,
+.batch-action-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    background: #fff;
+    padding: 14px 28px;
+    border-radius: 50px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+    display: none;
+    align-items: center;
+    gap: 15px;
+    border: 2px solid var(--sp-green);
+}
+.selection-count {
+    font-weight: 700;
+    color: var(--sp-green);
+}
+
+/* ── Scrollbar Styling ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #c1c9d2; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Receipt / Report Styles ── */
+.receipt-header {
+    border-bottom: 3px solid var(--sp-green);
+    padding-bottom: 15px;
+}
+.receipt-header h5 {
+    color: var(--sp-green);
+    font-weight: 700;
+}
+
+/* ── Utility Classes ── */
+.bg-navy { background-color: var(--sp-green) !important; }
+.bg-dark-green { background-color: var(--sp-green-dark) !important; color: white !important; }
+.text-dark-green { color: var(--sp-green-dark) !important; }
+.border-dark-green { border-color: var(--sp-green) !important; }
+.bg-dark-green-light { background-color: var(--sp-green-bg) !important; }
+.bg-dark-grey { background-color: var(--sp-green) !important; } /* Redirect grey to green */
+.bg-cyan { background-color: var(--sp-green-light) !important; color: white !important; }
+
+/* ── Search Results ── */
+.search-results-list {
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    z-index: 1050;
+    width: 100%;
+    background: white;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    border-radius: 0 0 12px 12px;
+    border: 1px solid var(--sp-border);
+}
+
+/* ── Stock Status Indicators ── */
+.stock-zero { background-color: #fef2f2 !important; }
+
+/* ── Inventory Table Polish ── */
+#inventoryTable thead tr th {
+    background-color: var(--sp-green) !important;
+    color: #fff !important;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    border: none;
+}
+#inventoryTable tbody tr:hover {
+    background-color: var(--sp-green-bg) !important;
+}
+
+/* ── Stat Cards (Custom) ── */
+.custom-stat-card {
+    border: 1px solid var(--sp-border);
+    border-radius: 10px;
+    background: #fff;
+    padding: 18px 22px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    height: 100%;
+    transition: var(--sp-transition);
+}
+.custom-stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+}
+.stat-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--sp-text-muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--sp-text-dark);
+    margin: 0;
+}
+
+/* ── Badge Balance ── */
+.badge-balance {
+    background-color: #fee2e2;
+    color: #dc2626;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+/* ── Scanning Zone (inventory_in) ── */
+.scanning-zone {
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--sp-card-shadow);
+    padding: 30px;
+    margin-bottom: 30px;
+    border-top: 5px solid var(--sp-green);
+}
+
+.btn-premium {
+    background: linear-gradient(135deg, var(--sp-green), var(--sp-green-dark));
+    color: white;
+    padding: 12px 25px;
+    border-radius: 10px;
+    font-weight: 700;
+    transition: var(--sp-transition);
+    border: none;
+}
+.btn-premium:hover {
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px var(--sp-green-20);
+}
+
+/* ── Model Cards (for spareparts_inventory_style) ── */
+.model-card:hover {
+    border-color: var(--sp-green) !important;
+}
+.quantity-badge {
+    background-color: var(--sp-green) !important;
+}
+.branch-marker {
+    background-color: var(--sp-green);
+}
+
+/* ── Smooth Page Loading Animation ── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+main {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* ── Print Styles (Preserved) ── */
+@media print {
+    .navbar, .navbar-custom, .no-print { display: none !important; }
+    .modal-header, .modal-footer { display: none !important; }
+    body { background: white !important; }
+    .table thead th {
+        background-color: #e8e8e8 !important;
+        color: #333 !important;
+    }
+}
+
+/* ── Responsive ── */
+
+/* ── Fullscreen Modal System (Opt-in via .modal-fs) ── */
+.modal.modal-fs .modal-dialog {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.modal.modal-fs .modal-content {
+    height: 100% !important;
+    border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+    border: none;
+}
+.modal.modal-fs .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #f8fafc;
+    padding: 2rem !important;
+}
+
+/* Constrain content width in fullscreen for better readability */
+.modal-fs-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.modal-fs .modal-header {
+    border-radius: 0;
+    padding: 1rem 2rem;
+}
+
+.modal-fs .modal-footer {
+    border-radius: 0;
+    padding: 1rem 2rem;
+}
+
+/* ── Pending Transfers Dashboard Component ── */
+.pending-transfer-card {
+    background: white;
+    border-radius: 14px;
+    border: 1.5px solid var(--sp-border);
+    box-shadow: var(--sp-card-shadow);
+    padding: 0;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.5s ease-out;
+}
+.pending-transfer-header {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.pending-transfer-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--sp-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: var(--sp-transition);
+}
+.pending-transfer-item:hover {
+    background-color: #fffbeb;
+}
+.pending-transfer-item:last-child {
+    border-bottom: none;
+}
+.transfer-info h6 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--sp-text-dark);
+}
+.transfer-info p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--sp-text-muted);
+}
+.btn-accept-sm {
+    background: var(--sp-green);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: var(--sp-transition);
+}
+.btn-accept-sm:hover {
+    background: var(--sp-green-dark);
+    transform: scale(1.05);
+}
+/* ── Custom Legacy Modals Lookalike (Matching User Request) ── */
+#successModal .modal-content, 
+#errorModal .modal-content, 
+#customConfirmModal .modal-content {
+    border-radius: 20px !important;
+    border: none !important;
+    padding: 1.5rem 1rem !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2) !important;
+}
+
+#successModal .modal-header, 
+#errorModal .modal-header,
+#successModal .modal-footer,
+#errorModal .modal-footer,
+#customConfirmModal .modal-footer {
+    border: none !important;
+    background: transparent !important;
+    justify-content: center !important;
+    padding-top: 0 !important;
+}
+
+#successModal .modal-title, 
+#errorModal .modal-title {
+    color: #1e293b !important;
+    font-size: 1.8rem !important;
+    font-weight: 800 !important;
+    width: 100%;
+    text-align: center;
+    margin-top: 10px;
+}
+
+#successMessage, #errorMessage, #confirmModalMessage {
+    font-size: 1.1rem !important;
+    color: #64748b !important;
+    text-align: center;
+    padding: 0 1rem 1rem !important;
+}
+
+#successModal .btn-success,
+#errorModal .btn-primary,
+#errorModal .btn-secondary,
+#customConfirmModal .btn-primary {
+    background-color: #7367f0 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 12px 40px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px 0 rgba(115, 103, 240, 0.35) !important;
+}
+.swal2-popup {
+    border-radius: 16px !important;
+    padding: 3rem 2rem !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+    font-family: var(--sp-font) !important;
+}
+
+.swal2-title {
+    font-size: 1.85rem !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    margin-top: 1.5rem !important;
+    letter-spacing: -0.5px !important;
+}
+
+.swal2-html-container {
+    font-size: 1.15rem !important;
+    color: #64748b !important;
+    margin-top: 0.75rem !important;
+    line-height: 1.5 !important;
+}
+
+.swal2-icon {
+    border-width: 3px !important;
+    margin-top: 0 !important;
+    transform: scale(1.1) !important;
+}
+
+.swal2-confirm {
+    background-color: #7367f0 !important; /* Premium Purple from the photo */
+    border-radius: 10px !important;
+    padding: 12px 40px !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+    box-shadow: 0 4px 14px 0 rgba(115, 103, 240, 0.35) !important;
+    transition: all 0.2s ease !important;
+    text-transform: none !important;
+}
+
+.swal2-confirm:hover {
+    box-shadow: 0 6px 20px rgba(115, 103, 240, 0.45) !important;
+    transform: translateY(-2px);
+    background-color: #6350e9 !important;
+}
+
+.swal2-confirm:focus {
+    box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.2) !important;
+}
+
+.swal2-cancel {
+    border-radius: 10px !important;
+    padding: 12px 40px !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+    border: 1px solid #e2e8f0 !important;
+    background-color: #fff !important;
+    color: #64748b !important;
+    transition: all 0.2s ease !important;
+}
+
+.swal2-cancel:hover {
+    background-color: #f8fafc !important;
+    color: #1e293b !important;
+}
+
+.swal2-icon.swal2-success {
+    border-color: #10b981 !important; /* Brighter, modern green */
+    color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+    border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+    background-color: #10b981 !important;
+}
+
+.swal2-icon.swal2-error {
+    border-color: #ef4444 !important;
+}
+
+.swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+    background-color: #ef4444 !important;
+}
+
+.swal2-icon.swal2-warning {
+    border-color: #f59e0b !important;
+    color: #f59e0b !important;
+}
+
+.swal2-actions {
+    margin-top: 2.5rem !important;
+}
