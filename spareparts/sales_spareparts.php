@@ -785,9 +785,9 @@ endif; ?>
                             <table class='table table-hover align-middle' id='employeesTable'>
                                 <thead>
                                     <tr>
-                                        <th>Employee Name</th>
-                                        <th>Role / Position</th>
-                                        <th>Date Added</th>
+                                        <th>Employee Information</th>
+                                        <th>Branch</th>
+                                        <th>Sales Volume</th>
                                         <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
@@ -1200,7 +1200,15 @@ endif; ?>
                                     Type</label><select class='form-select' id='out_transaction_type' required>
                                     <option value='cash' selected>Cash Sales</option>
                                     <option value='charge'>Charge Sales (Installment)</option>
+                                    <option value='pdc'>Charge Sales w/ PDC</option>
                                 </select></div>
+                        </div>
+                        <div class="row g-3 mb-3 d-none" id="pdc_fields">
+                            <div class="col-md-12">
+                                <label for='out_check_date' class='form-label fw-bold text-primary'>PDC Check Date (Maturity Date)</label>
+                                <input type='date' class='form-control border-primary' id='out_check_date'>
+                                <small class="text-muted">Enter the date when the check can be deposited.</small>
+                            </div>
                         </div>
                         <!-- Sales Force Field -->
                         <div class="row g-3 mb-3">

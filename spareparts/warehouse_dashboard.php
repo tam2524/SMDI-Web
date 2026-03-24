@@ -418,7 +418,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                     <a href="#" class="module-card bg-menu-gray" data-bs-toggle="modal" data-bs-target="#inventoryInModal">
                         <div class="module-icon-wrap"><i class="bi bi-box-arrow-in-down"></i></div>
                         <div>
-                            <div class="module-title ">Supplier Receipt (IN)</div>
+                            <div class="module-title">Received Stocks (RR/IN)</div>
                             <div class="module-desc">Receive stocks from supplier deliveries</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
@@ -445,7 +445,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                     <a href="transfer_stock.php" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-truck"></i></div>
                         <div>
-                            <div class="module-title">Transfer Stocks</div>
+                            <div class="module-title">Stock Transfer</div>
                             <div class="module-desc">Transfer stocks to other branches</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
@@ -492,28 +492,20 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                     </div>
                     <div class="sidebar-body">
                         <div class="summary-row">
-                            <span class="summary-row-label">Stocks In</span>
-                            <span class="summary-row-val" id="in-qty">—</span>
+                            <span class="summary-row-label">Received Stocks (Qty)</span>
+                            <span class="summary-row-val" id="received-qty">0</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Cost Amount</span>
-                            <span class="summary-row-val" id="in-amount">—</span>
+                            <span class="summary-row-label">Received Amount</span>
+                            <span class="summary-row-val" id="received-amount">₱0.00</span>
+                        </div>
+                        <div class="summary-row border-top mt-2 pt-2">
+                            <span class="summary-row-label">Transferred Stocks (Qty)</span>
+                            <span class="summary-row-val" id="transferred-qty">0</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Stocks Out</span>
-                            <span class="summary-row-val" id="out-qty">—</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-row-label">Cost Amount</span>
-                            <span class="summary-row-val" id="out-amount">—</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-row-label">Received Stocks</span>
-                            <span class="summary-row-val" id="received-qty">—</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-row-label">Cost Amount</span>
-                            <span class="summary-row-val" id="received-amount">—</span>
+                            <span class="summary-row-label">Transferred Amount</span>
+                            <span class="summary-row-val" id="transferred-amount">₱0.00</span>
                         </div>
                     </div>
                 </div>

@@ -8,14 +8,10 @@ function updateWarehouseSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
-                setT('in-qty', Number(s.in.qty).toLocaleString());
-                setT('in-amount', '₱' + Number(s.in.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('out-qty', Number(s.out.qty).toLocaleString());
-                setT('out-amount', '₱' + Number(s.out.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
                 setT('received-qty', Number(s.received.qty).toLocaleString());
                 setT('received-amount', '₱' + Number(s.received.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                
-
+                setT('transferred-qty', Number(s.transferred.qty).toLocaleString());
+                setT('transferred-amount', '₱' + Number(s.transferred.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
             }
         });
 }
@@ -30,12 +26,12 @@ function updateSalesSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
-                setT('cash-qty', Number(s.cash.qty).toLocaleString());
                 setT('cash-amount', '₱' + Number(s.cash.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('charge-qty', Number(s.charge.qty).toLocaleString());
                 setT('charge-amount', '₱' + Number(s.charge.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('total-qty', Number(s.total.qty).toLocaleString());
-                setT('total-amount', '₱' + Number(s.total.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('charge-pdc-amount', '₱' + Number(s.charge_pdc.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('payments-amount', '₱' + Number(s.payments.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('check-dues-amount', '₱' + Number(s.check_dues.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('payables-due-amount', '₱' + Number(s.payables_due.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
             }
         });
 }
@@ -50,11 +46,10 @@ function updateConsolidatedSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
-                setT('global-cash-qty', Number(s.cash.qty).toLocaleString());
                 setT('global-cash-amount', '₱' + Number(s.cash.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('global-charge-qty', Number(s.charge.qty).toLocaleString());
                 setT('global-charge-amount', '₱' + Number(s.charge.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('global-total-qty', Number(s.total.qty).toLocaleString());
+                setT('global-charge-pdc-amount', '₱' + Number(s.charge_pdc.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('global-payments-amount', '₱' + Number(s.payments.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
                 setT('global-total-amount', '₱' + Number(s.total.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
             }
         });

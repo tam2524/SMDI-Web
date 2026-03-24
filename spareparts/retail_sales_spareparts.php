@@ -785,9 +785,9 @@ endif; ?>
                             <table class='table table-hover align-middle' id='employeesTable'>
                                 <thead>
                                     <tr>
-                                        <th>Employee Name</th>
-                                        <th>Role / Position</th>
-                                        <th>Date Added</th>
+                                        <th>Employee Information</th>
+                                        <th>Branch</th>
+                                        <th>Sales Volume</th>
                                         <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
@@ -1198,7 +1198,16 @@ endif; ?>
                             <div class="col-md-6"><label for='out_transaction_type' class='form-label'>Payment
                                     Type</label><select class='form-select' id='out_transaction_type' required>
                                     <option value='cash' selected>Cash Sales</option>
+                                    <option value='charge'>Charge Sales (Installment)</option>
+                                    <option value='pdc'>Charge Sales w/ PDC</option>
                                 </select></div>
+                        </div>
+                        <div class="row g-3 mb-3 d-none" id="pdc_fields">
+                            <div class="col-md-12">
+                                <label for='out_check_date' class='form-label fw-bold text-primary'>PDC Check Date (Maturity Date)</label>
+                                <input type='date' class='form-control border-primary' id='out_check_date'>
+                                <small class="text-muted">Enter the date when the check can be deposited.</small>
+                            </div>
                         </div>
                         <!-- Sales Force Field -->
                         <div class="row g-3 mb-3">
@@ -2188,7 +2197,7 @@ endif; ?>
         <div class='modal-dialog modal-md modal-dialog-centered'>
             <div class='modal-content border-0 shadow-lg'>
                 <div class='modal-header bg-success text-white border-0'>
-                    <h5 class='modal-title fw-bold'><i class="bi bi-person-badge me-2"></i>Manage Sales Force</h5>
+                    <h5 class='modal-title fw-bold text-white'><i class="bi bi-person-badge me-2"></i>Manage Employees</h5>
                     <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
                 </div>
                 <div class='modal-body p-4'>
@@ -2196,12 +2205,22 @@ endif; ?>
                     <div class="card border-0 bg-light rounded-3 mb-4">
                         <div class="card-body p-3">
                             <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-person-plus me-2 text-success"></i>Add Employee</h6>
-                            <form id="addSalesForceForm" class="d-flex gap-2">
-                                <input type="text" id="sf_employee_name" class="form-control" 
-                                    placeholder="Employee full name..." required autocomplete="off">
-                                <button type="submit" class="btn btn-success fw-bold px-3 text-nowrap">
-                                    <i class="bi bi-plus-lg me-1"></i>Add
-                                </button>
+                            <form id="addSalesForceForm">
+                                <div class="row g-2">
+                                    <div class="col-md-7">
+                                        <input type="text" id="sf_employee_name" class="form-control" 
+                                            placeholder="Employee full name..." required autocomplete="off">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" id="sf_position" class="form-control" 
+                                            placeholder="Position..." autocomplete="off">
+                                    </div>
+                                    <div class="col-12 text-end mt-2">
+                                        <button type="submit" class="btn btn-success fw-bold px-4">
+                                            <i class="bi bi-plus-lg me-1"></i>Add Staff
+                                        </button>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -2216,6 +2235,35 @@ endif; ?>
                 <div class='modal-footer border-0'>
                     <button type='button' class='btn btn-secondary px-4' data-bs-dismiss='modal'>Close</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT EMPLOYEE MODAL -->
+    <div class='modal fade' id='editEmployeeModal' tabindex='-1' aria-hidden='true'>
+        <div class='modal-dialog modal-sm modal-dialog-centered'>
+            <div class='modal-content border-0 shadow-lg'>
+                <div class='modal-header bg-dark text-white border-0'>
+                    <h5 class='modal-title fw-bold text-white'><i class="bi bi-pencil-square me-2"></i>Edit Employee</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+                <form id="editEmployeeForm">
+                    <input type="hidden" id="edit_sf_id">
+                    <div class='modal-body p-4'>
+                        <div class="mb-3">
+                            <label class="form-label x-small fw-bold text-muted text-uppercase">Employee Name</label>
+                            <input type="text" id="edit_sf_name" class="form-control fw-bold" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label x-small fw-bold text-muted text-uppercase">Position</label>
+                            <input type="text" id="edit_sf_position" class="form-control" placeholder="e.g. Sales, Mechanic...">
+                        </div>
+                    </div>
+                    <div class='modal-footer border-0 pt-0'>
+                        <button type='button' class='btn btn-light px-3' data-bs-dismiss='modal'>Cancel</button>
+                        <button type='submit' class='btn btn-dark px-4 fw-bold'>Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

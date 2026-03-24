@@ -1355,6 +1355,14 @@ $(document).ready(function () {
             renderSaleCart();
         });
 
+        $('#out_transaction_type').on('change', function() {
+            if ($(this).val() === 'pdc') {
+                $('#pdc_fields').removeClass('d-none');
+            } else {
+                $('#pdc_fields').addClass('d-none');
+            }
+        });
+
         $('#sellPartsOutForm').on('submit', function (e) {
             e.preventDefault();
             if (saleCart.length === 0) { showErrorModal('Add items to sale first.'); return; }
@@ -1362,11 +1370,17 @@ $(document).ready(function () {
             const btn = $(this).find('button[type="submit"]');
             btn.prop('disabled', true).text('Confirming...');
 
+            const transactionTypeVal = $('#out_transaction_type').val();
+            const payment_method = (transactionTypeVal === 'pdc') ? 'PDC' : (transactionTypeVal === 'charge' ? 'Charge' : 'Cash');
+            const check_date = $('#out_check_date').val();
+
             const saleData = {
                 or_number: $('#out_or_number').val(),
                 customer_name: $('#out_customer_name').val(),
                 date: $('#out_date').val(),
-                transaction_type: $('#out_transaction_type').val(),
+                transaction_type: (transactionTypeVal === 'pdc' ? 'charge' : transactionTypeVal),
+                payment_method: payment_method,
+                check_date: check_date,
                 sales_force: $('#out_sales_force').val().trim(),
                 items: JSON.stringify(saleCart.map(p => ({ id: p.id, part_no: p.part_no, description: p.description, quantity: p.quantity, price: p.price })))
             };

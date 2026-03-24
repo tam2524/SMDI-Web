@@ -400,7 +400,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                     <a href="transfer_stock.php" class="module-card bg-menu-teal">
                         <div class="module-icon-wrap"><i class="bi bi-truck"></i></div>
                         <div>
-                            <div class="module-title">Transfer Stocks</div>
+                            <div class="module-title">Stock Transfer</div>
                             <div class="module-desc">Move stock between branches</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
@@ -461,31 +461,34 @@ endif; ?>
             <div class="col-lg-3">
                 <div class="section-label"><i class="bi bi-bar-chart"></i> Today's Summary</div>
                 <div class="sidebar-card">
-                    <div class="sidebar-header">
-                        <i class="bi bi-graph-up-arrow"></i> Sales Summary
+                    <div class="sidebar-header d-flex justify-content-between align-items-center">
+                        <div><i class="bi bi-graph-up-arrow"></i> Today's Transactions</div>
+                        <small class="badge bg-white text-success bg-opacity-75"><?php echo htmlspecialchars($branch); ?></small>
                     </div>
                     <div class="sidebar-body">
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge Sales Qty</span>
-                            <span class="summary-row-val" id="charge-qty">0</span>
+                            <span class="summary-row-label">Cash Sales</span>
+                            <span class="summary-row-val" id="cash-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge Amount</span>
+                            <span class="summary-row-label">Charge Sales</span>
                             <span class="summary-row-val" id="charge-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Cash Sales Qty</span>
-                            <span class="summary-row-val" id="cash-qty">0</span>
+                            <span class="summary-row-label">Charge w/ PDC</span>
+                            <span class="summary-row-val" id="charge-pdc-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Cash Amount</span>
-                            <span class="summary-row-val" id="cash-amount">₱0.00</span>
+                            <span class="summary-row-label">Payments</span>
+                            <span class="summary-row-val" id="payments-amount">₱0.00</span>
                         </div>
-                    </div>
-                    <div class="sidebar-footer">
-                        <div class="total-row">
-                            <span class="total-row-label">Total Sales</span>
-                            <span class="total-row-val" id="total-amount">₱0.00</span>
+                        <div class="summary-row">
+                            <span class="summary-row-label">Check Dues</span>
+                            <span class="summary-row-val" id="check-dues-amount">₱0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-row-label">Payables Due</span>
+                            <span class="summary-row-val" id="payables-due-amount">₱0.00</span>
                         </div>
                     </div>
                 </div>

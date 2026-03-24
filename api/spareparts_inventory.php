@@ -1639,8 +1639,10 @@ function sellMultiplePartsOut()
 {
     global $conn, $currentBranch;
 
-    // Auto-migrate: add sales_force column if missing
+    // Auto-migrate: add required columns if missing
     $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS sales_force VARCHAR(150) DEFAULT NULL");
+    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT NULL");
+    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS check_date DATE DEFAULT NULL");
 
     $items = json_decode($_POST['items'], true);
     $or_number = sanitizeInput($_POST['or_number']);
@@ -1648,6 +1650,15 @@ function sellMultiplePartsOut()
     $date = sanitizeInput($_POST['date']);
     $transaction_type = sanitizeInput($_POST['transaction_type']);
     $sales_force = sanitizeInput($_POST['sales_force'] ?? '');
+    
+    // Captured fields for PDC
+    $payment_method = sanitizeInput($_POST['payment_method'] ?? 'Cash');
+    $check_date = !empty($_POST['check_date']) ? sanitizeInput($_POST['check_date']) : NULL;
+
+    // If payment method is PDC, it defaults to a charge transaction for aging
+    if ($payment_method === 'PDC') {
+        $transaction_type = 'charge';
+    }
 
     // Check if OR already exists
     $checkStmt = $conn->prepare("SELECT or_number FROM spareparts_transactions WHERE or_number = ? LIMIT 1");
@@ -1679,9 +1690,9 @@ function sellMultiplePartsOut()
 
             // Log transaction
             $division = getCurrentDivision();
-            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force, category) 
-                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssssiddsss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division);
+            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force, category, payment_method, check_date) 
+                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssssiddssssss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division, $payment_method, $check_date);
             $stmt->execute();
         }
 

@@ -104,98 +104,105 @@ function getGlobalInventoryStats($conn) {
 
 function getWarehouseSummary($conn, $branch, $today) {
     $summary = [
-        'in' => ['qty' => 0, 'amount' => 0],
-        'out' => ['qty' => 0, 'amount' => 0],
-        'received' => ['qty' => 0, 'amount' => 0]
+        'received' => ['qty' => 0, 'amount' => 0],
+        'transferred' => ['qty' => 0, 'amount' => 0]
     ];
 
-    // STOCKS IN
-    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE to_location = ? AND type = 'IN' AND DATE(transaction_date) = ?");
-    $stmt->bind_param("ss", $branch, $today);
-    $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
-    $summary['in']['qty'] = $res['qty'] ?? 0;
-    $summary['in']['amount'] = $res['amount'] ?? 0;
-
-    // STOCKS OUT
-    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type IN ('OUT', 'TRANSFER_OUT') AND DATE(transaction_date) = ?");
-    $stmt->bind_param("ss", $branch, $today);
-    $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
-    $summary['out']['qty'] = $res['qty'] ?? 0;
-    $summary['out']['amount'] = $res['amount'] ?? 0;
-
-    // RECEIVED (TRANSFER_IN)
-    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE to_location = ? AND type = 'TRANSFER_IN' AND DATE(transaction_date) = ?");
+    // RECEIVED STOCKS (IN + TRANSFER_IN) - Combined as RR/IN
+    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE to_location = ? AND type IN ('IN', 'TRANSFER_IN') AND DATE(transaction_date) = ?");
     $stmt->bind_param("ss", $branch, $today);
     $stmt->execute();
     $res = $stmt->get_result()->fetch_assoc();
     $summary['received']['qty'] = $res['qty'] ?? 0;
     $summary['received']['amount'] = $res['amount'] ?? 0;
 
-
+    // TRANSFERRED STOCKS (TRANSFER_OUT)
+    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'TRANSFER_OUT' AND DATE(transaction_date) = ?");
+    $stmt->bind_param("ss", $branch, $today);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    $summary['transferred']['qty'] = $res['qty'] ?? 0;
+    $summary['transferred']['amount'] = $res['amount'] ?? 0;
 
     echo json_encode(['success' => true, 'summary' => $summary]);
 }
 
 function getSalesSummary($conn, $branch, $today) {
     $summary = [
-        'cash' => ['qty' => 0, 'amount' => 0],
-        'charge' => ['qty' => 0, 'amount' => 0],
-        'total' => ['qty' => 0, 'amount' => 0]
+        'cash' => ['amount' => 0],
+        'charge' => ['amount' => 0],
+        'charge_pdc' => ['amount' => 0],
+        'payments' => ['amount' => 0],
+        'check_dues' => ['amount' => 0],
+        'payables_due' => ['amount' => 0]
     ];
 
     // CASH SALES
-    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'OUT' AND LOWER(transaction_type) = 'cash' AND DATE(transaction_date) = ?");
+    $stmt = $conn->prepare("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'OUT' AND LOWER(transaction_type) = 'cash' AND DATE(transaction_date) = ?");
     $stmt->bind_param("ss", $branch, $today);
     $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
-    $summary['cash']['qty'] = $res['qty'] ?? 0;
-    $summary['cash']['amount'] = $res['amount'] ?? 0;
+    $summary['cash']['amount'] = $stmt->get_result()->fetch_assoc()['amount'] ?? 0;
 
-    // CHARGE SALES
-    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'OUT' AND LOWER(transaction_type) = 'charge' AND DATE(transaction_date) = ?");
+    // CHARGE SALES (NORMAL - EXCLUDES PDC)
+    $stmt = $conn->prepare("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'OUT' AND LOWER(transaction_type) = 'charge' AND (payment_method != 'PDC' OR payment_method IS NULL) AND DATE(transaction_date) = ?");
     $stmt->bind_param("ss", $branch, $today);
     $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
-    $summary['charge']['qty'] = $res['qty'] ?? 0;
-    $summary['charge']['amount'] = $res['amount'] ?? 0;
+    $summary['charge']['amount'] = $stmt->get_result()->fetch_assoc()['amount'] ?? 0;
 
-    $summary['total']['qty'] = $summary['cash']['qty'] + $summary['charge']['qty'];
-    $summary['total']['amount'] = $summary['cash']['amount'] + $summary['charge']['amount'];
+    // CHARGE SALES (WITH PDC)
+    $stmt = $conn->prepare("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'OUT' AND LOWER(transaction_type) = 'charge' AND payment_method = 'PDC' AND DATE(transaction_date) = ?");
+    $stmt->bind_param("ss", $branch, $today);
+    $stmt->execute();
+    $summary['charge_pdc']['amount'] = $stmt->get_result()->fetch_assoc()['amount'] ?? 0;
 
+    // PAYMENTS AMOUNT
+    $stmt = $conn->prepare("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'PAYMENT' AND DATE(transaction_date) = ?");
+    $stmt->bind_param("ss", $branch, $today);
+    $stmt->execute();
+    $summary['payments']['amount'] = $stmt->get_result()->fetch_assoc()['amount'] ?? 0;
 
+    // CHECK DUES AMOUNT (Payments with method Check dated today)
+    $stmt = $conn->prepare("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'PAYMENT' AND payment_method = 'Check' AND DATE(transaction_date) = ?");
+    $stmt->bind_param("ss", $branch, $today);
+    $stmt->execute();
+    $summary['check_dues']['amount'] = $stmt->get_result()->fetch_assoc()['amount'] ?? 0;
+
+    // PAYABLES DUE AMOUNT (Active aging record balances)
+    $stmt = $conn->prepare("SELECT SUM(balance) as total FROM spareparts_aging WHERE branch = ? AND status = 'Active'");
+    $stmt->bind_param("s", $branch);
+    $stmt->execute();
+    $summary['payables_due']['amount'] = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
 
     echo json_encode(['success' => true, 'summary' => $summary]);
 }
 
 function getConsolidatedSummary($conn, $today) {
     $summary = [
-        'cash' => ['qty' => 0, 'amount' => 0],
-        'charge' => ['qty' => 0, 'amount' => 0],
-        'total' => ['qty' => 0, 'amount' => 0]
+        'cash' => ['amount' => 0],
+        'charge' => ['amount' => 0],
+        'charge_pdc' => ['amount' => 0],
+        'payments' => ['amount' => 0],
+        'total' => ['amount' => 0]
     ];
 
     // CASH SALES (GLOBAL)
-    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE type = 'OUT' AND LOWER(transaction_type) = 'cash' AND DATE(transaction_date) = ?");
-    $stmt->bind_param("s", $today);
-    $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
-    $summary['cash']['qty'] = $res['qty'] ?? 0;
+    $res = $conn->query("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE type = 'OUT' AND LOWER(transaction_type) = 'cash' AND DATE(transaction_date) = '$today'")->fetch_assoc();
     $summary['cash']['amount'] = $res['amount'] ?? 0;
 
     // CHARGE SALES (GLOBAL)
-    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE type = 'OUT' AND LOWER(transaction_type) = 'charge' AND DATE(transaction_date) = ?");
-    $stmt->bind_param("s", $today);
-    $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
-    $summary['charge']['qty'] = $res['qty'] ?? 0;
+    $res = $conn->query("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE type = 'OUT' AND LOWER(transaction_type) = 'charge' AND (payment_method != 'PDC' OR payment_method IS NULL) AND DATE(transaction_date) = '$today'")->fetch_assoc();
     $summary['charge']['amount'] = $res['amount'] ?? 0;
 
-    $summary['total']['qty'] = $summary['cash']['qty'] + $summary['charge']['qty'];
-    $summary['total']['amount'] = $summary['cash']['amount'] + $summary['charge']['amount'];
+    // CHARGE WITH PDC (GLOBAL)
+    $res = $conn->query("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE type = 'OUT' AND LOWER(transaction_type) = 'charge' AND payment_method = 'PDC' AND DATE(transaction_date) = '$today'")->fetch_assoc();
+    $summary['charge_pdc']['amount'] = $res['amount'] ?? 0;
 
+    // PAYMENTS (GLOBAL)
+    $res = $conn->query("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE type = 'PAYMENT' AND DATE(transaction_date) = '$today'")->fetch_assoc();
+    $summary['payments']['amount'] = $res['amount'] ?? 0;
 
+    // TOTAL AMOUNT (Total Cash + Charge + Payments)
+    $summary['total']['amount'] = $summary['cash']['amount'] + $summary['charge']['amount'] + $summary['charge_pdc']['amount'] + $summary['payments']['amount'];
 
     echo json_encode(['success' => true, 'summary' => $summary]);
 }

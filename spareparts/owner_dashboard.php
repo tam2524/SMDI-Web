@@ -426,33 +426,29 @@ $today = date('l, F j, Y');
                 <div class="section-label"><i class="bi bi-layers"></i> Consolidated Stats</div>
                 <div class="sidebar-card">
                     <div class="sidebar-header">
-                        <i class="bi bi-globe"></i> Global Sales Today
+                        <i class="bi bi-globe"></i> Global Transactions Today
                     </div>
                     <div class="sidebar-body">
                         <div class="summary-row">
-                            <span class="summary-row-label">Cash Qty</span>
-                            <span class="summary-row-val" id="global-cash-qty">0</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-row-label">Cash Amount</span>
+                            <span class="summary-row-label">Cash Sales</span>
                             <span class="summary-row-val" id="global-cash-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge Qty</span>
-                            <span class="summary-row-val" id="global-charge-qty">0</span>
+                            <span class="summary-row-label">Charge Sales</span>
+                            <span class="summary-row-val" id="global-charge-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge Amount</span>
-                            <span class="summary-row-val" id="global-charge-amount">₱0.00</span>
+                            <span class="summary-row-label">Charge w/ PDC</span>
+                            <span class="summary-row-val" id="global-charge-pdc-amount">₱0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-row-label">Payments</span>
+                            <span class="summary-row-val" id="global-payments-amount">₱0.00</span>
                         </div>
                     </div>
                     <div class="sidebar-footer">
                         <div class="total-row">
-                            <span class="total-row-label">Total Qty</span>
-                            <span class="total-row-val" id="global-total-qty">0</span>
-                        </div>
-                        <div class="total-row">
-                            <span class="total-row-label">Cons. Total</span>
+                            <span class="total-row-label">Total Amount</span>
                             <span class="total-row-val" id="global-total-amount">₱0.00</span>
                         </div>
                     </div>
