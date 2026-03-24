@@ -1,5 +1,7 @@
 $(document).ready(function () {
     let inventoryData = [], salesData = [], paymentsData = [], transfersData = [], incomingTransfersData = [], activityLogData = [], globalTransfersData = [], paymentsAgingData = [];
+    let inventoryCurrentPage = 1, salesCurrentPage = 1, paymentsCurrentPage = 1, transfersCurrentPage = 1, incomingTransfersCurrentPage = 1;
+    let inventoryFilteredData = [], salesFilteredData = [], transfersAllData = [], incomingTransfersAllData = [], paymentsAllData = [];
     let saleCart = [], transferCart = [];
     const isBranchPage = typeof window.isBranchPage !== 'undefined' ? window.isBranchPage : window.location.pathname.includes('warehouse_spareparts');
     const isAdminPage = window.location.pathname.includes('admin_spareparts') || window.location.pathname.includes('headoffice_spareparts');
@@ -125,6 +127,7 @@ $(document).ready(function () {
             method: 'GET',
             data: data,
             dataType: 'json',
+            cache: false,
             success: response => {
                 if (response.success) {
                     successCallback(response.data);
@@ -315,7 +318,11 @@ $(document).ready(function () {
         $(document).on('click', '.show-stock-card-btn', function () {
             const partNo = $(this).data('part-no');
             const branch = $(this).data('branch');
-            showStockCard(partNo, branch);
+            if (typeof showStockCard === 'function') {
+                showStockCard(partNo, branch);
+            } else {
+                console.error('showStockCard is not defined. Ensure spareparts_stock_card.js is included.');
+            }
         });
 
         $(document).on('click', '.delete-part-btn', function () {
@@ -1461,6 +1468,70 @@ $(document).ready(function () {
             $('#receiptContent').html(html);
         }
 
+        function renderPaymentReceipt(data) {
+            const html = `
+                <div style="font-family: 'Courier New', Courier, monospace; color: #000;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h4 style="margin: 0; font-weight: bold;">Roxas City Solid Merchandising</h4>
+                        <p style="margin: 5px 0; font-size: 0.9rem;">Official Payment Receipt</p>
+                        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; font-size: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Receipt NO:</span>
+                            <span style="font-weight: bold;">${data.or_number}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Date:</span>
+                            <span>${data.date}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Customer:</span>
+                            <span style="font-weight: bold;">${data.customer_name}</span>
+                        </div>
+                        ${data.ref_or ? `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>For Invoice:</span>
+                            <span>${data.ref_or}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div style="border: 1px solid #000; padding: 15px; margin-bottom: 20px; text-align: center;">
+                        <div style="font-size: 0.9rem; text-transform: uppercase;">Amount Paid</div>
+                        <div style="font-size: 1.8rem; font-weight: bold; margin: 10px 0;">₱${formatCurrency(data.amount)}</div>
+                        <div style="font-size: 0.9rem; font-style: italic;">(${data.method})</div>
+                    </div>
+
+                    ${(data.method !== 'Cash') ? `
+                    <div style="margin-bottom: 20px; font-size: 0.9rem; padding: 10px; background: #f9f9f9;">
+                        ${data.bank_name ? `<div><strong>Bank:</strong> ${data.bank_name}</div>` : ''}
+                        ${data.check_number ? `<div><strong>Check #:</strong> ${data.check_number}</div>` : ''}
+                        ${data.reference_number ? `<div><strong>Ref #:</strong> ${data.reference_number}</div>` : ''}
+                    </div>
+                    ` : ''}
+
+                    <div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div style="text-align: center;">
+                            <div style="border-bottom: 1px solid #000; width: 150px; margin-bottom: 5px;"></div>
+                            <div style="font-size: 0.75rem;">Authorized Representative</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="border-bottom: 1px solid #000; width: 150px; margin-bottom: 5px;"></div>
+                            <div style="font-size: 0.75rem;">Customer Signature</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center; font-size: 0.8rem; color: #666;">
+                        <p>This serves as an official proof of payment.</p>
+                        <p>Thank you!</p>
+                    </div>
+                </div>
+            `;
+            $('#receiptContent').html(html);
+        }
+
         $('#btnPrintReceipt').on('click', function () {
             const content = $('#receiptContent').html();
             const printWindow = window.open('', '_blank');
@@ -1603,12 +1674,29 @@ $(document).ready(function () {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('recordPaymentModal')).hide();
                     showSuccessModal('Payment recorded successfully.');
 
+                    // Prepare receipt data
+                    const paymentData = {
+                        or_number: $('#payment_receipt_no').val(),
+                        customer_name: $('#payment_customer_search').val(),
+                        date: $('#payment_date').val(),
+                        amount: $('#payment_amount').val(),
+                        method: $('#payment_method').val(),
+                        check_number: $('#payment_check_number').val(),
+                        bank_name: $('#payment_bank_name').val(),
+                        reference_number: $('#payment_reference_number').val(),
+                        ref_or: $('#payment_or_number').val() // The SI number they paid for
+                    };
+
+                    renderPaymentReceipt(paymentData);
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('receiptModal')).show();
+
                     // Reset fields
                     $('#payment_details_container').addClass('d-none');
                     $('.payment-detail-field').addClass('d-none').find('input').val('');
 
                     loadSales();
                     loadPayments();
+                    if (typeof loadAging === 'function') loadAging();
                 } else {
                     showErrorModal(response.message);
                 }
@@ -3108,9 +3196,6 @@ $(document).ready(function () {
     }
 
     // ——— INVENTORY PAGINATION —————————————————————————————————————————————————
-    let inventoryCurrentPage = 1;
-    let inventoryFilteredData = [];
-
     function loadInventory() {
         loadApiData('get_inventory_list', data => {
             inventoryData = data;
@@ -3233,6 +3318,7 @@ $(document).ready(function () {
 
 
     window.loadSales = function () {
+        salesCurrentPage = 1; // Always reset to page 1 on load
         const branch = $('#salesFilterBranch').val() || 'all';
         const dateFrom = $('#salesFilterDateFrom').val() || '';
         const dateTo = $('#salesFilterDateTo').val() || '';
@@ -3249,8 +3335,6 @@ $(document).ready(function () {
         }, 'salesTableBody', filterParams);
     }
 
-    let salesCurrentPage = 1;
-    let salesFilteredData = [];
     let salesCurrentTypeFilter = 'all';
 
     function renderSales(data, typeFilter = 'all') {
@@ -3321,14 +3405,12 @@ $(document).ready(function () {
     }
 
     window.loadPayments = function () {
+        paymentsCurrentPage = 1; // Always reset to page 1 on load to show newest
         loadApiData('get_payments_list', data => {
             paymentsData = data;
             renderPayments(data);
         }, 'paymentsTableBody');
     }
-
-    let paymentsCurrentPage = 1;
-    let paymentsAllData = [];
 
     function renderPayments(data) {
         const tbody = $('#paymentsTableBody');
@@ -3503,14 +3585,12 @@ $(document).ready(function () {
     }
 
     function loadTransfers() {
+        transfersCurrentPage = 1;
         loadApiData('get_transfers_list', data => {
             transfersData = data;
             renderTransfers(data);
         }, 'transfersTableBody');
     }
-
-    let transfersCurrentPage = 1;
-    let transfersAllData = [];
 
     function renderTransfers(transfers) {
         transfersAllData = transfers || [];
@@ -3572,13 +3652,11 @@ $(document).ready(function () {
     }
 
     function loadIncomingTransfers() {
+        incomingTransfersCurrentPage = 1;
         loadApiData('get_incoming_transfers', data => {
             renderIncomingTransfers(data);
         }, 'incomingTransfersTableBody');
     }
-
-    let incomingTransfersCurrentPage = 1;
-    let incomingTransfersAllData = [];
 
     function renderIncomingTransfers(transfers) {
         incomingTransfersAllData = transfers || [];
@@ -4091,7 +4169,7 @@ $(document).ready(function () {
 
     if ($('#returnsTableBody').length && typeof loadReturns === 'function') loadReturns();
     if ($('#pricelistsTableBody').length) typeof loadPricelistsTable === 'function' && loadPricelistsTable();
-    if ($('#employeesTableBody').length) typeof loadEmployeesTable === 'function' && loadEmployeesTable();
+    // Removed redundant loadEmployeesTable call here as it's handled in sales_spareparts.js
 
     // Audit Log CSV export
     $(document).on('click', '#exportAuditLogBtn', function () {

@@ -613,16 +613,18 @@ $(document).ready(function() {
     $('#addSalesForceForm').on('submit', function (e) {
         e.preventDefault();
         const name = $('#sf_employee_name').val().trim();
+        const pos = $('#sf_position').val().trim();
         if (!name) return;
-        $.post('../api/spareparts_inventory.php?action=add_sales_force', { employee_name: name }, function (res) {
+        $.post('../api/spareparts_inventory.php?action=add_sales_force', { employee_name: name, position: pos }, function (res) {
             if (res.success) {
                 $('#sf_employee_name').val('');
+                $('#sf_position').val('');
                 loadSalesForceList();
-                if ($('#employees').hasClass('active')) {
-                    loadEmployeesTable();
-                }
+                loadEmployeesTable();
+                if (typeof showSuccessModal === 'function') showSuccessModal('Employee Added Successfully');
             } else {
-                alert(res.message || 'Failed to add employee.');
+                if (typeof showErrorModal === 'function') showErrorModal(res.message);
+                else alert(res.message);
             }
         }, 'json');
     });
@@ -655,7 +657,7 @@ $(document).ready(function() {
         tbody.empty();
         employeesAllData = data || [];
         if (!data || data.length === 0) {
-            tbody.append('<tr><td colspan="4" class="text-center text-muted p-4">No employees records found.</td></tr>');
+            tbody.append('<tr><td colspan="4" class="text-center text-muted p-4"><i class="bi bi-people fs-2 d-block mb-2 opacity-50"></i>No employee records found for this branch.</td></tr>');
             renderTablePagination('employeesPagination', 'employeesPageInfo', 0, 1, () => {});
             return;
         }
@@ -665,16 +667,31 @@ $(document).ready(function() {
             const count = parseInt(emp.total_sales || 0);
             const row = `
                 <tr>
-                    <td class="fw-bold"><i class="bi bi-person-circle me-2 text-success"></i>${escapeHtml(emp.employee_name)}</td>
                     <td>
-                        <span class="badge bg-light text-dark border">Sales Force / Staff</span>
-                        ${count > 0 ? `<div class="small mt-1 text-success fw-bold"><i class="bi bi-receipt me-1"></i>${count} Sales Record(s)</div>` : '<div class="small mt-1 text-muted">No sales yet</div>'}
+                        <div class="fw-bold fs-6 text-dark">${escapeHtml(emp.employee_name)}</div>
+                        <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">${escapeHtml(emp.position || 'No Position Set')}</div>
                     </td>
-                    <td>${new Date(emp.created_at).toLocaleDateString()}</td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-danger rounded-pill sf-delete-btn-tab" data-id="${emp.id}" title="Remove Employee">
-                            <i class="bi bi-trash me-1"></i>Remove
-                        </button>
+                    <td>
+                        <span class="badge bg-light text-dark border-0 shadow-sm px-3 py-2 rounded-pill">
+                            <i class="bi bi-building me-1"></i>${escapeHtml(emp.branch || 'N/A')}
+                        </span>
+                    </td>
+                    <td>
+                        ${count > 0 ? 
+                            `<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill cursor-pointer view-sf-sales" data-name="${escapeHtml(emp.employee_name)}" title="Click to view sales">
+                                <i class="bi bi-cart-check-fill me-1"></i>${count} Sales
+                            </span>` : 
+                            '<span class="badge bg-light text-muted border px-3 py-2 rounded-pill">No sales yet</span>'}
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group shadow-sm rounded-pill overflow-hidden">
+                            <button class="btn btn-sm btn-white border-0 sf-edit-btn" data-id="${emp.id}" data-name="${escapeHtml(emp.employee_name)}" data-pos="${escapeHtml(emp.position || '')}" title="Edit Staff">
+                                <i class="bi bi-pencil-square text-primary"></i>
+                            </button>
+                            <button class="btn btn-sm btn-white border-0 sf-delete-btn-tab" data-id="${emp.id}" title="Remove Employee">
+                                <i class="bi bi-trash3 text-danger"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -686,14 +703,19 @@ $(document).ready(function() {
             document.getElementById('employeesTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
-    window.loadEmployeesTable = function() {
+    window.renderEmployeesTable = renderEmployeesTable; // Make it global just in case
+
+    function loadEmployeesTable() {
         $.get('../api/spareparts_inventory.php?action=get_sales_force', function(res) {
             if (res.success) {
                 employeesData = res.data;
                 renderEmployeesTable(employeesData);
             }
-        }, 'json');
+        }, 'json').fail(function() {
+            $('#employeesTableBody').html('<tr><td colspan="4" class="text-center text-danger p-4">Error loading employees.</td></tr>');
+        });
     }
+    window.loadEmployeesTable = loadEmployeesTable; // Hoist to global
 
     // Search filter
     $('#employeesSearch').on('input', function() {
@@ -717,6 +739,44 @@ $(document).ready(function() {
                 alert(res.message || 'Failed to delete.');
             }
         }, 'json');
+    });
+
+    $(document).on('click', '.sf-edit-btn', function() {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+        const pos = $(this).data('pos');
+        $('#edit_sf_id').val(id);
+        $('#edit_sf_name').val(name);
+        $('#edit_sf_position').val(pos);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('editEmployeeModal')).show();
+    });
+
+    $('#editEmployeeForm').on('submit', function(e) {
+        e.preventDefault();
+        const id = $('#edit_sf_id').val();
+        const name = $('#edit_sf_name').val();
+        const position = $('#edit_sf_position').val();
+        $.post('../api/spareparts_inventory.php?action=edit_sales_force', { id, employee_name: name, position }, function(res) {
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editEmployeeModal')).hide();
+                loadEmployeesTable();
+                if (typeof showSuccessModal === 'function') showSuccessModal('Staff details updated.');
+            } else {
+                if (typeof showErrorModal === 'function') showErrorModal(res.message);
+                else alert(res.message);
+            }
+        }, 'json');
+    });
+
+    $(document).on('click', '.view-sf-sales', function() {
+        const name = $(this).data('name');
+        // Switch to Sales tab and filter by this employee
+        $('#all-sales-tab').trigger('click');
+        $('#salesSearch').val(name).trigger('input');
+        
+        // Find the Sales tab button in mainTabs
+        const salesTabBtn = document.querySelector('[data-bs-target="#sales"]');
+        if (salesTabBtn) bootstrap.Tab.getOrCreateInstance(salesTabBtn).show();
     });
 
     // Check if initial tab is employees

@@ -16,7 +16,22 @@ $canDelete = $isAdmin;
 // Auto-repair tools removed to prevent PHP exceptions from halting script execution
 try {
     $conn->query("ALTER TABLE spareparts_transfers ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER id");
+    $conn->query("ALTER TABLE spareparts_sales_force ADD COLUMN IF NOT EXISTS position VARCHAR(255) DEFAULT NULL AFTER employee_name");
+    $conn->query("ALTER TABLE spareparts_sales_force ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
+    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
+    $conn->query("ALTER TABLE spareparts_aging ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
+    // Attempt to add category to customers if table exists
+    @$conn->query("ALTER TABLE spareparts_customers ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
 } catch (Exception $e) {
+}
+
+function getCurrentDivision()
+{
+    global $userRole;
+    $pos = strtolower(trim($userRole));
+    if (strpos($pos, 'retail') !== false) return 'Retail';
+    if (strpos($pos, 'sales') !== false) return 'Wholesale'; 
+    return null; // Admin/HO
 }
 
 function sanitizeInput($data)
@@ -300,6 +315,9 @@ switch ($action) {
         break;
     case 'delete_sales_force':
         deleteSalesForce();
+        break;
+    case 'edit_sales_force':
+        editSalesForce();
         break;
     case 'search_sales_force':
         searchSalesForce();
@@ -606,10 +624,19 @@ function getDashboardStats()
     global $conn, $currentBranch, $isAdmin;
     $stats = [];
 
+    $division = getCurrentDivision();
     $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
     $whereInv = $seeAll ? "" : "WHERE current_branch = ?";
+    
     $whereTxOut = $seeAll ? "WHERE type = 'OUT'" : "WHERE type = 'OUT' AND from_location = ?";
+    if (!$seeAll && $division) {
+        $whereTxOut .= " AND category = '$division'";
+    }
+
     $whereAging = $seeAll ? "WHERE status = 'Active'" : "WHERE branch = ? AND status = 'Active'";
+    if (!$seeAll && $division) {
+        $whereAging .= " AND category = '$division'";
+    }
 
     // Total Qty
     $stmt = $conn->prepare("SELECT SUM(current_stock) as total FROM spareparts_inventory $whereInv");
@@ -731,6 +758,13 @@ function getSalesList()
         $types .= "s";
     }
 
+    $division = getCurrentDivision();
+    if (!$seeAll && $division) {
+        $whereClauses[] = "t.category = ?";
+        $params[] = $division;
+        $types .= "s";
+    }
+
     if (!empty($dateFrom)) {
         $whereClauses[] = "t.transaction_date >= ?";
         $params[] = $dateFrom;
@@ -780,8 +814,16 @@ function getSaleDetails()
         return;
     }
 
-    $stmt = $conn->prepare("SELECT * FROM spareparts_transactions WHERE or_number = ? AND from_location = ? AND type = 'OUT'");
-    $stmt->bind_param('ss', $or_number, $branch);
+    $division = getCurrentDivision();
+    $sql = "SELECT * FROM spareparts_transactions WHERE or_number = ? AND from_location = ? AND type = 'OUT'";
+    if ($division) {
+        $sql .= " AND category = ? ";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('sss', $or_number, $branch, $division);
+    } else {
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('ss', $or_number, $branch);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
     $items = [];
@@ -1004,7 +1046,21 @@ function searchCustomerAccounts()
     $term = sanitizeInput($_GET['term'] ?? '');
     $searchTerm = "%{$term}%";
 
+    $division = getCurrentDivision();
     $whereClause = $seeAll ? "WHERE (customer_name LIKE ? OR or_number LIKE ?)" : "WHERE (customer_name LIKE ? OR or_number LIKE ?) AND branch = ?";
+    $params = [$searchTerm, $searchTerm];
+    $types = "ss";
+
+    if (!$seeAll) {
+        $params[] = $currentBranch;
+        $types .= "s";
+    }
+
+    if (!$seeAll && $division) {
+        $whereClause .= " AND category = ?";
+        $params[] = $division;
+        $types .= "s";
+    }
 
     $stmt = $conn->prepare("SELECT customer_name, SUM(balance) as total_balance, GROUP_CONCAT(or_number) as or_numbers, branch 
                             FROM spareparts_aging 
@@ -1034,7 +1090,10 @@ function searchUniqueCustomers()
     $searchTerm = "%{$term}%";
 
     // 1. Search in spareparts_customers table (priority for rank info)
-    $sql_cust = "SELECT name AS customer_name, rank_level FROM spareparts_customers WHERE name LIKE ? " . ($seeAll ? "" : "AND branch = ?") . " LIMIT 10";
+    $division = getCurrentDivision();
+    $divFilter = (!$seeAll && $division) ? " AND category = '$division' " : "";
+
+    $sql_cust = "SELECT name AS customer_name, rank_level FROM spareparts_customers WHERE name LIKE ? " . ($seeAll ? "" : "AND branch = ?") . $divFilter . " LIMIT 10";
     $stmt_cust = $conn->prepare($sql_cust);
     if ($seeAll) $stmt_cust->bind_param('s', $searchTerm);
     else $stmt_cust->bind_param('ss', $searchTerm, $currentBranch);
@@ -1043,9 +1102,15 @@ function searchUniqueCustomers()
 
     // 2. Search in transactions for historical names
     $whereBranch = $seeAll ? "" : "AND from_location = ?";
-    $stmt_trans = $conn->prepare("SELECT DISTINCT customer_name FROM spareparts_transactions WHERE customer_name LIKE ? $whereBranch LIMIT 5");
-    if ($seeAll) $stmt_trans->bind_param('s', $searchTerm);
-    else $stmt_trans->bind_param('ss', $searchTerm, $currentBranch);
+    if (!$seeAll && $division) {
+        $whereBranch .= " AND category = ?";
+        $stmt_trans = $conn->prepare("SELECT DISTINCT customer_name FROM spareparts_transactions WHERE customer_name LIKE ? $whereBranch LIMIT 5");
+        $stmt_trans->bind_param('sss', $searchTerm, $currentBranch, $division);
+    } else {
+        $stmt_trans = $conn->prepare("SELECT DISTINCT customer_name FROM spareparts_transactions WHERE customer_name LIKE ? $whereBranch LIMIT 5");
+        if ($seeAll) $stmt_trans->bind_param('s', $searchTerm);
+        else $stmt_trans->bind_param('ss', $searchTerm, $currentBranch);
+    }
     $stmt_trans->execute();
     $res_trans = $stmt_trans->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -1613,17 +1678,18 @@ function sellMultiplePartsOut()
                 throw new Exception("Part $part_no not found or insufficient stock.");
 
             // Log transaction
-            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force) 
-                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssssiddss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force);
+            $division = getCurrentDivision();
+            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force, category) 
+                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssssiddsss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division);
             $stmt->execute();
         }
 
         // Add to aging if charge
         if ($transaction_type === 'charge') {
-            $stmt = $conn->prepare("INSERT INTO spareparts_aging (or_number, customer_name, sale_date, total_amount, balance, branch) 
-                                    VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('sssdds', $or_number, $customer_name, $date, $total_sale_amount, $total_sale_amount, $currentBranch);
+            $stmt = $conn->prepare("INSERT INTO spareparts_aging (or_number, customer_name, sale_date, total_amount, balance, branch, category) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('sssddss', $or_number, $customer_name, $date, $total_sale_amount, $total_sale_amount, $currentBranch, $division);
             $stmt->execute();
         }
 
@@ -1639,7 +1705,7 @@ function sellMultiplePartsOut()
 // ===================== SALES FORCE CRUD =====================
 function getSalesForce()
 {
-    global $conn, $currentBranch;
+    global $conn, $currentBranch, $isAdmin;
     // Auto-create table if missing
     $conn->query("CREATE TABLE IF NOT EXISTS spareparts_sales_force (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1652,20 +1718,41 @@ function getSalesForce()
     // Auto-migrate: add sales_force column to transactions if missing
     $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS sales_force VARCHAR(150) DEFAULT NULL");
 
-    // Join with transactions to count unique sales (OR numbers)
-    $stmt = $conn->prepare("
-        SELECT 
-            sf.id, 
-            sf.employee_name, 
-            sf.created_at,
-            COUNT(DISTINCT t.or_number) as total_sales
-        FROM spareparts_sales_force sf
-        LEFT JOIN spareparts_transactions t ON sf.employee_name = t.sales_force AND sf.branch = t.from_location AND t.type = 'OUT'
-        WHERE sf.branch = ?
-        GROUP BY sf.id, sf.employee_name, sf.created_at
-        ORDER BY sf.employee_name ASC
-    ");
-    $stmt->bind_param('s', $currentBranch);
+    $division = getCurrentDivision();
+    if (!$isAdmin && $division) {
+        $stmt = $conn->prepare("
+            SELECT 
+                sf.id, 
+                sf.branch, 
+                sf.employee_name, 
+                sf.position,
+                sf.created_at,
+                COUNT(DISTINCT t.or_number) as total_sales
+            FROM spareparts_sales_force sf
+            LEFT JOIN spareparts_transactions t ON sf.employee_name = t.sales_force AND sf.branch = t.from_location AND t.type = 'OUT'
+            WHERE sf.branch = ? AND sf.category = ?
+            GROUP BY sf.id, sf.branch, sf.employee_name, sf.position, sf.created_at
+            ORDER BY sf.employee_name ASC
+        ");
+        $stmt->bind_param('ss', $currentBranch, $division);
+    } else {
+        // Join with transactions to count unique sales (OR numbers)
+        $stmt = $conn->prepare("
+            SELECT 
+                sf.id, 
+                sf.branch, 
+                sf.employee_name, 
+                sf.position,
+                sf.created_at,
+                COUNT(DISTINCT t.or_number) as total_sales
+            FROM spareparts_sales_force sf
+            LEFT JOIN spareparts_transactions t ON sf.employee_name = t.sales_force AND sf.branch = t.from_location AND t.type = 'OUT'
+            WHERE sf.branch = ?
+            GROUP BY sf.id, sf.branch, sf.employee_name, sf.position, sf.created_at
+            ORDER BY sf.employee_name ASC
+        ");
+        $stmt->bind_param('s', $currentBranch);
+    }
     $stmt->execute();
     $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     echo json_encode(['success' => true, 'data' => $data]);
@@ -1678,23 +1765,44 @@ function addSalesForce()
         id INT AUTO_INCREMENT PRIMARY KEY,
         branch VARCHAR(100) NOT NULL,
         employee_name VARCHAR(150) NOT NULL,
+        position VARCHAR(100) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY unique_emp_branch (branch, employee_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    $name = sanitizeInput($_POST['employee_name'] ?? '');
-    if (empty($name)) {
-        echo json_encode(['success' => false, 'message' => 'Employee name is required.']);
+    $employee = trim($_POST['employee_name'] ?? '');
+    $position = trim($_POST['position'] ?? '');
+    if (!$employee) {
+        echo json_encode(['success' => false, 'message' => 'Employee name required.']);
         return;
     }
-    $stmt = $conn->prepare("INSERT IGNORE INTO spareparts_sales_force (branch, employee_name) VALUES (?, ?)");
-    $stmt->bind_param('ss', $currentBranch, $name);
+    $division = getCurrentDivision();
+    $stmt = $conn->prepare("INSERT INTO spareparts_sales_force (branch, employee_name, position, category) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $currentBranch, $employee, $position, $division);
     $stmt->execute();
     if ($stmt->affected_rows > 0) {
         echo json_encode(['success' => true, 'message' => 'Employee added.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Employee already exists in this branch.']);
     }
+}
+
+function editSalesForce()
+{
+    global $conn, $currentBranch;
+    $id = (int) ($_POST['id'] ?? 0);
+    $name = trim($_POST['employee_name'] ?? '');
+    $position = trim($_POST['position'] ?? '');
+    
+    if (!$id || !$name) {
+        echo json_encode(['success' => false, 'message' => 'ID and name required.']);
+        return;
+    }
+
+    $stmt = $conn->prepare("UPDATE spareparts_sales_force SET employee_name = ?, position = ? WHERE id = ? AND branch = ?");
+    $stmt->bind_param("ssis", $name, $position, $id, $currentBranch);
+    $stmt->execute();
+    echo json_encode(['success' => true, 'message' => 'Employee updated.']);
 }
 
 function deleteSalesForce()
@@ -1710,7 +1818,7 @@ function deleteSalesForce()
 
 function searchSalesForce()
 {
-    global $conn, $currentBranch;
+    global $conn, $currentBranch, $isAdmin;
     $conn->query("CREATE TABLE IF NOT EXISTS spareparts_sales_force (
         id INT AUTO_INCREMENT PRIMARY KEY,
         branch VARCHAR(100) NOT NULL,
@@ -1719,9 +1827,15 @@ function searchSalesForce()
         UNIQUE KEY unique_emp_branch (branch, employee_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $division = getCurrentDivision();
     $term = '%' . sanitizeInput($_GET['term'] ?? '') . '%';
-    $stmt = $conn->prepare("SELECT id, employee_name FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? ORDER BY employee_name ASC LIMIT 10");
-    $stmt->bind_param('ss', $currentBranch, $term);
+    if (!$isAdmin && $division) {
+        $stmt = $conn->prepare("SELECT id, employee_name FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? AND category = ? ORDER BY employee_name ASC LIMIT 10");
+        $stmt->bind_param('sss', $currentBranch, $term, $division);
+    } else {
+        $stmt = $conn->prepare("SELECT id, employee_name FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? ORDER BY employee_name ASC LIMIT 10");
+        $stmt->bind_param('ss', $currentBranch, $term);
+    }
     $stmt->execute();
     $data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     echo json_encode(['success' => true, 'data' => $data]);
@@ -1857,8 +1971,13 @@ function recordPayment()
         $remainingAmount = $amount;
         $customerToLog = $customer_name;
 
+        $division = getCurrentDivision();
         // Fetch active accounts for this customer or specific OR
         $sql = "SELECT id, or_number, customer_name, balance FROM spareparts_aging WHERE status = 'Active' ";
+        if ($division) {
+            $sql .= " AND category = '$division' ";
+        }
+        
         // If or_number contains a comma, it was a multi-selection/grouped result, so we distribute by customer name
         if (!empty($or_number) && strpos($or_number, ',') === false) {
             $sql .= " AND or_number = ? AND branch = ? ";
@@ -1892,9 +2011,9 @@ function recordPayment()
             $upd->bind_param('ddi', $payAmount, $payAmount, $acc['id']);
             $upd->execute();
 
-            $log = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, type, total_amount, from_location, transaction_type, payment_method, check_number, bank_name, reference_number) 
-                                    VALUES (?, ?, ?, 'PAYMENT', ?, ?, ?, ?, ?, ?, ?)");
-            $log->bind_param('sssdssssss', $date, $receipt_no, $acc['customer_name'], $payAmount, $branch, $acc['or_number'], $payment_method, $check_number, $bank_name, $reference_number);
+            $log = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, type, total_amount, from_location, transaction_type, payment_method, check_number, bank_name, reference_number, category) 
+                                    VALUES (?, ?, ?, 'PAYMENT', ?, ?, ?, ?, ?, ?, ?, ?)");
+            $log->bind_param('sssdsssssss', $date, $receipt_no, $acc['customer_name'], $payAmount, $branch, $acc['or_number'], $payment_method, $check_number, $bank_name, $reference_number, $division);
             $log->execute();
         }
 
@@ -3379,6 +3498,13 @@ function getAgingSummary()
         $types .= 's';
     }
 
+    $division = getCurrentDivision();
+    if (!$seeAll && $division) {
+        $sql .= " AND category = ? ";
+        $params[] = $division;
+        $types .= 's';
+    }
+
     $sql .= " GROUP BY branch, customer_name ORDER BY customer_name ASC";
 
     $stmt = $conn->prepare($sql);
@@ -3408,14 +3534,24 @@ function getCustomerLedger()
     }
 
     // Fetch all OUT and PAYMENT transactions for this customer
+    $division = getCurrentDivision();
     $sql = "SELECT transaction_date as date, or_number, type, total_amount as amount, transaction_type
             FROM spareparts_transactions 
-            WHERE customer_name = ? AND from_location = ? 
-              AND (type = 'PAYMENT' OR (type = 'OUT' AND transaction_type = 'charge'))
+            WHERE customer_name = ? AND from_location = ? ";
+    
+    if ($division) {
+        $sql .= " AND category = ? ";
+    }
+    
+    $sql .= " AND (type = 'PAYMENT' OR (type = 'OUT' AND transaction_type = 'charge'))
             ORDER BY transaction_date ASC, id ASC";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('ss', $customer, $branch);
+    if ($division) {
+        $stmt->bind_param('sss', $customer, $branch, $division);
+    } else {
+        $stmt->bind_param('ss', $customer, $branch);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
 

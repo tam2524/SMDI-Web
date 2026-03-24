@@ -1745,6 +1745,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
 
     <script src='https://code.jquery.com/jquery-3.7.1.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1754,6 +1755,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
         window.currentBranch = '<?php echo htmlspecialchars($currentBranch); ?>';
         window.isBranchPage = false;
     </script>
+    <script src="../js/spareparts_stock_card.js?v=<?php echo time(); ?>"></script>
     <script src='../js/spareparts_inventory.js?v=<?php echo time(); ?>'></script>
 
 
@@ -2312,6 +2314,7 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
     <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="../js/spareparts_stock_card.js?v=<?php echo time(); ?>"></script>
     <script src='../js/spareparts_inventory.js?v=<?php echo time(); ?>'></script>
 </body>
 </html>

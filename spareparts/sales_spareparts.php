@@ -771,7 +771,7 @@ endif; ?>
 
                     <div class='tab-pane fade' id='employees' role='tabpanel'>
                         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                            <h4 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>Branch Sales Force</h4>
+                            <h4 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>Employee Management</h4>
                             <div class="d-flex gap-3 align-items-center">
                                 <button class='btn btn-sm btn-success text-white fw-bold px-3 shadow-sm'
                                     data-bs-toggle='modal' data-bs-target='#manageSalesForceModal'>
@@ -854,10 +854,6 @@ endif; ?>
                                         data-bs-target='#sellPartsOutModal'>
                                         <i class='bi bi-cart-plus me-1'></i>Record Sale
                                     </button>
-                                    <button class='btn btn-sm btn-outline-success fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#manageSalesForceModal'>
-                                        <i class='bi bi-person-badge me-1'></i>Sales Force
-                                    </button>
                                 </div>
                                 <input type='text' id='salesSearch'
                                     class='form-control form-control-sm border shadow-sm' style="width: 250px;"
@@ -893,7 +889,7 @@ endif; ?>
                                         <th>Branch</th>
                                         <th>Customer</th>
                                         <th>SI #</th>
-                                        <th>Sales Force</th>
+                                        <th>Employee</th>
                                         <th class="text-end">Total Amount</th>
                                         <th class="text-center">Type</th>
                                         <th class="text-end col-balance">Balance</th>
@@ -1209,11 +1205,12 @@ endif; ?>
                         <!-- Sales Force Field -->
                         <div class="row g-3 mb-3">
                             <div class="col-12 position-relative">
-                                <label for='out_sales_force' class='form-label fw-bold'>
-                                    <i class="bi bi-person-badge me-1 text-success"></i>Sales Force <span class="text-muted fw-normal small">(Optional — employee who assisted the sale)</span>
-                                </label>
-                                <input type='text' class='form-control' id='out_sales_force'
-                                    placeholder="Type employee name..." autocomplete="off">
+                                <label class="label-premium"><i class="bi bi-person-badge me-1 text-success"></i>Employee Assisted <span class="text-muted fw-normal small">(Optional)</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-person text-success"></i></span>
+                                    <input type="text" id="out_sales_force" class="form-control border-start-0"
+                                        placeholder="Type to search employee name..." autocomplete="off">
+                                </div>
                                 <div id="salesForceSearchResults" class="list-group border rounded shadow-sm mt-1"
                                     style="max-height: 180px; overflow-y: auto; position: absolute; width: calc(100% - 1.5rem); z-index: 1055; display: none; background: white;">
                                 </div>
@@ -1508,10 +1505,9 @@ endif; ?>
 
                         <!-- Sales Force Row -->
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6 position-relative">
-                                <label class="form-label fw-bold">Sales Force (Employee assisted)</label>
-                                <input type="text" id="edit_sale_sales_force" name="sales_force" class="form-control" placeholder="Search employee name..." autocomplete="off">
-                                <div id="editSaleForceResults" class="list-group border rounded shadow-sm mt-1 w-100" style="position: absolute; display: none; z-index: 1056; background: white; max-height: 200px; overflow-y: auto;"></div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Employee Assisted</label>
+                                <input type="text" class="form-control" id="edit_sale_sales_force">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-danger">Reason for Revision (REQUIRED)</label>
@@ -2229,6 +2225,7 @@ endif; ?>
 
         <script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
@@ -2236,8 +2233,9 @@ endif; ?>
             window.canDelete = <?php echo json_encode($canDelete); ?>;
             window.currentBranch = '<?php echo htmlspecialchars($currentBranch); ?>';
         </script>
+        <script src="../js/spareparts_stock_card.js?v=<?php echo time(); ?>"></script>
         <script src='../js/spareparts_inventory.js?v=<?php echo time(); ?>'></script>
-    <script src="../js/spareparts_dashboard.js?v=<?php echo time(); ?>"></script>
+        <script src="../js/spareparts_dashboard.js?v=<?php echo time(); ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof updatePendingTransfers === 'function') {
@@ -2307,7 +2305,7 @@ endif; ?>
         <div class='modal-dialog modal-md modal-dialog-centered'>
             <div class='modal-content border-0 shadow-lg'>
                 <div class='modal-header bg-success text-white border-0'>
-                    <h5 class='modal-title fw-bold'><i class="bi bi-person-badge me-2"></i>Manage Sales Force</h5>
+                    <h5 class='modal-title fw-bold text-white'><i class="bi bi-person-badge me-2"></i>Manage Employees</h5>
                     <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
                 </div>
                 <div class='modal-body p-4'>
@@ -2315,12 +2313,22 @@ endif; ?>
                     <div class="card border-0 bg-light rounded-3 mb-4">
                         <div class="card-body p-3">
                             <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-person-plus me-2 text-success"></i>Add Employee</h6>
-                            <form id="addSalesForceForm" class="d-flex gap-2">
-                                <input type="text" id="sf_employee_name" class="form-control" 
-                                    placeholder="Employee full name..." required autocomplete="off">
-                                <button type="submit" class="btn btn-success fw-bold px-3 text-nowrap">
-                                    <i class="bi bi-plus-lg me-1"></i>Add
-                                </button>
+                            <form id="addSalesForceForm">
+                                <div class="row g-2">
+                                    <div class="col-md-7">
+                                        <input type="text" id="sf_employee_name" class="form-control" 
+                                            placeholder="Employee full name..." required autocomplete="off">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" id="sf_position" class="form-control" 
+                                            placeholder="Position..." autocomplete="off">
+                                    </div>
+                                    <div class="col-12 text-end mt-2">
+                                        <button type="submit" class="btn btn-success fw-bold px-4">
+                                            <i class="bi bi-plus-lg me-1"></i>Add Staff
+                                        </button>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -2335,6 +2343,35 @@ endif; ?>
                 <div class='modal-footer border-0'>
                     <button type='button' class='btn btn-secondary px-4' data-bs-dismiss='modal'>Close</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT EMPLOYEE MODAL -->
+    <div class='modal fade' id='editEmployeeModal' tabindex='-1' aria-hidden='true'>
+        <div class='modal-dialog modal-sm modal-dialog-centered'>
+            <div class='modal-content border-0 shadow-lg'>
+                <div class='modal-header bg-dark text-white border-0'>
+                    <h5 class='modal-title fw-bold text-white'><i class="bi bi-pencil-square me-2"></i>Edit Employee</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+                <form id="editEmployeeForm">
+                    <input type="hidden" id="edit_sf_id">
+                    <div class='modal-body p-4'>
+                        <div class="mb-3">
+                            <label class="form-label x-small fw-bold text-muted text-uppercase">Employee Name</label>
+                            <input type="text" id="edit_sf_name" class="form-control fw-bold" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label x-small fw-bold text-muted text-uppercase">Position</label>
+                            <input type="text" id="edit_sf_position" class="form-control" placeholder="e.g. Sales, Mechanic...">
+                        </div>
+                    </div>
+                    <div class='modal-footer border-0 pt-0'>
+                        <button type='button' class='btn btn-light px-3' data-bs-dismiss='modal'>Cancel</button>
+                        <button type='submit' class='btn btn-dark px-4 fw-bold'>Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -2514,11 +2551,135 @@ endif; ?>
                         <p>Search for a customer name above to see their purchased items.</p>
                     </div>
                 </div>
-                <div class="modal-footer border-0 bg-light p-3">
-                    <button type="button" class="btn btn-light fw-bold px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger fw-bold px-4 text-white d-none" id="btnSubmitReturn">
-                        <i class="bi bi-check-circle me-2"></i>Process Return
-                    </button>
+                <div class='modal-footer border-0 p-4 pt-0'>
+                    <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger px-4 fw-bold" id="confirmReturnBtn">Confirm Return</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STOCK CARD MODAL -->
+    <div class='modal fade modal-fs' id='stockCardModal' tabindex='-1'>
+        <div class='modal-dialog modal-dialog-centered'>
+            <div class='modal-content border-0 shadow-lg' style="border-radius: 16px; background: #f8fafc;">
+                <div class='modal-header bg-white border-0 px-4 pt-4 pb-0 align-items-start'>
+                    <div class="d-flex align-items-center">
+                        <div class="p-3 rounded-4 bg-primary bg-opacity-10 me-3">
+                            <i class="bi bi-upc-scan fs-3 text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class='modal-title fw-bold mb-0 text-primary'>Detailed Stock Card</h4>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span id="stockCardPartNo" class="badge bg-dark px-3 py-2" style="font-size: 0.85rem; letter-spacing: 0.5px;">PART-NO-PLACEHOLDER</span>
+                                <span id="stockCardBrand" class="text-muted small fw-bold text-uppercase border-start ps-2">BRAND NAME</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+                </div>
+
+                <div class='modal-body px-0 py-4'>
+                    <div class="modal-fs-container px-4">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm mb-3" style="border-radius: 16px;">
+                                <div class="card-body p-3 text-center">
+                                    <div id="stockCardImage" class="rounded-4 border bg-white mx-auto d-flex align-items-center justify-content-center overflow-hidden shadow-sm mb-3" style="width: 150px; height: 150px; background: #f1f5f9;">
+                                        <i class="bi bi-image text-muted opacity-25" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5 id="stockCardDescription" class="fw-bold text-dark mb-1">PART NAME / DESCRIPTION</h5>
+                                    <div class="badge bg-light text-muted border px-3 py-2 mt-2" style="font-size: 0.8rem;">
+                                        <i class="bi bi-geo-alt me-1"></i> STORAGE: <span id="stockCardBin">N/A</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <div class="p-3 bg-white border-0 shadow-sm rounded-4 d-flex justify-content-between align-items-center mb-1">
+                                        <div>
+                                            <div class="small text-muted fw-bold text-uppercase mb-0" style="font-size: 0.65rem;">Currently In Stock</div>
+                                            <div class="fw-bold fs-4 text-dark"><span id="stockCardQty">0</span> <span class="fs-6 fw-normal text-muted">pcs</span></div>
+                                        </div>
+                                        <div class="p-2 rounded-circle bg-success bg-opacity-10">
+                                            <i class="bi bi-box-fill text-success fs-5"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3 bg-white border-0 shadow-sm rounded-4">
+                                        <div class="small text-muted fw-bold text-uppercase mb-0" style="font-size: 0.65rem;">Cost</div>
+                                        <div id="stockCardCost" class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">₱0.00</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3 bg-white border-0 shadow-sm rounded-4">
+                                        <div class="small text-muted fw-bold text-uppercase mb-0" style="font-size: 0.65rem;">Selling</div>
+                                        <div id="stockCardPrice" class="fw-bold text-success mb-0" style="font-size: 0.9rem;">₱0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-8">
+                            <div class="card border-0 shadow-sm flex-grow-1" style="border-radius: 16px;">
+                                <div class="card-header bg-white border-0 pt-4 px-4">
+                                    <nav>
+                                        <div class="nav nav-pills gap-2" id="nav-tab" role="tablist">
+                                            <button class="nav-link active fw-bold px-4 rounded-pill d-flex align-items-center" id="nav-move-tab" data-bs-toggle="tab" data-bs-target="#sc-movement" type="button" role="tab">
+                                                <i class="bi bi-arrow-left-right me-2"></i> Activity Log (Ins & Outs)
+                                            </button>
+                                            <button class="nav-link fw-bold px-4 rounded-pill d-flex align-items-center" id="nav-cost-tab" data-bs-toggle="tab" data-bs-target="#sc-history" type="button" role="tab">
+                                                <i class="bi bi-clock-history me-2"></i> Cost History
+                                            </button>
+                                        </div>
+                                    </nav>
+                                </div>
+                                <div class="card-body p-0 mt-2">
+                                    <div class="tab-content">
+                                        <div class="tab-pane fade show active" id="sc-movement" role="tabpanel">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead class="bg-light sticky-top">
+                                                        <tr>
+                                                            <th class="ps-4 text-muted fw-bold small text-uppercase border-0 py-3">Date</th>
+                                                            <th class="text-muted fw-bold small text-uppercase border-0 py-3">Type of Activity</th>
+                                                            <th class="text-center text-muted fw-bold small text-uppercase border-0 py-3">Qty</th>
+                                                            <th class="text-muted fw-bold small text-uppercase border-0 py-3">To/From</th>
+                                                            <th class="pe-4 text-center text-muted fw-bold small text-uppercase border-0 py-3">Reference #</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="stockCardMovementBody" class="border-top-0"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane fade" id="sc-history" role="tabpanel">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0">
+                                                    <thead class="bg-light sticky-top">
+                                                        <tr>
+                                                            <th class="ps-4 text-muted fw-bold small text-uppercase border-0 py-3">Receive Date</th>
+                                                            <th class="text-muted fw-bold small text-uppercase border-0 py-3">Supplier Source</th>
+                                                            <th class="text-end text-muted fw-bold small text-uppercase border-0 py-3">Cost</th>
+                                                            <th class="pe-4 text-center text-muted fw-bold small text-uppercase border-0 py-3">Ref Invoice</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="stockCardHistoryBody" class="border-top-0"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div> <!-- End modal-body -->
+                <div class="modal-footer bg-white border-0 px-4 pb-4 pt-0">
+                    <div class="modal-fs-container d-flex justify-content-end">
+                        <button type="button" class="btn btn-dark fw-bold px-5 py-2 rounded-pill shadow-sm" data-bs-dismiss="modal">Close Card</button>
+                    </div>
                 </div>
             </div>
         </div>
