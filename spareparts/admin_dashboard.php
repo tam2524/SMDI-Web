@@ -363,6 +363,41 @@ $today = date('l, F j, Y');
         .total-row-label { color: var(--gray-700); }
         .total-row-val { color: var(--green-800); font-size: 1rem; font-weight: 800; }
 
+        .bg-menu-gray { background: #64748b !important; }
+        .bg-menu-red { background: #ef4444 !important; }
+        .bg-menu-purple { background: #8b5cf6 !important; }
+        .bg-menu-orange { background: #f97316 !important; }
+        .bg-menu-blue { background: #3b82f6 !important; }
+        .bg-menu-teal { background: #0d9488 !important; }
+        .bg-menu-cyan { background: #06b6d4 !important; }
+        .bg-menu-green { background: #10b981 !important; }
+
+        .module-card[class*="bg-menu-"] {
+            border: none !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .module-card[class*="bg-menu-"] .module-title {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"] .module-desc {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        .module-card[class*="bg-menu-"] .module-icon-wrap {
+            background: rgba(255,255,255,0.2) !important;
+        }
+        .module-card[class*="bg-menu-"] .module-icon-wrap i {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"] .module-arrow {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"]:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+            filter: brightness(1.05);
+        }
+
         /* ── FOOTER STRIP ── */
         .footer-strip {
             text-align: center;
@@ -440,7 +475,7 @@ $today = date('l, F j, Y');
                 <div class="section-label"><i class="bi bi-grid-3x3-gap"></i> Modules</div>
                 <div class="modules-grid">
 
-                    <a href="admin_spareparts.php?tab=dashboard" class="module-card" id="sys-dashboard-card">
+                    <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-blue" id="sys-dashboard-card">
                         <div class="module-icon-wrap"><i class="bi bi-speedometer2"></i></div>
                         <div>
                             <div class="module-title">System Dashboard</div>
@@ -449,8 +484,8 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=sales" class="module-card" id="sales-card">
-                        <div class="module-icon-wrap"><i class="bi bi-cart-check-fill text-success"></i></div>
+                    <a href="admin_spareparts.php?tab=sales" class="module-card bg-menu-purple" id="sales-card">
+                        <div class="module-icon-wrap"><i class="bi bi-cart-check-fill"></i></div>
                         <div>
                             <div class="module-title">Sales Transactions</div>
                             <div class="module-desc">View all sales, filters by branch & date</div>
@@ -458,7 +493,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=inventory" class="module-card" id="inventory-card">
+                    <a href="admin_spareparts.php?tab=inventory" class="module-card bg-menu-orange" id="inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-database-gear"></i></div>
                         <div>
                             <div class="module-title">Inventory Control</div>
@@ -467,7 +502,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=global-transfer" class="module-card" id="transfer-card">
+                    <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-blue" id="transfer-card">
                         <div class="module-icon-wrap"><i class="bi bi-arrow-left-right"></i></div>
                         <div>
                             <div class="module-title">Transfer Monitor</div>
@@ -476,7 +511,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=activity-log" class="module-card" id="audit-card">
+                    <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal" id="audit-card">
                         <div class="module-icon-wrap"><i class="bi bi-shield-check"></i></div>
                         <div>
                             <div class="module-title">Audit Logs</div>
@@ -485,7 +520,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="user_management.php" class="module-card" id="usermgmt-card">
+                    <a href="user_management.php" class="module-card bg-menu-cyan" id="usermgmt-card">
                         <div class="module-icon-wrap"><i class="bi bi-people-fill"></i></div>
                         <div>
                             <div class="module-title">User Management</div>
@@ -494,7 +529,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="master_reports.php" class="module-card" id="reports-card">
+                    <a href="master_reports.php" class="module-card bg-menu-green" id="reports-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
                             <div class="module-title">Master Reports</div>
@@ -503,8 +538,8 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="beginning_inventory.php" class="module-card" id="beginning-inventory-card">
-                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i></div>
+                    <a href="beginning_inventory.php" class="module-card bg-menu-red" id="beginning-inventory-card">
+                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
                             <div class="module-title">Beginning Inventory</div>
                             <div class="module-desc">Enter initial stock levels (Excel-style)</div>

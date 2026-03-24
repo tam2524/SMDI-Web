@@ -231,6 +231,43 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
         .total-row-label { color: var(--gray-700); }
         .total-row-val { color: var(--green-800); font-size: 1rem; font-weight: 800; }
 
+        .bg-menu-gray { background: #64748b !important; }
+        .bg-menu-red { background: #ef4444 !important; }
+        .bg-menu-purple { background: #8b5cf6 !important; }
+        .bg-menu-orange { background: #f97316 !important; }
+        .bg-menu-blue { background: #3b82f6 !important; }
+        .bg-menu-teal { background: #0d9488 !important; }
+        .bg-menu-cyan { background: #06b6d4 !important; }
+        .bg-menu-green { background: #10b981 !important; }
+        .bg-menu-indigo { background: #6366f1 !important; }
+        .bg-menu-pink { background: #ec4899 !important; }
+
+        .module-card[class*="bg-menu-"] {
+            border: none !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .module-card[class*="bg-menu-"] .module-title {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"] .module-desc {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        .module-card[class*="bg-menu-"] .module-icon-wrap {
+            background: rgba(255,255,255,0.2) !important;
+        }
+        .module-card[class*="bg-menu-"] .module-icon-wrap i {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"] .module-arrow {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"]:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+            filter: brightness(1.05);
+        }
+
         /* ── FOOTER ── */
         .footer-strip {
             text-align: center; padding: 1.5rem;
@@ -314,7 +351,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                 <div class="section-label"><i class="bi bi-grid-3x3-gap"></i> Modules</div>
                 <div class="modules-grid">
 
-                    <a href="sales_spareparts.php?tab=customers" class="module-card">
+                    <a href="sales_spareparts.php?tab=customers" class="module-card bg-menu-gray">
                         <div class="module-icon-wrap"><i class="bi bi-people"></i></div>
                         <div>
                             <div class="module-title">Customer</div>
@@ -323,7 +360,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="warehouse_spareparts.php" class="module-card">
+                    <a href="warehouse_spareparts.php" class="module-card bg-menu-red">
                         <div class="module-icon-wrap"><i class="bi bi-card-list"></i></div>
                         <div>
                             <div class="module-title">Stock Card</div>
@@ -332,7 +369,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="find_stocks.php" class="module-card">
+                    <a href="find_stocks.php" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
                             <div class="module-title">Find Stocks</div>
@@ -341,7 +378,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="sales_spareparts.php?tab=sales" class="module-card">
+                    <a href="sales_spareparts.php?tab=sales" class="module-card bg-menu-orange">
                         <div class="module-icon-wrap"><i class="bi bi-receipt"></i></div>
                         <div>
                             <div class="module-title">Sales</div>
@@ -351,7 +388,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                     </a>
 
 
-                    <a href="sales_spareparts.php?tab=payments" class="module-card">
+                    <a href="sales_spareparts.php?tab=payments" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
                         <div>
                             <div class="module-title">Payments</div>
@@ -360,7 +397,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="transfer_stock.php" class="module-card">
+                    <a href="transfer_stock.php" class="module-card bg-menu-teal">
                         <div class="module-icon-wrap"><i class="bi bi-truck"></i></div>
                         <div>
                             <div class="module-title">Transfer Stocks</div>
@@ -369,7 +406,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="sales_spareparts.php?tab=returns" class="module-card">
+                    <a href="sales_spareparts.php?tab=returns" class="module-card bg-menu-cyan">
                         <div class="module-icon-wrap"><i class="bi bi-arrow-return-left"></i></div>
                         <div>
                             <div class="module-title">CM</div>
@@ -378,7 +415,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="sales_spareparts.php?tab=employees" class="module-card">
+                    <a href="sales_spareparts.php?tab=employees" class="module-card bg-menu-pink">
                         <div class="module-icon-wrap"><i class="bi bi-person-badge"></i></div>
                         <div>
                             <div class="module-title">Employees</div>
@@ -387,7 +424,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="sales_spareparts.php?tab=pricelists" class="module-card">
+                    <a href="sales_spareparts.php?tab=pricelists" class="module-card bg-menu-green">
                         <div class="module-icon-wrap"><i class="bi bi-tags"></i></div>
                         <div>
                             <div class="module-title">Pricelist</div>
@@ -396,7 +433,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="master_reports.php" class="module-card">
+                    <a href="master_reports.php" class="module-card bg-menu-indigo">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
                             <div class="module-title">Master Reports</div>
@@ -406,8 +443,8 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                     </a>
 
                     <?php if ($beginningInvEnabled): ?>
-                    <a href="beginning_inventory.php" class="module-card" id="beginning-inventory-card">
-                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i></div>
+                    <a href="beginning_inventory.php" class="module-card bg-menu-red" id="beginning-inventory-card">
+                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
                             <div class="module-title">Beginning Inventory</div>
                             <div class="module-desc">Enter initial stock levels (Excel-style)</div>

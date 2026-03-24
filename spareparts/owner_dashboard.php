@@ -249,6 +249,41 @@ $today = date('l, F j, Y');
         .total-row-label { color: var(--gray-700); }
         .total-row-val { color: #b71c1c; font-size: 1rem; font-weight: 800; }
 
+        .bg-menu-gray { background: #64748b !important; }
+        .bg-menu-red { background: #ef4444 !important; }
+        .bg-menu-purple { background: #8b5cf6 !important; }
+        .bg-menu-orange { background: #f97316 !important; }
+        .bg-menu-blue { background: #3b82f6 !important; }
+        .bg-menu-teal { background: #0d9488 !important; }
+        .bg-menu-cyan { background: #06b6d4 !important; }
+        .bg-menu-green { background: #10b981 !important; }
+
+        .module-card[class*="bg-menu-"] {
+            border: none !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .module-card[class*="bg-menu-"] .module-title {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"] .module-desc {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        .module-card[class*="bg-menu-"] .module-icon-wrap {
+            background: rgba(255,255,255,0.2) !important;
+        }
+        .module-card[class*="bg-menu-"] .module-icon-wrap i {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"] .module-arrow {
+            color: white !important;
+        }
+        .module-card[class*="bg-menu-"]:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+            filter: brightness(1.05);
+        }
+
         /* ── FOOTER ── */
         .footer-strip {
             text-align: center; padding: 1.5rem;
@@ -311,7 +346,7 @@ $today = date('l, F j, Y');
                 <div class="section-label"><i class="bi bi-grid-3x3-gap"></i> Owner Console</div>
                 <div class="modules-grid">
 
-                    <a href="admin_spareparts.php?tab=dashboard" class="module-card">
+                    <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-speedometer2"></i></div>
                         <div>
                             <div class="module-title">Global Dashboard</div>
@@ -320,8 +355,8 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=sales" class="module-card">
-                        <div class="module-icon-wrap"><i class="bi bi-cart-check-fill text-success"></i></div>
+                    <a href="admin_spareparts.php?tab=sales" class="module-card bg-menu-purple">
+                        <div class="module-icon-wrap"><i class="bi bi-cart-check-fill"></i></div>
                         <div>
                             <div class="module-title">Sales Transactions</div>
                             <div class="module-desc">View all sales, filters by branch & date</div>
@@ -329,7 +364,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=inventory" class="module-card">
+                    <a href="admin_spareparts.php?tab=inventory" class="module-card bg-menu-orange">
                         <div class="module-icon-wrap"><i class="bi bi-boxes"></i></div>
                         <div>
                             <div class="module-title">Centralized Inventory</div>
@@ -338,7 +373,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=global-transfer" class="module-card">
+                    <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-globe-americas"></i></div>
                         <div>
                             <div class="module-title">Global Transfers</div>
@@ -347,7 +382,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="admin_spareparts.php?tab=activity-log" class="module-card">
+                    <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal">
                         <div class="module-icon-wrap"><i class="bi bi-journal-text"></i></div>
                         <div>
                             <div class="module-title">System Audit</div>
@@ -356,7 +391,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="master_reports.php" class="module-card">
+                    <a href="master_reports.php" class="module-card bg-menu-green">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
                             <div class="module-title">Master Reports</div>
@@ -365,7 +400,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="find_stocks.php" class="module-card">
+                    <a href="find_stocks.php" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
                             <div class="module-title">Find Tool</div>
@@ -374,7 +409,7 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-                    <a href="user_management.php" class="module-card">
+                    <a href="user_management.php" class="module-card bg-menu-cyan">
                         <div class="module-icon-wrap"><i class="bi bi-person-gear"></i></div>
                         <div>
                             <div class="module-title">User Management</div>
