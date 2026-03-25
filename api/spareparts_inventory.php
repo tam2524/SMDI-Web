@@ -1692,7 +1692,7 @@ function sellMultiplePartsOut()
             $division = getCurrentDivision();
             $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force, category, payment_method, check_date) 
                                     VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssssiddssssss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division, $payment_method, $check_date);
+            $stmt->bind_param('ssssssiddsssss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division, $payment_method, $check_date);
             $stmt->execute();
         }
 
