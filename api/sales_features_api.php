@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS spareparts_customers (
     term INT DEFAULT 0,
     credit_limit DECIMAL(15,2) DEFAULT 0.00,
     branch VARCHAR(100) DEFAULT 'HEADOFFICE',
+    category VARCHAR(50) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 ");
@@ -33,6 +34,10 @@ if ($res->num_rows == 0) {
 $res = $conn->query("SHOW COLUMNS FROM spareparts_customers LIKE 'credit_limit'");
 if ($res->num_rows == 0) {
     $conn->query("ALTER TABLE spareparts_customers ADD COLUMN credit_limit DECIMAL(15,2) DEFAULT 0.00 AFTER term");
+}
+$res = $conn->query("SHOW COLUMNS FROM spareparts_customers LIKE 'category'");
+if ($res->num_rows == 0) {
+    $conn->query("ALTER TABLE spareparts_customers ADD COLUMN category VARCHAR(50) DEFAULT NULL AFTER branch");
 }
 
 $conn->query("
@@ -107,13 +112,11 @@ switch ($action) {
         $term = $_POST['term'] ?? 0;
         $limit = $_POST['credit_limit'] ?? 0;
         
-        if (empty($name)) {
-            echo json_encode(["success" => false, "message" => "Name is required"]);
-            exit;
-        }
-        
-        $stmt = $conn->prepare("INSERT INTO spareparts_customers (name, contact_no, address, rank_level, term, credit_limit, branch) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssids", $name, $contact, $address, $rank, $term, $limit, $branch);
+        // Determine category (both sales and retail map to Wholesale in spareparts_inventory.php)
+        $category = (strpos(strtolower($userRole), 'retail') !== false || strpos(strtolower($userRole), 'sales') !== false) ? 'Wholesale' : null;
+
+        $stmt = $conn->prepare("INSERT INTO spareparts_customers (name, contact_no, address, rank_level, term, credit_limit, branch, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssidss", $name, $contact, $address, $rank, $term, $limit, $branch, $category);
         
         if ($stmt->execute()) {
             echo json_encode(["success" => true, "message" => "Customer added"]);
@@ -131,14 +134,12 @@ switch ($action) {
         $term = $_POST['term'] ?? 0;
         $limit = $_POST['credit_limit'] ?? 0;
         
-        if (empty($id) || empty($name)) {
-            echo json_encode(["success" => false, "message" => "ID and Name are required"]);
-            exit;
-        }
+        // Determine category
+        $category = (strpos(strtolower($userRole), 'retail') !== false || strpos(strtolower($userRole), 'sales') !== false) ? 'Wholesale' : null;
         
         $ownerCheck = "";
-        $params = [$name, $contact, $address, $rank, $term, $limit, $id];
-        $types = "sssidi";
+        $params = [$name, $contact, $address, $rank, $term, $limit, $category, $id];
+        $types = "sssidisi";
         
         if (!$isAdmin && $branch !== 'HEADOFFICE') {
             $ownerCheck = " AND branch = ?";
@@ -146,7 +147,7 @@ switch ($action) {
             $types .= "s";
         }
 
-        $stmt = $conn->prepare("UPDATE spareparts_customers SET name=?, contact_no=?, address=?, rank_level=?, term=?, credit_limit=? WHERE id=? $ownerCheck");
+        $stmt = $conn->prepare("UPDATE spareparts_customers SET name=?, contact_no=?, address=?, rank_level=?, term=?, credit_limit=?, category=? WHERE id=? $ownerCheck");
         $stmt->bind_param($types, ...$params);
         
         if ($stmt->execute()) {

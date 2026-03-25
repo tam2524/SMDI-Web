@@ -29,8 +29,7 @@ function getCurrentDivision()
 {
     global $userRole;
     $pos = strtolower(trim($userRole));
-    if (strpos($pos, 'retail') !== false) return 'Retail';
-    if (strpos($pos, 'sales') !== false) return 'Wholesale'; 
+    if (strpos($pos, 'retail') !== false || strpos($pos, 'sales') !== false) return 'Wholesale'; 
     return null; // Admin/HO
 }
 
@@ -1091,9 +1090,10 @@ function searchUniqueCustomers()
 
     // 1. Search in spareparts_customers table (priority for rank info)
     $division = getCurrentDivision();
-    $divFilter = (!$seeAll && $division) ? " AND category = '$division' " : "";
+    // Relaxed division filter to show both categorized and legacy (uncategorized) customers
+    $divFilter = (!$seeAll && $division) ? " AND (category = '$division' OR category IS NULL OR category = '') " : "";
 
-    $sql_cust = "SELECT name AS customer_name, rank_level FROM spareparts_customers WHERE name LIKE ? " . ($seeAll ? "" : "AND branch = ?") . $divFilter . " LIMIT 10";
+    $sql_cust = "SELECT name AS customer_name, rank_level, credit_limit FROM spareparts_customers WHERE name LIKE ? " . ($seeAll ? "" : "AND branch = ?") . $divFilter . " LIMIT 10";
     $stmt_cust = $conn->prepare($sql_cust);
     if ($seeAll) $stmt_cust->bind_param('s', $searchTerm);
     else $stmt_cust->bind_param('ss', $searchTerm, $currentBranch);
@@ -1103,7 +1103,7 @@ function searchUniqueCustomers()
     // 2. Search in transactions for historical names
     $whereBranch = $seeAll ? "" : "AND from_location = ?";
     if (!$seeAll && $division) {
-        $whereBranch .= " AND category = ?";
+        $whereBranch .= " AND (category = ? OR category IS NULL OR category = '')";
         $stmt_trans = $conn->prepare("SELECT DISTINCT customer_name FROM spareparts_transactions WHERE customer_name LIKE ? $whereBranch LIMIT 5");
         $stmt_trans->bind_param('sss', $searchTerm, $currentBranch, $division);
     } else {
@@ -1122,7 +1122,7 @@ function searchUniqueCustomers()
     }
     foreach ($res_trans as $t) {
         if (!in_array(strtolower($t['customer_name']), $names)) {
-            $final[] = ['customer_name' => $t['customer_name'], 'rank_level' => 'Standard'];
+            $final[] = ['customer_name' => $t['customer_name'], 'rank_level' => 'Standard', 'credit_limit' => 0];
         }
     }
 
@@ -1841,10 +1841,10 @@ function searchSalesForce()
     $division = getCurrentDivision();
     $term = '%' . sanitizeInput($_GET['term'] ?? '') . '%';
     if (!$isAdmin && $division) {
-        $stmt = $conn->prepare("SELECT id, employee_name FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? AND category = ? ORDER BY employee_name ASC LIMIT 10");
+        $stmt = $conn->prepare("SELECT id, employee_name, position FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? AND category = ? ORDER BY employee_name ASC LIMIT 10");
         $stmt->bind_param('sss', $currentBranch, $term, $division);
     } else {
-        $stmt = $conn->prepare("SELECT id, employee_name FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? ORDER BY employee_name ASC LIMIT 10");
+        $stmt = $conn->prepare("SELECT id, employee_name, position FROM spareparts_sales_force WHERE branch = ? AND employee_name LIKE ? ORDER BY employee_name ASC LIMIT 10");
         $stmt->bind_param('ss', $currentBranch, $term);
     }
     $stmt->execute();

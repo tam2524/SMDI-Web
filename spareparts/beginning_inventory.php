@@ -2,7 +2,7 @@
 require_once '../api/db_config.php';
 
 // Check if user is logged in and has appropriate role
-$allowedRoles = ['Spareparts-Admin', 'Spareparts-Owner', 'Spareparts-Warehouse', 'Spareparts-Sales', 'Spareparts-Retail'];
+$allowedRoles = ['Spareparts-Admin', 'Spareparts-Owner', 'Spareparts-Warehouse', 'Spareparts-Sales'];
 if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], $allowedRoles)) {
     header('Location: ../login.html');
     exit();

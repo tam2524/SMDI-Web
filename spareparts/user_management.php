@@ -173,7 +173,6 @@ $backLink = ($_SESSION['position'] === 'Spareparts-Owner') ? 'owner_dashboard.ph
                             <div class="col-6">
                                 <label class="form-label fw-bold text-muted small">Position / Role *</label>
                                 <select class="form-select" id="formPosition" name="position" required>
-                                    <option value="Spareparts-Retail">Spareparts Retail</option>
                                     <option value="Spareparts-Sales">Spareparts Sales</option>
                                     <option value="Spareparts-Warehouse">Spareparts Warehouse</option>
                                     <option value="Spareparts-Admin">Spareparts Admin</option>

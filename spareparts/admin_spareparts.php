@@ -643,12 +643,8 @@ endif; ?>
                                 <div id="inventoryStats" class="small text-muted fw-bold border-end pe-3"></div>
                                 <div class="btn-group shadow-sm">
                                     <button class='btn btn-sm btn-primary text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#addPartsInModal'>
-                                        <i class='bi bi-plus-circle me-1'></i>Add Stock
-                                    </button>
-                                    <button class='btn btn-sm btn-success text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#inventoryReportsModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
+                                        data-bs-toggle='modal' data-bs-target='#addPartModal'>
+                                        <i class='bi bi-plus-circle me-1'></i>Add New Part
                                     </button>
                                 </div>
                                 <input type='text' id='inventorySearch' class='form-control form-control-sm'
@@ -688,10 +684,6 @@ endif; ?>
                                     <button class='btn btn-sm btn-success fw-bold px-3' data-bs-toggle='modal'
                                         data-bs-target='#sellPartsOutModal'>
                                         <i class='bi bi-cart-plus me-1'></i>Record Sale
-                                    </button>
-                                    <button class='btn btn-sm btn-dark fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#generateSalesReportModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
                                     </button>
                                 </div>
                                 <input type='text' id='salesSearch'
@@ -788,10 +780,6 @@ endif; ?>
                                     <button class='btn btn-sm btn-primary text-white fw-bold px-3'
                                         data-bs-toggle='modal' data-bs-target='#recordPaymentModal'>
                                         <i class='bi bi-cash-coin me-1'></i>Record Payment
-                                    </button>
-                                    <button class='btn btn-sm btn-success text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#paymentReportsModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
                                     </button>
                                 </div>
                                 <input type='text' id='paymentsSearch' class='form-control form-control-sm'
@@ -1479,17 +1467,257 @@ endif; ?>
             </div>
         </div>
     </div>
-    <div class='modal fade' id='viewIncomingTransferModal' tabindex='-1'>
-        <div class='modal-dialog modal-lg'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title'>Incoming Transfer Details</h5><button type='button' class='btn-close'
-                        data-bs-dismiss='modal'></button>
+    <!-- VIEW TRANSFER MODAL -->
+    <div class='modal fade' id='viewTransferDetailsModal' tabindex='-1' aria-hidden='true'>
+        <div class='modal-dialog modal-lg modal-dialog-centered'>
+            <div class='modal-content border-0 shadow'>
+                <div class='modal-header bg-dark text-white border-0'>
+                    <h5 class='modal-title text-white fw-bold'><i class="bi bi-info-circle me-2"></i>Transfer Details</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
                 </div>
-                <div class='modal-body' id='incomingTransferDetailsBody'></div>
-                <div class='modal-footer'><button type='button' class='btn btn-secondary'
-                        data-bs-dismiss='modal'>Cancel</button><button type='button' class='btn btn-success'
-                        id="confirmReceiveBtn">Confirm and Receive Items</button></div>
+                <div class='modal-body p-0' id="transferDetailsBody">
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary"></div>
+                        <p class="mt-2 text-muted">Loading transfer details...</p>
+                    </div>
+                </div>
+                <div class='modal-footer border-0 bg-light p-3'>
+                    <button type='button' class='btn btn-outline-secondary fw-bold px-4'
+                        data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-outline-danger d-none fw-bold px-4' id="rejectTransferBtn">Reject Transfer</button>
+                    <button type='button' class='btn btn-success d-none fw-bold px-4' id="confirmReceiveBtn">Receive Items</button>
+                    <button type='button' class='btn btn-outline-warning d-none fw-bold px-4' id="cancelTransferBtn">Cancel Transfer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTER NEW PART MODAL -->
+    <div class='modal fade' id='addPartModal' tabindex='-1' aria-hidden='true'>
+        <div class='modal-dialog modal-lg modal-dialog-centered'>
+            <div class='modal-content border-0 shadow-lg' style="border-radius: 15px; overflow: hidden;">
+                <form id='addPartForm' enctype="multipart/form-data">
+                    <div class='modal-header bg-success text-white border-0 py-3'>
+                        <h5 class='modal-title text-white fw-bold'><i class="bi bi-plus-square me-2"></i>Register New Inventory Part</h5>
+                        <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                    </div>
+                    <div class='modal-body p-4 bg-light'>
+                        <!-- SECTION: PART INFORMATION -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3 text-dark d-flex align-items-center">
+                                    <i class="bi bi-tag-fill me-2 text-success"></i> Basic Part Information
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted text-uppercase">Part Number</label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-hash"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 fw-bold" name="part_no" placeholder="e.g. 123456-ABC" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted text-uppercase">Brand Name</label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-bookmark-star"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 fw-bold" name="brand" placeholder="e.g. Honda, Yamaha">
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold text-muted text-uppercase">Part Name / Description</label>
+                                        <div class="input-group shadow-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-card-text"></i></span>
+                                            <textarea class="form-control border-start-0 ps-0" name="description" rows="2" placeholder="Enter full part description..." required></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION: STOCK & PRICING -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                                    <div class="card-body p-4">
+                                        <h6 class="fw-bold mb-3 text-dark">
+                                            <i class="bi bi-box-seam me-2 text-primary"></i> Initial Stock & Limits
+                                        </h6>
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-muted text-uppercase">Initial Stock</label>
+                                                <input type="number" class="form-control fw-bold" name="stock" value="0" required min="0">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-muted text-uppercase">Min. Stock Alert</label>
+                                                <input type="number" class="form-control text-danger fw-bold" name="min_stock" value="5" required min="0">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-bold text-muted text-uppercase">Bin Location</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-geo-alt"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0" name="bin_location" placeholder="e.g. Row 1, Bin B">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                                    <div class="card-body p-4">
+                                        <h6 class="fw-bold mb-3 text-dark">
+                                            <i class="bi bi-cash-coin me-2 text-warning"></i> Master Pricing
+                                        </h6>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Dealer Unit Cost</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0 text-muted">₱</span>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold" name="cost" value="0.00" required>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Standard Selling Price</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0 text-success">₱</span>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold text-success" name="price" value="0.00" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='modal-footer border-0 bg-white py-3 px-4'>
+                        <button type='button' class='btn btn-light px-4 fw-bold' data-bs-dismiss='modal'>Cancel</button>
+                        <button type='submit' class='btn btn-success px-5 fw-bold shadow-sm'>
+                            <i class="bi bi-check-circle me-1"></i>Save Part
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPDATE PART MODAL -->
+    <div class='modal fade' id='editPartModal' tabindex='-1' aria-hidden='true'>
+        <div class='modal-dialog modal-lg modal-dialog-centered'>
+            <div class='modal-content border-0 shadow-lg' style="border-radius: 15px; overflow: hidden;">
+                <form id='editPartForm' enctype="multipart/form-data">
+                    <div class='modal-header bg-primary text-white border-0 py-3'>
+                        <h5 class='modal-title text-white fw-bold'><i class="bi bi-pencil-square me-2"></i>Update Part Details</h5>
+                        <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                    </div>
+                    <div class='modal-body p-4 bg-light'>
+                        <input type="hidden" name="id" id="edit_part_id">
+                        
+                        <!-- SECTION: PART INFORMATION -->
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3 text-dark d-flex align-items-center">
+                                    <i class="bi bi-tag-fill me-2 text-primary"></i> Part Information
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted text-uppercase">Part Number</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-hash"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 fw-bold" name="part_no" id="edit_part_no" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted text-uppercase">Brand Name</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-bookmark-star"></i></span>
+                                            <input type="text" class="form-control border-start-0 ps-0 fw-bold" name="brand" id="edit_brand">
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold text-muted text-uppercase">Part Name / Description</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-card-text"></i></span>
+                                            <textarea class="form-control border-start-0 ps-0" name="description" id="edit_description" rows="2" required></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION: STOCK, PRICING & LOCATION -->
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
+                                            <i class="bi bi-box-seam-fill me-2 text-success"></i> Stock Levels
+                                        </h6>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">In Stock Now</label>
+                                                <input type="number" class="form-control fw-bold form-control-sm" name="stock" id="edit_stock" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Alert if below</label>
+                                                <input type="number" class="form-control text-danger fw-bold form-control-sm" name="min_stock" id="edit_min_stock" required>
+                                            </div>
+                                            <div class="col-12 mt-3">
+                                                <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Reference Invoice #</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-file-earmark-text"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0" name="invoice_no" id="edit_invoice_no" placeholder="Optional">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
+                                            <i class="bi bi-cash-coin me-2 text-warning"></i> Pricing
+                                        </h6>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Cost (Master Inventory)</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-white border-end-0 text-muted">₱</span>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold" name="cost" id="edit_cost" required>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Store Selling Price</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-white border-end-0 text-success fw-bold">₱</span>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold text-success" name="price" id="edit_price" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
+                                            <i class="bi bi-geo-alt-fill me-2 text-primary"></i> Location
+                                        </h6>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Storage (Bin/Row)</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-pin-map"></i></span>
+                                                <input type="text" class="form-control border-start-0 ps-0" name="bin_location" id="edit_bin_location" placeholder="e.g. Row 2, Bin C">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='modal-footer border-0 bg-white py-3 px-4'>
+                        <button type='button' class='btn btn-light px-4 fw-bold' data-bs-dismiss='modal'>Cancel</button>
+                        <button type='submit' class='btn btn-primary px-5 fw-bold shadow-sm'>
+                            <i class="bi bi-check-circle me-1"></i>Update Part
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

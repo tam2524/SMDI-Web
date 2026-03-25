@@ -24,7 +24,7 @@ elseif ($position === 'Spareparts-Sales') {
     $backLink = "sales_dashboard.php";
 }
 elseif ($position === 'Spareparts-Retail') {
-    $backLink = "retail_dashboard.php";
+    $backLink = "sales_dashboard.php";
 }
 ?>
 <!DOCTYPE html>

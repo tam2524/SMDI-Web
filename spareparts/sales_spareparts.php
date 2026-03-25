@@ -889,7 +889,7 @@ endif; ?>
                                         <th>Branch</th>
                                         <th>Customer</th>
                                         <th>SI #</th>
-                                        <th>Employee</th>
+                                        <th>Sales Force</th>
                                         <th class="text-end">Total Amount</th>
                                         <th class="text-center">Type</th>
                                         <th class="text-end col-balance">Balance</th>
@@ -1213,7 +1213,7 @@ endif; ?>
                         <!-- Sales Force Field -->
                         <div class="row g-3 mb-3">
                             <div class="col-12 position-relative">
-                                <label class="label-premium"><i class="bi bi-person-badge me-1 text-success"></i>Employee Assisted <span class="text-muted fw-normal small">(Optional)</span></label>
+                                <label class="label-premium"><i class="bi bi-person-badge me-1 text-success"></i>Sales Force <span class="text-muted fw-normal small">(Optional)</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-person text-success"></i></span>
                                     <input type="text" id="out_sales_force" class="form-control border-start-0"
@@ -1514,7 +1514,7 @@ endif; ?>
                         <!-- Sales Force Row -->
                         <div class="row g-3 mb-4">
                             <div class="col-md-12 mb-3">
-                                <label class="form-label fw-bold">Employee Assisted</label>
+                                <label class="form-label fw-bold">Sales Force</label>
                                 <input type="text" class="form-control" id="edit_sale_sales_force">
                             </div>
                             <div class="col-md-6">

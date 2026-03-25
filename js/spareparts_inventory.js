@@ -1126,15 +1126,10 @@ $(document).ready(function () {
 
         // POS LOGIC (Sales Out)
         let currentCustomerRank = 'Standard';
-        $('#out_customer_name').on('input', function () {
+        $('#out_customer_name').on('input focus', function () {
             const val = $(this).val().toLowerCase().trim();
             const resultsBox = $('#saleCustomerSearchResults');
             resultsBox.empty();
-
-            if (!val) {
-                resultsBox.hide();
-                return;
-            }
 
             $.get('../api/spareparts_inventory.php?action=search_unique_customers', { term: val }, response => {
                 if (response.success && response.data.length > 0) {
@@ -1142,11 +1137,18 @@ $(document).ready(function () {
                     response.data.forEach(item => {
                         const custName = item.customer_name;
                         const rank = item.rank_level || 'Standard';
+                        const limit = parseFloat(item.credit_limit || 0);
+                        const limitFormatted = '₱' + limit.toLocaleString(undefined, { minimumFractionDigits: 2 });
                         if (!custName) return;
-                        html += `<button type="button" class="list-group-item list-group-item-action fw-bold fill-sale-customer" 
-                                    data-name="${escapeHtml(custName)}" data-rank="${rank}">
-                                    <i class="bi bi-person text-secondary me-2"></i>${escapeHtml(custName)}
-                                    <span class="badge bg-light text-dark border ms-2 small fw-normal">${rank}</span>
+                        html += `<button type="button" class="list-group-item list-group-item-action fill-sale-customer" 
+                                    data-name="${escapeHtml(custName)}" data-rank="${rank}" data-limit="${limit}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="fw-bold"><i class="bi bi-person text-secondary me-2"></i>${escapeHtml(custName)}</div>
+                                        <div class="text-end">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle small fw-normal">${rank}</span>
+                                            ${limit > 0 ? `<br><small class="text-muted" style="font-size:0.7rem">Limit: ${limitFormatted}</small>` : ''}
+                                        </div>
+                                    </div>
                                  </button>`;
                     });
                     resultsBox.html(html).show();
@@ -1159,10 +1161,43 @@ $(document).ready(function () {
         $(document).on('click', '.fill-sale-customer', function () {
             const name = $(this).data('name');
             const rank = $(this).data('rank');
+            const limit = $(this).data('limit');
+            
             $('#out_customer_name').val(name);
             currentCustomerRank = rank;
+            
+            // Show Rank and Limit info below the input if it's charge sale
+            if ($('#out_transaction_type').val() === 'charge' || $('#out_transaction_type').val() === 'pdc') {
+                const limitStr = '₱' + parseFloat(limit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                const infoHtml = `<div id="customerSelectionInfo" class="mt-1 small text-muted">
+                    <span class="badge bg-info-subtle text-info border border-info-subtle me-1">${rank} Rank</span>
+                    <span class="fw-bold">Credit Limit: ${limitStr}</span>
+                </div>`;
+                $('#customerSelectionInfo').remove();
+                $('#out_customer_name').after(infoHtml);
+            } else {
+                $('#customerSelectionInfo').remove();
+            }
+
             $('#saleCustomerSearchResults').hide();
             updateCartPricesForRank();
+        });
+
+        $(document).on('change', '#out_transaction_type', function() {
+            // Re-trigger visual feedback for customer if already selected
+            const name = $('#out_customer_name').val();
+            if (name) {
+                // If it's in the list of results, we can get the limit/rank again, 
+                // but usually the user has already selected it.
+                // For simplicity, if they change to cash, hidden the info.
+                if ($(this).val() === 'cash') {
+                    $('#customerSelectionInfo').remove();
+                } else {
+                    // We don't have the limit easily available here unless we store it.
+                    // Let's just trigger a re-search or similar if needed, 
+                    // but for now, we'll just keep it if it's there.
+                }
+            }
         });
 
         function updateCartPricesForRank() {
@@ -1195,6 +1230,8 @@ $(document).ready(function () {
         });
 
         $('#sellPartsOutModal').on('show.bs.modal', function () {
+            $('#customerSelectionInfo').remove();
+            $('#out_sales_force_info').remove();
             setTimeout(() => {
                 $('#out_transaction_type').trigger('change');
             }, 50);
@@ -1204,16 +1241,20 @@ $(document).ready(function () {
         });
 
         // ---- SALES FORCE AUTOCOMPLETE ----
-        $('#out_sales_force').on('input', function () {
+        $('#out_sales_force').on('input focus', function () {
             const term = $(this).val().trim();
             const $results = $('#salesForceSearchResults');
-            if (term.length < 1) { $results.hide(); return; }
+            
+            // On focus with empty term, show all available
             $.get('../api/spareparts_inventory.php?action=search_sales_force', { term }, function (res) {
                 $results.empty();
                 if (res.success && res.data.length > 0) {
                     res.data.forEach(emp => {
-                        $results.append(`<button type="button" class="list-group-item list-group-item-action sf-pick" data-name="${emp.employee_name}">
-                            <i class="bi bi-person me-2 text-success"></i>${emp.employee_name}
+                        $results.append(`<button type="button" class="list-group-item list-group-item-action sf-pick" data-name="${emp.employee_name}" data-position="${emp.position || ''}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-person-circle me-2 text-success"></i>${emp.employee_name}</span>
+                                ${emp.position ? `<small class="text-muted small">${emp.position}</small>` : ''}
+                            </div>
                         </button>`);
                     });
                     $results.show();
@@ -1224,8 +1265,22 @@ $(document).ready(function () {
         });
 
         $(document).on('click', '.sf-pick', function () {
-            $('#out_sales_force').val($(this).data('name'));
+            const name = $(this).data('name');
+            const pos = $(this).data('position');
+            $('#out_sales_force').val(name);
             $('#salesForceSearchResults').hide();
+            
+            // Show position info if available
+            $('#out_sales_force_info').remove();
+            if (pos) {
+                const infoHtml = `<div id="out_sales_force_info" class="small text-muted mt-1"><i class="bi bi-info-circle me-1"></i>${pos}</div>`;
+                const $el = $('#out_sales_force');
+                if ($el.parent().hasClass('input-group')) {
+                    $el.parent().after(infoHtml);
+                } else {
+                    $el.after(infoHtml);
+                }
+            }
         });
 
         $(document).on('click', function (e) {
@@ -1356,10 +1411,16 @@ $(document).ready(function () {
         });
 
         $('#out_transaction_type').on('change', function() {
-            if ($(this).val() === 'pdc') {
+            const val = $(this).val();
+            if (val === 'pdc') {
                 $('#pdc_fields').removeClass('d-none');
             } else {
                 $('#pdc_fields').addClass('d-none');
+            }
+            
+            // Focus and trigger search dropdown if customer name is empty
+            if (!$('#out_customer_name').val()) {
+                $('#out_customer_name').trigger('focus');
             }
         });
 

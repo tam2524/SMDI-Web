@@ -55,7 +55,7 @@ if ($result->num_rows > 0) {
                 header("Location: ../spareparts/sales_dashboard.php");
                 break;
             case 'Spareparts-Retail':
-                header("Location: ../spareparts/retail_dashboard.php");
+                header("Location: ../spareparts/sales_dashboard.php");
                 break;
             case 'Spareparts-Owner':
                 header("Location: ../spareparts/owner_dashboard.php");

@@ -485,7 +485,7 @@ if ($userRole === 'Spareparts-Sales') {
     echo 'sales_dashboard.php';
 }
 elseif ($userRole === 'f' || $userRole === 'Spareparts-Retail') {
-    echo 'retail_dashboard.php';
+    echo 'sales_dashboard.php';
 }
 else {
     echo 'warehouse_dashboard.php';

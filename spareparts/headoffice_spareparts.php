@@ -548,20 +548,14 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                             <h4 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Inventory Management</h4>
                             <div class="d-flex gap-3 align-items-center">
                                 <div id="inventoryStats" class="small text-muted fw-bold border-end pe-3"></div>
-                                <div class="btn-group shadow-sm">
                                     <button class='btn btn-sm btn-primary text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#addPartsInModal'>
-                                        <i class='bi bi-plus-circle me-1'></i>Add Stock
+                                        data-bs-toggle='modal' data-bs-target='#addPartModal'>
+                                        <i class='bi bi-plus-circle me-1'></i>Add New Part
                                     </button>
                                     <button class='btn btn-sm btn-warning text-dark fw-bold px-3' data-bs-toggle='modal'
                                         data-bs-target='#transferPartsModal'>
                                         <i class='bi bi-truck me-1'></i>Transfer
                                     </button>
-                                    <button class='btn btn-sm btn-success text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#inventoryReportsModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
-                                    </button>
-                                </div>
                                 <input type='text' id='inventorySearch' class='form-control form-control-sm'
                                     style="width: 250px;" placeholder='Search parts...' autocomplete="off">
                             </div>
@@ -663,10 +657,6 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                                         data-bs-target='#sellPartsOutModal'>
                                         <i class='bi bi-cart-plus me-1'></i>Record Sale
                                     </button>
-                                    <button class='btn btn-sm btn-dark fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#generateSalesReportModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
-                                    </button>
                                 </div>
                                 <input type='text' id='salesSearch' class='form-control form-control-sm'
                                     style="width: 250px;" placeholder='Search customer or OR...' autocomplete="off">
@@ -726,10 +716,6 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                                     <button class='btn btn-sm btn-primary text-white fw-bold px-3'
                                         data-bs-toggle='modal' data-bs-target='#recordPaymentModal'>
                                         <i class='bi bi-cash-coin me-1'></i>Record Payment
-                                    </button>
-                                    <button class='btn btn-sm btn-success text-white fw-bold px-3'
-                                        data-bs-toggle='modal' data-bs-target='#paymentReportsModal'>
-                                        <i class='bi bi-file-earmark-bar-graph me-1'></i>Reports
                                     </button>
                                 </div>
                                 <input type='text' id='paymentsSearch' class='form-control form-control-sm'
