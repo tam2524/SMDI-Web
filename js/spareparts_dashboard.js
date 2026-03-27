@@ -423,13 +423,21 @@ function submitPartialProcessing(transferId) {
 
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: 'Success!',
-                    text: data.message,
+                    title: 'Transfer Success!',
+                    text: data.message + ' What would you like to do next?',
                     icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    position: 'center'
-                }).then(() => {
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="bi bi-printer me-2"></i>Preview & Print',
+                    cancelButtonText: 'Done',
+                    confirmButtonColor: '#004d40',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (typeof printTransferSummaryUI === 'function') {
+                            printTransferSummaryUI(data.transfer_id, data.from_branch);
+                        }
+                    }
                     updatePendingTransfers();
                     if (window.location.href.includes('transfer_stock.php')) {
                         location.reload(); 
@@ -453,6 +461,10 @@ function submitPartialProcessing(transferId) {
 }
 
 function printTransferSummaryUI(transferId, fromBranch) {
+    const currentBranch = window.currentBranch || window.userBranch || 'Current Branch';
+    const isOutgoing = (fromBranch === currentBranch);
+    const typeLabel = isOutgoing ? 'Stock Transfer (Outgoing)' : 'Stock Transfer (Incoming)';
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
@@ -481,12 +493,12 @@ function printTransferSummaryUI(transferId, fromBranch) {
             <div class="meta">
                 <div>
                     <div><b>Transfer ID:</b> #${transferId}</div>
-                    <div><b>Origin:</b> ${fromBranch}</div>
-                    <div><b>Destination:</b> ${window.userBranch || 'Current Branch'}</div>
+                    <div id="origin-info"><b>Origin:</b> ${fromBranch}</div>
+                    <div id="dest-info"><b>Destination:</b> ${currentBranch}</div>
                 </div>
                 <div style="text-align: right;">
                     <div><b>Print Date:</b> ${new Date().toLocaleString()}</div>
-                    <div><b>Type:</b> Stock Transfer (Incoming)</div>
+                    <div><b>Type:</b> ${typeLabel}</div>
                 </div>
             </div>
             
@@ -508,10 +520,11 @@ function printTransferSummaryUI(transferId, fromBranch) {
             </div>
 
             <script>
-                fetch('../api/spareparts_dashboard_api.php?action=get_transfer_details&transfer_id=${transferId}')
+                fetch('../api/spareparts_inventory.php?action=get_transfer_details&id=${transferId}')
                     .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
+                    .then(res => {
+                        if (res.success) {
+                            const data = res.data;
                             const tbody = document.getElementById('print-tbody');
                             let html = '';
                             data.items.forEach(item => {
@@ -524,6 +537,10 @@ function printTransferSummaryUI(transferId, fromBranch) {
                                 \`;
                             });
                             tbody.innerHTML = html;
+                            
+                            document.getElementById('origin-info').innerHTML = '<b>Origin:</b> ' + data.from_branch;
+                            document.getElementById('dest-info').innerHTML = '<b>Destination:</b> ' + data.to_branch;
+                            
                             setTimeout(() => { window.print(); }, 500);
                         }
                     });

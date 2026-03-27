@@ -1318,7 +1318,7 @@ function transferMultipleParts()
         }
         $conn->commit();
         addAuditLog('INSERT', 'spareparts_transfers', $transferId, "Initiated Transfer ID $transferId (No: $transferNo): $currentBranch -> $toBranch with " . count($items) . " items");
-        echo json_encode(['success' => true, 'message' => 'Transfer initiated successfully.']);
+        echo json_encode(['success' => true, 'message' => 'Transfer initiated successfully.', 'transfer_id' => $transferId]);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['success' => false, 'message' => 'Transfer failed: ' . $e->getMessage()]);
@@ -1486,7 +1486,7 @@ function acceptTransfer()
 
         $conn->commit();
         addAuditLog('UPDATE', 'spareparts_transfers', $transferId, "Accepted Transfer ID $transferId at $currentBranch from $from_branch");
-        echo json_encode(['success' => true, 'message' => 'Transfer accepted and items added to inventory.']);
+        echo json_encode(['success' => true, 'message' => 'Transfer accepted and items added to inventory.', 'transfer_id' => $transferId, 'from_branch' => $from_branch]);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['success' => false, 'message' => 'Failed to accept transfer: ' . $e->getMessage()]);

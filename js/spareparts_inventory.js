@@ -927,10 +927,31 @@ $(document).ready(function () {
             }, response => {
                 if (response.success) {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('transferPartsModal')).hide();
-                    showSuccessModal('Transfer initiated successfully.');
+                    
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Transfer Success!',
+                            text: 'Transfer initiated successfully. What would you like to do next?',
+                            icon: 'success',
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="bi bi-printer me-2"></i>Preview & Print',
+                            cancelButtonText: 'Done',
+                            confirmButtonColor: '#004d40',
+                            cancelButtonColor: '#6c757d',
+                            reverseButtons: true
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                viewTransferById(response.transfer_id);
+                            }
+                        });
+                    } else {
+                        showSuccessModal('Transfer initiated successfully.');
+                    }
+                    
                     transferCart = [];
                     renderTransferCart();
                     loadInventory();
+                    if (typeof loadTransfers === 'function') loadTransfers();
                 } else {
                     showErrorModal(response.message);
                 }
@@ -939,8 +960,7 @@ $(document).ready(function () {
 
         // INCOMING TRANSFER ACTIONS
         let currentViewingTransferId = null;
-        $(document).on('click', '.view-transfer-btn, .view-global-transfer-btn', function () {
-            const id = $(this).data('id');
+        function viewTransferById(id) {
             currentViewingTransferId = id;
             $('#transferDetailsBody').html('<div class="text-center p-4"><div class="spinner-border text-primary"></div></div>');
             bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).show();
@@ -953,6 +973,10 @@ $(document).ready(function () {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
                 }
             }, 'json');
+        }
+
+        $(document).on('click', '.view-transfer-btn, .view-global-transfer-btn', function () {
+            viewTransferById($(this).data('id'));
         });
 
         function renderTransferDetails(data) {
@@ -1068,13 +1092,37 @@ $(document).ready(function () {
 
         $('#confirmReceiveBtn').on('click', function () {
             showConfirmModal('Are you sure you want to receive these items?', function () {
-                $.post('../api/spareparts_inventory.php?action=accept_transfer', { id: currentViewingTransferId }, response => {
+                $.post('../api/spareparts_inventory.php?action=accept_transfer', { transfer_id: currentViewingTransferId }, response => {
                     if (response.success) {
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
-                        showSuccessModal('Transfer accepted and inventory updated.');
-                        loadInventory();
-                        loadTransfers();
-                        loadIncomingTransfers();
+                        
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Transfer Accepted!',
+                                text: response.message + ' What would you like to do next?',
+                                icon: 'success',
+                                showCancelButton: true,
+                                confirmButtonText: '<i class="bi bi-printer me-2"></i>Preview & Print',
+                                cancelButtonText: 'Done',
+                                confirmButtonColor: '#004d40',
+                                cancelButtonColor: '#6c757d',
+                                reverseButtons: true
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    if (typeof printTransferSummaryUI === 'function') {
+                                        printTransferSummaryUI(response.transfer_id, response.from_branch);
+                                    }
+                                }
+                                loadInventory();
+                                loadTransfers();
+                                loadIncomingTransfers();
+                            });
+                        } else {
+                            showSuccessModal('Transfer accepted and inventory updated.');
+                            loadInventory();
+                            loadTransfers();
+                            loadIncomingTransfers();
+                        }
                     } else {
                         showErrorModal(response.message);
                     }

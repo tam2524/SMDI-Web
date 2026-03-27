@@ -427,7 +427,7 @@ function processPartialTransfer($conn, $currentBranch) {
         $updFinal->execute();
 
         $conn->commit();
-        echo json_encode(['success' => true, 'message' => "Transfer processed as $finalStatus."]);
+        echo json_encode(['success' => true, 'message' => "Transfer processed as $finalStatus.", 'transfer_id' => $transferId, 'from_branch' => $from_branch]);
         
     } catch (Exception $e) {
         $conn->rollback();
