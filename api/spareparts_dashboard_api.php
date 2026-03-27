@@ -43,6 +43,9 @@ try {
         case 'get_inventory_summary_by_branch':
             getInventorySummaryByBranch($conn);
             break;
+        case 'get_sales_summary_by_branch':
+            getSalesSummaryByBranch($conn, $today);
+            break;
         default:
             echo json_encode(['success' => false, 'message' => 'Invalid action']);
             break;
@@ -129,6 +132,7 @@ function getWarehouseSummary($conn, $branch, $today) {
 
 function getSalesSummary($conn, $branch, $today) {
     $summary = [
+        'received' => ['qty' => 0, 'amount' => 0],
         'cash' => ['amount' => 0],
         'charge' => ['amount' => 0],
         'charge_pdc' => ['amount' => 0],
@@ -136,6 +140,14 @@ function getSalesSummary($conn, $branch, $today) {
         'check_dues' => ['amount' => 0],
         'payables_due' => ['amount' => 0]
     ];
+
+    // RECEIVED STOCKS (IN + TRANSFER_IN) - Combined as RR/IN
+    $stmt = $conn->prepare("SELECT SUM(quantity) as qty, SUM(total_amount) as amount FROM spareparts_transactions WHERE to_location = ? AND type IN ('IN', 'TRANSFER_IN') AND DATE(transaction_date) = ?");
+    $stmt->bind_param("ss", $branch, $today);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    $summary['received']['qty'] = $res['qty'] ?? 0;
+    $summary['received']['amount'] = $res['amount'] ?? 0;
 
     // CASH SALES
     $stmt = $conn->prepare("SELECT SUM(total_amount) as amount FROM spareparts_transactions WHERE from_location = ? AND type = 'OUT' AND LOWER(transaction_type) = 'cash' AND DATE(transaction_date) = ?");
@@ -255,6 +267,27 @@ function getInventorySummaryByBranch($conn) {
             HAVING qty > 0
             ORDER BY current_branch ASC";
     $res = $conn->query($sql);
+    
+    $summary = [];
+    while ($row = $res->fetch_assoc()) {
+        $summary[] = $row;
+    }
+    
+    echo json_encode(['success' => true, 'summary' => $summary]);
+}
+
+function getSalesSummaryByBranch($conn, $today) {
+    $sql = "SELECT from_location as branch, 
+                   SUM(quantity) as qty, 
+                   SUM(total_amount) as value 
+            FROM spareparts_transactions 
+            WHERE type = 'OUT' AND DATE(transaction_date) = ?
+            GROUP BY from_location 
+            ORDER BY value DESC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $today);
+    $stmt->execute();
+    $res = $stmt->get_result();
     
     $summary = [];
     while ($row = $res->fetch_assoc()) {

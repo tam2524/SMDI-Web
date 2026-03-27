@@ -387,12 +387,29 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
-
                     <a href="sales_spareparts.php?tab=payments" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
                         <div>
                             <div class="module-title">Payments</div>
                             <div class="module-desc">Record customer payments</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
+                    <a href="#" class="module-card bg-menu-gray" data-bs-toggle="modal" data-bs-target="#inventoryInModal">
+                        <div class="module-icon-wrap"><i class="bi bi-box-arrow-in-down"></i></div>
+                        <div>
+                            <div class="module-title">Received Stocks (RR/IN)</div>
+                            <div class="module-desc">Receive stocks from supplier deliveries</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
+                    <a href="received_stock.php" class="module-card bg-menu-purple">
+                        <div class="module-icon-wrap"><i class="bi bi-journal-check"></i></div>
+                        <div>
+                            <div class="module-title">Received Stock</div>
+                            <div class="module-desc">Stocks received from other branches</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
@@ -451,6 +468,15 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+
+                    <a href="beginning_customer_balance.php" class="module-card bg-menu-green" id="beginning-customer-bal-card">
+                        <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
+                        <div>
+                            <div class="module-title">Customer Beginning Balance</div>
+                            <div class="module-desc">Enter initial customer balances (Excel-style)</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
                     <?php
 endif; ?>
 
@@ -466,6 +492,14 @@ endif; ?>
                         <small class="badge bg-white text-success bg-opacity-75"><?php echo htmlspecialchars($branch); ?></small>
                     </div>
                     <div class="sidebar-body">
+                        <div class="summary-row">
+                            <span class="summary-row-label">Received Stocks (Qty)</span>
+                            <span class="summary-row-val" id="received-qty">0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-row-label">Received Amount</span>
+                            <span class="summary-row-val" id="received-amount">₱0.00</span>
+                        </div>
                         <div class="summary-row">
                             <span class="summary-row-label">Cash Sales</span>
                             <span class="summary-row-val" id="cash-amount">₱0.00</span>
@@ -516,13 +550,191 @@ endif; ?>
         </div>
     </div>
 
+    <!-- INVENTORY IN MODAL -->
+    <div class="modal fade" id="inventoryInModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+                <div class="modal-header bg-dark text-white py-3">
+                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-box-arrow-in-down me-2"></i>Supplier Receipt (IN)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="row g-4">
+                        <!-- LEFT COL -->
+                        <div class="col-lg-9">
+                            <!-- Step 1: Receipt Details -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-4" style="border-top: 5px solid #26a69a !important;">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-3 text-muted text-uppercase small"><i class="bi bi-file-earmark-text me-2"></i>Step 1: Receipt Details</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="small fw-bold text-muted">Invoice / DR # *</label>
+                                            <input type="text" id="invoiceNo" class="form-control fw-bold border-primary" placeholder="Required" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="small fw-bold text-muted">Supplier Name</label>
+                                            <input type="text" id="supplier" class="form-control" placeholder="e.g. ABC Trading">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="small fw-bold text-muted">Date Received</label>
+                                            <input type="date" id="dateReceived" class="form-control" value="<?php echo date('Y-m-d'); ?>">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Part Search & Entry -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-4" style="padding: 30px; border-top: 5px solid #26a69a !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0 fw-bold text-muted text-uppercase small"><i class="bi bi-upc-scan me-2"></i>Step 2: Scan / Search Part Number</h6>
+                                </div>
+
+                                <div class="position-relative mb-3">
+                                    <i class="bi bi-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #004d40; font-size: 1.2rem; z-index: 5;"></i>
+                                    <input type="text" id="partSearchInput" class="form-control" style="padding-left: 45px; height: 50px; border-radius: 8px; border: 2px solid #eee;" placeholder="Type part number, name, or scan..." autocomplete="off">
+                                    <div id="searchDropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); z-index: 1050; max-height: 250px; overflow-y: auto; display: none;"></div>
+                                </div>
+
+                                <div id="partDisplay" class="mb-3 shadow-sm p-4" style="display:none; background: #fff; border-radius: 10px; border-left: 4px solid #26a69a;">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h5 id="partTitle" class="fw-bold mb-1">PART NAME</h5>
+                                            <p id="partNoDisplay" class="text-muted small mb-1">PART-NO</p>
+                                            <div id="compatibilityList"></div>
+                                        </div>
+                                        <span id="newPartBadge" class="badge bg-warning text-white d-none" style="font-size: 0.7rem; padding: 3px 8px; border-radius: 20px;">NEW PART</span>
+                                    </div>
+
+                                    <div id="newPartFields" class="d-none mb-3">
+                                        <div class="alert alert-warning p-2 small mb-2">
+                                            <i class="bi bi-exclamation-triangle me-1"></i> New part number detected.
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="small fw-bold text-muted">Brand</label>
+                                                <input type="text" id="newPartBrand" class="form-control form-control-sm" placeholder="e.g. Honda">
+                                            </div>
+                                            <div class="col-md-8">
+                                                <label class="small fw-bold text-muted">Description *</label>
+                                                <input type="text" id="newPartDesc" class="form-control form-control-sm" placeholder="Full description" required>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row align-items-end g-3">
+                                        <div class="col-md-3">
+                                            <label class="small text-muted fw-bold d-block">Cost <span id="costHistoryLink" class="text-decoration-underline text-info small d-none" style="cursor:pointer">(history)</span></label>
+                                            <span id="prevCostDisplay" class="fw-bold text-black fs-5">₱0.00</span>
+                                            <div id="costChangeIndicator" class="small mt-1"></div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="small text-muted fw-bold">Qty *</label>
+                                            <input type="number" id="scannedQty" class="form-control fw-bold border-primary" value="1" min="1">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="small text-muted fw-bold">New Cost</label>
+                                            <input type="number" id="scannedCost" step="0.01" class="form-control fw-bold" placeholder="0.00" min="0">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button id="addScannedPart" class="btn btn-primary w-100" style="background:#004d40; border:none; padding:12px; font-weight:600;"><i class="bi bi-plus-lg me-1"></i> ADD</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cart Table -->
+                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold text-muted text-uppercase small"><i class="bi bi-list-check me-2"></i>Incoming Items</h6>
+                                    <button id="clearCart" class="btn btn-sm btn-outline-danger px-3" style="border-radius:20px;">Clear All</button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height: 400px;">
+                                        <table class="table table-hover align-middle mb-0" id="inCartTable">
+                                            <thead class="bg-dark text-white">
+                                                <tr>
+                                                    <th class="ps-4">Item Details</th>
+                                                    <th class="text-center">Qty</th>
+                                                    <th class="text-end">Prev Cost</th>
+                                                    <th class="text-end">New Cost</th>
+                                                    <th class="text-end">Subtotal</th>
+                                                    <th class="text-center">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="cartBody">
+                                                <tr><td colspan="6" class="text-center text-muted py-5">No items added yet.</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT SIDEBAR -->
+                        <div class="col-lg-3">
+                            <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 20px; z-index: 10;">
+                                <div class="card-header bg-white py-3"><h6 class="mb-0 fw-bold text-muted text-uppercase small">Receipt Summary</h6></div>
+                                <div class="card-body">
+                                    <div id="brandSummaryContainer"></div>
+                                    <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                        <span class="text-muted">Total Qty</span>
+                                        <span id="summaryTotalQty" class="fw-bold">0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between fs-5 fw-bold mb-4 border-bottom pb-2">
+                                        <span class="text-muted">Total Cost</span>
+                                        <span id="summaryTotalValue" class="text-success">₱0.00</span>
+                                    </div>
+                                    <button id="submitStockIn" class="btn btn-success w-100 py-3 fw-bold shadow-sm" style="border-radius:12px;">
+                                        <span id="confirmReceiptBtnInner"><i class="bi bi-save me-2"></i> CONFIRM RECEIPT</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost History Modal -->
+    <div class="modal fade" id="costHistoryModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>Cost History: <span id="historyPartNo"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Cost</th>
+                                    <th>Invoice #</th>
+                                    <th class="pe-4">Supplier</th>
+                                </tr>
+                            </thead>
+                            <tbody id="costHistoryBody">
+                                <tr><td colspan="4" class="text-center text-muted py-3">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="footer-strip">
         SMDI Spare Parts Management System &copy; <?php echo date('Y'); ?>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../js/spareparts_dashboard.js"></script>
+    <script src="../js/spareparts_inventory_in.js"></script>
+    <script src="../js/spareparts_stock_card.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             updateSalesSummary();

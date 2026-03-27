@@ -458,7 +458,8 @@ function submitStockInAction() {
                         confirmButtonColor: '#004d40'
                     }).then(() => {
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('inventoryInModal')).hide();
-                        updateWarehouseSummary();
+                        if (typeof updateWarehouseSummary === 'function') updateWarehouseSummary();
+                        if (typeof updateSalesSummary === 'function') updateSalesSummary();
                         inCart = [];
                         renderInCart();
                         $('#invoiceNo, #supplier').val('');

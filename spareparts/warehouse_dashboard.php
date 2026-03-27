@@ -478,6 +478,15 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+
+                    <a href="beginning_customer_balance.php" class="module-card bg-menu-green" id="beginning-customer-bal-card">
+                        <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
+                        <div>
+                            <div class="module-title">Customer Beginning Balance</div>
+                            <div class="module-desc">Enter initial customer balances (Excel-style)</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
                     <?php endif; ?>
 
                 </div>

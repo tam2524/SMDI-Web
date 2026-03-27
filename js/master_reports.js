@@ -19,6 +19,7 @@ $(document).ready(function() {
             options: [
                 { value: "daily_sales_summary", text: "Daily Sales Summary (Cash vs Charge)" },
                 { value: "sales_by_item", text: "Sales by Item / Category" },
+                { value: "sales_per_employee", text: "Sales per Employee" },
                 { value: "profit_margin", text: "Profit Margin Report" },
                 { value: "branch_performance", text: "Branch Performance" }
             ]

@@ -161,6 +161,63 @@ function saveBeginningInventory()
     }
 }
 
+function saveBeginningCustomerBalance()
+{
+    global $conn, $currentBranch;
+    $items = json_decode($_POST['items'], true);
+    $branch = sanitizeInput($_POST['branch'] ?? $currentBranch);
+
+    if (empty($items)) {
+        echo json_encode(['success' => false, 'message' => 'No items provided.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+    try {
+        $division = getCurrentDivision();
+        foreach ($items as $idx => $item) {
+            $customerName = sanitizeInput($item['customer_name']);
+            $refNo = sanitizeInput($item['ref_no'] ?? '');
+            if (empty($refNo)) {
+                $refNo = 'BEG-' . time() . '-' . $idx . '-' . rand(100, 999);
+            }
+            $amount = (float) $item['amount'];
+            $asOfDate = sanitizeInput($item['date'] ?? date('Y-m-d'));
+
+            if (empty($customerName) || $amount <= 0) continue;
+
+            // 1. Ensure customer exists in spareparts_customers
+            $custCheck = $conn->prepare("SELECT id FROM spareparts_customers WHERE name = ? AND branch = ?");
+            $custCheck->bind_param('ss', $customerName, $branch);
+            $custCheck->execute();
+            if ($custCheck->get_result()->num_rows === 0) {
+                $custInsert = $conn->prepare("INSERT INTO spareparts_customers (name, branch, category) VALUES (?, ?, ?)");
+                $custInsert->bind_param('sss', $customerName, $branch, $division);
+                $custInsert->execute();
+            }
+
+            // 2. Add to spareparts_aging
+            $agingStmt = $conn->prepare("INSERT INTO spareparts_aging (or_number, customer_name, sale_date, total_amount, balance, branch, category, status) 
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')");
+            $agingStmt->bind_param('sssdsss', $refNo, $customerName, $asOfDate, $amount, $amount, $branch, $division);
+            $agingStmt->execute();
+
+            // 3. Log to transactions for ledger visibility
+            $txStmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, total_amount, from_location, category, status) 
+                                     VALUES (?, ?, ?, 'charge', 'OUT', ?, ?, ?, 'Completed')");
+            $txStmt->bind_param('sssdss', $asOfDate, $refNo, $customerName, $amount, $branch, $division);
+            $txStmt->execute();
+        }
+
+        $conn->commit();
+        addAuditLog('INSERT', 'spareparts_aging', 'BEGINNING_BAL', "Recorded beginning customer balances for " . count($items) . " accounts in $branch branch.");
+        echo json_encode(['success' => true, 'message' => 'Customer beginning balances successfully saved.']);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Failed to save beginning balances: ' . $e->getMessage()]);
+    }
+}
+
 $action = $_REQUEST['action'] ?? '';
 
 switch ($action) {
@@ -354,6 +411,9 @@ switch ($action) {
         break;
     case 'update_module_setting':
         updateModuleSetting();
+        break;
+    case 'save_beginning_customer_balance':
+        saveBeginningCustomerBalance();
         break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);

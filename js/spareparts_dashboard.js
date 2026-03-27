@@ -26,6 +26,8 @@ function updateSalesSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
+                setT('received-qty', Number(s.received.qty).toLocaleString());
+                setT('received-amount', '₱' + Number(s.received.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
                 setT('cash-amount', '₱' + Number(s.cash.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
                 setT('charge-amount', '₱' + Number(s.charge.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
                 setT('charge-pdc-amount', '₱' + Number(s.charge_pdc.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
@@ -113,7 +115,7 @@ function updateInventorySummary() {
 }
 
 function updateInventorySummaryByBranch() {
-    fetch('../api/spareparts_dashboard_api.php?action=get_inventory_summary_by_branch')
+    fetch('../api/spareparts_dashboard_api.php?action=get_sales_summary_by_branch')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -134,14 +136,14 @@ function updateInventorySummaryByBranch() {
                         <div class="summary-row">
                             <span class="summary-row-label text-truncate me-2">${item.branch}</span>
                             <div class="text-end flex-shrink-0">
-                                <div class="summary-row-val">${qty.toLocaleString()} Qty</div>
+                                <div class="summary-row-val">${qty.toLocaleString()} Sold</div>
                                 <div class="text-muted small" style="font-size: 0.7rem;">₱${val.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
                             </div>
                         </div>
                     `;
                 });
                 
-                container.innerHTML = html || '<div class="text-center py-3 text-muted small">No global stock available today.</div>';
+                container.innerHTML = html || '<div class="text-center py-3 text-muted small">No global sales available today.</div>';
                 
                 const qtyEl = document.getElementById('global-inv-total-qty');
                 const valEl = document.getElementById('global-inv-total-value');
@@ -326,13 +328,18 @@ function viewTransferDetailsUI(transferId, fromBranch) {
                                 </tbody>
                             </table>
                         </div>
-                        <div class="mt-4 d-flex justify-content-between">
+                        <div class="mt-4 d-flex justify-content-between align-items-center">
                             <button onclick="updatePendingTransfers()" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
                                 <i class="bi bi-arrow-left me-1"></i> Back
                             </button>
-                            <button onclick="submitPartialProcessing(${transferId})" class="btn btn-danger rounded-pill px-5 fw-bold shadow">
-                                <i class="bi bi-check2-circle me-1"></i> Process Transfer
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button onclick="printTransferSummaryUI(${transferId}, '${fromBranch}')" class="btn btn-outline-dark rounded-pill px-4 fw-bold">
+                                    <i class="bi bi-printer me-1"></i> Print Summary
+                                </button>
+                                <button onclick="submitPartialProcessing(${transferId})" class="btn btn-danger rounded-pill px-5 fw-bold shadow">
+                                    <i class="bi bi-check2-circle me-1"></i> Process Transfer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -445,3 +452,84 @@ function submitPartialProcessing(transferId) {
     });
 }
 
+function printTransferSummaryUI(transferId, fromBranch) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Transfer Summary - #${transferId}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
+                .header { text-align: center; border-bottom: 2px solid #004d40; padding-bottom: 15px; margin-bottom: 30px; }
+                .header h1 { margin: 0; color: #004d40; font-size: 24px; }
+                .header p { margin: 5px 0; color: #666; font-size: 14px; }
+                .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; }
+                .meta b { color: #004d40; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th { background: #f4f4f4; text-align: left; padding: 12px; border-bottom: 2px solid #ddd; font-size: 13px; text-transform: uppercase; }
+                td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+                .footer { margin-top: 50px; text-align: right; font-size: 12px; color: #999; }
+                @print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>ROXAS CITY SOLID MERCHANDISING</h1>
+                <p>Transfer Summary Document - Spare Parts Management</p>
+            </div>
+            
+            <div class="meta">
+                <div>
+                    <div><b>Transfer ID:</b> #${transferId}</div>
+                    <div><b>Origin:</b> ${fromBranch}</div>
+                    <div><b>Destination:</b> ${window.userBranch || 'Current Branch'}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div><b>Print Date:</b> ${new Date().toLocaleString()}</div>
+                    <div><b>Type:</b> Stock Transfer (Incoming)</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Part Number</th>
+                        <th>Description</th>
+                        <th style="text-align: center;">Qty Transferred</th>
+                    </tr>
+                </thead>
+                <tbody id="print-tbody">
+                    <tr><td colspan="3" style="text-align: center;">Loading items...</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="footer">
+                <p>Generated by Spare Parts Management System &copy; ${new Date().getFullYear()}</p>
+            </div>
+
+            <script>
+                fetch('../api/spareparts_dashboard_api.php?action=get_transfer_details&transfer_id=${transferId}')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.getElementById('print-tbody');
+                            let html = '';
+                            data.items.forEach(item => {
+                                html += \`
+                                    <tr>
+                                        <td>\${item.part_no}</td>
+                                        <td>\${item.description}</td>
+                                        <td style="text-align: center; font-weight: bold;">\${item.quantity}</td>
+                                    </tr>
+                                \`;
+                            });
+                            tbody.innerHTML = html;
+                            setTimeout(() => { window.print(); }, 500);
+                        }
+                    });
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}

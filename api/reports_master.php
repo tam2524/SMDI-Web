@@ -271,6 +271,22 @@ function handleSalesReports($type, $period, $dateVal, $branch, $brand) {
             
             $res = exe($sql, $types, $params);
             return [ 'success' => true, 'data' => $res, 'config' => ['headers' => $headers, 'keys' => $keys, 'formatters' => $formatters], 'summary' => [['label' => 'Total Branches Participated', 'value' => count($res)]] ];
+        
+        case 'sales_per_employee':
+            $sql = "SELECT t.sales_force as employee, 
+                           SUM(t.quantity) as total_qty, 
+                           SUM(t.total_amount) as total_revenue,
+                           t.from_location as branch
+                    FROM spareparts_transactions t 
+                    WHERE $where AND t.sales_force IS NOT NULL AND t.sales_force != ''
+                    GROUP BY t.sales_force, t.from_location 
+                    ORDER BY total_revenue DESC";
+            $headers = ['Employee Name', 'Branch', 'Items Sold', 'Total Revenue'];
+            $keys = ['employee', 'branch', 'total_qty', 'total_revenue'];
+            $formatters = ['total_revenue' => 'currency'];
+            
+            $res = exe($sql, $types, $params);
+            return [ 'success' => true, 'data' => $res, 'config' => ['headers' => $headers, 'keys' => $keys, 'formatters' => $formatters], 'summary' => [['label' => 'Total Sales Force', 'value' => count($res)]] ];
 
         default:
             return ['success' => false, 'message' => 'Sales report type not found.'];

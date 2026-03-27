@@ -382,6 +382,15 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
+                    <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-purple">
+                        <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
+                        <div>
+                            <div class="module-title">Payment Management</div>
+                            <div class="module-desc">Review global payment transactions & records</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
                     <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal">
                         <div class="module-icon-wrap"><i class="bi bi-journal-text"></i></div>
                         <div>
@@ -454,21 +463,21 @@ $today = date('l, F j, Y');
                     </div>
                 </div>
 
-                <div class="section-label mt-4"><i class="bi bi-building"></i> Branch Inventory</div>
+                <div class="section-label mt-4"><i class="bi bi-building"></i> Branch Sales Today</div>
                 <div class="sidebar-card">
                     <div class="sidebar-header">
-                        <i class="bi bi-database"></i> Global Stock Summary
+                        <i class="bi bi-cart-check"></i> Branch Sales Summary
                     </div>
                     <div class="sidebar-body" id="inventory-branch-summary-container" style="max-height: 400px; overflow-y: auto;">
-                        <div class="text-center py-3 text-muted small">Loading branch stocks...</div>
+                        <div class="text-center py-3 text-muted small">Loading branch sales...</div>
                     </div>
                     <div class="sidebar-footer">
                         <div class="total-row">
-                            <span class="total-row-label">Total Qty</span>
+                            <span class="total-row-label">Total Items Sold</span>
                             <span class="total-row-val" id="global-inv-total-qty">0</span>
                         </div>
                         <div class="total-row">
-                            <span class="total-row-label">Total Cost</span>
+                            <span class="total-row-label">Total Sales</span>
                             <span class="total-row-val" id="global-inv-total-value">₱0.00</span>
                         </div>
                     </div>

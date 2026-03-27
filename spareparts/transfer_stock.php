@@ -1634,6 +1634,9 @@ endif; ?>
                 </div>
                 <div class='modal-footer border-0 bg-light'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                    <button type='button' class='btn btn-outline-dark fw-bold' id="btnPrintTransferSummary" style="display: none;">
+                        <i class="bi bi-printer me-1"></i> Print Summary
+                    </button>
                     <button type='button' class='btn btn-warning text-dark fw-bold d-none' id="cancelTransferBtn">Cancel Transfer</button>
                     <button type='button' class='btn btn-danger d-none' id="rejectTransferBtn">Reject Transfer</button>
                     <button type='button' class='btn btn-success d-none' id="confirmReceiveBtn">Receive Items</button>

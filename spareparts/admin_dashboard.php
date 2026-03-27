@@ -511,6 +511,15 @@ $today = date('l, F j, Y');
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
 
+                    <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-purple" id="payments-mgmt-card">
+                        <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
+                        <div>
+                            <div class="module-title">Payment Management</div>
+                            <div class="module-desc">Review global payment transactions & records</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
                     <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal" id="audit-card">
                         <div class="module-icon-wrap"><i class="bi bi-shield-check"></i></div>
                         <div>
@@ -543,6 +552,15 @@ $today = date('l, F j, Y');
                         <div>
                             <div class="module-title">Beginning Inventory</div>
                             <div class="module-desc">Enter initial stock levels (Excel-style)</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+
+                    <a href="beginning_customer_balance.php" class="module-card bg-menu-green" id="beginning-customer-bal-card">
+                        <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
+                        <div>
+                            <div class="module-title">Customer Beginning Balance</div>
+                            <div class="module-desc">Enter initial customer balances (Excel-style)</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>

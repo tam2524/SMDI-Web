@@ -461,7 +461,13 @@ $filterType = $_GET['filter'] ?? 'all';
     <nav class="navbar navbar-custom sticky-top shadow-sm">
         <div class="container-fluid px-4">
             <div class="d-flex align-items-center">
-                <a href="warehouse_dashboard.php" class="back-btn">
+                <a href="<?php
+                if ($userRole === 'Spareparts-Sales' || $userRole === 'Spareparts-Retail') {
+                    echo 'sales_dashboard.php';
+                } else {
+                    echo 'warehouse_dashboard.php';
+                }
+                ?>" class="back-btn">
                     <i class="bi bi-arrow-left"></i>
                 </a>
                 <span class="navbar-brand">
