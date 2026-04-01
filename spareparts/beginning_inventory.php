@@ -2,33 +2,13 @@
 require_once '../api/db_config.php';
 
 // Check if user is logged in and has appropriate role
-$allowedRoles = ['Spareparts-Admin', 'Spareparts-Owner', 'Spareparts-Warehouse', 'Spareparts-Sales'];
+$allowedRoles = ['Spareparts-Admin', 'Spareparts-Owner', 'Spareparts-Warehouse', 'Spareparts-Sales', 'Spareparts-Retail'];
 if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], $allowedRoles)) {
     header('Location: ../login.html');
     exit();
 }
 
-// Ensure module settings table exists
-$conn->query("CREATE TABLE IF NOT EXISTS spareparts_settings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    setting_key VARCHAR(100) UNIQUE NOT NULL,
-    setting_value TEXT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)");
-$conn->query("INSERT IGNORE INTO spareparts_settings (setting_key, setting_value) VALUES ('beginning_inventory_enabled', 'true')");
-
-// Check if module is enabled
-$checkSetting = $conn->query("SELECT setting_value FROM spareparts_settings WHERE setting_key = 'beginning_inventory_enabled'");
-$moduleEnabled = true;
-if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
-    $moduleEnabled = ($row['setting_value'] === 'true');
-}
-
-if (!$moduleEnabled) {
-    echo "<div style='text-align:center; padding:50px;'><h1>Access Denied</h1><p>The Beginning Inventory module has been disabled by the administrator.</p><a href='javascript:history.back()'>Go Back</a></div>";
-    exit();
-}
-
+// Roles are checked in dashboards, but kept here for extra security
 $username = $_SESSION['username'];
 $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 ?>

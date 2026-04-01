@@ -26,14 +26,14 @@ function updateSalesSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
-                setT('received-qty', Number(s.received.qty).toLocaleString());
-                setT('received-amount', '₱' + Number(s.received.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('cash-amount', '₱' + Number(s.cash.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('charge-amount', '₱' + Number(s.charge.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('charge-pdc-amount', '₱' + Number(s.charge_pdc.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('payments-amount', '₱' + Number(s.payments.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('check-dues-amount', '₱' + Number(s.check_dues.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('payables-due-amount', '₱' + Number(s.payables_due.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                const fmt = (v) => '₱' + Number(v).toLocaleString(undefined, {minimumFractionDigits: 2});
+
+                setT('cash-sales-amount', fmt(s.cash.amount));
+                setT('charge-sales-amount', fmt(s.charge.amount));
+                setT('charge-pdc-amount', fmt(s.charge_pdc.amount));
+                setT('total-sales-amount', fmt(s.total_sales.amount));
+                setT('cash-payments-amount', fmt(s.cash_payments.amount));
+                setT('check-dues-amount', fmt(s.check_dues.amount));
             }
         });
 }
@@ -48,11 +48,14 @@ function updateConsolidatedSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
-                setT('global-cash-amount', '₱' + Number(s.cash.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('global-charge-amount', '₱' + Number(s.charge.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('global-charge-pdc-amount', '₱' + Number(s.charge_pdc.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('global-payments-amount', '₱' + Number(s.payments.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('global-total-amount', '₱' + Number(s.total.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                const fmt = (v) => '₱' + Number(v).toLocaleString(undefined, {minimumFractionDigits: 2});
+
+                setT('global-cash-sales-amount', fmt(s.cash.amount));
+                setT('global-charge-sales-amount', fmt(s.charge.amount));
+                setT('global-charge-pdc-amount', fmt(s.charge_pdc.amount));
+                setT('global-total-sales-amount', fmt(s.total_sales.amount));
+                setT('global-cash-payments-amount', fmt(s.cash_payments.amount));
+                setT('global-check-dues-amount', fmt(s.check_dues.amount));
             }
         });
 }
@@ -470,39 +473,92 @@ function printTransferSummaryUI(transferId, fromBranch) {
         <html>
         <head>
             <title>Transfer Summary - #${transferId}</title>
+            <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>
             <style>
-                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
-                .header { text-align: center; border-bottom: 2px solid #004d40; padding-bottom: 15px; margin-bottom: 30px; }
-                .header h1 { margin: 0; color: #004d40; font-size: 24px; }
-                .header p { margin: 5px 0; color: #666; font-size: 14px; }
-                .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; }
-                .meta b { color: #004d40; }
+                body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; padding: 0px; color: #333; }
+                
+                /* Standardized Header */
+                .report-header-print {
+                    text-align: center;
+                    margin-bottom: 25px;
+                    padding-bottom: 15px;
+                    border-bottom: 3px double #004d40;
+                }
+                .company-name {
+                    font-size: 18pt;
+                    font-weight: 800;
+                    color: #004d40;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 2px;
+                }
+                .company-address {
+                    font-size: 9pt;
+                    color: #444;
+                    margin-bottom: 2px;
+                }
+                .system-name {
+                    font-size: 9pt;
+                    font-weight: 600;
+                    color: #666;
+                    font-style: italic;
+                }
+                .report-title-container {
+                    margin-top: 15px;
+                }
+                .report-title {
+                    font-size: 14pt;
+                    font-weight: 700;
+                    color: #000;
+                    text-transform: uppercase;
+                    margin-bottom: 5px;
+                    text-decoration: underline;
+                }
+                .report-timestamp {
+                    font-size: 9pt;
+                    color: #777;
+                    font-style: italic;
+                }
+
+                .meta-container { margin-bottom: 25px; background: #fff; padding: 10px 0; }
+                .meta-item { margin-bottom: 5px; font-size: 14px; }
+                .meta-label { font-weight: bold; color: #555; text-transform: uppercase; font-size: 11px; margin-right: 10px; }
+                
                 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th { background: #f4f4f4; text-align: left; padding: 12px; border-bottom: 2px solid #ddd; font-size: 13px; text-transform: uppercase; }
-                td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-                .footer { margin-top: 50px; text-align: right; font-size: 12px; color: #999; }
-                @print { .no-print { display: none; } }
+                th { background: #f4f4f4 !important; text-align: left; padding: 12px; border: 1px solid #333; font-size: 12px; text-transform: uppercase; }
+                td { padding: 10px; border: 1px solid #ddd; font-size: 13px; }
+                
+                .footer-sig { margin-top: 60px; }
+                .sig-box { text-align: center; }
+                .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 0 auto 5px auto; }
+                .sig-label { font-size: 10px; font-weight: bold; text-transform: uppercase; }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>ROXAS CITY SOLID MERCHANDISING</h1>
-                <p>Transfer Summary Document - Spare Parts Management</p>
-            </div>
-            
-            <div class="meta">
-                <div>
-                    <div><b>Transfer ID:</b> #${transferId}</div>
-                    <div id="origin-info"><b>Origin:</b> ${fromBranch}</div>
-                    <div id="dest-info"><b>Destination:</b> ${currentBranch}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div><b>Print Date:</b> ${new Date().toLocaleString()}</div>
-                    <div><b>Type:</b> ${typeLabel}</div>
+            <div class="report-header-print">
+                <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
+                <div class="system-name">Spareparts Management System</div>
+                <div class="report-title-container" style="margin-top: 15px;">
+                    <div class="report-title">${typeLabel}</div>
+                    <div class="report-timestamp">Generated on: ${new Date().toLocaleString()}</div>
                 </div>
             </div>
             
-            <table>
+            <div class="meta-container">
+                <div class="row">
+                    <div class="col-8">
+                        <div class="meta-item"><span class="meta-label">Transfer ID:</span> <span class="fw-bold">#${transferId}</span></div>
+                        <div class="meta-item" id="origin-info"><span class="meta-label">Origin:</span> ${fromBranch}</div>
+                        <div class="meta-item" id="dest-info"><span class="meta-label">Destination:</span> ${currentBranch}</div>
+                    </div>
+                    <div class="col-4 text-end">
+                        <div class="meta-item"><span class="meta-label">Print Date:</span> ${new Date().toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th>Part Number</th>
@@ -515,8 +571,20 @@ function printTransferSummaryUI(transferId, fromBranch) {
                 </tbody>
             </table>
             
-            <div class="footer">
-                <p>Generated by Spare Parts Management System &copy; ${new Date().getFullYear()}</p>
+            <div class="row footer-sig">
+                <div class="col-4 sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Released By</div>
+                </div>
+                <div class="col-4"></div>
+                <div class="col-4 sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Received / Accepted By</div>
+                </div>
+            </div>
+
+            <div class="mt-5 text-center text-muted" style="font-size: 10px; font-style: italic;">
+                Generated by Spare Parts Management System &copy; ${new Date().getFullYear()}
             </div>
 
             <script>
@@ -538,8 +606,8 @@ function printTransferSummaryUI(transferId, fromBranch) {
                             });
                             tbody.innerHTML = html;
                             
-                            document.getElementById('origin-info').innerHTML = '<b>Origin:</b> ' + data.from_branch;
-                            document.getElementById('dest-info').innerHTML = '<b>Destination:</b> ' + data.to_branch;
+                            document.getElementById('origin-info').innerHTML = '<span class="meta-label">Origin:</span> ' + data.from_branch;
+                            document.getElementById('dest-info').innerHTML = '<span class="meta-label">Destination:</span> ' + data.to_branch;
                             
                             setTimeout(() => { window.print(); }, 500);
                         }

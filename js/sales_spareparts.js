@@ -127,7 +127,7 @@ $(document).ready(function() {
                             data-limit="${cust.credit_limit || 0}"
                             title="Edit"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-outline-danger btn-delete-customer" data-id="${cust.id}" title="Delete"><i class="bi bi-trash"></i></button>
-                        <button class="btn btn-sm btn-outline-info btn-view-aging" data-name="${escapeHtml(cust.name)}" title="Aging View"><i class="bi bi-clock-history"></i></button>
+                        <button class="btn btn-sm btn-outline-info btn-view-aging" data-name="${escapeHtml(cust.name)}" data-address="${escapeHtml(cust.address || '')}" data-contact="${escapeHtml(cust.contact_no || '')}" data-rank="${cust.rank_level || 'Standard'}" data-limit="${cust.credit_limit || 0}" title="Aging View"><i class="bi bi-clock-history"></i></button>
                     </td>
                 </tr>
             `;
@@ -181,11 +181,34 @@ $(document).ready(function() {
                 try { res = JSON.parse(res); } catch(e) {}
             }
             if(res && res.success) {
+                const newName = $('#cust_name').val();
+                const newRank = $('#cust_rank').val() || 'Silver';
+                const newLimit = $('#cust_limit').val() || 0;
+
                 const modalEl = document.getElementById('addCustomerModal');
                 bootstrap.Modal.getOrCreateInstance(modalEl).hide();
                 showSuccess('Customer added successfully!');
                 $('#addCustomerForm')[0].reset();
                 loadCustomers();
+
+                // If Record Sale modal is open, auto-fill it
+                if ($('#sellPartsOutModal').is(':visible')) {
+                    $('#out_customer_name').val(newName);
+                    if (typeof currentCustomerRank !== 'undefined') {
+                        currentCustomerRank = newRank;
+                    }
+                    
+                    if ($('#out_transaction_type').val() === 'charge' || $('#out_transaction_type').val() === 'pdc') {
+                        const limitStr = '₱' + parseFloat(newLimit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                        const infoHtml = `<div id="customerSelectionInfo" class="mt-1 small text-muted">
+                            <span class="badge bg-info-subtle text-info border border-info-subtle me-1">${newRank} Rank</span>
+                            <span class="fw-bold">Credit Limit: ${limitStr}</span>
+                        </div>`;
+                        $('#customerSelectionInfo').remove();
+                        $('#out_customer_name').after(infoHtml);
+                    }
+                }
+
             } else {
                 showError('Error: ' + (res ? res.message : 'Unknown response format'));
             }
@@ -237,12 +260,198 @@ $(document).ready(function() {
 
     $(document).on('click', '.btn-view-aging', function() {
         const name = $(this).data('name');
-        if (typeof window.printIndividualAging === 'function') {
-            window.printIndividualAging(name, window.currentBranch);
-        } else {
-            showError("Aging logic not available.");
-        }
+        const address = $(this).data('address') || 'No address provided';
+        const contact = $(this).data('contact') || 'No contact provided';
+        const rank = $(this).data('rank') || 'Standard';
+        const limitStr = '₱' + parseFloat($(this).data('limit') || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        $('#ledgerCustomerName').text(name);
+        $('#printLedgerCustomerName').text(name);
+        $('#printLedgerAddress').text(address);
+        $('#printLedgerContact').text('Contact: ' + contact);
+        $('#printLedgerRank').text(rank);
+        $('#printLedgerLimit').text(limitStr);
+        $('#printLedgerDateFooter').text(new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'2-digit' }));
+        $('#printLedgerTimeFooter').text(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+
+        $('#ledgerModalTbody').html('<tr><td colspan="6" class="text-center p-5"><div class="spinner-border text-success"></div><br>Loading ledger...</td></tr>');
+        
+        const modalEl = document.getElementById('customerLedgerModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        const branch = window.currentBranch || 'HEADOFFICE';
+
+        $.get('../api/reports_master.php', { 
+            action: 'customer_ledger', 
+            customer: name,
+            branch: branch
+        }, function(res) {
+            if (res.success) {
+                let html = '';
+                let totalDebit = 0;
+                let totalCredit = 0;
+                let finalBalance = 0;
+
+                if (!res.data || res.data.length === 0) {
+                    html = '<tr><td colspan="6" class="text-center p-4 text-muted">No transactions found for this customer.</td></tr>';
+                } else {
+                    res.data.forEach(item => {
+                        const debit = parseFloat(item.debit || 0);
+                        const credit = parseFloat(item.credit || 0);
+                        const runningBal = parseFloat(item.balance || 0);
+                        
+                        totalDebit += debit;
+                        totalCredit += credit;
+                        finalBalance = runningBal; // Last row is the final running balance
+
+                        html += `<tr>
+                            <td class="ps-3 small text-muted">${item.date}</td>
+                            <td><span class="badge bg-light text-dark border fw-bold px-2 py-1">${item.ref || '-'}</span></td>
+                            <td class="small">${item.debit_credit_type || ''}</td>
+                            <td class="text-end fw-bold text-danger">${debit > 0 ? '₱' + debit.toLocaleString(undefined, {minimumFractionDigits:2}) : '-'}</td>
+                            <td class="text-end fw-bold text-success">${credit > 0 ? '₱' + credit.toLocaleString(undefined, {minimumFractionDigits:2}) : '-'}</td>
+                            <td class="text-end pe-3 fw-bold ${runningBal > 0 ? 'text-primary' : ''}">₱${runningBal.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        </tr>`;
+                    });
+
+                    // Add Summary Row
+                    html += `<tr class="table-light">
+                        <td colspan="3" class="text-end fw-bold py-3 text-uppercase small bg-white border-top-2">Grand Totals</td>
+                        <td class="text-end fw-bold fs-6 text-danger border-top-2">₱${totalDebit.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        <td class="text-end fw-bold fs-6 text-success border-top-2">₱${totalCredit.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        <td class="text-end pe-3 fw-bold fs-5 text-primary border-top-2" style="background:#f0f7ff;">₱${finalBalance.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    </tr>`;
+                }
+                $('#ledgerModalTbody').html(html);
+                $('#ledgerPeriods').text('Statement as of ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'2-digit' }));
+            } else {
+                $('#ledgerModalTbody').html(`<tr><td colspan="6" class="text-center p-4 text-danger">${res.message || 'Error loading ledger'}</td></tr>`);
+            }
+        }, 'json');
     });
+
+    window.printLedger = function() {
+        const customerName = $('#printLedgerCustomerName').text();
+        const address = $('#printLedgerAddress').text();
+        const contact = $('#printLedgerContact').text();
+        const rank = $('#printLedgerRank').text() || '-';
+        const limit = $('#printLedgerLimit').text() || '₱0.00';
+        const tbodyHtml = $('#ledgerModalTbody').html();
+        const branch = window.currentBranch || 'HEADOFFICE';
+        const dateNow = new Date().toLocaleString();
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+        <html>
+        <head>
+            <title>Statement of Account - ${customerName}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; margin: 20px; font-size: 10pt; }
+                .report-header-print { text-align: center; border-bottom: 3px double #004d40; padding-bottom: 15px; margin-bottom: 25px; display: block; width: 100%; }
+                .report-header-print .company-name { font-size: 18pt; font-weight: 800; color: #004d40; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+                .report-header-print .company-address { font-size: 9pt; color: #444; margin-bottom: 2px; }
+                .report-header-print .system-name { font-size: 9pt; font-weight: 600; color: #666; font-style: italic; }
+                .report-title-container { margin-top: 15px; }
+                .report-title { font-size: 14pt; font-weight: 700; color: #000; text-decoration: underline; text-transform: uppercase; margin-bottom: 5px; }
+                .report-timestamp { font-size: 9pt; color: #777; font-style: italic; }
+                
+                .customer-info-box { margin-bottom: 15px; width: 100%; display: table; }
+                .customer-info-left { display: table-cell; width: 60%; }
+                .customer-info-right { display: table-cell; width: 40%; text-align: right; }
+                .info-label { font-size: 8pt; color: #555; text-transform: uppercase; font-weight: bold; }
+                .info-value { font-size: 11pt; font-weight: 700; text-transform: uppercase; color: #000; margin-bottom: 3px; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th { background-color: #f2f2f2 !important; color: #000 !important; font-size: 9pt; font-weight: 700; text-transform: uppercase; border: 1px solid #333 !important; padding: 8px; text-align: left;}
+                th.text-end, td.text-end { text-align: right !important; }
+                td { font-size: 9pt; vertical-align: middle; border: 1px solid #ddd !important; padding: 6px 8px; }
+                td .badge.border { border: none !important; padding: 0 !important; font-weight: bold; background: none !important; color: #000 !important;}
+                
+                .sig-section { margin-top: 40px; display: flex; width: 100%; }
+                .sig-box { flex: 1; text-align: center; }
+                .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 40px auto 5px auto; }
+                .sig-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #555; }
+                .footer-stamp { text-align: center; font-size: 8pt; font-style: italic; color: #777; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }
+                
+                @media print {
+                    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="report-header-print">
+                <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
+                <div class="system-name">Spareparts Management System</div>
+                <div class="report-title-container">
+                    <div class="report-title">STATEMENT OF ACCOUNT</div>
+                    <div class="report-timestamp">Generated on: ${dateNow} | Branch: ${branch}</div>
+                </div>
+            </div>
+            
+            <div class="customer-info-box">
+                <div class="customer-info-left">
+                    <div class="info-label">Customer Information:</div>
+                    <div class="info-value">${customerName}</div>
+                    <div style="font-size: 9pt; color: #444;">${address || ''}</div>
+                    <div style="font-size: 9pt; color: #444;">${contact || ''}</div>
+                </div>
+                <div class="customer-info-right">
+                    <table style="width: auto; float: right; border: none; margin: 0;">
+                        <tr><td style="border: none !important; text-align: right; padding: 2px 10px;" class="info-label">RANK LEVEL:</td><td style="border: none !important; text-align: left; padding: 2px;" class="info-value">${rank}</td></tr>
+                        <tr><td style="border: none !important; text-align: right; padding: 2px 10px;" class="info-label">CREDIT LIMIT:</td><td style="border: none !important; text-align: left; padding: 2px;" class="info-value">${limit}</td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th class="ps-3">Date</th>
+                        <th>Reference #</th>
+                        <th>Transaction Info</th>
+                        <th class="text-end">Debit (Charge)</th>
+                        <th class="text-end">Credit (Payment)</th>
+                        <th class="text-end pe-3">Running Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tbodyHtml}
+                </tbody>
+            </table>
+            
+            <div class="sig-section">
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Prepared By</div>
+                    <div style="font-size: 7.5pt; color: #777;">Authorized Personnel</div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Noted / Received By</div>
+                    <div style="font-size: 7.5pt; color: #777;">Customer / Representative</div>
+                </div>
+            </div>
+            
+            <div class="footer-stamp">
+                This is a system-generated statement. Please settle outstanding balances to maintain your good credit standing.
+            </div>
+        </body>
+        </html>
+        `);
+        printWindow.document.close();
+    };
+
+
+
+
+
+
+
+
+
+
 
     // 3. Returns (CM) Logic
     let returnsData = [];

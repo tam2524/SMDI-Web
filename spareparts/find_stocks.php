@@ -123,10 +123,12 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
             <div class="d-flex align-items-center">
                 <a href="<?php 
                     $role = $_SESSION['position'] ?? '';
-                    if ($role === 'Spareparts-Sales') {
+                    if ($role === 'Spareparts-Sales' || $role === 'Spareparts-Retail') {
                         echo 'sales_dashboard.php';
                     } elseif ($role === 'Spareparts-Owner') {
                         echo 'owner_dashboard.php';
+                    } elseif ($role === 'Spareparts-Admin') {
+                        echo 'admin_dashboard.php';
                     } else {
                         echo 'warehouse_dashboard.php';
                     }

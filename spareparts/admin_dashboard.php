@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], ['Spareparts-Admin', 'Spareparts-Owner'])) {
+if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-Admin', 'Spareparts-Owner'])) {
     header('Location: ../login.html');
     exit();
 }
@@ -11,6 +11,23 @@ $isOwner = ($userRole === 'Spareparts-Owner');
 $dashTitle = $isOwner ? 'Owner Dashboard' : 'Admin Dashboard';
 $greeting = 'Welcome back, ' . htmlspecialchars($username) . '!';
 $today = date('l, F j, Y');
+
+// Check module settings
+require_once '../api/db_config.php';
+$allSettings = [];
+$settingsRes = $conn->query("SELECT setting_key, setting_value FROM spareparts_settings");
+if ($settingsRes) {
+    while ($sRow = $settingsRes->fetch_assoc()) {
+        $allSettings[$sRow['setting_key']] = $sRow['setting_value'];
+    }
+}
+
+function isVisible($menuId) {
+    global $allSettings, $_SESSION;
+    $pos = $_SESSION['position'];
+    $key = "menu_vis_{$pos}_{$menuId}";
+    return !isset($allSettings[$key]) || $allSettings[$key] !== 'false';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -371,6 +388,9 @@ $today = date('l, F j, Y');
         .bg-menu-teal { background: #0d9488 !important; }
         .bg-menu-cyan { background: #06b6d4 !important; }
         .bg-menu-green { background: #10b981 !important; }
+        .bg-menu-indigo { background: #6366f1 !important; }
+        .bg-menu-pink { background: #ec4899 !important; }
+
 
         .module-card[class*="bg-menu-"] {
             border: none !important;
@@ -475,6 +495,7 @@ $today = date('l, F j, Y');
                 <div class="section-label"><i class="bi bi-grid-3x3-gap"></i> Modules</div>
                 <div class="modules-grid">
 
+                    <?php if (isVisible('sys-dashboard-card')): ?>
                     <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-blue" id="sys-dashboard-card">
                         <div class="module-icon-wrap"><i class="bi bi-speedometer2"></i></div>
                         <div>
@@ -483,7 +504,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('sales-card')): ?>
                     <a href="admin_spareparts.php?tab=sales" class="module-card bg-menu-purple" id="sales-card">
                         <div class="module-icon-wrap"><i class="bi bi-cart-check-fill"></i></div>
                         <div>
@@ -492,7 +515,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('inventory-card')): ?>
                     <a href="admin_spareparts.php?tab=inventory" class="module-card bg-menu-orange" id="inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-database-gear"></i></div>
                         <div>
@@ -501,7 +526,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('transfer-card')): ?>
                     <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-blue" id="transfer-card">
                         <div class="module-icon-wrap"><i class="bi bi-arrow-left-right"></i></div>
                         <div>
@@ -510,7 +537,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('payments-mgmt-card')): ?>
                     <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-purple" id="payments-mgmt-card">
                         <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
                         <div>
@@ -519,7 +548,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('audit-card')): ?>
                     <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal" id="audit-card">
                         <div class="module-icon-wrap"><i class="bi bi-shield-check"></i></div>
                         <div>
@@ -528,7 +559,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('usermgmt-card')): ?>
                     <a href="user_management.php" class="module-card bg-menu-cyan" id="usermgmt-card">
                         <div class="module-icon-wrap"><i class="bi bi-people-fill"></i></div>
                         <div>
@@ -537,7 +570,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('reports-card')): ?>
                     <a href="master_reports.php" class="module-card bg-menu-green" id="reports-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
@@ -546,24 +581,29 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
-                    <a href="beginning_inventory.php" class="module-card bg-menu-red" id="beginning-inventory-card">
-                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
+                    <?php if (isVisible('customer-mgmt-card')): ?>
+                    <a href="sales_spareparts.php?tab=customers" class="module-card bg-menu-indigo" id="customer-mgmt-card">
+                        <div class="module-icon-wrap"><i class="bi bi-people"></i></div>
                         <div>
-                            <div class="module-title">Beginning Inventory</div>
-                            <div class="module-desc">Enter initial stock levels (Excel-style)</div>
+                            <div class="module-title">Customer Records</div>
+                            <div class="module-desc">Manage customer ledgers, aging & profiles</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
-                    <a href="beginning_customer_balance.php" class="module-card bg-menu-green" id="beginning-customer-bal-card">
-                        <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
+                    <?php if (isVisible('employee-mgmt-card')): ?>
+                    <a href="sales_spareparts.php?tab=employees" class="module-card bg-menu-pink" id="employee-mgmt-card">
+                        <div class="module-icon-wrap"><i class="bi bi-person-badge"></i></div>
                         <div>
-                            <div class="module-title">Customer Beginning Balance</div>
-                            <div class="module-desc">Enter initial customer balances (Excel-style)</div>
+                            <div class="module-title">Employee Records</div>
+                            <div class="module-desc">Manage sales force and staff records</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
                 </div>
             </div>
@@ -577,30 +617,28 @@ $today = date('l, F j, Y');
                     </div>
                     <div class="sidebar-body">
                         <div class="summary-row">
-                            <span class="summary-row-label">Cash Qty</span>
-                            <span class="summary-row-val" id="global-cash-qty">—</span>
+                            <span class="summary-row-label">Cash Sales</span>
+                            <span class="summary-row-val" id="global-cash-sales-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Cash Amount</span>
-                            <span class="summary-row-val" id="global-cash-amount">—</span>
+                            <span class="summary-row-label">Charge Sales</span>
+                            <span class="summary-row-val" id="global-charge-sales-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge Qty</span>
-                            <span class="summary-row-val" id="global-charge-qty">—</span>
+                            <span class="summary-row-label">Charge Sales with PDC</span>
+                            <span class="summary-row-val" id="global-charge-pdc-amount">₱0.00</span>
+                        </div>
+                        <div class="summary-row border-bottom mb-2 pb-2">
+                            <span class="summary-row-label fw-bold">Total Cash & Charge</span>
+                            <span class="summary-row-val text-primary" id="global-total-sales-amount">₱0.00</span>
+                        </div>
+                        <div class="summary-row mt-3">
+                            <span class="summary-row-label text-success">Cash Payments</span>
+                            <span class="summary-row-val text-success" id="global-cash-payments-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge Amount</span>
-                            <span class="summary-row-val" id="global-charge-amount">—</span>
-                        </div>
-                    </div>
-                    <div class="sidebar-footer">
-                        <div class="total-row">
-                            <span class="total-row-label">Total Sales Qty</span>
-                            <span class="total-row-val" id="global-total-qty">—</span>
-                        </div>
-                        <div class="total-row">
-                            <span class="total-row-label">Total Sales Amt</span>
-                            <span class="total-row-val" id="global-total-amount">—</span>
+                            <span class="summary-row-label text-danger">Check Dues</span>
+                            <span class="summary-row-val text-danger" id="global-check-dues-amount">₱0.00</span>
                         </div>
                     </div>
                 </div>
@@ -633,25 +671,37 @@ $today = date('l, F j, Y');
     </div>
 
     <div class="modal fade" id="moduleSettingsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
                 <div class="modal-header bg-dark text-white border-0 py-3">
-                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-gear-fill me-2"></i>Module Settings</h5>
+                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-gear-fill me-2"></i>System & Menu Settings</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h6 class="fw-bold mb-1">Beginning Inventory Module</h6>
-                            <p class="text-muted small mb-0">Toggle visibility of the initial stock entry module.</p>
-                        </div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="beginningInventoryToggle" checked onchange="toggleModule('beginning_inventory_enabled', this.checked)">
+                    <div id="settings-content" class="mb-4">
+                        <h6 class="fw-bold text-muted small text-uppercase ls-1 mb-3">Menu Access Control</h6>
+                    </div>
+
+
+                        <!-- Menu Visibility Settings -->
+                        <div id="menu-visibility">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-muted small text-uppercase ls-1">Select Position / Role</label>
+                                <select class="form-select form-select-lg border-primary shadow-sm" id="visibilityPositionSelect" onchange="loadPositionMenus()" style="border-radius: 8px; font-weight: 600;">
+                                    <option value="Spareparts-Admin">Spareparts Admin</option>
+                                    <option value="Spareparts-Owner">Spareparts Owner</option>
+                                    <option value="Spareparts-Sales">Spareparts Sales</option>
+                                    <option value="Spareparts-Warehouse">Spareparts Warehouse</option>
+                                </select>
+                            </div>
+
+                            <div class="list-group border shadow-sm rounded-3" id="menus-container" style="max-height: 400px; overflow-y: auto;">
+                                <!-- Populated dynamically -->
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius: 20px;">Close</button>
                 </div>
             </div>
         </div>
@@ -662,15 +712,112 @@ $today = date('l, F j, Y');
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../js/spareparts_dashboard.js"></script>
     <script>
+        const POSITION_MENUS = {
+            'Spareparts-Admin': [
+                { id: 'sys-dashboard-card', label: 'System Dashboard' },
+                { id: 'sales-card', label: 'Sales Transactions' },
+                { id: 'inventory-card', label: 'Inventory Control' },
+                { id: 'transfer-card', label: 'Transfer Monitor' },
+                { id: 'payments-mgmt-card', label: 'Payment Management' },
+                { id: 'audit-card', label: 'Audit Logs' },
+                { id: 'usermgmt-card', label: 'User Management' },
+                { id: 'reports-card', label: 'Master Reports' },
+                { id: 'customer-mgmt-card', label: 'Customer Records' },
+                { id: 'employee-mgmt-card', label: 'Employee Records' }
+            ],
+            'Spareparts-Owner': [
+                { id: 'global-dashboard-card', label: 'Global Dashboard' },
+                { id: 'sales-transactions-card', label: 'Sales Transactions' },
+                { id: 'centralized-inventory-card', label: 'Centralized Inventory' },
+                { id: 'global-transfers-card', label: 'Global Transfers' },
+                { id: 'payment-management-card', label: 'Payment Management' },
+                { id: 'system-audit-card', label: 'System Audit' },
+                { id: 'master-reports-card', label: 'Master Reports' },
+                { id: 'find-tool-card', label: 'Find Tool' },
+                { id: 'user-management-card', label: 'User Management' }
+            ],
+            'Spareparts-Sales': [
+                { id: 'customers', label: 'Customer Records' },
+                { id: 'stock-card', label: 'Stock Card' },
+                { id: 'find-stocks', label: 'Find Stocks' },
+                { id: 'sales', label: 'Sales' },
+                { id: 'payments', label: 'Payments' },
+                { id: 'received-stocks-rr', label: 'Received Stocks (RR/IN)' },
+                { id: 'received-stock', label: 'Received Stock' },
+                { id: 'stock-transfer', label: 'Stock Transfer' },
+                { id: 'cm', label: 'Credit Memo' },
+                { id: 'employees', label: 'Employees' },
+                { id: 'pricelist', label: 'Pricelist' },
+                { id: 'master-reports', label: 'Master Reports' },
+                { id: 'beginning-inventory', label: 'Beginning Inventory' },
+                { id: 'beginning-customer-bal', label: 'Customer Beginning Balance' },
+                { id: 'pdc-payment', label: 'PDC Payment' }
+            ],
+            'Spareparts-Warehouse': [
+                { id: 'received-stocks-rr-warehouse', label: 'Received Stocks (RR/IN)' },
+                { id: 'stock-card-warehouse', label: 'Stock Card' },
+                { id: 'received-stock-warehouse', label: 'Received Stock' },
+                { id: 'stock-transfer-warehouse', label: 'Stock Transfer' },
+                { id: 'find-stocks-warehouse', label: 'Find Stocks' },
+                { id: 'master-reports-warehouse', label: 'Master Reports' },
+                { id: 'beginning-inventory-warehouse', label: 'Beginning Inventory' },
+                { id: 'barcode-generator', label: 'Barcode Generator' }
+            ]
+        };
+
         function openModuleSettings() {
             $.get('../api/spareparts_inventory.php?action=get_module_settings', function(response) {
                 if (response.success) {
-                    $('#beginningInventoryToggle').prop('checked', response.data.beginning_inventory_enabled === 'true');
+                    loadPositionMenus(response.data);
                     new bootstrap.Modal(document.getElementById('moduleSettingsModal')).show();
                 } else {
                     Swal.fire('Error', 'Failed to load settings.', 'error');
                 }
             });
+        }
+
+        function loadPositionMenus(currentSettings = null) {
+            const pos = $('#visibilityPositionSelect').val();
+            const menus = POSITION_MENUS[pos] || [];
+            const container = $('#menus-container');
+            container.empty();
+
+            if (currentSettings) {
+                renderMenus(menus, currentSettings, pos);
+            } else {
+                $.get('../api/spareparts_inventory.php?action=get_module_settings', function(response) {
+                    if (response.success) {
+                        renderMenus(menus, response.data, pos);
+                    }
+                });
+            }
+        }
+
+        function renderMenus(menus, settings, pos) {
+            const container = $('#menus-container');
+            menus.forEach(menu => {
+                const settingKey = `menu_vis_${pos}_${menu.id}`;
+                const isVisible = settings[settingKey] !== 'false'; 
+
+                const html = `
+                    <div class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom p-3">
+                        <div>
+                            <div class="fw-bold">${menu.label}</div>
+                            <div class="text-muted small">ID: ${menu.id}</div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" ${isVisible ? 'checked' : ''} 
+                                   onchange="toggleMenuVisibility('${pos}', '${menu.id}', this.checked)">
+                        </div>
+                    </div>
+                `;
+                container.append(html);
+            });
+        }
+
+        function toggleMenuVisibility(pos, menuId, isVisible) {
+            const settingKey = `menu_vis_${pos}_${menuId}`;
+            toggleModule(settingKey, isVisible);
         }
 
         function toggleModule(key, enabled) {
@@ -681,10 +828,10 @@ $today = date('l, F j, Y');
             }, function(response) {
                 if (response.success) {
                     Swal.fire({
-                        title: 'Success!',
+                        title: 'Updated!',
                         text: response.message,
                         icon: 'success',
-                        timer: 1500,
+                        timer: 1000,
                         showConfirmButton: false
                     });
                 } else {

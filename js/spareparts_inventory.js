@@ -1184,16 +1184,15 @@ $(document).ready(function () {
             resultsBox.empty();
 
             $.get('../api/spareparts_inventory.php?action=search_unique_customers', { term: val }, response => {
+                let html = '';
                 if (response.success && response.data.length > 0) {
-                    let html = '';
                     response.data.forEach(item => {
                         const custName = item.customer_name;
                         const rank = item.rank_level || 'Standard';
                         const limit = parseFloat(item.credit_limit || 0);
                         const limitFormatted = '₱' + limit.toLocaleString(undefined, { minimumFractionDigits: 2 });
                         if (!custName) return;
-                        html += `<button type="button" class="list-group-item list-group-item-action fill-sale-customer" 
-                                    data-name="${escapeHtml(custName)}" data-rank="${rank}" data-limit="${limit}">
+                        html += `<button type="button" class="list-group-item list-group-item-action fill-sale-cu                                     data-name="${escapeHtml(custName)}" data-rank="${rank}" data-limit="${limit}" data-balance="${item.current_balance}">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="fw-bold"><i class="bi bi-person text-secondary me-2"></i>${escapeHtml(custName)}</div>
                                         <div class="text-end">
@@ -1203,6 +1202,24 @@ $(document).ready(function () {
                                     </div>
                                  </button>`;
                     });
+                }
+                
+                // Add "Add New Customer" prompt
+                if (val.length > 0) {
+                    html += `<button type="button" class="list-group-item list-group-item-action text-primary fw-bold p-3" id="btn-prompt-add-customer" data-name="${escapeHtml($(this).val())}">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary-subtle p-2 me-3">
+                                        <i class="bi bi-person-plus-fill text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-muted">Customer name not exists?</div>
+                                        <div>ADD NEW CUSTOMER: <span class="text-dark">"${escapeHtml($(this).val())}"</span></div>
+                                    </div>
+                                </div>
+                             </button>`;
+                }
+
+                if (html) {
                     resultsBox.html(html).show();
                 } else {
                     resultsBox.hide();
@@ -1210,20 +1227,32 @@ $(document).ready(function () {
             }, 'json');
         });
 
+        $(document).on('click', '#btn-prompt-add-customer', function() {
+            const name = $(this).data('name');
+            $('#saleCustomerSearchResults').hide();
+            $('#cust_name').val(name);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('addCustomerModal')).show();
+        });
+
         $(document).on('click', '.fill-sale-customer', function () {
             const name = $(this).data('name');
             const rank = $(this).data('rank');
-            const limit = $(this).data('limit');
+            const limit = parseFloat($(this).data('limit') || 0);
+            const balance = parseFloat($(this).data('balance') || 0);
             
             $('#out_customer_name').val(name);
             currentCustomerRank = rank;
+            window.currentCustomerLimit = limit;
+            window.currentCustomerBalance = balance;
             
             // Show Rank and Limit info below the input if it's charge sale
             if ($('#out_transaction_type').val() === 'charge' || $('#out_transaction_type').val() === 'pdc') {
-                const limitStr = '₱' + parseFloat(limit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                const limitStr = '₱' + limit.toLocaleString(undefined, { minimumFractionDigits: 2 });
+                const balStr = '₱' + balance.toLocaleString(undefined, { minimumFractionDigits: 2 });
                 const infoHtml = `<div id="customerSelectionInfo" class="mt-1 small text-muted">
                     <span class="badge bg-info-subtle text-info border border-info-subtle me-1">${rank} Rank</span>
-                    <span class="fw-bold">Credit Limit: ${limitStr}</span>
+                    <span class="fw-bold">Credit Limit: ${limitStr}</span> | 
+                    <span class="fw-bold">Current Balance: ${balStr}</span>
                 </div>`;
                 $('#customerSelectionInfo').remove();
                 $('#out_customer_name').after(infoHtml);
@@ -1272,12 +1301,22 @@ $(document).ready(function () {
 
         $('#out_transaction_type').on('change', function () {
             const label = $('label[for="out_customer_name"]');
-            if ($(this).val() === 'cash') {
+            const selectedType = $(this).val();
+            $('#credit_limit_error').addClass('d-none'); // Hide error on type change
+
+            if (selectedType === 'cash') {
                 $('#out_customer_name').removeAttr('required');
                 label.html('Customer Name <small class="text-muted fw-normal">(Optional for Cash)</small>');
+                $('#pdcFields').slideUp();
             } else {
                 $('#out_customer_name').prop('required', true);
                 label.html('Customer Name <span class="text-danger">*</span>');
+                
+                if (selectedType === 'pdc') {
+                    $('#pdcFields').slideDown();
+                } else {
+                    $('#pdcFields').slideUp();
+                }
             }
         });
 
@@ -1469,21 +1508,39 @@ $(document).ready(function () {
             } else {
                 $('#pdc_fields').addClass('d-none');
             }
-            
-            // Focus and trigger search dropdown if customer name is empty
-            if (!$('#out_customer_name').val()) {
-                $('#out_customer_name').trigger('focus');
-            }
         });
 
         $('#sellPartsOutForm').on('submit', function (e) {
             e.preventDefault();
             if (saleCart.length === 0) { showErrorModal('Add items to sale first.'); return; }
 
+            const transactionTypeVal = $('#out_transaction_type').val();
+            
+            // Credit Limit Validation
+            if (transactionTypeVal === 'charge' || transactionTypeVal === 'pdc') {
+                const limit = parseFloat(window.currentCustomerLimit || 0);
+                const balance = parseFloat(window.currentCustomerBalance || 0);
+                let currentTotal = 0;
+                saleCart.forEach(item => {
+                    currentTotal += (item.quantity * item.price);
+                });
+                
+                const newTotal = balance + currentTotal;
+                if (newTotal > limit && limit > 0) {
+                    const excess = newTotal - limit;
+                    $('#credit_limit_msg').html(`Transaction Blocked! Customer has exceeded their credit limit.<br>
+                        <b>Credit Limit:</b> ₱${limit.toLocaleString(undefined, {minimumFractionDigits:2})}<br>
+                        <b>Total if processed:</b> ₱${newTotal.toLocaleString(undefined, {minimumFractionDigits:2})}<br>
+                        <span class="text-danger"><b>Exceeds by:</b> ₱${excess.toLocaleString(undefined, {minimumFractionDigits:2})}</span>`);
+                    $('#credit_limit_error').removeClass('d-none');
+                    document.getElementById('credit_limit_error').scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return;
+                }
+            }
+
             const btn = $(this).find('button[type="submit"]');
             btn.prop('disabled', true).text('Confirming...');
 
-            const transactionTypeVal = $('#out_transaction_type').val();
             const payment_method = (transactionTypeVal === 'pdc') ? 'PDC' : (transactionTypeVal === 'charge' ? 'Charge' : 'Cash');
             const check_date = $('#out_check_date').val();
 
@@ -1495,6 +1552,12 @@ $(document).ready(function () {
                 payment_method: payment_method,
                 check_date: check_date,
                 sales_force: $('#out_sales_force').val().trim(),
+                // New PDC fields
+                pdc_bank: $('input[name="pdc_bank"]').val(),
+                pdc_check_no: $('input[name="pdc_check_no"]').val(),
+                pdc_maturity_date: $('input[name="pdc_maturity_date"]').val(),
+                pdc_amount: $('input[name="pdc_amount"]').val(),
+                pdc_remarks: $('textarea[name="pdc_remarks"]').val(),
                 items: JSON.stringify(saleCart.map(p => ({ id: p.id, part_no: p.part_no, description: p.description, quantity: p.quantity, price: p.price })))
             };
 
@@ -3486,7 +3549,9 @@ $(document).ready(function () {
         const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
         paged.forEach(s => {
-            const typeBadge = s.transaction_type === 'charge' ? 'bg-info text-dark' : 'bg-success text-white';
+            const isPDC = s.payment_method === 'PDC';
+            const typeBadge = s.transaction_type === 'charge' ? (isPDC ? 'bg-info text-dark' : 'bg-info text-dark') : 'bg-success text-white';
+            const typeText = isPDC ? 'CHARGE w/ PDC' : s.transaction_type.toUpperCase();
             const balanceVal = Number(s.balance || 0);
             const balanceText = s.transaction_type === 'charge' ? formatCurrency(balanceVal) : '-';
 
@@ -3502,7 +3567,7 @@ $(document).ready(function () {
                 <td><div class="small text-muted">${escapeHtml(s.or_number)}</div></td>
                 <td><div class="small text-muted">${escapeHtml(s.sales_force || 'N/A')}</div></td>
                 <td class="text-end fw-bold">${formatCurrency(s.total_amount)}</td>
-                <td class="text-center"><span class="badge ${typeBadge}">${escapeHtml(s.transaction_type.toUpperCase())}</span></td>
+                <td class="text-center"><span class="badge ${typeBadge}">${escapeHtml(typeText)}</span></td>
                 <td class="text-end ${balanceVal > 0 ? 'text-danger' : ''}">${balanceText}</td>
                 <td class="text-center">
                     <div class="btn-group">
@@ -4144,67 +4209,100 @@ $(document).ready(function () {
         const dateNow = new Date().toLocaleString();
 
         printWindow.document.write(`
-                        <html>
-                <head>
-                    <title>${title}</title>
-                    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>
-                    <style>
+            <html>
+            <head>
+                <title>${title}</title>
+                <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>
+                <style>
                     @page { size: landscape; margin: 1cm; }
-                    body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; padding: 20px; color: #000; }
-                    .company-header { color: #000; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-                    .report-info { font-size: 0.9rem; color: #333; margin-bottom: 10px; }
-                    th { background-color: #f0f0f0 !important; color: #000 !important; font-size: 10pt; text-transform: uppercase; border: 1px solid #000 !important; }
-                    td { font-size: 10pt; vertical-align: middle; border: 1px solid #000 !important; }
-                    .table-dark { background-color: #f0f0f0 !important; color: #000 !important; }
-                    .table-secondary { background-color: #f9f9f9 !important; }
-                    .sig-line { border-bottom: 2px solid #000; width: 100%; margin-bottom: 5px; }
-
-                    /* Print Pagination & Large Dataset Handling */
-                    table { page-break-inside: auto; border-collapse: collapse; width: 100%; }
-                    tr { page-break-inside: avoid; page-break-after: auto; }
-                    thead { display: table-header-group; }
-                    tfoot { display: table-footer-group; }
-                </style>
-                </head>
-                <body>
-                    <div class="company-header d-flex justify-content-between align-items-end">
-                        <h1 class="mb-0"></h1>
-                        <div class="text-end">
-                            <h4 class="mb-0">${title}</h4>
-                        </div>
-                    </div>
-                    <div class="report-info d-flex justify-content-between mt-2">
-                        <span>Generated on: ${dateNow}</span>
-                        <span>Record Count: ${recordCount}</span>
-                    </div>
+                    body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 10pt; padding: 0px; color: #333; background: #fff; }
                     
+                    /* Standardized Header */
+                    .report-header-print {
+                        text-align: center;
+                        margin-bottom: 25px;
+                        padding-bottom: 15px;
+                        border-bottom: 3px double #004d40;
+                    }
+                    .company-name {
+                        font-size: 18pt;
+                        font-weight: 800;
+                        color: #004d40;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        margin-bottom: 2px;
+                    }
+                    .company-address {
+                        font-size: 9pt;
+                        color: #444;
+                        margin-bottom: 2px;
+                    }
+                    .system-name {
+                        font-size: 9pt;
+                        font-weight: 600;
+                        color: #666;
+                        font-style: italic;
+                    }
+                    .report-title-container {
+                        margin-top: 15px;
+                    }
+                    .report-title {
+                        font-size: 14pt;
+                        font-weight: 700;
+                        color: #000;
+                        text-transform: uppercase;
+                        margin-bottom: 5px;
+                        text-decoration: underline;
+                    }
+                    .report-timestamp {
+                        font-size: 9pt;
+                        color: #777;
+                        font-style: italic;
+                    }
+
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th { background-color: #f8f9fa !important; color: #000 !important; font-size: 9pt; text-transform: uppercase; border: 1px solid #333 !important; padding: 8px; }
+                    td { font-size: 9pt; vertical-align: middle; border: 1px solid #ddd !important; padding: 6px 8px; }
+                    
+                    .sig-section { margin-top: 50px; }
+                    .sig-box { text-align: center; }
+                    .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 0 auto 5px auto; }
+                    .sig-label { font-size: 9pt; font-weight: bold; text-transform: uppercase; color: #555; }
+                </style>
+            </head>
+            <body>
+                <div class="report-header-print">
+                    <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
+                    <div class="system-name">Spareparts Management System</div>
+                    <div class="report-title-container" style="margin-top: 15px;">
+                        <h2 class="report-title">${title}</h2>
+                        <div class="report-timestamp">Generated on: ${dateNow} | Record Count: ${recordCount}</div>
+                    </div>
+                </div>
+                
+                <div class="report-content">
                     ${content}
+                </div>
 
-                    <div class="row mt-5 pt-4">
-                        <div class="col-4">
-                            <div class="sig-line"></div>
-                            <div class="text-center small fw-bold">Prepared By</div>
-                        </div>
-                        <div class="col-4"></div>
-                        <div class="col-4">
-                            <div class="sig-line"></div>
-                            <div class="text-center small fw-bold">Noted By</div>
-                        </div>
+                <div class="row sig-section">
+                    <div class="col-4 sig-box">
+                        <div style="height: 40px;"></div>
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Prepared By</div>
                     </div>
-
-                    <div class="mt-5 pt-4 text-center text-muted small border-top">
-                        Spare Parts Management System &copy; ${new Date().getFullYear()}
+                    <div class="col-4"></div>
+                    <div class="col-4 sig-box">
+                        <div style="height: 40px;"></div>
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Noted / Received By</div>
                     </div>
+                </div>
 
-                    <script>
-                        window.onload = function() {
-                            setTimeout(() => {
-                                window.print();
-                                // window.close();
-                            }, 500);
-                        };
-                    </script>
-                </body>
+                <div class="mt-5 pt-3 text-center text-muted small border-top" style="font-size: 8pt; font-style: italic;">
+                    This is a system-generated report. Spare Parts Management System &copy; ${new Date().getFullYear()}
+                </div>
+            </body>
             </html>
             `);
         printWindow.document.close();
@@ -4373,35 +4471,91 @@ if (typeof window.printTransferSummaryUI !== 'function') {
             <html>
             <head>
                 <title>Transfer Summary - #${transferId}</title>
+                <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>
                 <style>
-                    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
-                    .header { text-align: center; border-bottom: 2px solid #004d40; padding-bottom: 15px; margin-bottom: 30px; }
-                    .header h1 { margin: 0; color: #004d40; font-size: 24px; }
-                    .header p { margin: 5px 0; color: #666; font-size: 14px; }
-                    .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; }
-                    .meta b { color: #004d40; }
+                    body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; padding: 0px; color: #333; }
+                    
+                    /* Standardized Header */
+                    .report-header-print {
+                    /* Standardized Header */
+                    .report-header-print {
+                        text-align: center;
+                        margin-bottom: 25px;
+                        padding-bottom: 15px;
+                        border-bottom: 3px double #004d40;
+                    }
+                    .company-name {
+                        font-size: 18pt;
+                        font-weight: 800;
+                        color: #004d40;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        margin-bottom: 2px;
+                    }
+                    .company-address {
+                        font-size: 9pt;
+                        color: #444;
+                        margin-bottom: 2px;
+                    }
+                    .system-name {
+                        font-size: 9pt;
+                        font-weight: 600;
+                        color: #666;
+                        font-style: italic;
+                    }
+                    .report-title-container {
+                        margin-top: 15px;
+                    }
+                    .report-title {
+                        font-size: 14pt;
+                        font-weight: 700;
+                        color: #000;
+                        text-transform: uppercase;
+                        margin-bottom: 5px;
+                        text-decoration: underline;
+                    }
+                    .report-timestamp {
+                        font-size: 9pt;
+                        color: #777;
+                        font-style: italic;
+                    }
+
+                    .meta-container { margin-bottom: 25px; background: #fff; padding: 10px 0; }
+                    .meta-item { margin-bottom: 5px; font-size: 14px; }
+                    .meta-label { font-weight: bold; color: #555; text-transform: uppercase; font-size: 11px; margin-right: 10px; }
+                    
                     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th { background: #f4f4f4; text-align: left; padding: 12px; border-bottom: 2px solid #ddd; font-size: 13px; text-transform: uppercase; }
-                    td { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-                    .footer { margin-top: 50px; text-align: right; font-size: 12px; color: #999; }
-                    @print { .no-print { display: none; } }
+                    th { background: #f4f4f4 !important; text-align: left; padding: 12px; border: 1px solid #333; font-size: 12px; text-transform: uppercase; }
+                    td { padding: 10px; border: 1px solid #ddd; font-size: 13px; }
+                    
+                    .footer-sig { margin-top: 60px; }
+                    .sig-box { text-align: center; }
+                    .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 0 auto 5px auto; }
+                    .sig-label { font-size: 10px; font-weight: bold; text-transform: uppercase; }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <h1>ROXAS CITY SOLID MERCHANDISING</h1>
-                    <p>Transfer Summary Document - Spare Parts Management</p>
+                <div class="report-header-print">
+                    <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
+                    <div class="system-name">Spareparts Management System</div>
+                    <div class="report-title-container" style="margin-top: 15px;">
+                        <div class="report-title">TRANSFER SUMMARY DOCUMENT</div>
+                        <div class="report-timestamp">Generated on: ${new Date().toLocaleString()}</div>
+                    </div>
                 </div>
                 
-                <div class="meta">
-                    <div>
-                        <div><b>Transfer ID:</b> #${transferId}</div>
-                        <div><b>Origin:</b> ${fromBranch}</div>
-                        <div><b>Destination:</b> ${window.currentBranch || 'N/A'}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div><b>Print Date:</b> ${new Date().toLocaleString()}</div>
-                        <div><b>Type:</b> Stock Transfer</div>
+                <div class="meta-container">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="meta-item"><span class="meta-label">Transfer ID:</span> <span class="fw-bold">#${transferId}</span></div>
+                            <div class="meta-item"><span class="meta-label">Origin:</span> ${fromBranch}</div>
+                            <div class="meta-item"><span class="meta-label">Destination:</span> ${window.currentBranch || 'N/A'}</div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <div class="meta-item"><span class="meta-label">Print Date:</span> ${new Date().toLocaleString()}</div>
+                            <div class="meta-item"><span class="meta-label">Document Type:</span> Stock Transfer</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -4418,8 +4572,20 @@ if (typeof window.printTransferSummaryUI !== 'function') {
                     </tbody>
                 </table>
                 
-                <div class="footer">
-                    <p>Generated by Spare Parts Management System &copy; ${new Date().getFullYear()}</p>
+                <div class="row footer-sig">
+                    <div class="col-4 sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Released By</div>
+                    </div>
+                    <div class="col-4"></div>
+                    <div class="col-4 sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Received / Accepted By</div>
+                    </div>
+                </div>
+
+                <div class="mt-5 text-center text-muted" style="font-size: 10px; font-style: italic;">
+                    Generated by Spare Parts Management System &copy; ${new Date().getFullYear()}
                 </div>
 
                 <script>

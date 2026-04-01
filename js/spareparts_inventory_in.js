@@ -445,6 +445,7 @@ function submitStockInAction() {
                 items: JSON.stringify(inCart),
                 invoice_no: invoice,
                 supplier_source: $('#supplier').val().trim(),
+                payment_mode: $('#paymentMode').val(),
                 date_in: $('#dateReceived').val()
             },
             success: function (response) {

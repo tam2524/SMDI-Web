@@ -64,7 +64,7 @@ if ($colCheck && $colCheck->num_rows == 0) {
 
 $action = $_GET['action'] ?? '';
 $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
-$userRole = $_SESSION['user_role'] ?? $_SESSION['position'] ?? 'user';
+$userRole = $_SESSION['position'] ?? $_SESSION['user_role'] ?? 'user';
 $adminRoles = ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-Admin', 'Spareparts-Owner'];
 $isAdmin = in_array(strtolower(trim($userRole)), array_map('strtolower', $adminRoles));
 

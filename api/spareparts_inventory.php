@@ -77,8 +77,7 @@ function getModuleSettings()
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
     
-    // Ensure default setting exists
-    $conn->query("INSERT IGNORE INTO spareparts_settings (setting_key, setting_value) VALUES ('beginning_inventory_enabled', 'true')");
+    // Settings table is used for various global and role-based visibility flags
 
     $result = $conn->query("SELECT * FROM spareparts_settings");
     $settings = [];
@@ -96,13 +95,13 @@ function updateModuleSetting()
     $key = sanitizeInput($_POST['key']);
     $val = sanitizeInput($_POST['value']);
 
-    $stmt = $conn->prepare("UPDATE spareparts_settings SET setting_value = ? WHERE setting_key = ?");
-    $stmt->bind_param('ss', $val, $key);
+    $stmt = $conn->prepare("INSERT INTO spareparts_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+    $stmt->bind_param('sss', $key, $val, $val);
     if ($stmt->execute()) {
         addAuditLog('UPDATE', 'spareparts_settings', $key, "Updated setting $key to $val");
         echo json_encode(['success' => true, 'message' => 'Setting updated successfully.']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to update setting.']);
+        echo json_encode(['success' => false, 'message' => 'Failed to update setting: ' . $conn->error]);
     }
 }
 
@@ -1153,7 +1152,9 @@ function searchUniqueCustomers()
     // Relaxed division filter to show both categorized and legacy (uncategorized) customers
     $divFilter = (!$seeAll && $division) ? " AND (category = '$division' OR category IS NULL OR category = '') " : "";
 
-    $sql_cust = "SELECT name AS customer_name, rank_level, credit_limit FROM spareparts_customers WHERE name LIKE ? " . ($seeAll ? "" : "AND branch = ?") . $divFilter . " LIMIT 10";
+    $sql_cust = "SELECT name AS customer_name, rank_level, credit_limit,
+                 (SELECT SUM(balance) FROM spareparts_aging WHERE customer_name = spareparts_customers.name AND branch = spareparts_customers.branch AND status = 'Active') as current_balance
+                 FROM spareparts_customers WHERE name LIKE ? " . ($seeAll ? "" : "AND branch = ?") . $divFilter . " LIMIT 10";
     $stmt_cust = $conn->prepare($sql_cust);
     if ($seeAll) $stmt_cust->bind_param('s', $searchTerm);
     else $stmt_cust->bind_param('ss', $searchTerm, $currentBranch);
@@ -1178,11 +1179,18 @@ function searchUniqueCustomers()
     $final = [];
     foreach ($res_cust as $c) {
         $names[] = strtolower($c['customer_name']);
+        $c['current_balance'] = (float)($c['current_balance'] ?? 0);
         $final[] = $c;
     }
     foreach ($res_trans as $t) {
         if (!in_array(strtolower($t['customer_name']), $names)) {
-            $final[] = ['customer_name' => $t['customer_name'], 'rank_level' => 'Standard', 'credit_limit' => 0];
+            // Fetch balance even for names not in customers table
+            $bStmt = $conn->prepare("SELECT SUM(balance) as b FROM spareparts_aging WHERE customer_name = ? AND status = 'Active' " . ($seeAll ? "" : "AND branch = ?"));
+            if ($seeAll) $bStmt->bind_param('s', $t['customer_name']);
+            else $bStmt->bind_param('ss', $t['customer_name'], $currentBranch);
+            $bStmt->execute();
+            $currBal = $bStmt->get_result()->fetch_assoc()['b'] ?? 0;
+            $final[] = ['customer_name' => $t['customer_name'], 'rank_level' => 'Standard', 'credit_limit' => 0, 'current_balance' => (float)$currBal];
         }
     }
 
@@ -1565,10 +1573,33 @@ function addMultiplePartsIn()
             transaction_date DATE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
+        $conn->query("CREATE TABLE IF NOT EXISTS spareparts_supplier_aging (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            supplier_name VARCHAR(255) NOT NULL,
+            invoice_no VARCHAR(100) NOT NULL,
+            total_amount DECIMAL(15,2) NOT NULL,
+            balance DECIMAL(15,2) NOT NULL,
+            date_received DATE,
+            status VARCHAR(50) DEFAULT 'Active',
+            branch VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
     } catch(Exception $e) {}
 
     $conn->begin_transaction();
     try {
+        $totalItemsAmount = 0;
+        foreach ($items as $item) {
+            $totalItemsAmount += ((int)$item['quantity'] * (float)$item['cost']);
+        }
+
+        $paymentMode = sanitizeInput($_POST['payment_mode'] ?? 'Cash');
+        if ($paymentMode === 'Charge' && $totalItemsAmount > 0) {
+            $stmt = $conn->prepare("INSERT INTO spareparts_supplier_aging (supplier_name, invoice_no, total_amount, balance, date_received, branch) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssddss', $supplier, $invoice_no, $totalItemsAmount, $totalItemsAmount, $date, $currentBranch);
+            $stmt->execute();
+        }
+
         foreach ($items as $item) {
             $brand       = sanitizeInput($item['brand'] ?? '');
             $part_no     = sanitizeInput($item['part_no']);
@@ -1597,8 +1628,6 @@ function addMultiplePartsIn()
             }
 
             // UPSERT inventory:
-            // - Always use new cost as the primary cost (master cost update)
-            // - Add to stock for this branch
             $stmt = $conn->prepare(
                 "INSERT INTO spareparts_inventory (brand, part_no, description, current_stock, cost, price, current_branch)
                  VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -1612,8 +1641,7 @@ function addMultiplePartsIn()
             $stmt->bind_param('sssidds', $brand, $part_no, $description, $quantity, $new_cost, $price, $currentBranch);
             $stmt->execute();
 
-            // Always log cost history (provides full audit trail)
-            // Try with part_no column name (check both common schema variants)
+            // Always log cost history
             $histCheck = $conn->query("SHOW COLUMNS FROM spareparts_price_history LIKE 'part_no'");
             if ($histCheck && $histCheck->num_rows > 0) {
                 $histStmt = $conn->prepare(
@@ -1631,10 +1659,10 @@ function addMultiplePartsIn()
             $total = $quantity * $new_cost;
             $log = $conn->prepare(
                 "INSERT INTO spareparts_transactions
-                    (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, or_number, status)
-                 VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, 'Completed')"
+                    (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, or_number, status, payment_method)
+                 VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, 'Completed', ?)"
             );
-            $log->bind_param('sssiddsss', $date, $part_no, $description, $quantity, $new_cost, $total, $supplier, $currentBranch, $invoice_no);
+            $log->bind_param('sssiddssss', $date, $part_no, $description, $quantity, $new_cost, $total, $supplier, $currentBranch, $invoice_no, $paymentMode);
             $log->execute();
         }
 
@@ -1729,6 +1757,39 @@ function sellMultiplePartsOut()
         return;
     }
 
+    // Server-side Credit Limit Validation for Charge/PDC sales
+    if ($transaction_type === 'charge' || $payment_method === 'PDC') {
+        // Fetch customer credit limit
+        $stmt_l = $conn->prepare("SELECT credit_limit FROM spareparts_customers WHERE name = ? AND branch = ? LIMIT 1");
+        $stmt_l->bind_param('ss', $customer_name, $currentBranch);
+        $stmt_l->execute();
+        $res_l = $stmt_l->get_result()->fetch_assoc();
+        $limit = (float)($res_l['credit_limit'] ?? 0);
+
+        if ($limit > 0) {
+            // Fetch current outstanding balance
+            $stmt_b = $conn->prepare("SELECT SUM(balance) as current_balance FROM spareparts_aging WHERE customer_name = ? AND status = 'Active' AND branch = ?");
+            $stmt_b->bind_param('ss', $customer_name, $currentBranch);
+            $stmt_b->execute();
+            $res_b = $stmt_b->get_result()->fetch_assoc();
+            $current_balance = (float)($res_b['current_balance'] ?? 0);
+
+            $total_sale_est = 0;
+            foreach ($items as $item) {
+                $total_sale_est += ($item['quantity'] * $item['price']);
+            }
+
+            if (($current_balance + $total_sale_est) > $limit) {
+                $excess = ($current_balance + $total_sale_est) - $limit;
+                echo json_encode([
+                    'success' => false, 
+                    'message' => "Credit Limit Exceeded! \nLimit: PHP " . number_format($limit, 2) . "\nCurrent Bal: PHP " . number_format($current_balance, 2) . "\nThis Sale: PHP " . number_format($total_sale_est, 2) . "\nExceeds by PHP " . number_format($excess, 2)
+                ]);
+                return;
+            }
+        }
+    }
+
     $conn->begin_transaction();
     try {
         $total_sale_amount = 0;
@@ -1762,6 +1823,28 @@ function sellMultiplePartsOut()
                                     VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param('sssddss', $or_number, $customer_name, $date, $total_sale_amount, $total_sale_amount, $currentBranch, $division);
             $stmt->execute();
+
+            // Save PDC details if payment method is PDC
+            if ($payment_method === 'PDC') {
+                $pdc_bank = sanitizeInput($_POST['pdc_bank'] ?? '');
+                $pdc_check_no = sanitizeInput($_POST['pdc_check_no'] ?? '');
+                $pdc_maturity_date = sanitizeInput($_POST['pdc_maturity_date'] ?? '');
+                $pdc_amount = !empty($_POST['pdc_amount']) ? (float)$_POST['pdc_amount'] : $total_sale_amount;
+                $pdc_remarks = sanitizeInput($_POST['pdc_remarks'] ?? '');
+                
+                // Get customer ID
+                $stmt_cid = $conn->prepare("SELECT id FROM spareparts_customers WHERE name = ? AND branch = ? LIMIT 1");
+                $stmt_cid->bind_param('ss', $customer_name, $currentBranch);
+                $stmt_cid->execute();
+                $cid_res = $stmt_cid->get_result()->fetch_assoc();
+                $customer_id = (int)($cid_res['id'] ?? 0);
+
+                $encoded_by = $_SESSION['username'] ?? 'System';
+
+                $stmt_pdc = $conn->prepare("INSERT INTO spareparts_pdc_payments (customer_id, customer_name, bank_name, check_no, check_date, amount, status, branch, encoded_by, or_number, remarks) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?)");
+                $stmt_pdc->bind_param('issssdssss', $customer_id, $customer_name, $pdc_bank, $pdc_check_no, $pdc_maturity_date, $pdc_amount, $currentBranch, $encoded_by, $or_number, $pdc_remarks);
+                $stmt_pdc->execute();
+            }
         }
 
         $conn->commit();
@@ -1790,7 +1873,9 @@ function getSalesForce()
     $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS sales_force VARCHAR(150) DEFAULT NULL");
 
     $division = getCurrentDivision();
-    if (!$isAdmin && $division) {
+    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+
+    if ($seeAll) {
         $stmt = $conn->prepare("
             SELECT 
                 sf.id, 
@@ -1798,7 +1883,21 @@ function getSalesForce()
                 sf.employee_name, 
                 sf.position,
                 sf.created_at,
-                COUNT(DISTINCT t.or_number) as total_sales
+                COUNT(DISTINCT t.id) as total_sales
+            FROM spareparts_sales_force sf
+            LEFT JOIN spareparts_transactions t ON sf.employee_name = t.sales_force AND sf.branch = t.from_location AND t.type = 'OUT'
+            GROUP BY sf.id, sf.branch, sf.employee_name, sf.position, sf.created_at
+            ORDER BY sf.employee_name ASC
+        ");
+    } else if ($division) {
+        $stmt = $conn->prepare("
+            SELECT 
+                sf.id, 
+                sf.branch, 
+                sf.employee_name, 
+                sf.position,
+                sf.created_at,
+                COUNT(DISTINCT t.id) as total_sales
             FROM spareparts_sales_force sf
             LEFT JOIN spareparts_transactions t ON sf.employee_name = t.sales_force AND sf.branch = t.from_location AND t.type = 'OUT'
             WHERE sf.branch = ? AND sf.category = ?
@@ -1807,7 +1906,6 @@ function getSalesForce()
         ");
         $stmt->bind_param('ss', $currentBranch, $division);
     } else {
-        // Join with transactions to count unique sales (OR numbers)
         $stmt = $conn->prepare("
             SELECT 
                 sf.id, 
@@ -1815,7 +1913,7 @@ function getSalesForce()
                 sf.employee_name, 
                 sf.position,
                 sf.created_at,
-                COUNT(DISTINCT t.or_number) as total_sales
+                COUNT(DISTINCT t.id) as total_sales
             FROM spareparts_sales_force sf
             LEFT JOIN spareparts_transactions t ON sf.employee_name = t.sales_force AND sf.branch = t.from_location AND t.type = 'OUT'
             WHERE sf.branch = ?
@@ -1860,7 +1958,7 @@ function addSalesForce()
 
 function editSalesForce()
 {
-    global $conn, $currentBranch;
+    global $conn, $currentBranch, $isAdmin;
     $id = (int) ($_POST['id'] ?? 0);
     $name = trim($_POST['employee_name'] ?? '');
     $position = trim($_POST['position'] ?? '');
@@ -1870,19 +1968,33 @@ function editSalesForce()
         return;
     }
 
-    $stmt = $conn->prepare("UPDATE spareparts_sales_force SET employee_name = ?, position = ? WHERE id = ? AND branch = ?");
-    $stmt->bind_param("ssis", $name, $position, $id, $currentBranch);
+    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    
+    if ($seeAll) {
+        $stmt = $conn->prepare("UPDATE spareparts_sales_force SET employee_name = ?, position = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $name, $position, $id);
+    } else {
+        $stmt = $conn->prepare("UPDATE spareparts_sales_force SET employee_name = ?, position = ? WHERE id = ? AND branch = ?");
+        $stmt->bind_param("ssis", $name, $position, $id, $currentBranch);
+    }
     $stmt->execute();
     echo json_encode(['success' => true, 'message' => 'Employee updated.']);
 }
 
 function deleteSalesForce()
 {
-    global $conn, $currentBranch;
+    global $conn, $currentBranch, $isAdmin;
     $id = (int) ($_POST['id'] ?? 0);
     if (!$id) { echo json_encode(['success' => false, 'message' => 'Invalid ID.']); return; }
-    $stmt = $conn->prepare("DELETE FROM spareparts_sales_force WHERE id = ? AND branch = ?");
-    $stmt->bind_param('is', $id, $currentBranch);
+    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
+    
+    if ($seeAll) {
+        $stmt = $conn->prepare("DELETE FROM spareparts_sales_force WHERE id = ?");
+        $stmt->bind_param('i', $id);
+    } else {
+        $stmt = $conn->prepare("DELETE FROM spareparts_sales_force WHERE id = ? AND branch = ?");
+        $stmt->bind_param('is', $id, $currentBranch);
+    }
     $stmt->execute();
     echo json_encode(['success' => $stmt->affected_rows > 0, 'message' => $stmt->affected_rows > 0 ? 'Deleted.' : 'Not found.']);
 }

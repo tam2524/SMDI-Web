@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['username'])) {
-    header('Location: ../login.php');
+    header('Location: ../login.html');
     exit();
 }
 $currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
@@ -18,6 +18,7 @@ $currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
     <link href="../css/bootstrap.min.css" rel="stylesheet">
     <link href="../css/style.css?v=<?php echo time(); ?>" rel="stylesheet">
     <link href="../css/spareparts_premium.css?v=<?php echo time(); ?>" rel="stylesheet">
+    <link href="../css/spareparts_report_print.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         :root {
             --primary-dark: #004d40;

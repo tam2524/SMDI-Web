@@ -9,13 +9,23 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 $greeting = 'Welcome back, ' . htmlspecialchars($username) . '!';
 $today = date('l, F j, Y');
 
-// Check if module is enabled
+// Check module settings
 require_once '../api/db_config.php';
-$checkSetting = $conn->query("SELECT setting_value FROM spareparts_settings WHERE setting_key = 'beginning_inventory_enabled'");
-$beginningInvEnabled = true;
-if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
-    $beginningInvEnabled = ($row['setting_value'] === 'true');
+$allSettings = [];
+$settingsRes = $conn->query("SELECT setting_key, setting_value FROM spareparts_settings");
+if ($settingsRes) {
+    while ($sRow = $settingsRes->fetch_assoc()) {
+        $allSettings[$sRow['setting_key']] = $sRow['setting_value'];
+    }
 }
+
+function isVisible($menuId) {
+    global $allSettings, $_SESSION;
+    $pos = $_SESSION['position'];
+    $key = "menu_vis_{$pos}_{$menuId}";
+    return !isset($allSettings[$key]) || $allSettings[$key] !== 'false';
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -242,6 +252,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
         .bg-menu-indigo { background: #6366f1 !important; }
         .bg-menu-pink { background: #ec4899 !important; }
 
+
         .module-card[class*="bg-menu-"] {
             border: none !important;
             color: white !important;
@@ -351,6 +362,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                 <div class="section-label"><i class="bi bi-grid-3x3-gap"></i> Modules</div>
                 <div class="modules-grid">
 
+                    <?php if (isVisible('customers')): ?>
                     <a href="sales_spareparts.php?tab=customers" class="module-card bg-menu-gray">
                         <div class="module-icon-wrap"><i class="bi bi-people"></i></div>
                         <div>
@@ -359,7 +371,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('stock-card')): ?>
                     <a href="warehouse_spareparts.php" class="module-card bg-menu-red">
                         <div class="module-icon-wrap"><i class="bi bi-card-list"></i></div>
                         <div>
@@ -368,7 +382,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('find-stocks')): ?>
                     <a href="find_stocks.php" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
@@ -377,7 +393,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('sales')): ?>
                     <a href="sales_spareparts.php?tab=sales" class="module-card bg-menu-orange">
                         <div class="module-icon-wrap"><i class="bi bi-receipt"></i></div>
                         <div>
@@ -386,7 +404,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('payments')): ?>
                     <a href="sales_spareparts.php?tab=payments" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
                         <div>
@@ -395,7 +415,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('received-stocks-rr')): ?>
                     <a href="#" class="module-card bg-menu-gray" data-bs-toggle="modal" data-bs-target="#inventoryInModal">
                         <div class="module-icon-wrap"><i class="bi bi-box-arrow-in-down"></i></div>
                         <div>
@@ -404,7 +426,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('received-stock')): ?>
                     <a href="received_stock.php" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-journal-check"></i></div>
                         <div>
@@ -413,7 +437,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('stock-transfer')): ?>
                     <a href="transfer_stock.php" class="module-card bg-menu-teal">
                         <div class="module-icon-wrap"><i class="bi bi-truck"></i></div>
                         <div>
@@ -422,7 +448,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('cm')): ?>
                     <a href="sales_spareparts.php?tab=returns" class="module-card bg-menu-cyan">
                         <div class="module-icon-wrap"><i class="bi bi-arrow-return-left"></i></div>
                         <div>
@@ -431,7 +459,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('employees')): ?>
                     <a href="sales_spareparts.php?tab=employees" class="module-card bg-menu-pink">
                         <div class="module-icon-wrap"><i class="bi bi-person-badge"></i></div>
                         <div>
@@ -440,7 +470,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('pricelist')): ?>
                     <a href="sales_spareparts.php?tab=pricelists" class="module-card bg-menu-green">
                         <div class="module-icon-wrap"><i class="bi bi-tags"></i></div>
                         <div>
@@ -449,7 +481,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('master-reports')): ?>
                     <a href="master_reports.php" class="module-card bg-menu-indigo">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
@@ -458,8 +492,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
-                    <?php if ($beginningInvEnabled): ?>
+                    <?php if (isVisible('beginning-inventory')): ?>
                     <a href="beginning_inventory.php" class="module-card bg-menu-red" id="beginning-inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
@@ -468,7 +503,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('beginning-customer-bal')): ?>
                     <a href="beginning_customer_balance.php" class="module-card bg-menu-green" id="beginning-customer-bal-card">
                         <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
                         <div>
@@ -477,9 +514,18 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
-                    <?php
-endif; ?>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('pdc-payment')): ?>
+                    <a href="sales_pdc_payments.php" class="module-card bg-menu-indigo">
+                        <div class="module-icon-wrap"><i class="bi bi-calendar-check"></i></div>
+                        <div>
+                            <div class="module-title">PDC Payment</div>
+                            <div class="module-desc">Record & manage post-dated check payments</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -493,36 +539,29 @@ endif; ?>
                     </div>
                     <div class="sidebar-body">
                         <div class="summary-row">
-                            <span class="summary-row-label">Received Stocks (Qty)</span>
-                            <span class="summary-row-val" id="received-qty">0</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-row-label">Received Amount</span>
-                            <span class="summary-row-val" id="received-amount">₱0.00</span>
-                        </div>
-                        <div class="summary-row">
                             <span class="summary-row-label">Cash Sales</span>
-                            <span class="summary-row-val" id="cash-amount">₱0.00</span>
+                            <span class="summary-row-val" id="cash-sales-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
                             <span class="summary-row-label">Charge Sales</span>
-                            <span class="summary-row-val" id="charge-amount">₱0.00</span>
+                            <span class="summary-row-val" id="charge-sales-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge w/ PDC</span>
+                            <span class="summary-row-label">Charge Sales with PDC</span>
                             <span class="summary-row-val" id="charge-pdc-amount">₱0.00</span>
                         </div>
-                        <div class="summary-row">
-                            <span class="summary-row-label">Payments</span>
-                            <span class="summary-row-val" id="payments-amount">₱0.00</span>
+                        <div class="summary-row border-bottom border-secondary mb-2 pb-2">
+                            <span class="summary-row-label fw-bold">Total Cash & Charge</span>
+                            <span class="summary-row-val text-primary" id="total-sales-amount">₱0.00</span>
+                        </div>
+                        
+                        <div class="summary-row mt-3">
+                            <span class="summary-row-label text-success">Cash Payments</span>
+                            <span class="summary-row-val text-success" id="cash-payments-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Check Dues</span>
-                            <span class="summary-row-val" id="check-dues-amount">₱0.00</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-row-label">Payables Due</span>
-                            <span class="summary-row-val" id="payables-due-amount">₱0.00</span>
+                            <span class="summary-row-label text-danger">Check Dues</span>
+                            <span class="summary-row-val text-danger" id="check-dues-amount">₱0.00</span>
                         </div>
                     </div>
                 </div>

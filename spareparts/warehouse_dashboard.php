@@ -9,13 +9,23 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 $greeting = 'Welcome back, ' . htmlspecialchars($username) . '!';
 $today = date('l, F j, Y');
 
-// Check if module is enabled
+// Check module settings
 require_once '../api/db_config.php';
-$checkSetting = $conn->query("SELECT setting_value FROM spareparts_settings WHERE setting_key = 'beginning_inventory_enabled'");
-$beginningInvEnabled = true;
-if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
-    $beginningInvEnabled = ($row['setting_value'] === 'true');
+$allSettings = [];
+$settingsRes = $conn->query("SELECT setting_key, setting_value FROM spareparts_settings");
+if ($settingsRes) {
+    while ($sRow = $settingsRes->fetch_assoc()) {
+        $allSettings[$sRow['setting_key']] = $sRow['setting_value'];
+    }
 }
+
+function isVisible($menuId) {
+    global $allSettings, $_SESSION;
+    $pos = $_SESSION['position'];
+    $key = "menu_vis_{$pos}_{$menuId}";
+    return !isset($allSettings[$key]) || $allSettings[$key] !== 'false';
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -239,6 +249,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
         .bg-menu-teal { background: #0d9488 !important; }
         .bg-menu-cyan { background: #06b6d4 !important; }
         .bg-menu-green { background: #10b981 !important; }
+        .bg-menu-indigo { background: #6366f1 !important; }
 
         .module-card[class*="bg-menu-"] {
             border: none !important;
@@ -415,6 +426,7 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                 <div class="section-label"><i class="bi bi-grid-3x3-gap"></i> Modules</div>
                 <div class="modules-grid">
 
+                    <?php if (isVisible('received-stocks-rr-warehouse')): ?>
                     <a href="#" class="module-card bg-menu-gray" data-bs-toggle="modal" data-bs-target="#inventoryInModal">
                         <div class="module-icon-wrap"><i class="bi bi-box-arrow-in-down"></i></div>
                         <div>
@@ -423,7 +435,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('stock-card-warehouse')): ?>
                     <a href="warehouse_spareparts.php?tab=inventory" class="module-card bg-menu-red">
                         <div class="module-icon-wrap"><i class="bi bi-card-list"></i></div>
                         <div>
@@ -432,7 +446,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('received-stock-warehouse')): ?>
                     <a href="received_stock.php" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-journal-check"></i></div>
                         <div>
@@ -441,7 +457,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('stock-transfer-warehouse')): ?>
                     <a href="transfer_stock.php" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-truck"></i></div>
                         <div>
@@ -450,7 +468,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('find-stocks-warehouse')): ?>
                     <a href="find_stocks.php" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
@@ -459,7 +479,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('master-reports-warehouse')): ?>
                     <a href="master_reports.php" class="module-card bg-menu-green">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
@@ -468,8 +490,9 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
-                    <?php if ($beginningInvEnabled): ?>
+                    <?php if (isVisible('beginning-inventory-warehouse')): ?>
                     <a href="beginning_inventory.php" class="module-card bg-menu-red" id="beginning-inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
@@ -478,12 +501,14 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
-                    <a href="beginning_customer_balance.php" class="module-card bg-menu-green" id="beginning-customer-bal-card">
-                        <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
+                    <?php if (isVisible('barcode-generator')): ?>
+                    <a href="barcode_generator.php" class="module-card bg-menu-indigo">
+                        <div class="module-icon-wrap"><i class="bi bi-upc-scan"></i></div>
                         <div>
-                            <div class="module-title">Customer Beginning Balance</div>
-                            <div class="module-desc">Enter initial customer balances (Excel-style)</div>
+                            <div class="module-title">Barcode Generator</div>
+                            <div class="module-desc">Generate & print product barcodes</div>
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
@@ -685,15 +710,22 @@ if ($checkSetting && $row = $checkSetting->fetch_assoc()) {
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-3 text-muted text-uppercase small"><i class="bi bi-file-earmark-text me-2"></i>Step 1: Receipt Details</h6>
                                     <div class="row g-3">
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <label class="small fw-bold text-muted">Invoice / DR # *</label>
                                             <input type="text" id="invoiceNo" class="form-control fw-bold border-primary" placeholder="Required" required>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <label class="small fw-bold text-muted">Supplier Name</label>
                                             <input type="text" id="supplier" class="form-control" placeholder="e.g. ABC Trading">
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
+                                            <label class="small fw-bold text-muted">Payment Mode</label>
+                                            <select id="paymentMode" class="form-control">
+                                                <option value="Cash">Cash</option>
+                                                <option value="Charge">Charge (Payable)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
                                             <label class="small fw-bold text-muted">Date Received</label>
                                             <input type="date" id="dateReceived" class="form-control" value="<?php echo date('Y-m-d'); ?>">
                                         </div>

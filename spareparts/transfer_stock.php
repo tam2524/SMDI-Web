@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['username'])) {
-    header('Location: ../login.php');
+    header('Location: ../login.html');
     exit();
 }
 $currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
@@ -31,6 +31,7 @@ $filterType = $_GET['filter'] ?? 'all';
     <link href='../css/style.css?v=<?php echo time(); ?>' rel='stylesheet'>
     <link href='../css/spareparts_inventory_style.css?v=<?php echo time(); ?>' rel='stylesheet'>
     <link href='../css/spareparts_premium.css?v=<?php echo time(); ?>' rel='stylesheet'>
+    <link href="../css/spareparts_report_print.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         :root {
             --smdi-green: #004d40;
@@ -1852,13 +1853,13 @@ endif; ?>
                 </div>
                 <div class='modal-body p-4'>
                     <!-- PRINT HEADER (Hidden on Screen) -->
-                    <div class="print-only d-none mb-4">
-                        <div class="text-center">
-                            <h4 class="fw-bold mb-0">ROXAS CITY SOLID MERCHANDISING</h4>
-                            <p class="small mb-0">1031 Victoria Bldg.,Roxas Avenue, Roxas City, Capiz</p>
-                            <div style="border-bottom: 2px solid #333; margin-bottom: 20px;"></div>
-                            <h5 class="text-uppercase fw-bold mb-1" id="printReportTitleDisplay">OFFICIAL REPORT</h5>
-                            <p class="small text-muted">Date Generated: <?php echo date('F d, Y h:i A'); ?></p>
+                    <div class="report-header-print d-none d-print-block">
+                        <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                        <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
+                        <div class="system-name">Spareparts Management System</div>
+                        <div class="report-title-container" style="margin-top: 15px;">
+                            <div class="report-title" id="printReportTitleDisplay"></div>
+                            <div class="report-timestamp">Generated on: <?php echo date('F d, Y h:i A'); ?></div>
                         </div>
                     </div>
 

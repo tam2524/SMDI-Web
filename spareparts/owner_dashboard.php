@@ -7,6 +7,23 @@ if (!isset($_SESSION['username']) || $_SESSION['position'] !== 'Spareparts-Owner
 $username = $_SESSION['username'];
 $greeting = 'Welcome back, ' . htmlspecialchars($username) . '!';
 $today = date('l, F j, Y');
+
+// Check module settings
+require_once '../api/db_config.php';
+$allSettings = [];
+$settingsRes = $conn->query("SELECT setting_key, setting_value FROM spareparts_settings");
+if ($settingsRes) {
+    while ($sRow = $settingsRes->fetch_assoc()) {
+        $allSettings[$sRow['setting_key']] = $sRow['setting_value'];
+    }
+}
+
+function isVisible($menuId) {
+    global $allSettings, $_SESSION;
+    $pos = $_SESSION['position'];
+    $key = "menu_vis_{$pos}_{$menuId}";
+    return !isset($allSettings[$key]) || $allSettings[$key] !== 'false';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -257,6 +274,8 @@ $today = date('l, F j, Y');
         .bg-menu-teal { background: #0d9488 !important; }
         .bg-menu-cyan { background: #06b6d4 !important; }
         .bg-menu-green { background: #10b981 !important; }
+        .bg-menu-indigo { background: #6366f1 !important; }
+        .bg-menu-pink { background: #ec4899 !important; }
 
         .module-card[class*="bg-menu-"] {
             border: none !important;
@@ -346,6 +365,7 @@ $today = date('l, F j, Y');
                 <div class="section-label"><i class="bi bi-grid-3x3-gap"></i> Owner Console</div>
                 <div class="modules-grid">
 
+                    <?php if (isVisible('global-dashboard-card')): ?>
                     <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-speedometer2"></i></div>
                         <div>
@@ -354,7 +374,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('sales-transactions-card')): ?>
                     <a href="admin_spareparts.php?tab=sales" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-cart-check-fill"></i></div>
                         <div>
@@ -363,7 +385,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('centralized-inventory-card')): ?>
                     <a href="admin_spareparts.php?tab=inventory" class="module-card bg-menu-orange">
                         <div class="module-icon-wrap"><i class="bi bi-boxes"></i></div>
                         <div>
@@ -372,7 +396,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('global-transfers-card')): ?>
                     <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-blue">
                         <div class="module-icon-wrap"><i class="bi bi-globe-americas"></i></div>
                         <div>
@@ -381,7 +407,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('payment-management-card')): ?>
                     <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
                         <div>
@@ -390,7 +418,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('system-audit-card')): ?>
                     <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal">
                         <div class="module-icon-wrap"><i class="bi bi-journal-text"></i></div>
                         <div>
@@ -399,7 +429,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('master-reports-card')): ?>
                     <a href="master_reports.php" class="module-card bg-menu-green">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
@@ -408,7 +440,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('find-tool-card')): ?>
                     <a href="find_stocks.php" class="module-card bg-menu-purple">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
@@ -417,7 +451,9 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
+                    <?php if (isVisible('user-management-card')): ?>
                     <a href="user_management.php" class="module-card bg-menu-cyan">
                         <div class="module-icon-wrap"><i class="bi bi-person-gear"></i></div>
                         <div>
@@ -426,6 +462,7 @@ $today = date('l, F j, Y');
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php endif; ?>
 
                 </div>
             </div>
@@ -440,19 +477,28 @@ $today = date('l, F j, Y');
                     <div class="sidebar-body">
                         <div class="summary-row">
                             <span class="summary-row-label">Cash Sales</span>
-                            <span class="summary-row-val" id="global-cash-amount">₱0.00</span>
+                            <span class="summary-row-val" id="global-cash-sales-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
                             <span class="summary-row-label">Charge Sales</span>
-                            <span class="summary-row-val" id="global-charge-amount">₱0.00</span>
+                            <span class="summary-row-val" id="global-charge-sales-amount">₱0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Charge w/ PDC</span>
+                            <span class="summary-row-label">Charge Sales with PDC</span>
                             <span class="summary-row-val" id="global-charge-pdc-amount">₱0.00</span>
                         </div>
+                        <div class="summary-row border-bottom mb-2 pb-2">
+                            <span class="summary-row-label fw-bold">Total Cash & Charge</span>
+                            <span class="summary-row-val text-primary" id="global-total-sales-amount">₱0.00</span>
+                        </div>
+                        
+                        <div class="summary-row mt-3">
+                            <span class="summary-row-label text-success">Cash Payments</span>
+                            <span class="summary-row-val text-success" id="global-cash-payments-amount">₱0.00</span>
+                        </div>
                         <div class="summary-row">
-                            <span class="summary-row-label">Payments</span>
-                            <span class="summary-row-val" id="global-payments-amount">₱0.00</span>
+                            <span class="summary-row-label text-danger">Check Dues</span>
+                            <span class="summary-row-val text-danger" id="global-check-dues-amount">₱0.00</span>
                         </div>
                     </div>
                     <div class="sidebar-footer">

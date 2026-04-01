@@ -2,7 +2,7 @@
 require_once '../api/db_config.php';
 
 // Check if user is logged in and has appropriate role
-$allowedRoles = ['Spareparts-Admin', 'Spareparts-Owner', 'Spareparts-Warehouse', 'Spareparts-Sales'];
+$allowedRoles = ['Spareparts-Admin', 'Spareparts-Owner', 'Spareparts-Warehouse', 'Spareparts-Sales', 'Spareparts-Retail'];
 if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], $allowedRoles)) {
     header('Location: ../login.html');
     exit();
@@ -22,6 +22,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
     <link href="../css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="../css/spareparts_report_print.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         :root {
             --green-900: #003d33;

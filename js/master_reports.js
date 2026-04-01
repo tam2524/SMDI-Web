@@ -41,6 +41,14 @@ $(document).ready(function() {
                 { value: "transfer_history", text: "Transfer History" },
                 { value: "stock_reconciliation", text: "Stock Reconciliation Report" }
             ]
+        },
+        payables: {
+            title: "Accounts Payable & Supplier Aging",
+            desc: "Monitor outstanding balances and payments to suppliers.",
+            options: [
+                { value: "supplier_aging", text: "Supplier Aging Report (Payables)" },
+                { value: "supplier_payments", text: "Payment to Supplier History" }
+            ]
         }
     };
 
@@ -193,6 +201,9 @@ $(document).ready(function() {
         // Render Header
         let headerHtml = '<tr>';
         config.headers.forEach(h => headerHtml += `<th>${h}</th>`);
+        if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
+            headerHtml += '<th class="text-center">Action</th>';
+        }
         headerHtml += '</tr>';
         thead.append(headerHtml);
 
@@ -208,6 +219,11 @@ $(document).ready(function() {
                 }
                 rowHtml += `<td>${displayVal}</td>`;
             });
+            
+            if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
+                rowHtml += `<td class="text-center"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
+            }
+            
             rowHtml += '</tr>';
             tbody.append(rowHtml);
         });
@@ -225,6 +241,37 @@ $(document).ready(function() {
                     </div>
                 `);
             });
+        }
+
+        // Set Print Titles so it's ready when user clicks Print This Preview
+        const reportTitle = $('#report_type option:selected').text();
+        const branch = $('#branch_filter').val();
+        const period = $('#period').val();
+        let date_value = '';
+        if (period === 'monthly') date_value = $('#month_value').val();
+        else if (period === 'daily') date_value = $('#date_value').val();
+        else date_value = $('#start_date').val() + ' to ' + $('#end_date').val();
+
+        $('#printTitle').text(reportTitle.toUpperCase());
+        $('#printCriteria').text(`Generated on: ${new Date().toLocaleString()} | Branch: ${branch.toUpperCase()}`);
+
+        // Update footer based on category
+        if (currentCategory === 'payments' || currentCategory === 'sales') {
+            $('#notedByLabel').text('NOTED / RECEIVED BY');
+            $('#notedBySub').text('Customer / Representative');
+            $('#footerDisclaimerText').text('This is a system-generated statement. Please settle outstanding balances to maintain your good credit standing.');
+        } else if (currentCategory === 'payables') {
+            $('#notedByLabel').text('NOTED / APPROVED BY');
+            $('#notedBySub').text('Management / Finance');
+            $('#footerDisclaimerText').text('This is a system-generated report for payables and disbursements.');
+        } else if (currentCategory === 'inventory' || currentCategory === 'transfer') {
+            $('#notedByLabel').text('VERIFIED BY');
+            $('#notedBySub').text('Warehouse / Inventory Manager');
+            $('#footerDisclaimerText').text('This is a system-generated inventory report.');
+        } else {
+            $('#notedByLabel').text('NOTED / CHECKED BY');
+            $('#notedBySub').text('Manager / Supervisor');
+            $('#footerDisclaimerText').text('This is a system-generated report.');
         }
 
         $('#previewArea').fadeIn();
@@ -247,8 +294,27 @@ $(document).ready(function() {
         else date_value = $('#start_date').val() + ' to ' + $('#end_date').val();
 
         $('#printTitle').text(reportTitle.toUpperCase());
-        $('#printCriteria').text(`Branch: ${branch.toUpperCase()} | Period: ${date_value} | Generated on: ${new Date().toLocaleString()}`);
+        $('#printCriteria').text(`Generated on: ${new Date().toLocaleString()} | Branch: ${branch.toUpperCase()}`);
         
+        // Update footer based on category
+        if (currentCategory === 'payments' || currentCategory === 'sales') {
+            $('#notedByLabel').text('NOTED / RECEIVED BY');
+            $('#notedBySub').text('Customer / Representative');
+            $('#footerDisclaimerText').text('This is a system-generated statement. Please settle outstanding balances to maintain your good credit standing.');
+        } else if (currentCategory === 'payables') {
+            $('#notedByLabel').text('NOTED / APPROVED BY');
+            $('#notedBySub').text('Management / Finance');
+            $('#footerDisclaimerText').text('This is a system-generated report for payables and disbursements.');
+        } else if (currentCategory === 'inventory' || currentCategory === 'transfer') {
+            $('#notedByLabel').text('VERIFIED BY');
+            $('#notedBySub').text('Warehouse / Inventory Manager');
+            $('#footerDisclaimerText').text('This is a system-generated inventory report.');
+        } else {
+            $('#notedByLabel').text('NOTED / CHECKED BY');
+            $('#notedBySub').text('Manager / Supervisor');
+            $('#footerDisclaimerText').text('This is a system-generated report.');
+        }
+
         window.print();
     });
 
@@ -393,4 +459,158 @@ $(document).ready(function() {
         $('#statusMsg').text(msg);
         new bootstrap.Modal('#statusModal').show();
     }
+
+    window.viewCustomerHistory = function(customerName) {
+        const period = $('#period').val();
+        let date_value = '';
+        if (period === 'monthly') date_value = $('#month_value').val();
+        else if (period === 'daily') date_value = $('#date_value').val();
+        else date_value = $('#start_date').val() + ' to ' + $('#end_date').val();
+
+        $('#ledgerCustomerName').text(customerName.toUpperCase());
+        $('#ledgerPeriods').text(`Transaction History | ${date_value}`);
+        
+        $('#printLedgerCustomerName').text(customerName.toUpperCase());
+        $('#printLedgerPeriods').text(`Transaction History | ${date_value}`);
+        
+        let now = new Date();
+        $('#printLedgerDateFooter').text(now.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'2-digit' }));
+        $('#printLedgerTimeFooter').text(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+
+        $('#ledgerModalTbody').html('<tr><td colspan="6" class="text-center py-5"><div class="spinner-border spinner-border-sm me-2"></div>Loading ledger...</td></tr>');
+        
+        const modal = new bootstrap.Modal('#customerLedgerModal');
+        modal.show();
+
+        const params = {
+            action: 'generate_master_report',
+            category: 'payments',
+            report_type: 'customer_ledger',
+
+            period: period,
+            date_value: date_value,
+            branch: $('#branch_filter').val(),
+            customer_name: customerName
+        };
+
+        $.get('../api/reports_master.php', params, function(response) {
+            if (response.success && response.data.length > 0) {
+                let html = '';
+                response.data.forEach(row => {
+                    html += `<tr>
+                                <td>${row.date}</td>
+                                <td><code class="text-dark">${row.ref}</code></td>
+                                <td>${row.debit_credit_type}</td>
+                                <td class="text-end text-danger">${row.debit > 0 ? formatCurrency(row.debit) : '-'}</td>
+                                <td class="text-end text-success">${row.credit > 0 ? formatCurrency(row.credit) : '-'}</td>
+                                <td class="text-end fw-bold">${formatCurrency(row.balance)}</td>
+                             </tr>`;
+                });
+                $('#ledgerModalTbody').html(html);
+            } else {
+                $('#ledgerModalTbody').html('<tr><td colspan="6" class="text-center py-5 text-muted">No transactions found for this period.</td></tr>');
+            }
+        });
+    };
+
+    window.printLedger = function() {
+        const customerName = $('#printLedgerCustomerName').text();
+        const period = $('#printLedgerPeriods').text();
+        const tbodyHtml = $('#ledgerModalTbody').html();
+        const branch = window.currentBranch || 'HEADOFFICE';
+        const dateNow = new Date().toLocaleString();
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+        <html>
+        <head>
+            <title>Statement of Account - ${customerName}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; margin: 20px; font-size: 10pt; }
+                .report-header-print { text-align: center; border-bottom: 3px double #004d40; padding-bottom: 15px; margin-bottom: 25px; display: block; width: 100%; }
+                .report-header-print .company-name { font-size: 18pt; font-weight: 800; color: #004d40; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+                .report-header-print .company-address { font-size: 9pt; color: #444; margin-bottom: 2px; }
+                .report-header-print .system-name { font-size: 9pt; font-weight: 600; color: #666; font-style: italic; }
+                .report-title-container { margin-top: 15px; }
+                .report-title { font-size: 14pt; font-weight: 700; color: #000; text-decoration: underline; text-transform: uppercase; margin-bottom: 5px; }
+                .report-timestamp { font-size: 9pt; color: #777; font-style: italic; }
+                
+                .customer-info-box { margin-bottom: 15px; width: 100%; display: table; }
+                .customer-info-left { display: table-cell; width: 100%; }
+                .info-label { font-size: 8pt; color: #555; text-transform: uppercase; font-weight: bold; }
+                .info-value { font-size: 11pt; font-weight: 700; text-transform: uppercase; color: #000; margin-bottom: 3px; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th { background-color: #f2f2f2 !important; color: #000 !important; font-size: 9pt; font-weight: 700; text-transform: uppercase; border: 1px solid #333 !important; padding: 8px; text-align: left; }
+                th.text-end, td.text-end { text-align: right !important; }
+                td { font-size: 9pt; vertical-align: middle; border: 1px solid #ddd !important; padding: 6px 8px; }
+                td code { border: none !important; padding: 0 !important; font-weight: bold; background: none !important; color: #000 !important; font-family: inherit; }
+                
+                .sig-section { margin-top: 40px; display: flex; width: 100%; }
+                .sig-box { flex: 1; text-align: center; }
+                .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 40px auto 5px auto; }
+                .sig-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #555; }
+                .footer-stamp { text-align: center; font-size: 8pt; font-style: italic; color: #777; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }
+                
+                @media print {
+                    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="report-header-print">
+                <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
+                <div class="system-name">Spareparts Management System</div>
+                <div class="report-title-container">
+                    <div class="report-title">STATEMENT OF ACCOUNT</div>
+                    <div class="report-timestamp">Generated on: ${dateNow} | Branch: ${branch}</div>
+                </div>
+            </div>
+            
+            <div class="customer-info-box">
+                <div class="customer-info-left">
+                    <div class="info-label">Customer Information:</div>
+                    <div class="info-value">${customerName}</div>
+                    <div style="font-size: 9pt; color: #444;">${period}</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th class="ps-3">Date</th>
+                        <th>Reference #</th>
+                        <th>Transaction Info</th>
+                        <th class="text-end">Debit (Charge)</th>
+                        <th class="text-end">Credit (Payment)</th>
+                        <th class="text-end pe-3">Running Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tbodyHtml}
+                </tbody>
+            </table>
+            
+            <div class="sig-section">
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Prepared By</div>
+                    <div style="font-size: 7.5pt; color: #777;">Authorized Personnel</div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Noted / Received By</div>
+                    <div style="font-size: 7.5pt; color: #777;">Customer / Representative</div>
+                </div>
+            </div>
+            
+            <div class="footer-stamp">
+                This is a system-generated statement. Please settle outstanding balances to maintain your good credit standing.
+            </div>
+        </body>
+        </html>
+        `);
+        printWindow.document.close();
+    };
 });

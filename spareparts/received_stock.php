@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['username'])) {
-    header('Location: ../login.php');
+    header('Location: ../login.html');
     exit();
 }
 $currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
@@ -31,6 +31,7 @@ $filterType = $_GET['filter'] ?? 'all';
     <link href='../css/style.css?v=<?php echo time(); ?>' rel='stylesheet'>
     <link href='../css/spareparts_inventory_style.css?v=<?php echo time(); ?>' rel='stylesheet'>
     <link href='../css/spareparts_premium.css?v=<?php echo time(); ?>' rel='stylesheet'>
+    <link href="../css/spareparts_report_print.css?v=<?php echo time(); ?>" rel="stylesheet">
     <style>
         :root {
             --smdi-green: #004d40;
