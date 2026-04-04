@@ -414,9 +414,231 @@ switch ($action) {
     case 'save_beginning_customer_balance':
         saveBeginningCustomerBalance();
         break;
+    case 'get_next_invoice_number':
+        getNextInvoiceNumber();
+        break;
+    case 'update_invoice_sequence_start':
+        updateInvoiceSequenceStart();
+        break;
+    case 'get_invoice_sequence_settings':
+        getInvoiceSequenceSettings();
+        break;
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action specified.']);
         break;
+}
+
+/**
+ * Get the next sequential Sales Invoice number for the current branch.
+ * Format: {PREFIX}-{YEAR}-{PADDED_SEQ}
+ * e.g. SI-2026-00123
+ * The starting number can be configured per branch in spareparts_settings.
+ */
+function getNextInvoiceNumber()
+{
+    global $conn, $currentBranch;
+
+    // Ensure settings table exists
+    $conn->query("CREATE TABLE IF NOT EXISTS spareparts_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(100) UNIQUE NOT NULL,
+        setting_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+
+    $branch = sanitizeInput($_GET['branch'] ?? $currentBranch);
+    $branchSlug = preg_replace('/[^A-Za-z0-9]+/', '', strtoupper($branch));
+    $year = date('Y');
+
+    // Key for the starting sequence override (admin-configurable)
+    $startKey = "invoice_seq_start_{$branchSlug}";
+    // Key for the prefix (optional per-branch prefix)
+    $prefixKey = "invoice_seq_prefix_{$branchSlug}";
+
+    // Fetch settings
+    $stmtCfg = $conn->prepare("SELECT setting_key, setting_value FROM spareparts_settings WHERE setting_key IN (?, ?)");
+    $stmtCfg->bind_param('ss', $startKey, $prefixKey);
+    $stmtCfg->execute();
+    $cfgRows = $stmtCfg->get_result();
+    $cfg = [];
+    while ($r = $cfgRows->fetch_assoc()) {
+        $cfg[$r['setting_key']] = $r['setting_value'];
+    }
+    $stmtCfg->close();
+
+    $startingNumber = isset($cfg[$startKey]) ? (int)$cfg[$startKey] : 1;
+    $prefix = isset($cfg[$prefixKey]) && !empty($cfg[$prefixKey]) ? strtoupper($cfg[$prefixKey]) : 'SI';
+
+    // Count existing invoices for this branch in the current year that are >= startingNumber
+    // We look at spareparts_transactions (OUT type) for the branch and year
+    $stmtCount = $conn->prepare("
+        SELECT COUNT(DISTINCT or_number) as cnt
+        FROM spareparts_transactions
+        WHERE type = 'OUT'
+          AND from_location = ?
+          AND YEAR(transaction_date) = ?
+          AND or_number IS NOT NULL
+          AND or_number != ''
+    ");
+    $stmtCount->bind_param('ss', $branch, $year);
+    $stmtCount->execute();
+    $countRow = $stmtCount->get_result()->fetch_assoc();
+    $stmtCount->close();
+
+    $existingCount = (int)($countRow['cnt'] ?? 0);
+
+    // Next number = max(startingNumber, existingCount + 1)
+    // But also check the actual max OR number to avoid duplicates
+    $stmtMax = $conn->prepare("
+        SELECT MAX(CAST(SUBSTRING_INDEX(or_number, '-', -1) AS UNSIGNED)) as maxSeq
+        FROM spareparts_transactions
+        WHERE type = 'OUT'
+          AND from_location = ?
+          AND YEAR(transaction_date) = ?
+          AND or_number REGEXP '^[A-Z]+-[0-9]{4}-[0-9]+$'
+    ");
+    $stmtMax->bind_param('ss', $branch, $year);
+    $stmtMax->execute();
+    $maxRow = $stmtMax->get_result()->fetch_assoc();
+    $stmtMax->close();
+
+    $maxSeq = (int)($maxRow['maxSeq'] ?? 0);
+    $nextSeq = max($startingNumber, $maxSeq + 1);
+
+    $paddedSeq = str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
+    $nextInvoice = "{$prefix}-{$year}-{$paddedSeq}";
+
+    echo json_encode([
+        'success' => true,
+        'invoice_number' => $nextInvoice,
+        'prefix' => $prefix,
+        'year' => $year,
+        'sequence' => $nextSeq,
+        'branch' => $branch
+    ]);
+}
+
+/**
+ * Admin: Set the starting sequence number and prefix for a specific branch.
+ */
+function updateInvoiceSequenceStart()
+{
+    global $conn, $isAdmin;
+
+    if (!$isAdmin) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized. Admin access required.']);
+        return;
+    }
+
+    $branch = sanitizeInput($_POST['branch'] ?? '');
+    $startNum = (int)($_POST['start_number'] ?? 1);
+    $prefix = strtoupper(sanitizeInput($_POST['prefix'] ?? 'SI'));
+
+    if (empty($branch)) {
+        echo json_encode(['success' => false, 'message' => 'Branch is required.']);
+        return;
+    }
+    if ($startNum < 1) $startNum = 1;
+    if (empty($prefix)) $prefix = 'SI';
+
+    $branchSlug = preg_replace('/[^A-Za-z0-9]+/', '', strtoupper($branch));
+    $startKey  = "invoice_seq_start_{$branchSlug}";
+    $prefixKey = "invoice_seq_prefix_{$branchSlug}";
+
+    $conn->query("CREATE TABLE IF NOT EXISTS spareparts_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(100) UNIQUE NOT NULL,
+        setting_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+
+    // Upsert start number
+    $s1 = $conn->prepare("INSERT INTO spareparts_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+    $startVal = (string)$startNum;
+    $s1->bind_param('ss', $startKey, $startVal);
+    $s1->execute();
+    $s1->close();
+
+    // Upsert prefix
+    $s2 = $conn->prepare("INSERT INTO spareparts_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+    $s2->bind_param('ss', $prefixKey, $prefix);
+    $s2->execute();
+    $s2->close();
+
+    addAuditLog('UPDATE', 'spareparts_settings', $branch, "Invoice sequence for branch $branch set to start: $startNum, prefix: $prefix");
+    echo json_encode(['success' => true, 'message' => "Invoice sequence for branch '$branch' updated. Next SI will start from: {$prefix}-" . date('Y') . "-" . str_pad($startNum, 5, '0', STR_PAD_LEFT)]);
+}
+
+/**
+ * Get all invoice sequence settings for all branches (admin view).
+ */
+function getInvoiceSequenceSettings()
+{
+    global $conn, $isAdmin;
+
+    if (!$isAdmin) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+        return;
+    }
+
+    // Get all branches from users table
+    $branchesResult = $conn->query("SELECT DISTINCT branch FROM users WHERE LOWER(position) LIKE '%pareparts%' AND branch IS NOT NULL AND branch != '' ORDER BY branch ASC");
+    $branches = ['HEADOFFICE'];
+    if ($branchesResult) {
+        while ($r = $branchesResult->fetch_assoc()) {
+            if (!in_array($r['branch'], $branches)) {
+                $branches[] = $r['branch'];
+            }
+        }
+    }
+
+
+    sort($branches);
+
+    // Get all invoice settings
+    $settingsResult = $conn->query("SELECT setting_key, setting_value FROM spareparts_settings WHERE setting_key LIKE 'invoice_seq_%'");
+    $settings = [];
+    if ($settingsResult) {
+        while ($r = $settingsResult->fetch_assoc()) {
+            $settings[$r['setting_key']] = $r['setting_value'];
+        }
+    }
+
+    $year = date('Y');
+    $result = [];
+    foreach ($branches as $branch) {
+        $branchSlug = preg_replace('/[^A-Za-z0-9]+/', '', strtoupper($branch));
+        $startKey  = "invoice_seq_start_{$branchSlug}";
+        $prefixKey = "invoice_seq_prefix_{$branchSlug}";
+
+        $startNum = isset($settings[$startKey]) ? (int)$settings[$startKey] : 1;
+        $prefix   = isset($settings[$prefixKey]) ? $settings[$prefixKey] : 'SI';
+
+        // Get the actual current max sequence for this branch
+        $stmtMax = $conn->prepare("
+            SELECT MAX(CAST(SUBSTRING_INDEX(or_number, '-', -1) AS UNSIGNED)) as maxSeq
+            FROM spareparts_transactions
+            WHERE type = 'OUT' AND from_location = ?
+              AND YEAR(transaction_date) = ?
+              AND or_number REGEXP '^[A-Z]+-[0-9]{4}-[0-9]+$'
+        ");
+        $stmtMax->bind_param('ss', $branch, $year);
+        $stmtMax->execute();
+        $maxRow = $stmtMax->get_result()->fetch_assoc();
+        $stmtMax->close();
+        $maxSeq = (int)($maxRow['maxSeq'] ?? 0);
+        $nextSeq = max($startNum, $maxSeq + 1);
+
+        $result[] = [
+            'branch'       => $branch,
+            'prefix'       => $prefix,
+            'start_number' => $startNum,
+            'current_max'  => $maxSeq,
+            'next_number'  => "{$prefix}-{$year}-" . str_pad($nextSeq, 5, '0', STR_PAD_LEFT)
+        ];
+    }
+
+    echo json_encode(['success' => true, 'data' => $result]);
 }
 
 // ===================================================================

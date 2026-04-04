@@ -292,6 +292,31 @@ function isVisible($menuId) {
             .main-content { padding: 0 1rem; }
             .modules-grid { grid-template-columns: 1fr 1fr; }
         }
+
+        /* ── INVENTORY IN MODAL – true fullscreen forced –– */
+        #inventoryInModal,
+        #inventoryInModal .modal-dialog,
+        #inventoryInModal .modal-content {
+            width: 100vw !important;
+            max-width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+        }
+        #inventoryInModal,
+        #inventoryInModal .modal-dialog,
+        #inventoryInModal .modal-content {
+            height: 100vh !important;
+            min-height: 100vh !important;
+        }
+        #inventoryInModal .modal-content {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        #inventoryInModal .modal-body {
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+        }
     </style>
 </head>
 <body>
@@ -590,9 +615,9 @@ function isVisible($menuId) {
     </div>
 
     <!-- INVENTORY IN MODAL -->
-    <div class="modal fade" id="inventoryInModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+    <div class="modal fade" id="inventoryInModal" tabindex="-1" aria-hidden="true" style="padding:0!important;">
+        <div class="modal-dialog" style="width:100vw;max-width:100vw;height:100vh;min-height:100vh;margin:0;padding:0;">
+            <div class="modal-content border-0" style="width:100%;height:100vh;min-height:100vh;border-radius:0;display:flex;flex-direction:column;overflow:hidden;">
                 <div class="modal-header bg-dark text-white py-3">
                     <h5 class="modal-title fw-bold text-white"><i class="bi bi-box-arrow-in-down me-2"></i>Supplier Receipt (IN)</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

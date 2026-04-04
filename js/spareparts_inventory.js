@@ -1329,6 +1329,37 @@ $(document).ready(function () {
             // Clear sales force field on new sale
             $('#out_sales_force').val('');
             $('#salesForceSearchResults').hide();
+
+            // Auto-generate Sales Invoice Number
+            const orField = document.getElementById('out_or_number');
+            if (orField) {
+                orField.value = '';
+                orField.placeholder = 'Generating SI number...';
+                orField.style.opacity = '0.6';
+
+                // Remove any previous badge
+                $('#auto_invoice_badge').remove();
+
+                $.get('../api/spareparts_inventory.php?action=get_next_invoice_number', {
+                    branch: window.currentBranch || 'HEADOFFICE'
+                }, function(res) {
+                    if (res && res.success) {
+                        orField.value = res.invoice_number;
+                        orField.placeholder = 'Sales Invoice No.';
+                        orField.style.opacity = '1';
+
+                        // Show a subtle "auto-generated" badge - user can still edit
+                        const badge = $('<span id="auto_invoice_badge" class="badge bg-success-subtle text-success border border-success-subtle ms-2 small mt-1 d-inline-block" style="font-size: 0.7rem; letter-spacing: 0.3px;"><i class="bi bi-magic me-1"></i>Auto-generated &ndash; editable</span>');
+                        $(orField).closest('.col-12').append(badge);
+                    } else {
+                        orField.placeholder = 'Enter SI Number';
+                        orField.style.opacity = '1';
+                    }
+                }, 'json').fail(function() {
+                    orField.placeholder = 'Enter SI Number';
+                    orField.style.opacity = '1';
+                });
+            }
         });
 
         // ---- SALES FORCE AUTOCOMPLETE ----
@@ -1510,6 +1541,18 @@ $(document).ready(function () {
             }
         });
 
+        $(document).on('click', '#confirmPdcDetailsBtn', function() {
+            const bank = $('input[name="pdc_bank"]').val().trim();
+            const check = $('input[name="pdc_check_no"]').val().trim();
+            const date = $('input[name="pdc_maturity_date"]').val().trim();
+            if (!bank || !check || !date) {
+                alert('Please fill in required fields (Bank, Check No, Date).');
+                return;
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('pdcDetailsModal')).hide();
+            $('#sellPartsOutForm').data('pdc-confirmed', true).submit();
+        });
+
         $('#sellPartsOutForm').on('submit', function (e) {
             e.preventDefault();
             if (saleCart.length === 0) { showErrorModal('Add items to sale first.'); return; }
@@ -1538,11 +1581,20 @@ $(document).ready(function () {
                 }
             }
 
+            if (transactionTypeVal === 'pdc' && !$(this).data('pdc-confirmed')) {
+                let currentTotal = 0;
+                saleCart.forEach(item => { currentTotal += (item.quantity * item.price); });
+                $('input[name="pdc_amount"]').val(currentTotal.toFixed(2));
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('pdcDetailsModal')).show();
+                return;
+            }
+            $(this).data('pdc-confirmed', false); // reset flag
+
             const btn = $(this).find('button[type="submit"]');
             btn.prop('disabled', true).text('Confirming...');
 
             const payment_method = (transactionTypeVal === 'pdc') ? 'PDC' : (transactionTypeVal === 'charge' ? 'Charge' : 'Cash');
-            const check_date = $('#out_check_date').val();
+            const check_date = $('input[name="pdc_maturity_date"]').val();
 
             const saleData = {
                 or_number: $('#out_or_number').val(),
@@ -1564,6 +1616,7 @@ $(document).ready(function () {
             $.post('../api/spareparts_inventory.php?action=sell_multiple_parts_out', saleData, response => {
                 if (response.success) {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('sellPartsOutModal')).hide();
+                    $('input[name="pdc_bank"], input[name="pdc_check_no"], input[name="pdc_maturity_date"], input[name="pdc_amount"], textarea[name="pdc_remarks"]').val('');
 
                     // Generate and show receipt
                     renderSaleReceipt(saleData, saleCart);

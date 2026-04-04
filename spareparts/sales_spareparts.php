@@ -172,6 +172,36 @@ $showTabs = !isset($_GET['tab']);
             }
         }
 
+        /* sellPartsOutModal – true fullscreen forced */
+        #sellPartsOutModal,
+        #sellPartsOutModal .modal-dialog,
+        #sellPartsOutModal .modal-content {
+            width: 100vw !important;
+            max-width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+        }
+        #sellPartsOutModal,
+        #sellPartsOutModal .modal-dialog,
+        #sellPartsOutModal .modal-content {
+            height: 100vh !important;
+            min-height: 100vh !important;
+        }
+        #sellPartsOutModal .modal-content {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        #sellPartsOutModal .modal-body {
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+        }
+        #sellPartsOutModal .sale-summary-sidebar {
+            position: sticky;
+            top: 20px;
+            z-index: 10;
+        }
+
         .navbar-custom {
             background-color: var(--smdi-green);
             padding: 0.75rem 1rem;
@@ -1285,128 +1315,204 @@ $showTabs = !isset($_GET['tab']);
     </div>
 
     <div class='modal fade' id='sellPartsOutModal' tabindex='-1' aria-labelledby='sellPartsOutModalLabel'
+        aria-hidden='true' style="padding:0!important;">
+        <div class="modal-dialog" style="width:100vw;max-width:100vw;height:100vh;min-height:100vh;margin:0;padding:0;">
+            <form id='sellPartsOutForm' class='modal-content border-0' style="width:100%;height:100vh;min-height:100vh;border-radius:0;display:flex;flex-direction:column;overflow:hidden;">
+                <!-- HEADER -->
+                <div class="modal-header bg-dark text-white py-3">
+                    <h5 class="modal-title fw-bold" id='sellPartsOutModalLabel'>
+                        <i class="bi bi-cart-plus me-2"></i>Record New Sale
+                    </h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+
+                <!-- BODY -->
+                <div class="modal-body p-4 bg-light">
+                    <div class="row g-4">
+
+                        <!-- LEFT: Customer & Sale Details -->
+                        <div class="col-lg-3">
+
+                            <!-- Sale Info Card -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="border-top: 5px solid #198754 !important;">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-3 text-muted text-uppercase small">
+                                        <i class="bi bi-file-earmark-text me-2"></i>Step 1: Sale Details
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label for='out_or_number' class='small fw-bold text-muted'>Sales Invoice No. *</label>
+                                            <input type='text' class='form-control fw-bold border-success' id='out_or_number' required autocomplete="off" placeholder="Required">
+                                            <div id="or_availability_feedback" class="small mt-1"></div>
+                                        </div>
+                                        <div class="col-12 position-relative">
+                                            <label for='out_customer_name' class='small fw-bold text-muted'>Customer Name *</label>
+                                            <input type='text' class='form-control' id='out_customer_name' required autocomplete="off" placeholder="Type to search customer...">
+                                            <div id="saleCustomerSearchResults" class="list-group border rounded shadow-sm mt-1"
+                                                style="max-height: 200px; overflow-y: auto; position: absolute; width: calc(100% - 1.5rem); z-index: 1052; display: none; background: white;">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for='out_date' class='small fw-bold text-muted'>Date of Sale</label>
+                                            <input type='date' class='form-control' id='out_date' required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for='out_transaction_type' class='small fw-bold text-muted'>Payment Type</label>
+                                            <select class='form-select' id='out_transaction_type' required>
+                                                <option value='cash' selected>Cash Sales</option>
+                                                <option value='charge'>Charge Sales</option>
+                                                <option value='pdc'>Charge w/ PDC</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sales Force Card -->
+                            <div class="card border-0 shadow-sm rounded-4" style="border-top: 5px solid #198754 !important;">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-3 text-muted text-uppercase small">
+                                        <i class="bi bi-person-badge me-2"></i>Step 2: Sales Force
+                                        <span class="fw-normal text-muted">(Optional)</span>
+                                    </h6>
+                                    <div class="position-relative">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0">
+                                                <i class="bi bi-person text-success"></i>
+                                            </span>
+                                            <input type="text" id="out_sales_force" class="form-control border-start-0"
+                                                placeholder="Type to search employee..." autocomplete="off">
+                                        </div>
+                                        <div id="salesForceSearchResults" class="list-group border rounded shadow-sm mt-1"
+                                            style="max-height: 180px; overflow-y: auto; position: absolute; width: 100%; z-index: 1055; display: none; background: white;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- RIGHT: Part Search + Cart -->
+                        <div class="col-lg-9">
+
+                            <!-- Part Search Card -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="padding: 24px; border-top: 5px solid #198754 !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0 fw-bold text-muted text-uppercase small">
+                                        <i class="bi bi-upc-scan me-2"></i>Step 3: Scan / Search Part
+                                    </h6>
+                                </div>
+                                <div class="position-relative">
+                                    <i class="bi bi-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #004d40; font-size: 1.2rem; z-index: 5;"></i>
+                                    <input type="text" id="salePartSearchInput" class="form-control"
+                                        style="padding-left: 45px; height: 50px; border-radius: 8px; border: 2px solid #eee;"
+                                        placeholder="Enter Part No. or Part Name to add items..." autocomplete="off">
+                                    <div id="salePartSearchResults" class="list-group border rounded shadow"
+                                        style="position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; z-index: 1100; display: none; background: white;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cart Table Card -->
+                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold text-muted text-uppercase small">
+                                        <i class="bi bi-list-check me-2"></i>Sale Items
+                                    </h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height: 370px;">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="bg-dark text-white">
+                                                <tr>
+                                                    <th class="ps-4">Item</th>
+                                                    <th class="text-center">Qty</th>
+                                                    <th class="text-end">Unit Price</th>
+                                                    <th class="text-end">Subtotal</th>
+                                                    <th class="text-center">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="partsForSaleList">
+                                                <tr id="emptySaleListRow">
+                                                    <td colspan="5" class="text-center text-muted py-5">Cart is empty</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- Grand Total Footer -->
+                                <div class="card-footer bg-white py-3 px-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted fw-semibold">Grand Total</span>
+                                        <span id="pos-grand-total" class="fw-bold fs-4 text-success">₱0.00</span>
+                                    </div>
+                                    <div id="credit_limit_error" class="alert alert-danger mt-2 py-2 small d-none">
+                                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                        <span id="credit_limit_msg"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div class='modal-footer bg-white border-top'>
+                    <button type='button' class='btn btn-premium-cancel' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='submit' class='btn btn-success px-5 py-2 fw-bold shadow-sm' style="border-radius:12px;">
+                        <i class="bi bi-check-circle me-2"></i>Confirm Sale
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class='modal fade' id='pdcDetailsModal' tabindex='-1' aria-labelledby='pdcDetailsModalLabel'
         aria-hidden='true'>
-        <div class='modal-dialog modal-lg modal-dialog-centered'>
+        <div class='modal-dialog modal-dialog-centered'>
             <div class='modal-content'>
-                <form id='sellPartsOutForm'>
-                    <div class='modal-header bg-success text-white'>
-                        <h5 class='modal-title' id='sellPartsOutModalLabel'><i class="bi bi-cart-plus me-2"></i>Record
-                            New Sale</h5><button type='button' class='btn-close btn-close-white'
-                            data-bs-dismiss='modal'></button>
-                    </div>
-                    <div class='modal-body p-4'>
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label for='out_or_number' class='form-label'>Sales Invoice No.</label>
-                                <input type='text' class='form-control' id='out_or_number' required autocomplete="off">
-                                <div id="or_availability_feedback" class="small mt-1"></div>
-                            </div>
-                            <div class="col-md-6 position-relative">
-                                <label for='out_customer_name' class='form-label'>Customer Name</label>
-                                <input type='text' class='form-control' id='out_customer_name' required
-                                    autocomplete="off">
-                                <div id="saleCustomerSearchResults" class="list-group border rounded shadow-sm mt-1"
-                                    style="max-height: 200px; overflow-y: auto; position: absolute; width: calc(100% - 1.5rem); z-index: 1052; display: none; background: white;">
-                                </div>
-                            </div>
-                            <div class="col-md-6"><label for='out_date' class='form-label'>Date of
-                                    Sale</label><input type='date' class='form-control' id='out_date' required>
-                            </div>
-                            <div class="col-md-6"><label for='out_transaction_type' class='form-label'>Payment
-                                    Type</label><select class='form-select' id='out_transaction_type' required>
-                                    <option value='cash' selected>Cash Sales</option>
-                                    <option value='charge'>Charge Sales (Installment)</option>
-                                    <option value='pdc'>Charge Sales w/ PDC</option>
-                                </select></div>
+                <div class='modal-header bg-primary text-white'>
+                    <h5 class='modal-title' id='pdcDetailsModalLabel'><i class="bi bi-wallet2 me-2"></i>PDC Payment
+                        Details</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+                <div class='modal-body p-4'>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class='form-label fw-bold text-primary'>Bank Name</label>
+                            <input type='text' class='form-control border-primary' name='pdc_bank'
+                                placeholder="e.g. BDO, Metrobank" required>
                         </div>
-                        <div class="row g-3 mb-3 d-none" id="pdc_fields">
-                            <div class="col-md-6">
-                                <label for='out_bank_name' class='form-label fw-bold text-primary'>Bank Name</label>
-                                <input type='text' class='form-control border-primary' id='out_bank_name'
-                                    placeholder="e.g. BDO, Metrobank">
-                            </div>
-                            <div class="col-md-6">
-                                <label for='out_check_no' class='form-label fw-bold text-primary'>Check No.</label>
-                                <input type='text' class='form-control border-primary' id='out_check_no'
-                                    placeholder="00012345">
-                            </div>
-                            <div class="col-md-6">
-                                <label for='out_check_date' class='form-label fw-bold text-primary'>Maturity
-                                    Date</label>
-                                <input type='date' class='form-control border-primary' id='out_check_date'>
-                            </div>
-                            <div class="col-md-6">
-                                <label for='out_pdc_amount' class='form-label fw-bold text-primary'>Amount</label>
-                                <div class="input-group">
-                                    <span class="input-group-text border-primary text-primary">₱</span>
-                                    <input type='number' step="0.01" class='form-control border-primary'
-                                        id='out_pdc_amount' placeholder="0.00">
-                                </div>
-                            </div>
-                            <div class="col-md-12">
-                                <label for='out_pdc_remarks' class='form-label fw-bold text-primary'>Remarks
-                                    (Optional)</label>
-                                <textarea class='form-control border-primary' id='out_pdc_remarks' rows="1"
-                                    placeholder="Notes..."></textarea>
+                        <div class="col-md-6">
+                            <label class='form-label fw-bold text-primary'>Check No.</label>
+                            <input type='text' class='form-control border-primary' name='pdc_check_no'
+                                placeholder="00012345" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class='form-label fw-bold text-primary'>Maturity Date</label>
+                            <input type='date' class='form-control border-primary' name='pdc_maturity_date' required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class='form-label fw-bold text-primary'>Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text border-primary text-primary">₱</span>
+                                <input type='number' step="0.01" class='form-control border-primary' name='pdc_amount'
+                                    placeholder="0.00" required readonly>
                             </div>
                         </div>
-                        <!-- Sales Force Field -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-12 position-relative">
-                                <label class="label-premium"><i class="bi bi-person-badge me-1 text-success"></i>Sales
-                                    Force <span class="text-muted fw-normal small">(Optional)</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0"><i
-                                            class="bi bi-person text-success"></i></span>
-                                    <input type="text" id="out_sales_force" class="form-control border-start-0"
-                                        placeholder="Type to search employee name..." autocomplete="off">
-                                </div>
-                                <div id="salesForceSearchResults" class="list-group border rounded shadow-sm mt-1"
-                                    style="max-height: 180px; overflow-y: auto; position: absolute; width: calc(100% - 1.5rem); z-index: 1055; display: none; background: white;">
-                                </div>
-                            </div>
-                        </div>
-                        <input type="text" id="salePartSearchInput" class="form-control mb-2"
-                            placeholder="Enter Part No. or Part Name to add items...">
-                        <div id="salePartSearchResults" class="list-group border rounded mb-4"
-                            style="max-height: 150px; overflow-y: auto;"></div>
-                        <h6 class="mb-2">Sale Items</h6>
-                        <div class="table-responsive border rounded">
-                            <table class="table table-striped table-sm mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th class="text-center">Qty</th>
-                                        <th class="text-end">Unit Price</th>
-                                        <th class="text-end">Subtotal</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="partsForSaleList">
-                                    <tr id="emptySaleListRow">
-                                        <td colspan="5" class="text-center text-muted p-4">Cart is empty</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="d-flex justify-content-end mt-3">
-                            <div style="width: 320px;">
-                                <hr>
-                                <div class="d-flex justify-content-between fw-bold fs-5 text-success"><span>Grand
-                                        Total:</span><span id="pos-grand-total">₱0.00</span></div>
-                                <div id="credit_limit_error" class="alert alert-danger mt-2 py-2 small d-none">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    <span id="credit_limit_msg"></span>
-                                </div>
-                            </div>
+                        <div class="col-md-12">
+                            <label class='form-label fw-bold text-primary'>Remarks (Optional)</label>
+                            <textarea class='form-control border-primary' name='pdc_remarks' rows="2"
+                                placeholder="Notes..."></textarea>
                         </div>
                     </div>
-                    <div class='modal-footer'>
-                        <button type='button' class='btn btn-premium-cancel' data-bs-dismiss='modal'>Cancel</button>
-                        <button type='submit' class='btn btn-premium-save bg-success text-white'><i
-                                class="bi bi-check-circle me-2"></i>Confirm Sale</button>
-                    </div>
-                </form>
+                </div>
+                <div class='modal-footer'>
+                    <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+                    <button type='button' class='btn btn-primary' id='confirmPdcDetailsBtn'><i
+                            class="bi bi-check-circle me-2"></i>Confirm PDC Details</button>
+                </div>
             </div>
         </div>
     </div>
@@ -2433,9 +2539,11 @@ $showTabs = !isset($_GET['tab']);
                     <div class="row align-items-center mb-4 ledger-meta-box">
                         <div class="col-7">
                             <div class="print-clear-box p-3 border rounded-3 bg-light shadow-sm">
-                                <p class="small text-muted mb-1 text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 0.7rem;">
+                                <p class="small text-muted mb-1 text-uppercase fw-bold"
+                                    style="letter-spacing: 0.5px; font-size: 0.7rem;">
                                     Customer Information:</p>
-                                <h4 class="fw-bold mb-1 text-dark text-uppercase" id="printLedgerCustomerName">Customer Name</h4>
+                                <h4 class="fw-bold mb-1 text-dark text-uppercase" id="printLedgerCustomerName">Customer
+                                    Name</h4>
                                 <p class="mb-1 small text-secondary" id="printLedgerAddress"></p>
                                 <p class="small mb-0 text-secondary" id="printLedgerContact"></p>
                             </div>

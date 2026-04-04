@@ -22,7 +22,8 @@ if ($settingsRes) {
     }
 }
 
-function isVisible($menuId) {
+function isVisible($menuId)
+{
     global $allSettings, $_SESSION;
     $pos = $_SESSION['position'];
     $key = "menu_vis_{$pos}_{$menuId}";
@@ -31,6 +32,7 @@ function isVisible($menuId) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,7 +41,8 @@ function isVisible($menuId) {
     <link rel="icon" href="../assets/img/smdi_logosmall.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="../css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --green-900: #003d33;
@@ -47,19 +50,23 @@ function isVisible($menuId) {
             --green-700: #00695c;
             --green-600: #00796b;
             --green-400: #26a69a;
-            --green-50:  #e0f2f1;
+            --green-50: #e0f2f1;
             --white: #ffffff;
             --gray-50: #f8fafb;
             --gray-100: #f1f5f4;
             --gray-200: #e2e8e6;
             --gray-500: #6b7280;
             --gray-700: #374151;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-            --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.05);
-            --shadow-lg: 0 10px 30px rgba(0,0,0,.10), 0 4px 10px rgba(0,0,0,.06);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .05);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, .10), 0 4px 10px rgba(0, 0, 0, .06);
         }
 
-        *, *::before, *::after { box-sizing: border-box; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -81,7 +88,7 @@ function isVisible($menuId) {
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 12px rgba(0,0,0,.25);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .25);
         }
 
         .nav-brand {
@@ -91,7 +98,10 @@ function isVisible($menuId) {
             text-decoration: none;
         }
 
-        .nav-brand img { height: 34px; border-radius: 6px; }
+        .nav-brand img {
+            height: 34px;
+            border-radius: 6px;
+        }
 
         .nav-brand-text {
             font-size: 1rem;
@@ -111,7 +121,7 @@ function isVisible($menuId) {
             display: flex;
             align-items: center;
             gap: 8px;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255, 255, 255, 0.9);
             font-size: 0.82rem;
             font-weight: 500;
         }
@@ -119,7 +129,7 @@ function isVisible($menuId) {
         .nav-user-avatar {
             width: 34px;
             height: 34px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -127,11 +137,11 @@ function isVisible($menuId) {
             font-weight: 700;
             font-size: 0.85rem;
             color: white;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .btn-logout {
-            border: 1.5px solid rgba(255,255,255,0.45);
+            border: 1.5px solid rgba(255, 255, 255, 0.45);
             color: white;
             background: transparent;
             padding: 5px 16px;
@@ -144,7 +154,7 @@ function isVisible($menuId) {
         }
 
         .btn-logout:hover {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             border-color: white;
             color: white;
         }
@@ -160,22 +170,29 @@ function isVisible($menuId) {
         .hero-banner::before {
             content: '';
             position: absolute;
-            top: -60px; right: -60px;
-            width: 300px; height: 300px;
-            background: rgba(255,255,255,0.04);
+            top: -60px;
+            right: -60px;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.04);
             border-radius: 50%;
         }
 
         .hero-banner::after {
             content: '';
             position: absolute;
-            bottom: -80px; left: 30%;
-            width: 200px; height: 200px;
-            background: rgba(255,255,255,0.03);
+            bottom: -80px;
+            left: 30%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 50%;
         }
 
-        .hero-content { position: relative; z-index: 1; }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
 
         .hero-greeting {
             font-size: 1.65rem;
@@ -186,7 +203,7 @@ function isVisible($menuId) {
         }
 
         .hero-sub {
-            color: rgba(255,255,255,0.72);
+            color: rgba(255, 255, 255, 0.72);
             font-size: 0.875rem;
             font-weight: 400;
             display: flex;
@@ -194,7 +211,9 @@ function isVisible($menuId) {
             gap: 8px;
         }
 
-        .hero-sub i { font-size: 0.8rem; }
+        .hero-sub i {
+            font-size: 0.8rem;
+        }
 
         /* ── MAIN CONTENT ── */
         .main-content {
@@ -253,8 +272,10 @@ function isVisible($menuId) {
         .module-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 3px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
             background: linear-gradient(90deg, var(--green-800), var(--green-400));
             opacity: 0;
             transition: opacity 0.25s;
@@ -268,7 +289,9 @@ function isVisible($menuId) {
             text-decoration: none;
         }
 
-        .module-card:hover::before { opacity: 1; }
+        .module-card:hover::before {
+            opacity: 1;
+        }
 
         .module-icon-wrap {
             width: 52px;
@@ -347,7 +370,9 @@ function isVisible($menuId) {
             gap: 8px;
         }
 
-        .sidebar-body { padding: 16px 20px; }
+        .sidebar-body {
+            padding: 16px 20px;
+        }
 
         .summary-row {
             display: flex;
@@ -358,9 +383,19 @@ function isVisible($menuId) {
             font-size: 0.82rem;
         }
 
-        .summary-row:last-child { border-bottom: none; }
-        .summary-row-label { color: var(--gray-500); font-weight: 500; }
-        .summary-row-val { font-weight: 700; color: var(--green-800); }
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-row-label {
+            color: var(--gray-500);
+            font-weight: 500;
+        }
+
+        .summary-row-val {
+            font-weight: 700;
+            color: var(--green-800);
+        }
 
         .sidebar-footer {
             background: var(--green-50);
@@ -376,45 +411,90 @@ function isVisible($menuId) {
             font-weight: 600;
         }
 
-        .total-row:last-child { margin-bottom: 0; }
-        .total-row-label { color: var(--gray-700); }
-        .total-row-val { color: var(--green-800); font-size: 1rem; font-weight: 800; }
+        .total-row:last-child {
+            margin-bottom: 0;
+        }
 
-        .bg-menu-gray { background: #64748b !important; }
-        .bg-menu-red { background: #ef4444 !important; }
-        .bg-menu-purple { background: #8b5cf6 !important; }
-        .bg-menu-orange { background: #f97316 !important; }
-        .bg-menu-blue { background: #3b82f6 !important; }
-        .bg-menu-teal { background: #0d9488 !important; }
-        .bg-menu-cyan { background: #06b6d4 !important; }
-        .bg-menu-green { background: #10b981 !important; }
-        .bg-menu-indigo { background: #6366f1 !important; }
-        .bg-menu-pink { background: #ec4899 !important; }
+        .total-row-label {
+            color: var(--gray-700);
+        }
+
+        .total-row-val {
+            color: var(--green-800);
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .bg-menu-gray {
+            background: #64748b !important;
+        }
+
+        .bg-menu-red {
+            background: #ef4444 !important;
+        }
+
+        .bg-menu-purple {
+            background: #8b5cf6 !important;
+        }
+
+        .bg-menu-orange {
+            background: #f97316 !important;
+        }
+
+        .bg-menu-blue {
+            background: #3b82f6 !important;
+        }
+
+        .bg-menu-teal {
+            background: #0d9488 !important;
+        }
+
+        .bg-menu-cyan {
+            background: #06b6d4 !important;
+        }
+
+        .bg-menu-green {
+            background: #10b981 !important;
+        }
+
+        .bg-menu-indigo {
+            background: #6366f1 !important;
+        }
+
+        .bg-menu-pink {
+            background: #ec4899 !important;
+        }
 
 
         .module-card[class*="bg-menu-"] {
             border: none !important;
             color: white !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+
         .module-card[class*="bg-menu-"] .module-title {
             color: white !important;
         }
+
         .module-card[class*="bg-menu-"] .module-desc {
-            color: rgba(255,255,255,0.8) !important;
+            color: rgba(255, 255, 255, 0.8) !important;
         }
+
         .module-card[class*="bg-menu-"] .module-icon-wrap {
-            background: rgba(255,255,255,0.2) !important;
+            background: rgba(255, 255, 255, 0.2) !important;
         }
+
         .module-card[class*="bg-menu-"] .module-icon-wrap i {
             color: white !important;
         }
+
         .module-card[class*="bg-menu-"] .module-arrow {
             color: white !important;
         }
+
         .module-card[class*="bg-menu-"]:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
             filter: brightness(1.05);
         }
 
@@ -429,12 +509,21 @@ function isVisible($menuId) {
 
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
-            .hero-banner { padding: 2rem 1rem 3rem; }
-            .main-content { padding: 0 1rem; }
-            .modules-grid { grid-template-columns: 1fr 1fr; }
+            .hero-banner {
+                padding: 2rem 1rem 3rem;
+            }
+
+            .main-content {
+                padding: 0 1rem;
+            }
+
+            .modules-grid {
+                grid-template-columns: 1fr 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <!-- TOP NAVBAR -->
@@ -447,11 +536,13 @@ function isVisible($menuId) {
             <div class="nav-user">
                 <div class="nav-user-avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div>
                 <div>
-                    <div style="font-weight:700;color:white;"><?php echo htmlspecialchars(strtoupper($username)); ?></div>
+                    <div style="font-weight:700;color:white;"><?php echo htmlspecialchars(strtoupper($username)); ?>
+                    </div>
                     <div style="font-size:0.7rem;opacity:0.7;"><?php echo htmlspecialchars($branch); ?></div>
                 </div>
             </div>
-            <a href="javascript:void(0)" onclick="openModuleSettings()" class="text-white text-decoration-none me-3" title="Module Settings">
+            <a href="javascript:void(0)" onclick="openModuleSettings()" class="text-white text-decoration-none me-3"
+                title="Module Settings">
                 <i class="bi bi-gear-fill fs-5"></i>
             </a>
             <a href="../api/logout.php" class="btn-logout">Logout</a>
@@ -462,7 +553,8 @@ function isVisible($menuId) {
     <div class="hero-banner">
         <div class="hero-content">
             <h1 class="hero-greeting"><?php echo $greeting; ?></h1>
-            <p class="hero-sub"><i class="bi bi-calendar3"></i> <?php echo $today; ?> &nbsp;|&nbsp; <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($branch); ?></p>
+            <p class="hero-sub"><i class="bi bi-calendar3"></i> <?php echo $today; ?> &nbsp;|&nbsp; <i
+                    class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($branch); ?></p>
         </div>
     </div>
 
@@ -471,10 +563,13 @@ function isVisible($menuId) {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
                 <div class="modal-header bg-danger text-white border-0 py-3">
-                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-exclamation-triangle-fill me-2"></i>PENDING INCOMING TRANSFERS</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title fw-bold text-white"><i
+                            class="bi bi-exclamation-triangle-fill me-2"></i>PENDING INCOMING TRANSFERS</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-0" id="incoming-alert-modal-body" style="background: #f8f9fa; max-height: 480px; overflow-y: auto;">
+                <div class="modal-body p-0" id="incoming-alert-modal-body"
+                    style="background: #f8f9fa; max-height: 480px; overflow-y: auto;">
                     <!-- Populated via JS -->
                 </div>
             </div>
@@ -496,113 +591,118 @@ function isVisible($menuId) {
                 <div class="modules-grid">
 
                     <?php if (isVisible('sys-dashboard-card')): ?>
-                    <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-blue" id="sys-dashboard-card">
-                        <div class="module-icon-wrap"><i class="bi bi-speedometer2"></i></div>
-                        <div>
-                            <div class="module-title">System Dashboard</div>
-                            <div class="module-desc">Real-time stats, KPIs &amp; branch overview</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-blue"
+                            id="sys-dashboard-card">
+                            <div class="module-icon-wrap"><i class="bi bi-speedometer2"></i></div>
+                            <div>
+                                <div class="module-title">System Dashboard</div>
+                                <div class="module-desc">Real-time stats, KPIs &amp; branch overview</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('sales-card')): ?>
-                    <a href="admin_spareparts.php?tab=sales" class="module-card bg-menu-purple" id="sales-card">
-                        <div class="module-icon-wrap"><i class="bi bi-cart-check-fill"></i></div>
-                        <div>
-                            <div class="module-title">Sales Transactions</div>
-                            <div class="module-desc">View all sales, filters by branch & date</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="admin_spareparts.php?tab=sales" class="module-card bg-menu-purple" id="sales-card">
+                            <div class="module-icon-wrap"><i class="bi bi-cart-check-fill"></i></div>
+                            <div>
+                                <div class="module-title">Sales Transactions</div>
+                                <div class="module-desc">View all sales, filters by branch & date</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('inventory-card')): ?>
-                    <a href="admin_spareparts.php?tab=inventory" class="module-card bg-menu-orange" id="inventory-card">
-                        <div class="module-icon-wrap"><i class="bi bi-database-gear"></i></div>
-                        <div>
-                            <div class="module-title">Inventory Control</div>
-                            <div class="module-desc">Master stock management across all branches</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="admin_spareparts.php?tab=inventory" class="module-card bg-menu-orange" id="inventory-card">
+                            <div class="module-icon-wrap"><i class="bi bi-database-gear"></i></div>
+                            <div>
+                                <div class="module-title">Inventory Control</div>
+                                <div class="module-desc">Master stock management across all branches</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('transfer-card')): ?>
-                    <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-blue" id="transfer-card">
-                        <div class="module-icon-wrap"><i class="bi bi-arrow-left-right"></i></div>
-                        <div>
-                            <div class="module-title">Transfer Monitor</div>
-                            <div class="module-desc">Track global stock transfers &amp; movements</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-blue"
+                            id="transfer-card">
+                            <div class="module-icon-wrap"><i class="bi bi-arrow-left-right"></i></div>
+                            <div>
+                                <div class="module-title">Transfer Monitor</div>
+                                <div class="module-desc">Track global stock transfers &amp; movements</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('payments-mgmt-card')): ?>
-                    <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-purple" id="payments-mgmt-card">
-                        <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
-                        <div>
-                            <div class="module-title">Payment Management</div>
-                            <div class="module-desc">Review global payment transactions & records</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-purple"
+                            id="payments-mgmt-card">
+                            <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
+                            <div>
+                                <div class="module-title">Payment Management</div>
+                                <div class="module-desc">Review global payment transactions & records</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('audit-card')): ?>
-                    <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal" id="audit-card">
-                        <div class="module-icon-wrap"><i class="bi bi-shield-check"></i></div>
-                        <div>
-                            <div class="module-title">Audit Logs</div>
-                            <div class="module-desc">Security events &amp; spareparts activity trail</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal" id="audit-card">
+                            <div class="module-icon-wrap"><i class="bi bi-shield-check"></i></div>
+                            <div>
+                                <div class="module-title">Audit Logs</div>
+                                <div class="module-desc">Security events &amp; spareparts activity trail</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('usermgmt-card')): ?>
-                    <a href="user_management.php" class="module-card bg-menu-cyan" id="usermgmt-card">
-                        <div class="module-icon-wrap"><i class="bi bi-people-fill"></i></div>
-                        <div>
-                            <div class="module-title">User Management</div>
-                            <div class="module-desc">Manage accounts, roles &amp; access rights</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="user_management.php" class="module-card bg-menu-cyan" id="usermgmt-card">
+                            <div class="module-icon-wrap"><i class="bi bi-people-fill"></i></div>
+                            <div>
+                                <div class="module-title">User Management</div>
+                                <div class="module-desc">Manage accounts, roles &amp; access rights</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('reports-card')): ?>
-                    <a href="master_reports.php" class="module-card bg-menu-green" id="reports-card">
-                        <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
-                        <div>
-                            <div class="module-title">Master Reports</div>
-                            <div class="module-desc">Generate &amp; export system-wide reports</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="master_reports.php" class="module-card bg-menu-green" id="reports-card">
+                            <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
+                            <div>
+                                <div class="module-title">Master Reports</div>
+                                <div class="module-desc">Generate &amp; export system-wide reports</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('customer-mgmt-card')): ?>
-                    <a href="sales_spareparts.php?tab=customers" class="module-card bg-menu-indigo" id="customer-mgmt-card">
-                        <div class="module-icon-wrap"><i class="bi bi-people"></i></div>
-                        <div>
-                            <div class="module-title">Customer Records</div>
-                            <div class="module-desc">Manage customer ledgers, aging & profiles</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="sales_spareparts.php?tab=customers" class="module-card bg-menu-indigo"
+                            id="customer-mgmt-card">
+                            <div class="module-icon-wrap"><i class="bi bi-people"></i></div>
+                            <div>
+                                <div class="module-title">Customer Records</div>
+                                <div class="module-desc">Manage customer ledgers, aging & profiles</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                     <?php if (isVisible('employee-mgmt-card')): ?>
-                    <a href="sales_spareparts.php?tab=employees" class="module-card bg-menu-pink" id="employee-mgmt-card">
-                        <div class="module-icon-wrap"><i class="bi bi-person-badge"></i></div>
-                        <div>
-                            <div class="module-title">Employee Records</div>
-                            <div class="module-desc">Manage sales force and staff records</div>
-                        </div>
-                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
-                    </a>
+                        <a href="sales_spareparts.php?tab=employees" class="module-card bg-menu-pink"
+                            id="employee-mgmt-card">
+                            <div class="module-icon-wrap"><i class="bi bi-person-badge"></i></div>
+                            <div>
+                                <div class="module-title">Employee Records</div>
+                                <div class="module-desc">Manage sales force and staff records</div>
+                            </div>
+                            <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                        </a>
                     <?php endif; ?>
 
                 </div>
@@ -648,7 +748,8 @@ function isVisible($menuId) {
                     <div class="sidebar-header">
                         <i class="bi bi-database"></i> Global Stock Summary
                     </div>
-                    <div class="sidebar-body" id="inventory-branch-summary-container" style="max-height: 400px; overflow-y: auto;">
+                    <div class="sidebar-body" id="inventory-branch-summary-container"
+                        style="max-height: 400px; overflow-y: auto;">
                         <div class="text-center py-3 text-muted small">Loading branch stocks...</div>
                     </div>
                     <div class="sidebar-footer">
@@ -674,132 +775,181 @@ function isVisible($menuId) {
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
                 <div class="modal-header bg-dark text-white border-0 py-3">
-                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-gear-fill me-2"></i>System & Menu Settings</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-gear-fill me-2"></i>System & Menu
+                        Settings</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div id="settings-content" class="mb-4">
-                        <h6 class="fw-bold text-muted small text-uppercase ls-1 mb-3">Menu Access Control</h6>
-                    </div>
+                <div class="modal-body p-0">
+                    <ul class="nav nav-tabs nav-fill bg-light border-bottom" id="settingsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold py-3" id="menu-access-tab" data-bs-toggle="tab"
+                                data-bs-target="#menu-access-pane" type="button" role="tab"><i
+                                    class="bi bi-ui-checks-grid me-2"></i>Menu Access</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold py-3" id="invoice-seq-tab" data-bs-toggle="tab"
+                                data-bs-target="#invoice-seq-pane" type="button" role="tab"
+                                onclick="loadInvoiceSequences()"><i class="bi bi-123 me-2"></i>Invoice
+                                Sequences</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="settingsTabsContent">
 
+                        <!-- Menu Access Tab Pane -->
+                        <div class="tab-pane fade show active p-4" id="menu-access-pane" role="tabpanel" tabindex="0">
+                            <!-- Menu Visibility Settings -->
+                            <div id="menu-visibility">
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Select
+                                        Position / Role</label>
+                                    <select class="form-select form-select-lg border-primary shadow-sm"
+                                        id="visibilityPositionSelect" onchange="loadPositionMenus()"
+                                        style="border-radius: 8px; font-weight: 600;">
+                                        <option value="Spareparts-Admin">Spareparts Admin</option>
+                                        <option value="Spareparts-Owner">Spareparts Owner</option>
+                                        <option value="Spareparts-Sales">Spareparts Sales</option>
+                                        <option value="Spareparts-Warehouse">Spareparts Warehouse</option>
+                                    </select>
+                                </div>
 
-                        <!-- Menu Visibility Settings -->
-                        <div id="menu-visibility">
-                            <div class="mb-4">
-                                <label class="form-label fw-bold text-muted small text-uppercase ls-1">Select Position / Role</label>
-                                <select class="form-select form-select-lg border-primary shadow-sm" id="visibilityPositionSelect" onchange="loadPositionMenus()" style="border-radius: 8px; font-weight: 600;">
-                                    <option value="Spareparts-Admin">Spareparts Admin</option>
-                                    <option value="Spareparts-Owner">Spareparts Owner</option>
-                                    <option value="Spareparts-Sales">Spareparts Sales</option>
-                                    <option value="Spareparts-Warehouse">Spareparts Warehouse</option>
-                                </select>
+                                <div class="list-group border shadow-sm rounded-3" id="menus-container"
+                                    style="max-height: 400px; overflow-y: auto;">
+                                    <!-- Populated dynamically -->
+                                </div>
                             </div>
-
-                            <div class="list-group border shadow-sm rounded-3" id="menus-container" style="max-height: 400px; overflow-y: auto;">
-                                <!-- Populated dynamically -->
                         </div>
+
+                        <!-- Invoice Sequence Tab Pane -->
+                        <div class="tab-pane fade p-4" id="invoice-seq-pane" role="tabpanel" tabindex="0">
+                            <div class="alert alert-info py-2 small mb-4">
+                                <i class="bi bi-info-circle-fill me-2"></i>Configure the starting Sales Invoice (SI)
+                                number and prefix for each branch. The system will automatically resume from the highest
+                                existing number if it surpasses this start.
+                            </div>
+                            <div class="table-responsive">
+                                <table
+                                    class="table table-hover align-middle border shadow-sm rounded-3 overflow-hidden">
+                                    <thead class="table-light text-muted small text-uppercase ls-1">
+                                        <tr>
+                                            <th>Branch</th>
+                                            <th class="text-center" style="width: 15%">Prefix</th>
+                                            <th class="text-center" style="width: 20%">Starting #</th>
+                                            <th class="text-center">Next Invoice</th>
+                                            <th class="text-end pe-3">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="invoice-seq-container">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted">Loading branches...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                     </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius: 20px;">Close</button>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal"
+                            style="border-radius: 20px;">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="../js/spareparts_dashboard.js"></script>
-    <script>
-        const POSITION_MENUS = {
-            'Spareparts-Admin': [
-                { id: 'sys-dashboard-card', label: 'System Dashboard' },
-                { id: 'sales-card', label: 'Sales Transactions' },
-                { id: 'inventory-card', label: 'Inventory Control' },
-                { id: 'transfer-card', label: 'Transfer Monitor' },
-                { id: 'payments-mgmt-card', label: 'Payment Management' },
-                { id: 'audit-card', label: 'Audit Logs' },
-                { id: 'usermgmt-card', label: 'User Management' },
-                { id: 'reports-card', label: 'Master Reports' },
-                { id: 'customer-mgmt-card', label: 'Customer Records' },
-                { id: 'employee-mgmt-card', label: 'Employee Records' }
-            ],
-            'Spareparts-Owner': [
-                { id: 'global-dashboard-card', label: 'Global Dashboard' },
-                { id: 'sales-transactions-card', label: 'Sales Transactions' },
-                { id: 'centralized-inventory-card', label: 'Centralized Inventory' },
-                { id: 'global-transfers-card', label: 'Global Transfers' },
-                { id: 'payment-management-card', label: 'Payment Management' },
-                { id: 'system-audit-card', label: 'System Audit' },
-                { id: 'master-reports-card', label: 'Master Reports' },
-                { id: 'find-tool-card', label: 'Find Tool' },
-                { id: 'user-management-card', label: 'User Management' }
-            ],
-            'Spareparts-Sales': [
-                { id: 'customers', label: 'Customer Records' },
-                { id: 'stock-card', label: 'Stock Card' },
-                { id: 'find-stocks', label: 'Find Stocks' },
-                { id: 'sales', label: 'Sales' },
-                { id: 'payments', label: 'Payments' },
-                { id: 'received-stocks-rr', label: 'Received Stocks (RR/IN)' },
-                { id: 'received-stock', label: 'Received Stock' },
-                { id: 'stock-transfer', label: 'Stock Transfer' },
-                { id: 'cm', label: 'Credit Memo' },
-                { id: 'employees', label: 'Employees' },
-                { id: 'pricelist', label: 'Pricelist' },
-                { id: 'master-reports', label: 'Master Reports' },
-                { id: 'beginning-inventory', label: 'Beginning Inventory' },
-                { id: 'beginning-customer-bal', label: 'Customer Beginning Balance' },
-                { id: 'pdc-payment', label: 'PDC Payment' }
-            ],
-            'Spareparts-Warehouse': [
-                { id: 'received-stocks-rr-warehouse', label: 'Received Stocks (RR/IN)' },
-                { id: 'stock-card-warehouse', label: 'Stock Card' },
-                { id: 'received-stock-warehouse', label: 'Received Stock' },
-                { id: 'stock-transfer-warehouse', label: 'Stock Transfer' },
-                { id: 'find-stocks-warehouse', label: 'Find Stocks' },
-                { id: 'master-reports-warehouse', label: 'Master Reports' },
-                { id: 'beginning-inventory-warehouse', label: 'Beginning Inventory' },
-                { id: 'barcode-generator', label: 'Barcode Generator' }
-            ]
-        };
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="../js/spareparts_dashboard.js"></script>
+        <script>
+            const POSITION_MENUS = {
+                'Spareparts-Admin': [
+                    { id: 'sys-dashboard-card', label: 'System Dashboard' },
+                    { id: 'sales-card', label: 'Sales Transactions' },
+                    { id: 'inventory-card', label: 'Inventory Control' },
+                    { id: 'transfer-card', label: 'Transfer Monitor' },
+                    { id: 'payments-mgmt-card', label: 'Payment Management' },
+                    { id: 'audit-card', label: 'Audit Logs' },
+                    { id: 'usermgmt-card', label: 'User Management' },
+                    { id: 'reports-card', label: 'Master Reports' },
+                    { id: 'customer-mgmt-card', label: 'Customer Records' },
+                    { id: 'employee-mgmt-card', label: 'Employee Records' }
+                ],
+                'Spareparts-Owner': [
+                    { id: 'global-dashboard-card', label: 'Global Dashboard' },
+                    { id: 'sales-transactions-card', label: 'Sales Transactions' },
+                    { id: 'centralized-inventory-card', label: 'Centralized Inventory' },
+                    { id: 'global-transfers-card', label: 'Global Transfers' },
+                    { id: 'payment-management-card', label: 'Payment Management' },
+                    { id: 'system-audit-card', label: 'System Audit' },
+                    { id: 'master-reports-card', label: 'Master Reports' },
+                    { id: 'find-tool-card', label: 'Find Tool' },
+                    { id: 'user-management-card', label: 'User Management' }
+                ],
+                'Spareparts-Sales': [
+                    { id: 'customers', label: 'Customer Records' },
+                    { id: 'stock-card', label: 'Stock Card' },
+                    { id: 'find-stocks', label: 'Find Stocks' },
+                    { id: 'sales', label: 'Sales' },
+                    { id: 'payments', label: 'Payments' },
+                    { id: 'received-stocks-rr', label: 'Received Stocks (RR/IN)' },
+                    { id: 'received-stock', label: 'Received Stock' },
+                    { id: 'stock-transfer', label: 'Stock Transfer' },
+                    { id: 'cm', label: 'Credit Memo' },
+                    { id: 'employees', label: 'Employees' },
+                    { id: 'pricelist', label: 'Pricelist' },
+                    { id: 'master-reports', label: 'Master Reports' },
+                    { id: 'beginning-inventory', label: 'Beginning Inventory' },
+                    { id: 'beginning-customer-bal', label: 'Customer Beginning Balance' },
+                    { id: 'pdc-payment', label: 'PDC Payment' }
+                ],
+                'Spareparts-Warehouse': [
+                    { id: 'received-stocks-rr-warehouse', label: 'Received Stocks (RR/IN)' },
+                    { id: 'stock-card-warehouse', label: 'Stock Card' },
+                    { id: 'received-stock-warehouse', label: 'Received Stock' },
+                    { id: 'stock-transfer-warehouse', label: 'Stock Transfer' },
+                    { id: 'find-stocks-warehouse', label: 'Find Stocks' },
+                    { id: 'master-reports-warehouse', label: 'Master Reports' },
+                    { id: 'beginning-inventory-warehouse', label: 'Beginning Inventory' },
+                    { id: 'barcode-generator', label: 'Barcode Generator' }
+                ]
+            };
 
-        function openModuleSettings() {
-            $.get('../api/spareparts_inventory.php?action=get_module_settings', function(response) {
-                if (response.success) {
-                    loadPositionMenus(response.data);
-                    new bootstrap.Modal(document.getElementById('moduleSettingsModal')).show();
-                } else {
-                    Swal.fire('Error', 'Failed to load settings.', 'error');
-                }
-            });
-        }
-
-        function loadPositionMenus(currentSettings = null) {
-            const pos = $('#visibilityPositionSelect').val();
-            const menus = POSITION_MENUS[pos] || [];
-            const container = $('#menus-container');
-            container.empty();
-
-            if (currentSettings) {
-                renderMenus(menus, currentSettings, pos);
-            } else {
-                $.get('../api/spareparts_inventory.php?action=get_module_settings', function(response) {
+            function openModuleSettings() {
+                $.get('../api/spareparts_inventory.php?action=get_module_settings', function (response) {
                     if (response.success) {
-                        renderMenus(menus, response.data, pos);
+                        loadPositionMenus(response.data);
+                        new bootstrap.Modal(document.getElementById('moduleSettingsModal')).show();
+                    } else {
+                        Swal.fire('Error', 'Failed to load settings.', 'error');
                     }
                 });
             }
-        }
 
-        function renderMenus(menus, settings, pos) {
-            const container = $('#menus-container');
-            menus.forEach(menu => {
-                const settingKey = `menu_vis_${pos}_${menu.id}`;
-                const isVisible = settings[settingKey] !== 'false'; 
+            function loadPositionMenus(currentSettings = null) {
+                const pos = $('#visibilityPositionSelect').val();
+                const menus = POSITION_MENUS[pos] || [];
+                const container = $('#menus-container');
+                container.empty();
 
-                const html = `
+                if (currentSettings) {
+                    renderMenus(menus, currentSettings, pos);
+                } else {
+                    $.get('../api/spareparts_inventory.php?action=get_module_settings', function (response) {
+                        if (response.success) {
+                            renderMenus(menus, response.data, pos);
+                        }
+                    });
+                }
+            }
+
+            function renderMenus(menus, settings, pos) {
+                const container = $('#menus-container');
+                menus.forEach(menu => {
+                    const settingKey = `menu_vis_${pos}_${menu.id}`;
+                    const isVisible = settings[settingKey] !== 'false';
+
+                    const html = `
                     <div class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom p-3">
                         <div>
                             <div class="fw-bold">${menu.label}</div>
@@ -811,45 +961,112 @@ function isVisible($menuId) {
                         </div>
                     </div>
                 `;
-                container.append(html);
-            });
-        }
+                    container.append(html);
+                });
+            }
 
-        function toggleMenuVisibility(pos, menuId, isVisible) {
-            const settingKey = `menu_vis_${pos}_${menuId}`;
-            toggleModule(settingKey, isVisible);
-        }
+            function toggleMenuVisibility(pos, menuId, isVisible) {
+                const settingKey = `menu_vis_${pos}_${menuId}`;
+                toggleModule(settingKey, isVisible);
+            }
 
-        function toggleModule(key, enabled) {
-            $.post('../api/spareparts_inventory.php', {
-                action: 'update_module_setting',
-                key: key,
-                value: enabled ? 'true' : 'false'
-            }, function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        title: 'Updated!',
-                        text: response.message,
-                        icon: 'success',
-                        timer: 1000,
-                        showConfirmButton: false
-                    });
-                } else {
-                    Swal.fire('Error', response.message, 'error');
+            function toggleModule(key, enabled) {
+                $.post('../api/spareparts_inventory.php', {
+                    action: 'update_module_setting',
+                    key: key,
+                    value: enabled ? 'true' : 'false'
+                }, function (response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Updated!',
+                            text: response.message,
+                            icon: 'success',
+                            timer: 1000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                });
+            }
+
+            // --- Invoice Sequence Settings Logic ---
+            function loadInvoiceSequences() {
+                const container = $('#invoice-seq-container');
+                container.html('<tr><td colspan="5" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading branches...</td></tr>');
+
+                $.get('../api/spareparts_inventory.php?action=get_invoice_sequence_settings', function (res) {
+                    container.empty();
+                    if (res && res.success && res.data.length > 0) {
+                        res.data.forEach(item => {
+                            const html = `
+                            <tr>
+                                <td class="fw-bold"><i class="bi bi-shop me-2 text-secondary"></i>${item.branch}</td>
+                                <td class="text-center">
+                                    <input type="text" class="form-control form-control-sm text-center text-uppercase mx-auto fw-bold" id="seq_prefix_${item.branch}" value="${item.prefix}" style="max-width:80px; letter-spacing: 1px;">
+                                </td>
+                                <td class="text-center">
+                                    <input type="number" class="form-control form-control-sm text-center mx-auto" id="seq_start_${item.branch}" value="${item.start_number}" style="max-width:100px;">
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border shadow-sm fs-6 font-monospace px-3 py-2" style="color: black !important;">${item.next_number}</span>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <button class="btn btn-sm btn-dark px-3 rounded-pill" onclick="saveInvoiceSequence('${item.branch}')"><i class="bi bi-floppy me-1"></i>Save</button>
+                                </td>
+                            </tr>
+                        `;
+                            container.append(html);
+                        });
+                    } else {
+                        container.html('<tr><td colspan="5" class="text-center py-4 text-muted">No branches found or unauthorized.</td></tr>');
+                    }
+                }, 'json').fail(function () {
+                    container.html('<tr><td colspan="5" class="text-center py-4 text-danger">Error loading sequence data.</td></tr>');
+                });
+            }
+
+            function saveInvoiceSequence(branch) {
+                const prefix = $(`#seq_prefix_${branch}`).val().trim();
+                const startStr = $(`#seq_start_${branch}`).val();
+                const startNum = parseInt(startStr);
+
+                if (!startStr || isNaN(startNum) || startNum < 1) {
+                    Swal.fire('Invalid Input', 'Starting number must be a valid positive integer.', 'warning');
+                    return;
                 }
-            });
-        }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            updateConsolidatedSummary();
-            updateInventorySummaryByBranch();
-            updatePendingTransfers();
-            setInterval(() => {
+                $.post('../api/spareparts_inventory.php?action=update_invoice_sequence_start', {
+                    branch: branch,
+                    prefix: prefix,
+                    start_number: startNum
+                }, function (res) {
+                    if (res.success) {
+                        Swal.fire({
+                            title: 'Saved!',
+                            text: res.message,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        loadInvoiceSequences(); // Reload to show updated "Next Invoice" preview
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                }, 'json');
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
                 updateConsolidatedSummary();
                 updateInventorySummaryByBranch();
                 updatePendingTransfers();
-            }, 30000);
-        });
-    </script>
+                setInterval(() => {
+                    updateConsolidatedSummary();
+                    updateInventorySummaryByBranch();
+                    updatePendingTransfers();
+                }, 30000);
+            });
+        </script>
 </body>
+
 </html>
