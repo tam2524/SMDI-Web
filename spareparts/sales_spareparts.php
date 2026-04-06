@@ -1393,28 +1393,28 @@ $showTabs = !isset($_GET['tab']);
                         </div>
 
                         <!-- RIGHT: Part Search + Cart -->
-                        <div class="col-lg-9">
+                        <div class="col-lg-9" style="position: relative; z-index: 9999 !important;">
 
                             <!-- Part Search Card -->
-                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="padding: 24px; border-top: 5px solid #198754 !important;">
+                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="padding: 24px; border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 class="mb-0 fw-bold text-muted text-uppercase small">
                                         <i class="bi bi-upc-scan me-2"></i>Step 3: Scan / Search Part
                                     </h6>
                                 </div>
-                                <div class="position-relative">
+                                <div class="position-relative" style="z-index: 9999 !important; overflow: visible !important;">
                                     <i class="bi bi-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #004d40; font-size: 1.2rem; z-index: 5;"></i>
                                     <input type="text" id="salePartSearchInput" class="form-control"
                                         style="padding-left: 45px; height: 50px; border-radius: 8px; border: 2px solid #eee;"
                                         placeholder="Enter Part No. or Part Name to add items..." autocomplete="off">
                                     <div id="salePartSearchResults" class="list-group border rounded shadow"
-                                        style="position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; z-index: 1100; display: none; background: white;">
+                                        style="position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; z-index: 99999 !important; display: none; background: white;">
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Cart Table Card -->
-                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="position: relative; z-index: 1;">
                                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                                     <h6 class="mb-0 fw-bold text-muted text-uppercase small">
                                         <i class="bi bi-list-check me-2"></i>Sale Items
