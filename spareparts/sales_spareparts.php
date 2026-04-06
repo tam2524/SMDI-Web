@@ -1334,7 +1334,7 @@ $showTabs = !isset($_GET['tab']);
                         <div class="col-lg-3">
 
                             <!-- Sale Info Card -->
-                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="border-top: 5px solid #198754 !important;">
+                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">
                                         <i class="bi bi-file-earmark-text me-2"></i>Step 1: Sale Details
@@ -1345,11 +1345,11 @@ $showTabs = !isset($_GET['tab']);
                                             <input type='text' class='form-control fw-bold border-success' id='out_or_number' required autocomplete="off" placeholder="Required">
                                             <div id="or_availability_feedback" class="small mt-1"></div>
                                         </div>
-                                        <div class="col-12 position-relative">
+                                        <div class="col-12 position-relative" style="z-index: 9999 !important; overflow: visible !important;">
                                             <label for='out_customer_name' class='small fw-bold text-muted'>Customer Name *</label>
                                             <input type='text' class='form-control' id='out_customer_name' required autocomplete="off" placeholder="Type to search customer...">
                                             <div id="saleCustomerSearchResults" class="list-group border rounded shadow-sm mt-1"
-                                                style="max-height: 200px; overflow-y: auto; position: absolute; width: calc(100% - 1.5rem); z-index: 1052; display: none; background: white;">
+                                                style="max-height: 200px; overflow-y: auto; position: absolute; width: calc(100% - 1.5rem); z-index: 99999 !important; display: none; background: white;">
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -1369,13 +1369,13 @@ $showTabs = !isset($_GET['tab']);
                             </div>
 
                             <!-- Sales Force Card -->
-                            <div class="card border-0 shadow-sm rounded-4" style="border-top: 5px solid #198754 !important;">
+                            <div class="card border-0 shadow-sm rounded-4" style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">
                                         <i class="bi bi-person-badge me-2"></i>Step 2: Sales Force
                                         <span class="fw-normal text-muted">(Optional)</span>
                                     </h6>
-                                    <div class="position-relative">
+                                    <div class="position-relative" style="z-index: 9999 !important; overflow: visible !important;">
                                         <div class="input-group">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="bi bi-person text-success"></i>
@@ -1384,7 +1384,7 @@ $showTabs = !isset($_GET['tab']);
                                                 placeholder="Type to search employee..." autocomplete="off">
                                         </div>
                                         <div id="salesForceSearchResults" class="list-group border rounded shadow-sm mt-1"
-                                            style="max-height: 180px; overflow-y: auto; position: absolute; width: 100%; z-index: 1055; display: none; background: white;">
+                                            style="max-height: 180px; overflow-y: auto; position: absolute; width: 100%; z-index: 99999 !important; display: none; background: white;">
                                         </div>
                                     </div>
                                 </div>
