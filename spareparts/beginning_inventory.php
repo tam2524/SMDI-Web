@@ -276,6 +276,25 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
         $(document).ready(function() {
             let rowCount = 0;
 
+            function saveDraft() {
+                const draft = [];
+                $('#inventoryBody tr').each(function() {
+                    const row = $(this);
+                    draft.push({
+                        part_no: row.find('.part-no').val() || '',
+                        brand: row.find('.brand').val() || '',
+                        description: row.find('.description').val() || '',
+                        qty: row.find('.qty').val() || '',
+                        cost: row.find('.cost').val() || ''
+                    });
+                });
+                localStorage.setItem('beginning_inventory_draft', JSON.stringify(draft));
+            }
+
+            $(document).on('input', '.excel-input', function() {
+                saveDraft();
+            });
+
             function addRow(data = {}) {
                 rowCount++;
                 const row = `
@@ -298,6 +317,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                 if ($('#inventoryBody tr').length > 1) {
                     $(`#row-${id}`).remove();
                     updateCount();
+                    saveDraft();
                 } else {
                     Swal.fire('Error', 'At least one row is required.', 'error');
                 }
@@ -307,11 +327,26 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                 $('#rowCountDisplay').text($('#inventoryBody tr').length);
             }
 
-            // Initial 5 rows
-            for (let i = 0; i < 5; i++) addRow();
+            // Load from draft or create 5 initial rows
+            const draft = localStorage.getItem('beginning_inventory_draft');
+            if (draft) {
+                try {
+                    const parsedDraft = JSON.parse(draft);
+                    if (parsedDraft && parsedDraft.length > 0) {
+                        parsedDraft.forEach(item => addRow(item));
+                    } else {
+                        for (let i = 0; i < 5; i++) addRow();
+                    }
+                } catch(e) {
+                    for (let i = 0; i < 5; i++) addRow();
+                }
+            } else {
+                for (let i = 0; i < 5; i++) addRow();
+            }
 
             $('#addRowBtn').click(function() {
                 addRow();
+                saveDraft();
             });
 
             $('#clearAllBtn').click(function() {
@@ -327,6 +362,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                     if (result.isConfirmed) {
                         $('#inventoryBody').empty();
                         addRow();
+                        saveDraft();
                     }
                 });
             });
@@ -337,20 +373,20 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 
                 $('#inventoryBody tr').each(function() {
                     const row = $(this);
+                    const rawCost = row.find('.cost').val().trim();
                     const item = {
                         part_no: row.find('.part-no').val().trim(),
                         brand: row.find('.brand').val().trim(),
                         description: row.find('.description').val().trim(),
                         qty: row.find('.qty').val().trim(),
-                        cost: row.find('.cost').val().trim()
+                        cost: rawCost === '' ? 0 : rawCost
                     };
 
-                    if (!item.part_no || !item.brand || !item.description || !item.qty || !item.cost) {
-                        hasEmpty = true;
-                    }
-
-                    if (item.part_no || item.brand || item.description || item.qty || item.cost) {
-                      items.push(item);
+                    if (item.part_no || item.brand || item.description || item.qty || rawCost !== '') {
+                        if (!item.part_no || !item.brand || !item.description || !item.qty) {
+                            hasEmpty = true;
+                        }
+                        items.push(item);
                     }
                 });
 
@@ -384,6 +420,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                             },
                             success: function(response) {
                                 if (response.success) {
+                                    localStorage.removeItem('beginning_inventory_draft');
                                     Swal.fire({
                                         title: 'Success!',
                                         text: response.message,
@@ -442,9 +479,11 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 
                         if (count > 0) {
                             Swal.fire('Imported!', `Successfully processed ${count} rows.`, 'success');
+                            saveDraft();
                         } else {
                             Swal.fire('Error', 'No valid tab-separated data found. Make sure you copy from an Excel table.', 'error');
                             addRow();
+                            saveDraft();
                         }
                     }
                 });
