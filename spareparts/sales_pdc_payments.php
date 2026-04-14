@@ -330,11 +330,11 @@ $today = date('l, F j, Y');
         <!-- Standardized Report Header (Print only) -->
         <div class="report-header-print d-none d-print-block">
             <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-            <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
             <div class="system-name">Spareparts Management System</div>
             <div class="report-title-container" style="margin-top: 15px;">
                 <div class="report-title">PDC PAYMENTS REPORT</div>
-                <div class="report-timestamp">Branch: <?php echo htmlspecialchars($branch); ?> | Generated on: <?php echo date('F d, Y h:i A'); ?></div>
+                <div class="report-timestamp">Branch: <?php echo htmlspecialchars($branch); ?> | Generated on:
+                    <?php echo date('F d, Y h:i A'); ?></div>
             </div>
         </div>
 

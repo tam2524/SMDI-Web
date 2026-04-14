@@ -471,11 +471,11 @@ if ($position === 'Spareparts-Owner') {
                         </div>
                         <div class="report-header-print d-none d-print-block">
                             <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                            <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                             <div class="system-name">Spareparts Management System</div>
                             <div class="report-title-container" style="margin-top: 15px;">
                                 <div class="report-title" id="printTitle"></div>
-                                <div class="report-criteria" id="printCriteria" style="font-size: 9pt; color: #777; font-style: italic; margin-top: 5px;"></div>
+                                <div class="report-criteria" id="printCriteria"
+                                    style="font-size: 9pt; color: #777; font-style: italic; margin-top: 5px;"></div>
                             </div>
                         </div>
                         <p class="report-desc" id="activeReportDesc">Maintain optimal stock levels and prevent
@@ -610,16 +610,19 @@ if ($position === 'Spareparts-Owner') {
                         <div style="display: flex; justify-content: space-around; margin-top: 50px;">
                             <div style="width: 250px;">
                                 <div style="border-bottom: 1.5px solid #000; height: 30px; margin-bottom: 5px;"></div>
-                                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;">PREPARED BY</div>
+                                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;">PREPARED BY
+                                </div>
                                 <div style="font-size: 9pt; color: #666;">Authorized Personnel</div>
                             </div>
                             <div style="width: 250px;" id="dynamicNotedBy">
                                 <div style="border-bottom: 1.5px solid #000; height: 30px; margin-bottom: 5px;"></div>
-                                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;" id="notedByLabel">NOTED / CHECKED BY</div>
+                                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;"
+                                    id="notedByLabel">NOTED / CHECKED BY</div>
                                 <div style="font-size: 9pt; color: #666;" id="notedBySub">Manager / Supervisor</div>
                             </div>
                         </div>
-                        <div style="margin-top: 40px; font-size: 9pt; font-style: italic; color: #777; border-top: 1px solid #eee; padding-top: 15px;" id="footerDisclaimerText">
+                        <div style="margin-top: 40px; font-size: 9pt; font-style: italic; color: #777; border-top: 1px solid #eee; padding-top: 15px;"
+                            id="footerDisclaimerText">
                             This is a system-generated report.
                         </div>
                     </div>
@@ -656,7 +659,6 @@ if ($position === 'Spareparts-Owner') {
                     <!-- Standardized Report Header (Print only) -->
                     <div class="report-header-print d-none d-print-block">
                         <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                        <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                         <div class="system-name">Spareparts Management System</div>
                         <div class="report-title-container" style="margin-top: 15px;">
                             <div class="report-title">STATEMENT OF ACCOUNT</div>

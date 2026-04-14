@@ -927,7 +927,7 @@ $(document).ready(function () {
             }, response => {
                 if (response.success) {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('transferPartsModal')).hide();
-                    
+
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             title: 'Transfer Success!',
@@ -947,7 +947,7 @@ $(document).ready(function () {
                     } else {
                         showSuccessModal('Transfer initiated successfully.');
                     }
-                    
+
                     transferCart = [];
                     renderTransferCart();
                     loadInventory();
@@ -1095,7 +1095,7 @@ $(document).ready(function () {
                 $.post('../api/spareparts_inventory.php?action=accept_transfer', { transfer_id: currentViewingTransferId }, response => {
                     if (response.success) {
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
-                        
+
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Transfer Accepted!',
@@ -1203,7 +1203,7 @@ $(document).ready(function () {
                                  </button>`;
                     });
                 }
-                
+
                 // Add "Add New Customer" prompt
                 if (val.length > 0) {
                     html += `<button type="button" class="list-group-item list-group-item-action text-primary fw-bold p-3" id="btn-prompt-add-customer" data-name="${escapeHtml($(this).val())}">
@@ -1227,7 +1227,7 @@ $(document).ready(function () {
             }, 'json');
         });
 
-        $(document).on('click', '#btn-prompt-add-customer', function() {
+        $(document).on('click', '#btn-prompt-add-customer', function () {
             const name = $(this).data('name');
             $('#saleCustomerSearchResults').hide();
             $('#cust_name').val(name);
@@ -1239,12 +1239,12 @@ $(document).ready(function () {
             const rank = $(this).data('rank');
             const limit = parseFloat($(this).data('limit') || 0);
             const balance = parseFloat($(this).data('balance') || 0);
-            
+
             $('#out_customer_name').val(name);
             currentCustomerRank = rank;
             window.currentCustomerLimit = limit;
             window.currentCustomerBalance = balance;
-            
+
             // Show Rank and Limit info below the input if it's charge sale
             if ($('#out_transaction_type').val() === 'charge' || $('#out_transaction_type').val() === 'pdc') {
                 const limitStr = '₱' + limit.toLocaleString(undefined, { minimumFractionDigits: 2 });
@@ -1264,7 +1264,7 @@ $(document).ready(function () {
             updateCartPricesForRank();
         });
 
-        $(document).on('change', '#out_transaction_type', function() {
+        $(document).on('change', '#out_transaction_type', function () {
             // Re-trigger visual feedback for customer if already selected
             const name = $('#out_customer_name').val();
             if (name) {
@@ -1311,7 +1311,7 @@ $(document).ready(function () {
             } else {
                 $('#out_customer_name').prop('required', true);
                 label.html('Customer Name <span class="text-danger">*</span>');
-                
+
                 if (selectedType === 'pdc') {
                     $('#pdcFields').slideDown();
                 } else {
@@ -1342,7 +1342,7 @@ $(document).ready(function () {
 
                 $.get('../api/spareparts_inventory.php?action=get_next_invoice_number', {
                     branch: window.currentBranch || 'HEADOFFICE'
-                }, function(res) {
+                }, function (res) {
                     if (res && res.success) {
                         orField.value = res.invoice_number;
                         orField.placeholder = 'Sales Invoice No.';
@@ -1355,7 +1355,7 @@ $(document).ready(function () {
                         orField.placeholder = 'Enter SI Number';
                         orField.style.opacity = '1';
                     }
-                }, 'json').fail(function() {
+                }, 'json').fail(function () {
                     orField.placeholder = 'Enter SI Number';
                     orField.style.opacity = '1';
                 });
@@ -1366,7 +1366,7 @@ $(document).ready(function () {
         $('#out_sales_force').on('input focus', function () {
             const term = $(this).val().trim();
             const $results = $('#salesForceSearchResults');
-            
+
             // On focus with empty term, show all available
             $.get('../api/spareparts_inventory.php?action=search_sales_force', { term }, function (res) {
                 $results.empty();
@@ -1391,7 +1391,7 @@ $(document).ready(function () {
             const pos = $(this).data('position');
             $('#out_sales_force').val(name);
             $('#salesForceSearchResults').hide();
-            
+
             // Show position info if available
             $('#out_sales_force_info').remove();
             if (pos) {
@@ -1532,7 +1532,7 @@ $(document).ready(function () {
             renderSaleCart();
         });
 
-        $('#out_transaction_type').on('change', function() {
+        $('#out_transaction_type').on('change', function () {
             const val = $(this).val();
             if (val === 'pdc') {
                 $('#pdc_fields').removeClass('d-none');
@@ -1541,7 +1541,7 @@ $(document).ready(function () {
             }
         });
 
-        $(document).on('click', '#confirmPdcDetailsBtn', function() {
+        $(document).on('click', '#confirmPdcDetailsBtn', function () {
             const bank = $('input[name="pdc_bank"]').val().trim();
             const check = $('input[name="pdc_check_no"]').val().trim();
             const date = $('input[name="pdc_maturity_date"]').val().trim();
@@ -1558,7 +1558,7 @@ $(document).ready(function () {
             if (saleCart.length === 0) { showErrorModal('Add items to sale first.'); return; }
 
             const transactionTypeVal = $('#out_transaction_type').val();
-            
+
             // Credit Limit Validation
             if (transactionTypeVal === 'charge' || transactionTypeVal === 'pdc') {
                 const limit = parseFloat(window.currentCustomerLimit || 0);
@@ -1567,16 +1567,16 @@ $(document).ready(function () {
                 saleCart.forEach(item => {
                     currentTotal += (item.quantity * item.price);
                 });
-                
+
                 const newTotal = balance + currentTotal;
                 if (newTotal > limit && limit > 0) {
                     const excess = newTotal - limit;
                     $('#credit_limit_msg').html(`Transaction Blocked! Customer has exceeded their credit limit.<br>
-                        <b>Credit Limit:</b> ₱${limit.toLocaleString(undefined, {minimumFractionDigits:2})}<br>
-                        <b>Total if processed:</b> ₱${newTotal.toLocaleString(undefined, {minimumFractionDigits:2})}<br>
-                        <span class="text-danger"><b>Exceeds by:</b> ₱${excess.toLocaleString(undefined, {minimumFractionDigits:2})}</span>`);
+                        <b>Credit Limit:</b> ₱${limit.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+                        <b>Total if processed:</b> ₱${newTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+                        <span class="text-danger"><b>Exceeds by:</b> ₱${excess.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>`);
                     $('#credit_limit_error').removeClass('d-none');
-                    document.getElementById('credit_limit_error').scrollIntoView({behavior: 'smooth', block: 'center'});
+                    document.getElementById('credit_limit_error').scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
             }
@@ -2169,7 +2169,7 @@ $(document).ready(function () {
 
                 // Only showing badge here as dashboard modal handles the alert
                 if (!hasShownAlert) {
-                     hasShownAlert = true; // Still mark as alert shown so we don't repeat badge logging
+                    hasShownAlert = true; // Still mark as alert shown so we don't repeat badge logging
                 }
             } else {
                 $('#incoming-badge').addClass('d-none');
@@ -4326,7 +4326,6 @@ $(document).ready(function () {
             <body>
                 <div class="report-header-print">
                     <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                    <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                     <div class="system-name">Spareparts Management System</div>
                     <div class="report-title-container" style="margin-top: 15px;">
                         <h2 class="report-title">${title}</h2>
@@ -4518,7 +4517,7 @@ window.showConfirmModal = function (message, onConfirm) {
 
 // Polyfill/Ensure printTransferSummaryUI is available globally if not already from spareparts_dashboard.js
 if (typeof window.printTransferSummaryUI !== 'function') {
-    window.printTransferSummaryUI = function(transferId, fromBranch) {
+    window.printTransferSummaryUI = function (transferId, fromBranch) {
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html>
@@ -4590,7 +4589,6 @@ if (typeof window.printTransferSummaryUI !== 'function') {
             <body>
                 <div class="report-header-print">
                     <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                    <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                     <div class="system-name">Spareparts Management System</div>
                     <div class="report-title-container" style="margin-top: 15px;">
                         <div class="report-title">TRANSFER SUMMARY DOCUMENT</div>

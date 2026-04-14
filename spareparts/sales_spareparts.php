@@ -182,20 +182,24 @@ $showTabs = !isset($_GET['tab']);
             padding: 0 !important;
             border-radius: 0 !important;
         }
+
         #sellPartsOutModal,
         #sellPartsOutModal .modal-dialog,
         #sellPartsOutModal .modal-content {
             height: 100vh !important;
             min-height: 100vh !important;
         }
+
         #sellPartsOutModal .modal-content {
             display: flex !important;
             flex-direction: column !important;
         }
+
         #sellPartsOutModal .modal-body {
             flex: 1 1 auto !important;
             overflow-y: auto !important;
         }
+
         #sellPartsOutModal .sale-summary-sidebar {
             position: sticky;
             top: 20px;
@@ -1317,7 +1321,8 @@ $showTabs = !isset($_GET['tab']);
     <div class='modal fade' id='sellPartsOutModal' tabindex='-1' aria-labelledby='sellPartsOutModalLabel'
         aria-hidden='true' style="padding:0!important;">
         <div class="modal-dialog" style="width:100vw;max-width:100vw;height:100vh;min-height:100vh;margin:0;padding:0;">
-            <form id='sellPartsOutForm' class='modal-content border-0' style="width:100%;height:100vh;min-height:100vh;border-radius:0;display:flex;flex-direction:column;overflow:hidden;">
+            <form id='sellPartsOutForm' class='modal-content border-0'
+                style="width:100%;height:100vh;min-height:100vh;border-radius:0;display:flex;flex-direction:column;overflow:hidden;">
                 <!-- HEADER -->
                 <div class="modal-header bg-dark text-white py-3">
                     <h5 class="modal-title fw-bold" id='sellPartsOutModalLabel'>
@@ -1334,21 +1339,28 @@ $showTabs = !isset($_GET['tab']);
                         <div class="col-lg-3">
 
                             <!-- Sale Info Card -->
-                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
+                            <div class="card border-0 shadow-sm rounded-4 mb-3"
+                                style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">
                                         <i class="bi bi-file-earmark-text me-2"></i>Step 1: Sale Details
                                     </h6>
                                     <div class="row g-3">
                                         <div class="col-12">
-                                            <label for='out_or_number' class='small fw-bold text-muted'>Sales Invoice No. *</label>
-                                            <input type='text' class='form-control fw-bold border-success' id='out_or_number' required autocomplete="off" placeholder="Required">
+                                            <label for='out_or_number' class='small fw-bold text-muted'>Sales Invoice
+                                                No. *</label>
+                                            <input type='text' class='form-control fw-bold border-success'
+                                                id='out_or_number' required autocomplete="off" placeholder="Required">
                                             <div id="or_availability_feedback" class="small mt-1"></div>
                                         </div>
-                                        <div class="col-12 position-relative" style="z-index: 9999 !important; overflow: visible !important;">
-                                            <label for='out_customer_name' class='small fw-bold text-muted'>Customer Name *</label>
-                                            <input type='text' class='form-control' id='out_customer_name' required autocomplete="off" placeholder="Type to search customer...">
-                                            <div id="saleCustomerSearchResults" class="list-group border rounded shadow-sm mt-1"
+                                        <div class="col-12 position-relative"
+                                            style="z-index: 9999 !important; overflow: visible !important;">
+                                            <label for='out_customer_name' class='small fw-bold text-muted'>Customer
+                                                Name *</label>
+                                            <input type='text' class='form-control' id='out_customer_name' required
+                                                autocomplete="off" placeholder="Type to search customer...">
+                                            <div id="saleCustomerSearchResults"
+                                                class="list-group border rounded shadow-sm mt-1"
                                                 style="max-height: 200px; overflow-y: auto; position: absolute; width: calc(100% - 1.5rem); z-index: 99999 !important; display: none; background: white;">
                                             </div>
                                         </div>
@@ -1357,7 +1369,8 @@ $showTabs = !isset($_GET['tab']);
                                             <input type='date' class='form-control' id='out_date' required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for='out_transaction_type' class='small fw-bold text-muted'>Payment Type</label>
+                                            <label for='out_transaction_type' class='small fw-bold text-muted'>Payment
+                                                Type</label>
                                             <select class='form-select' id='out_transaction_type' required>
                                                 <option value='cash' selected>Cash Sales</option>
                                                 <option value='charge'>Charge Sales</option>
@@ -1369,13 +1382,15 @@ $showTabs = !isset($_GET['tab']);
                             </div>
 
                             <!-- Sales Force Card -->
-                            <div class="card border-0 shadow-sm rounded-4" style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
+                            <div class="card border-0 shadow-sm rounded-4"
+                                style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">
                                         <i class="bi bi-person-badge me-2"></i>Step 2: Sales Force
                                         <span class="fw-normal text-muted">(Optional)</span>
                                     </h6>
-                                    <div class="position-relative" style="z-index: 9999 !important; overflow: visible !important;">
+                                    <div class="position-relative"
+                                        style="z-index: 9999 !important; overflow: visible !important;">
                                         <div class="input-group">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="bi bi-person text-success"></i>
@@ -1383,7 +1398,8 @@ $showTabs = !isset($_GET['tab']);
                                             <input type="text" id="out_sales_force" class="form-control border-start-0"
                                                 placeholder="Type to search employee..." autocomplete="off">
                                         </div>
-                                        <div id="salesForceSearchResults" class="list-group border rounded shadow-sm mt-1"
+                                        <div id="salesForceSearchResults"
+                                            class="list-group border rounded shadow-sm mt-1"
                                             style="max-height: 180px; overflow-y: auto; position: absolute; width: 100%; z-index: 99999 !important; display: none; background: white;">
                                         </div>
                                     </div>
@@ -1396,14 +1412,17 @@ $showTabs = !isset($_GET['tab']);
                         <div class="col-lg-9" style="position: relative; z-index: 9999 !important;">
 
                             <!-- Part Search Card -->
-                            <div class="card border-0 shadow-sm rounded-4 mb-3" style="padding: 24px; border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
+                            <div class="card border-0 shadow-sm rounded-4 mb-3"
+                                style="padding: 24px; border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 class="mb-0 fw-bold text-muted text-uppercase small">
                                         <i class="bi bi-upc-scan me-2"></i>Step 3: Scan / Search Part
                                     </h6>
                                 </div>
-                                <div class="position-relative" style="z-index: 9999 !important; overflow: visible !important;">
-                                    <i class="bi bi-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #004d40; font-size: 1.2rem; z-index: 5;"></i>
+                                <div class="position-relative"
+                                    style="z-index: 9999 !important; overflow: visible !important;">
+                                    <i class="bi bi-search"
+                                        style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #004d40; font-size: 1.2rem; z-index: 5;"></i>
                                     <input type="text" id="salePartSearchInput" class="form-control"
                                         style="padding-left: 45px; height: 50px; border-radius: 8px; border: 2px solid #eee;"
                                         placeholder="Enter Part No. or Part Name to add items..." autocomplete="off">
@@ -1414,8 +1433,10 @@ $showTabs = !isset($_GET['tab']);
                             </div>
 
                             <!-- Cart Table Card -->
-                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="position: relative; z-index: 1;">
-                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden"
+                                style="position: relative; z-index: 1;">
+                                <div
+                                    class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                                     <h6 class="mb-0 fw-bold text-muted text-uppercase small">
                                         <i class="bi bi-list-check me-2"></i>Sale Items
                                     </h6>
@@ -1434,7 +1455,8 @@ $showTabs = !isset($_GET['tab']);
                                             </thead>
                                             <tbody id="partsForSaleList">
                                                 <tr id="emptySaleListRow">
-                                                    <td colspan="5" class="text-center text-muted py-5">Cart is empty</td>
+                                                    <td colspan="5" class="text-center text-muted py-5">Cart is empty
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -1460,7 +1482,8 @@ $showTabs = !isset($_GET['tab']);
                 <!-- FOOTER -->
                 <div class='modal-footer bg-white border-top'>
                     <button type='button' class='btn btn-premium-cancel' data-bs-dismiss='modal'>Cancel</button>
-                    <button type='submit' class='btn btn-success px-5 py-2 fw-bold shadow-sm' style="border-radius:12px;">
+                    <button type='submit' class='btn btn-success px-5 py-2 fw-bold shadow-sm'
+                        style="border-radius:12px;">
                         <i class="bi bi-check-circle me-2"></i>Confirm Sale
                     </button>
                 </div>
@@ -1948,7 +1971,6 @@ $showTabs = !isset($_GET['tab']);
                     <!-- PRINT HEADER (Hidden on Screen) -->
                     <div class="report-header-print d-none d-print-block">
                         <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                        <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                         <div class="system-name">Spareparts Management System</div>
                         <div class="report-title-container" style="margin-top: 15px;">
                             <div class="report-title">INVENTORY ITEM REPORT</div>
@@ -2527,7 +2549,6 @@ $showTabs = !isset($_GET['tab']);
                     <!-- Standardized Report Header (Print only) -->
                     <div class="report-header-print d-none d-print-block">
                         <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                        <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                         <div class="system-name">Spareparts Management System</div>
                         <div class="report-title-container" style="margin-top: 15px;">
                             <div class="report-title">STATEMENT OF ACCOUNT</div>

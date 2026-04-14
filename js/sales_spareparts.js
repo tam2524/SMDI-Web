@@ -2,17 +2,17 @@
  * Extension script for Sales Dashboard (Customers and Returns/CM)
  */
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     // ===================== SHARED PAGINATION HELPER =====================
     const SALES_PAGE_SIZE = 20;
     function renderTablePagination(pagId, infoId, totalItems, currentPage, onChangePage) {
         const totalPages = Math.max(1, Math.ceil(totalItems / SALES_PAGE_SIZE));
-        const pag  = document.getElementById(pagId);
+        const pag = document.getElementById(pagId);
         const info = document.getElementById(infoId);
         if (!pag || !info) return;
         const start = totalItems === 0 ? 0 : (currentPage - 1) * SALES_PAGE_SIZE + 1;
-        const end   = Math.min(currentPage * SALES_PAGE_SIZE, totalItems);
+        const end = Math.min(currentPage * SALES_PAGE_SIZE, totalItems);
         info.textContent = totalItems === 0 ? 'No records' : `Showing ${start}–${end} of ${totalItems} records`;
         pag.innerHTML = '';
         if (totalPages <= 1) return;
@@ -67,7 +67,7 @@ $(document).ready(function() {
         if (titles[target]) {
             $('.navbar-brand').text(titles[target]);
         }
-        
+
         if (target === 'employees') { loadEmployeesTable(); }
         if (target === 'pricelists') { loadPricelistsTable(); }
     });
@@ -104,7 +104,7 @@ $(document).ready(function() {
     function renderCustomers(data) {
         const tbody = $('#customersTableBody');
         tbody.empty();
-        if(!data || data.length === 0) {
+        if (!data || data.length === 0) {
             tbody.append('<tr><td colspan="5" class="text-center text-muted p-4">No customers found.</td></tr>');
             return;
         }
@@ -115,7 +115,7 @@ $(document).ready(function() {
                     <td class="py-3 ps-4 fw-bold" style="color: #2c3e50;">${cust.name}</td>
                     <td class="py-3" style="color: #6c757d;">${cust.contact_no || '-'}</td>
                     <td class="py-3" style="color: #6c757d;">${cust.address || '-'}</td>
-                    <td class="py-3 text-end"><span class="badge-balance">₱${parseFloat(cust.balance || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</span></td>
+                    <td class="py-3 text-end"><span class="badge-balance">₱${parseFloat(cust.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></td>
                     <td class="py-3 pe-4 text-center">
                         <button class="btn btn-sm btn-outline-primary btn-edit-customer" 
                             data-id="${cust.id}" 
@@ -139,22 +139,22 @@ $(document).ready(function() {
     function escapeHtml(unsafe) {
         if (!unsafe) return '';
         return unsafe
-             .toString()
-             .replace(/&/g, "&amp;")
-             .replace(/</g, "&lt;")
-             .replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
+            .toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     // Call API
     function loadCustomers() {
-        $.get('../api/sales_features_api.php?action=get_customers', function(res) {
+        $.get('../api/sales_features_api.php?action=get_customers', function (res) {
             // Fallback parse if jQuery didn't treat it as JSON automatically
             if (typeof res === 'string') {
-                try { res = JSON.parse(res); } catch(e) { console.error("Parse Error:", e); }
+                try { res = JSON.parse(res); } catch (e) { console.error("Parse Error:", e); }
             }
-            if(res && res.success) {
+            if (res && res.success) {
                 customersData = res.data;
                 renderCustomers(customersData);
             }
@@ -163,7 +163,7 @@ $(document).ready(function() {
     loadCustomers();
 
     // Manual triggers for Add Customer button
-    $(document).on('click', '[data-bs-target="#addCustomerModal"]', function(e) {
+    $(document).on('click', '[data-bs-target="#addCustomerModal"]', function (e) {
         console.log("Add Customer button clicked");
         const modalEl = document.getElementById('addCustomerModal');
         if (modalEl) {
@@ -174,13 +174,13 @@ $(document).ready(function() {
         }
     });
 
-    $('#addCustomerForm').on('submit', function(e) {
+    $('#addCustomerForm').on('submit', function (e) {
         e.preventDefault();
-        $.post('../api/sales_features_api.php?action=add_customer', $(this).serialize(), function(res) {
+        $.post('../api/sales_features_api.php?action=add_customer', $(this).serialize(), function (res) {
             if (typeof res === 'string') {
-                try { res = JSON.parse(res); } catch(e) {}
+                try { res = JSON.parse(res); } catch (e) { }
             }
-            if(res && res.success) {
+            if (res && res.success) {
                 const newName = $('#cust_name').val();
                 const newRank = $('#cust_rank').val() || 'Silver';
                 const newLimit = $('#cust_limit').val() || 0;
@@ -197,7 +197,7 @@ $(document).ready(function() {
                     if (typeof currentCustomerRank !== 'undefined') {
                         currentCustomerRank = newRank;
                     }
-                    
+
                     if ($('#out_transaction_type').val() === 'charge' || $('#out_transaction_type').val() === 'pdc') {
                         const limitStr = '₱' + parseFloat(newLimit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
                         const infoHtml = `<div id="customerSelectionInfo" class="mt-1 small text-muted">
@@ -212,13 +212,13 @@ $(document).ready(function() {
             } else {
                 showError('Error: ' + (res ? res.message : 'Unknown response format'));
             }
-        }, 'json').fail(function(xhr) {
+        }, 'json').fail(function (xhr) {
             console.error("Add customer failed: ", xhr.responseText);
             showError("Error communicating with server.");
         });
     });
 
-    $(document).on('click', '.btn-edit-customer', function() {
+    $(document).on('click', '.btn-edit-customer', function () {
         $('#edit_cust_id').val($(this).data('id'));
         $('#edit_cust_name').val($(this).data('name'));
         $('#edit_cust_contact').val($(this).data('contact'));
@@ -226,14 +226,14 @@ $(document).ready(function() {
         $('#edit_cust_rank').val($(this).data('rank') || 'Standard');
         $('#edit_cust_term').val($(this).data('term') || 0);
         $('#edit_cust_limit').val($(this).data('limit') || 0);
-        
+
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editCustomerModal')).show();
     });
 
-    $('#editCustomerForm').on('submit', function(e) {
+    $('#editCustomerForm').on('submit', function (e) {
         e.preventDefault();
-        $.post('../api/sales_features_api.php?action=edit_customer', $(this).serialize(), function(res) {
-            if(res.success) {
+        $.post('../api/sales_features_api.php?action=edit_customer', $(this).serialize(), function (res) {
+            if (res.success) {
                 const modalEl = document.getElementById('editCustomerModal');
                 bootstrap.Modal.getOrCreateInstance(modalEl).hide();
                 showSuccess('Customer updated successfully!');
@@ -244,12 +244,12 @@ $(document).ready(function() {
         }, 'json');
     });
 
-    $(document).on('click', '.btn-delete-customer', function() {
+    $(document).on('click', '.btn-delete-customer', function () {
         if (!confirm('Are you sure you want to delete this customer?')) return;
-        
+
         const id = $(this).data('id');
-        $.post('../api/sales_features_api.php?action=delete_customer', {id: id}, function(res) {
-            if(res.success) {
+        $.post('../api/sales_features_api.php?action=delete_customer', { id: id }, function (res) {
+            if (res.success) {
                 showSuccess('Customer deleted successfully!');
                 loadCustomers();
             } else {
@@ -258,12 +258,12 @@ $(document).ready(function() {
         }, 'json');
     });
 
-    $(document).on('click', '.btn-view-aging', function() {
+    $(document).on('click', '.btn-view-aging', function () {
         const name = $(this).data('name');
         const address = $(this).data('address') || 'No address provided';
         const contact = $(this).data('contact') || 'No contact provided';
         const rank = $(this).data('rank') || 'Standard';
-        const limitStr = '₱' + parseFloat($(this).data('limit') || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+        const limitStr = '₱' + parseFloat($(this).data('limit') || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
 
         $('#ledgerCustomerName').text(name);
         $('#printLedgerCustomerName').text(name);
@@ -271,22 +271,22 @@ $(document).ready(function() {
         $('#printLedgerContact').text('Contact: ' + contact);
         $('#printLedgerRank').text(rank);
         $('#printLedgerLimit').text(limitStr);
-        $('#printLedgerDateFooter').text(new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'2-digit' }));
+        $('#printLedgerDateFooter').text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }));
         $('#printLedgerTimeFooter').text(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
 
         $('#ledgerModalTbody').html('<tr><td colspan="6" class="text-center p-5"><div class="spinner-border text-success"></div><br>Loading ledger...</td></tr>');
-        
+
         const modalEl = document.getElementById('customerLedgerModal');
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
 
         const branch = window.currentBranch || 'HEADOFFICE';
 
-        $.get('../api/reports_master.php', { 
-            action: 'customer_ledger', 
+        $.get('../api/reports_master.php', {
+            action: 'customer_ledger',
             customer: name,
             branch: branch
-        }, function(res) {
+        }, function (res) {
             if (res.success) {
                 let html = '';
                 let totalDebit = 0;
@@ -300,7 +300,7 @@ $(document).ready(function() {
                         const debit = parseFloat(item.debit || 0);
                         const credit = parseFloat(item.credit || 0);
                         const runningBal = parseFloat(item.balance || 0);
-                        
+
                         totalDebit += debit;
                         totalCredit += credit;
                         finalBalance = runningBal; // Last row is the final running balance
@@ -309,29 +309,29 @@ $(document).ready(function() {
                             <td class="ps-3 small text-muted">${item.date}</td>
                             <td><span class="badge bg-light text-dark border fw-bold px-2 py-1">${item.ref || '-'}</span></td>
                             <td class="small">${item.debit_credit_type || ''}</td>
-                            <td class="text-end fw-bold text-danger">${debit > 0 ? '₱' + debit.toLocaleString(undefined, {minimumFractionDigits:2}) : '-'}</td>
-                            <td class="text-end fw-bold text-success">${credit > 0 ? '₱' + credit.toLocaleString(undefined, {minimumFractionDigits:2}) : '-'}</td>
-                            <td class="text-end pe-3 fw-bold ${runningBal > 0 ? 'text-primary' : ''}">₱${runningBal.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                            <td class="text-end fw-bold text-danger">${debit > 0 ? '₱' + debit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}</td>
+                            <td class="text-end fw-bold text-success">${credit > 0 ? '₱' + credit.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}</td>
+                            <td class="text-end pe-3 fw-bold ${runningBal > 0 ? 'text-primary' : ''}">₱${runningBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                         </tr>`;
                     });
 
                     // Add Summary Row
                     html += `<tr class="table-light">
                         <td colspan="3" class="text-end fw-bold py-3 text-uppercase small bg-white border-top-2">Grand Totals</td>
-                        <td class="text-end fw-bold fs-6 text-danger border-top-2">₱${totalDebit.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                        <td class="text-end fw-bold fs-6 text-success border-top-2">₱${totalCredit.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                        <td class="text-end pe-3 fw-bold fs-5 text-primary border-top-2" style="background:#f0f7ff;">₱${finalBalance.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        <td class="text-end fw-bold fs-6 text-danger border-top-2">₱${totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td class="text-end fw-bold fs-6 text-success border-top-2">₱${totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td class="text-end pe-3 fw-bold fs-5 text-primary border-top-2" style="background:#f0f7ff;">₱${finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     </tr>`;
                 }
                 $('#ledgerModalTbody').html(html);
-                $('#ledgerPeriods').text('Statement as of ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'2-digit' }));
+                $('#ledgerPeriods').text('Statement as of ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }));
             } else {
                 $('#ledgerModalTbody').html(`<tr><td colspan="6" class="text-center p-4 text-danger">${res.message || 'Error loading ledger'}</td></tr>`);
             }
         }, 'json');
     });
 
-    window.printLedger = function() {
+    window.printLedger = function () {
         const customerName = $('#printLedgerCustomerName').text();
         const address = $('#printLedgerAddress').text();
         const contact = $('#printLedgerContact').text();
@@ -382,7 +382,6 @@ $(document).ready(function() {
         <body onload="window.print();">
             <div class="report-header-print">
                 <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                 <div class="system-name">Spareparts Management System</div>
                 <div class="report-title-container">
                     <div class="report-title">STATEMENT OF ACCOUNT</div>
@@ -469,7 +468,7 @@ $(document).ready(function() {
             $('#returnsStat-count').text('0');
             $('#returnsStat-credited').text('₱0.00');
             $('#returnsStat-qty').text('0');
-            renderTablePagination('returnsPagination', 'returnsPageInfo', 0, 1, () => {});
+            renderTablePagination('returnsPagination', 'returnsPageInfo', 0, 1, () => { });
             return;
         }
 
@@ -480,7 +479,7 @@ $(document).ready(function() {
             totalQty += parseInt(ret.qty_returned || 0);
         });
         $('#returnsStat-count').text(data.length);
-        $('#returnsStat-credited').text('₱' + totalCredited.toLocaleString(undefined, {minimumFractionDigits:2}));
+        $('#returnsStat-credited').text('₱' + totalCredited.toLocaleString(undefined, { minimumFractionDigits: 2 }));
         $('#returnsStat-qty').text(totalQty);
 
         const page = returnsCurrentPage;
@@ -492,12 +491,12 @@ $(document).ready(function() {
         });
 
         $('#returnsStat-count').text(data.length);
-        $('#returnsStat-credited').text('₱' + totalCredited.toLocaleString(undefined, {minimumFractionDigits:2}));
+        $('#returnsStat-credited').text('₱' + totalCredited.toLocaleString(undefined, { minimumFractionDigits: 2 }));
         $('#returnsStat-qty').text(totalQty);
 
         data.forEach(ret => {
             // Format date safely
-            const dateStr = ret.date_returned ? new Date(ret.date_returned + 'T00:00:00').toLocaleDateString('en-US', { year:'numeric', month:'short', day:'2-digit' }) : '-';
+            const dateStr = ret.date_returned ? new Date(ret.date_returned + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }) : '-';
             const row = `
                 <tr>
                     <td class="ps-3 small fw-bold">${dateStr}</td>
@@ -510,7 +509,7 @@ $(document).ready(function() {
                     <td class="text-center">
                         <span class="badge bg-light text-dark border fw-bold px-2">${ret.qty_returned}</span>
                     </td>
-                    <td class="text-end text-danger fw-bold">₱${parseFloat(ret.amount_credited).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    <td class="text-end text-danger fw-bold">₱${parseFloat(ret.amount_credited).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td class="small text-muted">${ret.remarks || ''}</td>
                     <td class="text-center">
                         <span class="badge bg-success-subtle text-success border border-success" style="font-size:0.7rem;">
@@ -529,9 +528,9 @@ $(document).ready(function() {
         });
     }
     function loadReturns() {
-        $.get('../api/sales_features_api.php?action=get_returns', function(res) {
-            if(typeof res === 'string') { try { res = JSON.parse(res); } catch(e) {} }
-            if(res && res.success) {
+        $.get('../api/sales_features_api.php?action=get_returns', function (res) {
+            if (typeof res === 'string') { try { res = JSON.parse(res); } catch (e) { } }
+            if (res && res.success) {
                 returnsData = res.data;
                 renderReturns(returnsData);
             }
@@ -540,12 +539,12 @@ $(document).ready(function() {
     loadReturns();
 
     // Reload returns list when tab is clicked
-    $(document).on('click', '#returns-tab', function() {
+    $(document).on('click', '#returns-tab', function () {
         loadReturns();
     });
 
     // Search/filter returns
-    $('#returnsSearch').on('input', function() {
+    $('#returnsSearch').on('input', function () {
         const q = $(this).val().toLowerCase().trim();
         if (!q) {
             renderReturns(returnsData);
@@ -568,7 +567,7 @@ $(document).ready(function() {
     $('#returnDate').val(new Date().toISOString().split('T')[0]);
 
     // Reset modal state when opened
-    $('#recordReturnModal').on('show.bs.modal', function() {
+    $('#recordReturnModal').on('show.bs.modal', function () {
         $('#returnCustomerSearch').val('');
         $('#returnCustomerName').val('');
         $('#returnCustomerResults').hide();
@@ -585,15 +584,15 @@ $(document).ready(function() {
 
     // Customer search typeahead
     let returnSearchTimer = null;
-    $('#returnCustomerSearch').on('input', function() {
+    $('#returnCustomerSearch').on('input', function () {
         const term = $(this).val().trim();
         const $results = $('#returnCustomerResults');
-        
+
         clearTimeout(returnSearchTimer);
         if (term.length < 2) { $results.hide(); return; }
 
-        returnSearchTimer = setTimeout(function() {
-            $.get('../api/sales_features_api.php?action=search_customers_for_return', { term }, function(res) {
+        returnSearchTimer = setTimeout(function () {
+            $.get('../api/sales_features_api.php?action=search_customers_for_return', { term }, function (res) {
                 $results.empty();
                 if (res.success && res.data && res.data.length > 0) {
                     res.data.forEach(name => {
@@ -611,7 +610,7 @@ $(document).ready(function() {
     });
 
     // Pick customer from dropdown
-    $(document).on('click', '.return-customer-pick', function() {
+    $(document).on('click', '.return-customer-pick', function () {
         const name = $(this).data('name');
         $('#returnCustomerSearch').val(name);
         $('#returnCustomerName').val(name);
@@ -626,7 +625,7 @@ $(document).ready(function() {
         $('#returnEmptyState').addClass('d-none');
         $('#returnCustomerLabel').text(customerName);
 
-        $.get('../api/sales_features_api.php?action=get_customer_sales', { customer_name: customerName }, function(res) {
+        $.get('../api/sales_features_api.php?action=get_customer_sales', { customer_name: customerName }, function (res) {
             if (res.success && res.data.length > 0) {
                 returnSalesData = res.data;
                 renderReturnSalesItems(res.data);
@@ -635,7 +634,7 @@ $(document).ready(function() {
                 $('#returnSalesBody').html('<tr><td colspan="8" class="text-center text-muted py-4">No sales found for this customer.</td></tr>');
                 $('#btnSubmitReturn').addClass('d-none');
             }
-        }, 'json').fail(function() {
+        }, 'json').fail(function () {
             $('#returnSalesBody').html('<tr><td colspan="8" class="text-center text-danger py-4">Error loading sales data.</td></tr>');
         });
     }
@@ -656,15 +655,15 @@ $(document).ready(function() {
                     <td><span class="badge bg-dark">${item.or_number}</span></td>
                     <td class="fw-bold">${item.part_no}</td>
                     <td class="small">${item.description || ''}</td>
-                    <td class="text-center">${item.quantity} ${item.already_returned > 0 ? '<small class="text-warning">('+item.already_returned+' returned)</small>' : ''}</td>
-                    <td class="text-end">₱${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td class="text-center">${item.quantity} ${item.already_returned > 0 ? '<small class="text-warning">(' + item.already_returned + ' returned)</small>' : ''}</td>
+                    <td class="text-end">₱${parseFloat(item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td class="text-center">
-                        ${isReturnable ? 
-                            `<input type="number" class="form-control form-control-sm text-center return-qty-input" 
+                        ${isReturnable ?
+                    `<input type="number" class="form-control form-control-sm text-center return-qty-input" 
                                 data-index="${idx}" min="1" max="${item.returnable_qty}" value="${item.returnable_qty}" 
-                                style="width: 70px; margin: 0 auto;" disabled>` 
-                            : '<span class="badge bg-success">All Returned</span>'
-                        }
+                                style="width: 70px; margin: 0 auto;" disabled>`
+                    : '<span class="badge bg-success">All Returned</span>'
+                }
                     </td>
                 </tr>
             `;
@@ -676,21 +675,21 @@ $(document).ready(function() {
     }
 
     // Select all checkbox
-    $('#selectAllReturnItems').on('change', function() {
+    $('#selectAllReturnItems').on('change', function () {
         const isChecked = $(this).is(':checked');
         $('.return-item-check:not(:disabled)').prop('checked', isChecked);
-        $('.return-qty-input').prop('disabled', function() {
+        $('.return-qty-input').prop('disabled', function () {
             return !$(this).closest('tr').find('.return-item-check').is(':checked');
         });
         updateReturnTotal();
     });
 
     // Individual checkbox toggle
-    $(document).on('change', '.return-item-check', function() {
+    $(document).on('change', '.return-item-check', function () {
         const idx = $(this).data('index');
         const isChecked = $(this).is(':checked');
         $(this).closest('tr').find('.return-qty-input').prop('disabled', !isChecked);
-        
+
         const total = $('.return-item-check:not(:disabled)').length;
         const checked = $('.return-item-check:checked').length;
         $('#selectAllReturnItems').prop('checked', total === checked && total > 0);
@@ -698,7 +697,7 @@ $(document).ready(function() {
     });
 
     // Qty input change
-    $(document).on('input', '.return-qty-input', function() {
+    $(document).on('input', '.return-qty-input', function () {
         const max = parseInt($(this).attr('max'));
         let val = parseInt($(this).val());
         if (val > max) { $(this).val(max); val = max; }
@@ -709,7 +708,7 @@ $(document).ready(function() {
     function updateReturnTotal() {
         let total = 0;
         let selectedCount = 0;
-        $('.return-item-check:checked').each(function() {
+        $('.return-item-check:checked').each(function () {
             const idx = $(this).data('index');
             const item = returnSalesData[idx];
             const qty = parseInt($(this).closest('tr').find('.return-qty-input').val()) || 0;
@@ -717,8 +716,8 @@ $(document).ready(function() {
             selectedCount++;
         });
 
-        $('#returnTotalCredit').text('₱' + total.toLocaleString(undefined, {minimumFractionDigits: 2}));
-        
+        $('#returnTotalCredit').text('₱' + total.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+
         if (selectedCount > 0) {
             $('#btnSubmitReturn').removeClass('d-none');
         } else {
@@ -727,9 +726,9 @@ $(document).ready(function() {
     }
 
     // Submit return
-    $('#btnSubmitReturn').on('click', function() {
+    $('#btnSubmitReturn').on('click', function () {
         const selectedItems = [];
-        $('.return-item-check:checked').each(function() {
+        $('.return-item-check:checked').each(function () {
             const idx = $(this).data('index');
             const item = returnSalesData[idx];
             const qty = parseInt($(this).closest('tr').find('.return-qty-input').val()) || 0;
@@ -761,7 +760,7 @@ $(document).ready(function() {
             customer_name: customerName,
             date: date,
             remarks: remarks
-        }, function(res) {
+        }, function (res) {
             btn.prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i>Process Return');
             if (res.success) {
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('recordReturnModal')).hide();
@@ -770,14 +769,14 @@ $(document).ready(function() {
             } else {
                 showError(res.message);
             }
-        }, 'json').fail(function() {
+        }, 'json').fail(function () {
             btn.prop('disabled', false).html('<i class="bi bi-check-circle me-2"></i>Process Return');
             showError('Server error while processing return.');
         });
     });
 
     // Close dropdown on outside click
-    $(document).on('click', function(e) {
+    $(document).on('click', function (e) {
         if (!$(e.target).closest('#returnCustomerSearch, #returnCustomerResults').length) {
             $('#returnCustomerResults').hide();
         }
@@ -855,7 +854,7 @@ $(document).ready(function() {
     });
 
     // ===================== EMPLOYEES TAB LOGIC =====================
-    
+
     let employeesData = [];
 
     let employeesCurrentPage = 1;
@@ -867,7 +866,7 @@ $(document).ready(function() {
         employeesAllData = data || [];
         if (!data || data.length === 0) {
             tbody.append('<tr><td colspan="4" class="text-center text-muted p-4"><i class="bi bi-people fs-2 d-block mb-2 opacity-50"></i>No employee records found for this branch.</td></tr>');
-            renderTablePagination('employeesPagination', 'employeesPageInfo', 0, 1, () => {});
+            renderTablePagination('employeesPagination', 'employeesPageInfo', 0, 1, () => { });
             return;
         }
         const page = employeesCurrentPage;
@@ -886,11 +885,11 @@ $(document).ready(function() {
                         </span>
                     </td>
                     <td>
-                        ${count > 0 ? 
-                            `<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill cursor-pointer view-sf-sales" data-name="${escapeHtml(emp.employee_name)}" title="Click to view sales">
+                        ${count > 0 ?
+                    `<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill cursor-pointer view-sf-sales" data-name="${escapeHtml(emp.employee_name)}" title="Click to view sales">
                                 <i class="bi bi-cart-check-fill me-1"></i>${count} Sales
-                            </span>` : 
-                            '<span class="badge bg-light text-muted border px-3 py-2 rounded-pill">No sales yet</span>'}
+                            </span>` :
+                    '<span class="badge bg-light text-muted border px-3 py-2 rounded-pill">No sales yet</span>'}
                     </td>
                     <td class="text-end">
                         <div class="btn-group shadow-sm rounded-pill overflow-hidden">
@@ -915,21 +914,21 @@ $(document).ready(function() {
     window.renderEmployeesTable = renderEmployeesTable; // Make it global just in case
 
     function loadEmployeesTable() {
-        $.get('../api/spareparts_inventory.php?action=get_sales_force', function(res) {
+        $.get('../api/spareparts_inventory.php?action=get_sales_force', function (res) {
             if (res.success) {
                 employeesData = res.data;
                 renderEmployeesTable(employeesData);
             }
-        }, 'json').fail(function() {
+        }, 'json').fail(function () {
             $('#employeesTableBody').html('<tr><td colspan="4" class="text-center text-danger p-4">Error loading employees.</td></tr>');
         });
     }
     window.loadEmployeesTable = loadEmployeesTable; // Hoist to global
 
     // Search filter
-    $('#employeesSearch').on('input', function() {
+    $('#employeesSearch').on('input', function () {
         const query = $(this).val().toLowerCase();
-        const filtered = employeesData.filter(emp => 
+        const filtered = employeesData.filter(emp =>
             emp.employee_name.toLowerCase().includes(query)
         );
         renderEmployeesTable(filtered);
@@ -950,7 +949,7 @@ $(document).ready(function() {
         }, 'json');
     });
 
-    $(document).on('click', '.sf-edit-btn', function() {
+    $(document).on('click', '.sf-edit-btn', function () {
         const id = $(this).data('id');
         const name = $(this).data('name');
         const pos = $(this).data('pos');
@@ -960,12 +959,12 @@ $(document).ready(function() {
         bootstrap.Modal.getOrCreateInstance(document.getElementById('editEmployeeModal')).show();
     });
 
-    $('#editEmployeeForm').on('submit', function(e) {
+    $('#editEmployeeForm').on('submit', function (e) {
         e.preventDefault();
         const id = $('#edit_sf_id').val();
         const name = $('#edit_sf_name').val();
         const position = $('#edit_sf_position').val();
-        $.post('../api/spareparts_inventory.php?action=edit_sales_force', { id, employee_name: name, position }, function(res) {
+        $.post('../api/spareparts_inventory.php?action=edit_sales_force', { id, employee_name: name, position }, function (res) {
             if (res.success) {
                 bootstrap.Modal.getInstance(document.getElementById('editEmployeeModal')).hide();
                 loadEmployeesTable();
@@ -977,12 +976,12 @@ $(document).ready(function() {
         }, 'json');
     });
 
-    $(document).on('click', '.view-sf-sales', function() {
+    $(document).on('click', '.view-sf-sales', function () {
         const name = $(this).data('name');
         // Switch to Sales tab and filter by this employee
         $('#all-sales-tab').trigger('click');
         $('#salesSearch').val(name).trigger('input');
-        
+
         // Find the Sales tab button in mainTabs
         const salesTabBtn = document.querySelector('[data-bs-target="#sales"]');
         if (salesTabBtn) bootstrap.Tab.getOrCreateInstance(salesTabBtn).show();
@@ -1008,7 +1007,7 @@ $(document).ready(function() {
         pricelistsAllData = data || [];
         if (!data || data.length === 0) {
             tbody.append('<tr><td colspan="5" class="text-center text-muted p-4">No rank-based prices found.</td></tr>');
-            renderTablePagination('pricelistsPagination', 'pricelistsPageInfo', 0, 1, () => {});
+            renderTablePagination('pricelistsPagination', 'pricelistsPageInfo', 0, 1, () => { });
             return;
         }
         const page = pricelistsCurrentPage;
@@ -1038,7 +1037,7 @@ $(document).ready(function() {
             document.getElementById('pricelistsTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
-    window.loadPricelistsTable = function() {
+    window.loadPricelistsTable = function () {
         const query = $('#pricelistsSearch').val();
         $.get('../api/spareparts_inventory.php?action=get_pricelists', { query }, function (res) {
             if (res.success) {
@@ -1110,7 +1109,7 @@ $(document).ready(function() {
         $('#pl_part_no').val(pno);
         $('#pl_part_search').val('');
         $('#pl_search_results').hide();
-        
+
         $('#pl_sel_part_no').text(pno);
         $('#pl_sel_description').text((brand ? brand + ' - ' : '') + desc);
         $('#pl_sel_price').text('₱' + parseFloat(price).toLocaleString(undefined, { minimumFractionDigits: 2 }));
@@ -1200,18 +1199,18 @@ $(document).ready(function() {
         $('#bulk-count').text(bulkItems.length);
     }
 
-    $(document).on('input', '.bulk-item-price-input', function() {
+    $(document).on('input', '.bulk-item-price-input', function () {
         const index = $(this).data('index');
         bulkItems[index].rank_price = $(this).val();
     });
 
-    $(document).on('click', '.remove-bulk-item', function() {
+    $(document).on('click', '.remove-bulk-item', function () {
         const index = $(this).data('index');
         bulkItems.splice(index, 1);
         renderBulkTable();
     });
 
-    $('#saveBulkPricelistBtn').on('click', function() {
+    $('#saveBulkPricelistBtn').on('click', function () {
         const rank = $('#bulk_rank_level').val().trim();
         if (!rank) { alert('Please select a rank level first!'); return; }
         if (bulkItems.length === 0) { alert('Please add at least one product.'); return; }
@@ -1225,7 +1224,7 @@ $(document).ready(function() {
         const originalText = btn.html();
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
 
-        $.post('../api/spareparts_inventory.php?action=save_bulk_pricelists', { rank_level: rank, items: items }, function(res) {
+        $.post('../api/spareparts_inventory.php?action=save_bulk_pricelists', { rank_level: rank, items: items }, function (res) {
             btn.prop('disabled', false).html(originalText);
             if (res.success) {
                 $('#bulkPricelistModal').modal('hide');
@@ -1258,8 +1257,8 @@ $(document).ready(function() {
         if (dd < 10) dd = '0' + dd;
         if (mm < 10) mm = '0' + mm;
         const formattedDate = `${yyyy}-${mm}-${dd}`;
-        
-        $(container).find('input[type="date"], input[type="datetime-local"]').each(function() {
+
+        $(container).find('input[type="date"], input[type="datetime-local"]').each(function () {
             if (!$(this).val()) {
                 if ($(this).attr('type') === 'date') {
                     $(this).val(formattedDate);

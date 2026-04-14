@@ -77,15 +77,16 @@ $filterType = $_GET['filter'] ?? 'all';
 
         /* NEW HEADER STYLES mimicking inventory_in.php */
         .bg-navy {
-            background-color: #395a53 !important; /* The dark cyan/grey from inventory_in */
+            background-color: #395a53 !important;
+            /* The dark cyan/grey from inventory_in */
         }
-        
+
         .navbar-custom {
             background-color: var(--smdi-green);
             padding: 0.75rem 1rem;
             margin-bottom: 0px;
         }
-        
+
         .navbar-custom .navbar-brand {
             color: white;
             font-weight: 700;
@@ -107,7 +108,7 @@ $filterType = $_GET['filter'] ?? 'all';
         .navbar-custom .back-btn:hover {
             opacity: 0.8;
         }
-        
+
         .navbar-custom .user-info {
             color: white;
             font-weight: 600;
@@ -121,9 +122,9 @@ $filterType = $_GET['filter'] ?? 'all';
         .navbar-custom .user-info i {
             font-size: 1.1rem;
         }
-        
+
         .navbar-custom .btn-logout {
-            border: 1px solid rgba(255,255,255,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             color: white;
             background: transparent;
             padding: 4px 12px;
@@ -132,9 +133,9 @@ $filterType = $_GET['filter'] ?? 'all';
             text-decoration: none;
             transition: all 0.2s;
         }
-        
+
         .navbar-custom .btn-logout:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
         }
 
@@ -185,19 +186,19 @@ $filterType = $_GET['filter'] ?? 'all';
             border: none;
             background: white;
             transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .custom-tabs .nav-link:hover {
             color: #343a40;
             transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
         }
 
         .custom-tabs .nav-link.active {
             color: #395a53;
             background-color: #e8f5e9;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             border-bottom: 2px solid #395a53;
         }
 
@@ -206,10 +207,10 @@ $filterType = $_GET['filter'] ?? 'all';
             border-radius: 8px;
             background: #fff;
             padding: 15px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
             height: 100%;
         }
-        
+
         .stat-label {
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -402,10 +403,13 @@ $filterType = $_GET['filter'] ?? 'all';
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
                 <div class="modal-header bg-danger text-white border-0 py-3">
-                    <h5 class="modal-title fw-bold text-white"><i class="bi bi-exclamation-triangle-fill me-2"></i>PENDING INCOMING TRANSFERS</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title fw-bold text-white"><i
+                            class="bi bi-exclamation-triangle-fill me-2"></i>PENDING INCOMING TRANSFERS</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-0" id="incoming-alert-modal-body" style="background: #f8f9fa; max-height: 80vh; overflow-y: auto;">
+                <div class="modal-body p-0" id="incoming-alert-modal-body"
+                    style="background: #f8f9fa; max-height: 80vh; overflow-y: auto;">
                     <div class="p-5 text-center text-muted">
                         <div class="spinner-border text-danger mb-3" role="status"></div>
                         <p class="mb-0 fw-bold ls-1">Checking for new transfers...</p>
@@ -430,36 +434,37 @@ $filterType = $_GET['filter'] ?? 'all';
                 <div class='modal-body p-0'>
                     <div class="modal-fs-container py-4">
                         <!-- Selection Summary Bar -->
-                        <div class="d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom mb-3 shadow-sm rounded">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="selectAllIncoming">
-                            <label class="form-check-label fw-bold text-muted" for="selectAllIncoming">Select
-                                All</label>
+                        <div
+                            class="d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom mb-3 shadow-sm rounded">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="selectAllIncoming">
+                                <label class="form-check-label fw-bold text-muted" for="selectAllIncoming">Select
+                                    All</label>
+                            </div>
+                            <div id="incomingSelectionCount" class="badge rounded-pill bg-cyan px-3 py-2 d-none">
+                                <span id="incomingSelectedNum">0</span> selected
+                            </div>
                         </div>
-                        <div id="incomingSelectionCount" class="badge rounded-pill bg-cyan px-3 py-2 d-none">
-                            <span id="incomingSelectedNum">0</span> selected
-                        </div>
-                    </div>
 
-                    <div class='table-responsive'>
-                        <table class='table table-hover align-middle mb-0' id="incomingTransferTable">
-                            <thead class="bg-dark-grey text-white">
-                                <tr>
-                                    <th class="ps-4" style="width: 40px;"></th>
-                                    <th>Part No</th>
-                                    <th>Part Name</th>
-                                    <th>Brand</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-center">Transfer Date</th>
-                                    <th class="text-center">From</th>
-                                    <th class="text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id='incomingTransferDetailsBody'>
-                                <!-- Populated via JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class='table-responsive'>
+                            <table class='table table-hover align-middle mb-0' id="incomingTransferTable">
+                                <thead class="bg-dark-grey text-white">
+                                    <tr>
+                                        <th class="ps-4" style="width: 40px;"></th>
+                                        <th>Part No</th>
+                                        <th>Part Name</th>
+                                        <th>Brand</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-center">Transfer Date</th>
+                                        <th class="text-center">From</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id='incomingTransferDetailsBody'>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
                 <div class='modal-footer border-0 p-4'>
@@ -482,16 +487,14 @@ $filterType = $_GET['filter'] ?? 'all';
         <div class="container-fluid px-4">
             <div class="d-flex align-items-center">
                 <a href="<?php
-if ($userRole === 'Spareparts-Sales') {
-    echo 'sales_dashboard.php';
-}
-elseif ($userRole === 'f' || $userRole === 'Spareparts-Retail') {
-    echo 'sales_dashboard.php';
-}
-else {
-    echo 'warehouse_dashboard.php';
-}
-?>" class="back-btn">
+                if ($userRole === 'Spareparts-Sales') {
+                    echo 'sales_dashboard.php';
+                } elseif ($userRole === 'f' || $userRole === 'Spareparts-Retail') {
+                    echo 'sales_dashboard.php';
+                } else {
+                    echo 'warehouse_dashboard.php';
+                }
+                ?>" class="back-btn">
                     <i class="bi bi-arrow-left"></i>
                 </a>
                 <span class="navbar-brand">
@@ -500,13 +503,17 @@ else {
             </div>
             <div class="user-info">
                 <?php if (isset($_SESSION['username'])): ?>
-                    <a href="javascript:void(0)" onclick="if(document.getElementById('incomingTransferAlertModal')) bootstrap.Modal.getOrCreateInstance(document.getElementById('incomingTransferAlertModal')).show()" class="text-white position-relative me-4" title="Pending Incoming Transfers">
+                    <a href="javascript:void(0)"
+                        onclick="if(document.getElementById('incomingTransferAlertModal')) bootstrap.Modal.getOrCreateInstance(document.getElementById('incomingTransferAlertModal')).show()"
+                        class="text-white position-relative me-4" title="Pending Incoming Transfers">
                         <i class="bi bi-bell-fill fs-5"></i>
-                        <span id="incoming-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.55rem; padding: 0.25em 0.5em;">0</span>
+                        <span id="incoming-badge"
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
+                            style="font-size: 0.55rem; padding: 0.25em 0.5em;">0</span>
                     </a>
                     <span><i class="bi bi-person-circle me-1"></i> <?php echo htmlspecialchars($currentBranch); ?></span>
-                <?php
-endif; ?>
+                    <?php
+                endif; ?>
                 <a href="../api/logout.php" class="btn-logout">Logout</a>
             </div>
         </div>
@@ -514,12 +521,13 @@ endif; ?>
 
     <main class='container-fluid px-4 py-4'>
         <div class='card border-0 mb-4 bg-transparent shadow-none'>
-            
+
             <!-- Custom Flat Navigation -->
             <!-- Tab navigation removed for single-purpose page -->
             <ul class="nav custom-tabs" id="mainTabs" role="tablist" style="display: none;">
                 <li class="nav-item">
-                    <button class="nav-link active" id="transfer-out-tab" data-bs-toggle="tab" data-bs-target="#sub-transfer-out" type="button" role="tab">
+                    <button class="nav-link active" id="transfer-out-tab" data-bs-toggle="tab"
+                        data-bs-target="#sub-transfer-out" type="button" role="tab">
                         Transfers (Out)
                     </button>
                 </li>
@@ -534,8 +542,8 @@ endif; ?>
                                 Transfers</h4>
                             <div class="d-flex gap-3 align-items-center">
                                 <div class="btn-group shadow-sm">
-                                    <button class='btn btn-sm btn-outline-primary text-dark fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#transferPartsModal'>
+                                    <button class='btn btn-sm btn-outline-primary text-dark fw-bold px-3'
+                                        data-bs-toggle='modal' data-bs-target='#transferPartsModal'>
                                         <i class='bi bi-truck me-1'></i>New Transfer
                                     </button>
                                 </div>
@@ -616,153 +624,156 @@ endif; ?>
                 </div>
                 <div class='modal-body p-4 bg-light'>
                     <div class="modal-fs-container">
-                    <!-- Section A: Stock Info -->
-                    <div class="row g-3 mb-4 pb-3 border-bottom align-items-end">
-                        <div class="col-sm-6 col-md-4">
-                            <label class='form-label small fw-bold text-muted mb-1 text-nowrap'><i
-                                    class="bi bi-calendar-date me-1"></i>Date Received *</label>
-                            <input type='date' class='form-control form-control-sm' id='add_date' name='date' required>
-                        </div>
-                        <div class="col-sm-6 col-md-4">
-                            <label class='form-label small fw-bold text-muted mb-1 text-nowrap'><i
-                                    class="bi bi-hash me-1"></i>Invoice Number</label>
-                            <input type='text' class='form-control form-control-sm' id='add_invoice_no'
-                                name='invoice_no' placeholder="Enter Invoice #">
-                        </div>
-                        <div class="col-sm-6 col-md-4">
-                            <label class='form-label small fw-bold text-muted mb-1 text-nowrap'><i
-                                    class="bi bi-hash me-1"></i>Reference No. (Optional)</label>
-                            <input type='text' class='form-control form-control-sm' id='add_reference' name='reference'
-                                placeholder="Optional">
-                        </div>
-                    </div>
-
-                    <!-- Section B: Add Items -->
-                    <ul class="nav nav-tabs nav-fill mb-3" id="addPartsTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-bold" id="search-existing-tab" data-bs-toggle="tab"
-                                data-bs-target="#search-existing" type="button" role="tab"><i
-                                    class="bi bi-search me-2"></i>Search Existing</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-bold" id="manual-entry-tab" data-bs-toggle="tab"
-                                data-bs-target="#manual-entry" type="button" role="tab"><i
-                                    class="bi bi-pencil-square me-2"></i>Manual Entry</button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content mb-4" id="addPartsTabsContent">
-                        <div class="tab-pane fade show active" id="search-existing" role="tabpanel">
-                            <div class="position-relative">
-                                <input type="text" id="addPartSearchInput" class="form-control form-control-lg"
-                                    placeholder="🔍 Search by Part No. or Part Name...">
-                                <div id="addPartSearchResults"
-                                    class="list-group search-results-list d-none shadow-sm rounded-bottom"></div>
+                        <!-- Section A: Stock Info -->
+                        <div class="row g-3 mb-4 pb-3 border-bottom align-items-end">
+                            <div class="col-sm-6 col-md-4">
+                                <label class='form-label small fw-bold text-muted mb-1 text-nowrap'><i
+                                        class="bi bi-calendar-date me-1"></i>Date Received *</label>
+                                <input type='date' class='form-control form-control-sm' id='add_date' name='date'
+                                    required>
+                            </div>
+                            <div class="col-sm-6 col-md-4">
+                                <label class='form-label small fw-bold text-muted mb-1 text-nowrap'><i
+                                        class="bi bi-hash me-1"></i>Invoice Number</label>
+                                <input type='text' class='form-control form-control-sm' id='add_invoice_no'
+                                    name='invoice_no' placeholder="Enter Invoice #">
+                            </div>
+                            <div class="col-sm-6 col-md-4">
+                                <label class='form-label small fw-bold text-muted mb-1 text-nowrap'><i
+                                        class="bi bi-hash me-1"></i>Reference No. (Optional)</label>
+                                <input type='text' class='form-control form-control-sm' id='add_reference'
+                                    name='reference' placeholder="Optional">
                             </div>
                         </div>
-                        <div class="tab-pane fade" id="manual-entry" role="tabpanel">
-                            <div class="card bg-light border-0">
-                                <div class="card-body p-3">
-                                    <div class="row g-2">
-                                        <div class="col-md-4">
-                                            <label class="form-label small mb-1 fw-bold text-muted">Brand *</label>
-                                            <input type="text" id="manual_brand" class="form-control form-control-sm"
-                                                placeholder="e.g. Honda">
-                                        </div>
-                                        <div class="col-md-8">
-                                            <label class="form-label small mb-1 fw-bold text-muted">Part No
-                                                *</label>
-                                            <input type="text" id="manual_part_no" class="form-control form-control-sm"
-                                                placeholder="Required">
-                                        </div>
-                                        <div class="col-12 mt-2">
-                                            <label class="form-label small mb-1 fw-bold text-muted">Part Name
-                                                *</label>
-                                            <input type="text" id="manual_desc" class="form-control form-control-sm"
-                                                placeholder="Required">
-                                        </div>
-                                        <div class="col-md-3 mt-2">
-                                            <label class="form-label small mb-1 fw-bold text-muted">Qty *</label>
-                                            <input type="number" id="manual_qty" class="form-control form-control-sm"
-                                                value="1" min="1">
-                                        </div>
-                                        <div class="col-md-3 mt-2">
-                                            <label class="form-label small mb-1 fw-bold text-muted">Cost</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text">₱</span>
-                                                <input type="number" id="manual_cost" class="form-control" step="0.01"
-                                                    placeholder="0.00">
+
+                        <!-- Section B: Add Items -->
+                        <ul class="nav nav-tabs nav-fill mb-3" id="addPartsTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active fw-bold" id="search-existing-tab" data-bs-toggle="tab"
+                                    data-bs-target="#search-existing" type="button" role="tab"><i
+                                        class="bi bi-search me-2"></i>Search Existing</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-bold" id="manual-entry-tab" data-bs-toggle="tab"
+                                    data-bs-target="#manual-entry" type="button" role="tab"><i
+                                        class="bi bi-pencil-square me-2"></i>Manual Entry</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content mb-4" id="addPartsTabsContent">
+                            <div class="tab-pane fade show active" id="search-existing" role="tabpanel">
+                                <div class="position-relative">
+                                    <input type="text" id="addPartSearchInput" class="form-control form-control-lg"
+                                        placeholder="🔍 Search by Part No. or Part Name...">
+                                    <div id="addPartSearchResults"
+                                        class="list-group search-results-list d-none shadow-sm rounded-bottom"></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="manual-entry" role="tabpanel">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body p-3">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small mb-1 fw-bold text-muted">Brand *</label>
+                                                <input type="text" id="manual_brand"
+                                                    class="form-control form-control-sm" placeholder="e.g. Honda">
                                             </div>
-                                        </div>
-                                        <div class="col-md-3 mt-2">
-                                            <label class="form-label small mb-1 fw-bold text-muted">Sell
-                                                Price</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text">₱</span>
-                                                <input type="number" id="manual_price" class="form-control" step="0.01"
-                                                    placeholder="0.00">
+                                            <div class="col-md-8">
+                                                <label class="form-label small mb-1 fw-bold text-muted">Part No
+                                                    *</label>
+                                                <input type="text" id="manual_part_no"
+                                                    class="form-control form-control-sm" placeholder="Required">
                                             </div>
-                                        </div>
-                                        <div class="col-md-3 mt-2 d-flex align-items-end">
-                                            <button type="button"
-                                                class="btn btn-primary btn-sm w-100 fw-bold text-white"
-                                                id="addManualPartBtn" title="Press Enter to Add">
-                                                <i class="bi bi-plus-circle me-1"></i> Add Item
-                                            </button>
+                                            <div class="col-12 mt-2">
+                                                <label class="form-label small mb-1 fw-bold text-muted">Part Name
+                                                    *</label>
+                                                <input type="text" id="manual_desc" class="form-control form-control-sm"
+                                                    placeholder="Required">
+                                            </div>
+                                            <div class="col-md-3 mt-2">
+                                                <label class="form-label small mb-1 fw-bold text-muted">Qty *</label>
+                                                <input type="number" id="manual_qty"
+                                                    class="form-control form-control-sm" value="1" min="1">
+                                            </div>
+                                            <div class="col-md-3 mt-2">
+                                                <label class="form-label small mb-1 fw-bold text-muted">Cost</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">₱</span>
+                                                    <input type="number" id="manual_cost" class="form-control"
+                                                        step="0.01" placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 mt-2">
+                                                <label class="form-label small mb-1 fw-bold text-muted">Sell
+                                                    Price</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">₱</span>
+                                                    <input type="number" id="manual_price" class="form-control"
+                                                        step="0.01" placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 mt-2 d-flex align-items-end">
+                                                <button type="button"
+                                                    class="btn btn-primary btn-sm w-100 fw-bold text-white"
+                                                    id="addManualPartBtn" title="Press Enter to Add">
+                                                    <i class="bi bi-plus-circle me-1"></i> Add Item
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Items to Add Table -->
-                    <h6 class="border-bottom pb-2 fw-bold text-dark d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-list-ul me-2"></i>Items to Add</span>
-                        <span class="badge bg-secondary rounded-pill" id="itemCountBadge">0 Items</span>
-                    </h6>
-                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                        <table class="table table-bordered table-sm table-hover mb-0">
-                            <thead class="table-light text-muted" style="position: sticky; top: 0; z-index: 1;">
-                                <tr>
-                                    <th class="text-center">#</th>
-                                    <th>Brand</th>
-                                    <th>Part Details</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-end">Cost</th>
-                                    <th class="text-end">Sell Price</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="partsToAddList">
-                                <tr id="emptyAddListRow">
-                                    <td colspan="7" class="text-center text-muted py-5">
-                                        <i class="bi bi-box-seam display-4 d-block mb-2 text-secondary opacity-50"></i>
-                                        <h6 class="fw-bold mb-1">No items yet</h6>
-                                        <p class="small mb-0">Start by searching or adding manually</p>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                        <!-- Items to Add Table -->
+                        <h6
+                            class="border-bottom pb-2 fw-bold text-dark d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-list-ul me-2"></i>Items to Add</span>
+                            <span class="badge bg-secondary rounded-pill" id="itemCountBadge">0 Items</span>
+                        </h6>
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-bordered table-sm table-hover mb-0">
+                                <thead class="table-light text-muted" style="position: sticky; top: 0; z-index: 1;">
+                                    <tr>
+                                        <th class="text-center">#</th>
+                                        <th>Brand</th>
+                                        <th>Part Details</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-end">Cost</th>
+                                        <th class="text-end">Sell Price</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="partsToAddList">
+                                    <tr id="emptyAddListRow">
+                                        <td colspan="7" class="text-center text-muted py-5">
+                                            <i
+                                                class="bi bi-box-seam display-4 d-block mb-2 text-secondary opacity-50"></i>
+                                            <h6 class="fw-bold mb-1">No items yet</h6>
+                                            <p class="small mb-0">Start by searching or adding manually</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <!-- Summary Bar -->
-                    <div class="mt-3 p-3 rounded" style="background-color: #ebf5f3; border: 1px solid #c8e6c9;">
-                        <div class="row text-center fw-bold" style="color: var(--smdi-green-dark);">
-                            <div class="col-4 border-end border-success border-opacity-25">
-                                <span class="d-block small text-muted text-uppercase mb-1">Total Items</span>
-                                <span class="fs-5" id="addTotalQty">0</span>
-                            </div>
-                            <div class="col-4 border-end border-success border-opacity-25">
-                                <span class="d-block small text-muted text-uppercase mb-1">Total Cost</span>
-                                <span class="fs-5 text-danger" id="addTotalCost">₱0.00</span>
-                            </div>
-                            <div class="col-4">
-                                <span class="d-block small text-muted text-uppercase mb-1">Total Value</span>
-                                <span class="fs-5 text-success" id="addTotalPrice">₱0.00</span>
+                        <!-- Summary Bar -->
+                        <div class="mt-3 p-3 rounded" style="background-color: #ebf5f3; border: 1px solid #c8e6c9;">
+                            <div class="row text-center fw-bold" style="color: var(--smdi-green-dark);">
+                                <div class="col-4 border-end border-success border-opacity-25">
+                                    <span class="d-block small text-muted text-uppercase mb-1">Total Items</span>
+                                    <span class="fs-5" id="addTotalQty">0</span>
+                                </div>
+                                <div class="col-4 border-end border-success border-opacity-25">
+                                    <span class="d-block small text-muted text-uppercase mb-1">Total Cost</span>
+                                    <span class="fs-5 text-danger" id="addTotalCost">₱0.00</span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="d-block small text-muted text-uppercase mb-1">Total Value</span>
+                                    <span class="fs-5 text-success" id="addTotalPrice">₱0.00</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
                     </div>
                 </div>
@@ -830,7 +841,8 @@ endif; ?>
                             </div>
                             <div class="col-12 mt-2">
                                 <label class="form-label">Thumbnail Image (Optional)</label>
-                                <input type="file" class="form-control" name="part_image" id="edit_part_image" accept="image/*">
+                                <input type="file" class="form-control" name="part_image" id="edit_part_image"
+                                    accept="image/*">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Minimum Stock (Low Stock Alert)</label>
@@ -1131,57 +1143,60 @@ endif; ?>
                 </div>
                 <div class='modal-body p-4 bg-light'>
                     <div class="modal-fs-container">
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class='form-label fw-bold small text-muted text-uppercase'>Transfer Date</label>
-                            <input type='date' class='form-control border-0 bg-light fw-bold' id='transfer_date'
-                                name='transfer_date' required>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class='form-label fw-bold small text-muted text-uppercase'>Transfer Date</label>
+                                <input type='date' class='form-control border-0 bg-light fw-bold' id='transfer_date'
+                                    name='transfer_date' required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class='form-label fw-bold small text-muted text-uppercase'>Destination
+                                    Branch</label>
+                                <select class='form-select border-0 bg-light fw-bold' id='to_branch' name='to_branch'
+                                    required>
+                                    <option value="" disabled selected>Select destination...</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="col-md-12 mt-3">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Transfer
+                                    Number</label>
+                                <input type="text" id="transfer_no" class="form-control border-0 bg-light fw-bold"
+                                    placeholder="E.g., TRANS-2024-001">
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class='form-label fw-bold small text-muted text-uppercase'>Destination Branch</label>
-                            <select class='form-select border-0 bg-light fw-bold' id='to_branch' name='to_branch'
-                                required>
-                                <option value="" disabled selected>Select destination...</option>
-                                <!-- Populated dynamically -->
-                            </select>
-                        </div>
-                        <div class="col-md-12 mt-3">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Transfer Number</label>
-                            <input type="text" id="transfer_no" class="form-control border-0 bg-light fw-bold" placeholder="E.g., TRANS-2024-001">
-                        </div>
-                    </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-muted text-uppercase">Search Part to
-                            Transfer</label>
-                        <input type="text" id="transferPartSearchInput" class="form-control"
-                            placeholder="Enter Part No. or Part Name to add items..." autocomplete="off">
-                        <div id="transferPartSearchResults" class="list-group border rounded shadow-sm mt-1"
-                            style="max-height: 200px; overflow-y: auto; position: absolute; width: 95%; z-index: 1051; display: none;">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Search Part to
+                                Transfer</label>
+                            <input type="text" id="transferPartSearchInput" class="form-control"
+                                placeholder="Enter Part No. or Part Name to add items..." autocomplete="off">
+                            <div id="transferPartSearchResults" class="list-group border rounded shadow-sm mt-1"
+                                style="max-height: 200px; overflow-y: auto; position: absolute; width: 95%; z-index: 1051; display: none;">
+                            </div>
                         </div>
-                    </div>
 
-                    <h6 class="fw-bold mb-3 small text-muted text-uppercase">Items to Transfer</h6>
-                    <div class="table-responsive border rounded">
-                        <table class="table table-striped table-sm mb-0">
-                            <thead class="bg-dark text-white">
-                                <tr>
-                                    <th class="ps-3 py-2">Part Details</th>
-                                    <th class="text-center py-2" style="width: 120px;">Qty</th>
-                                    <th class="text-center py-2" style="width: 150px;">Cost (ea)</th>
-                                    <th class="text-center py-2" style="width: 60px;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="partsToTransferList">
-                                <tr id="emptyTransferListRow">
-                                    <td colspan="4" class="text-center text-muted p-5">
-                                        <i class="bi bi-search d-block fs-3 mb-2 opacity-25"></i>
-                                        Use the search bar above to add items
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                        <h6 class="fw-bold mb-3 small text-muted text-uppercase">Items to Transfer</h6>
+                        <div class="table-responsive border rounded">
+                            <table class="table table-striped table-sm mb-0">
+                                <thead class="bg-dark text-white">
+                                    <tr>
+                                        <th class="ps-3 py-2">Part Details</th>
+                                        <th class="text-center py-2" style="width: 120px;">Qty</th>
+                                        <th class="text-center py-2" style="width: 150px;">Cost (ea)</th>
+                                        <th class="text-center py-2" style="width: 60px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="partsToTransferList">
+                                    <tr id="emptyTransferListRow">
+                                        <td colspan="4" class="text-center text-muted p-5">
+                                            <i class="bi bi-search d-block fs-3 mb-2 opacity-25"></i>
+                                            Use the search bar above to add items
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
                 <div class='modal-footer border-0 p-4 pt-0'>
@@ -1321,7 +1336,8 @@ endif; ?>
                         <div class="mb-3">
                             <h5 class="fw-bold mb-1 text-success" id="historyPartDescription"></h5>
                             <div class="text-muted small">
-                                Brand: <span id="historyPartBrand"></span> | Part #: <span id="historyPartNumber"></span>
+                                Brand: <span id="historyPartBrand"></span> | Part #: <span
+                                    id="historyPartNumber"></span>
                             </div>
                         </div>
                         <div class="table-responsive card border-0 shadow-sm rounded-3 overflow-hidden">
@@ -1370,7 +1386,8 @@ endif; ?>
 
     <div class='modal fade modal-fs' id='stockCardModal' tabindex='-1'>
         <div class='modal-dialog modal-dialog-centered'>
-            <div class='modal-content border-0 shadow' style="border-radius: 12px; border-top: 5px solid #26a69a !important;">
+            <div class='modal-content border-0 shadow'
+                style="border-radius: 12px; border-top: 5px solid #26a69a !important;">
                 <div class='modal-header bg-white border-0 px-4 pt-4 pb-0'>
                     <div class="d-flex align-items-center">
                         <i class="bi bi-upc-scan fs-3 me-3" style="color: #004d40;"></i>
@@ -1383,108 +1400,139 @@ endif; ?>
                 </div>
                 <div class='modal-body px-0 py-3 bg-white'>
                     <div class="modal-fs-container px-4">
-                    <div class="row g-4">
-                        <!-- Left Panel: Profile & Details -->
-                        <div class="col-md-5">
-                            <div class="card border-0 shadow-sm" style="border-radius: 12px; background: #f4f7f6;">
-                                <div class="card-body p-4">
-                                    <div class="text-center mb-4">
-                                        <div id="stockCardImage" class="rounded-4 border bg-white mx-auto d-flex align-items-center justify-content-center overflow-hidden shadow-sm" style="width: 180px; height: 180px;">
-                                            <i class="bi bi-box-seam text-muted" style="font-size: 4rem;"></i>
-                                        </div>
-                                    </div>
-                                    <h5 id="stockCardDescription" class="fw-bold text-center mb-1 text-dark">PART DESCRIPTION</h5>
-                                    <p id="stockCardBrand" class="text-muted text-center mb-4 small fw-bold text-uppercase">BRAND NAME</p>
-                                    
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-6">
-                                            <div class="p-3 bg-white rounded-4 border text-center shadow-sm">
-                                                <div class="small text-muted fw-bold mb-1">STOCK LELVEL</div>
-                                                <div id="stockCardQty" class="fw-bold fs-4" style="color: #004d40;">0</div>
+                        <div class="row g-4">
+                            <!-- Left Panel: Profile & Details -->
+                            <div class="col-md-5">
+                                <div class="card border-0 shadow-sm" style="border-radius: 12px; background: #f4f7f6;">
+                                    <div class="card-body p-4">
+                                        <div class="text-center mb-4">
+                                            <div id="stockCardImage"
+                                                class="rounded-4 border bg-white mx-auto d-flex align-items-center justify-content-center overflow-hidden shadow-sm"
+                                                style="width: 180px; height: 180px;">
+                                                <i class="bi bi-box-seam text-muted" style="font-size: 4rem;"></i>
                                             </div>
                                         </div>
-                                        <div class="col-6">
-                                            <div class="p-3 bg-white rounded-4 border text-center shadow-sm">
-                                                <div class="small text-muted fw-bold mb-1">BIN LOCATION</div>
-                                                <div id="stockCardBin" class="badge mt-2" style="background: #26a69a; font-size: 0.85rem;">N/A</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        <h5 id="stockCardDescription" class="fw-bold text-center mb-1 text-dark">PART
+                                            DESCRIPTION</h5>
+                                        <p id="stockCardBrand"
+                                            class="text-muted text-center mb-4 small fw-bold text-uppercase">BRAND NAME
+                                        </p>
 
-                                    <div class="row g-2 mb-4">
-                                        <div class="col-6">
-                                            <label class="small text-muted fw-bold d-block mb-1">Cost</label>
-                                            <div id="stockCardCost" class="fw-bold border rounded-3 px-3 py-2 bg-white text-muted">₱0.00</div>
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="small text-muted fw-bold d-block mb-1">Selling Price</label>
-                                            <div id="stockCardPrice" class="fw-bold border rounded-3 px-3 py-2 bg-white text-success">₱0.00</div>
-                                        </div>
-                                    </div>
-
-                                    <label class="small text-muted fw-bold d-block mb-2">Compatibility Tags</label>
-                                    <div id="stockCardCompatibility" class="d-flex flex-wrap gap-2">
-                                        <!-- Badges -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right Panel: History Tabs -->
-                        <div class="col-md-7">
-                            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-                                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-                                    <ul class="nav nav-tabs border-bottom-0 gap-2" role="tablist">
-                                        <li class="nav-item">
-                                            <button class="nav-link active fw-bold px-4 border-0 rounded-top pb-3" style="color: #004d40; border-bottom: 3px solid #26a69a !important; background: transparent;" data-bs-toggle="tab" data-bs-target="#sc-movement">Movement Log</button>
-                                        </li>
-                                        <li class="nav-item">
-                                            <button class="nav-link fw-bold px-4 border-0 rounded-top text-muted pb-3" style="background: transparent;" data-bs-toggle="tab" data-bs-target="#sc-history" onclick="$(this).css('border-bottom', '3px solid #26a69a').css('color', '#004d40'); $(this).parent().siblings().find('button').css('border-bottom', 'none').css('color', '#6c757d');">Cost History</button>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="tab-content h-100">
-                                        <div class="tab-pane fade show active h-100" id="sc-movement">
-                                            <div class="table-responsive h-100" style="max-height: 500px;">
-                                                <table class="table table-hover align-middle mb-0 small">
-                                                    <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">
-                                                        <tr>
-                                                            <th class="ps-4 text-muted fw-bold border-0 py-3">Date</th>
-                                                            <th class="text-muted fw-bold border-0 py-3">Type</th>
-                                                            <th class="text-center text-muted fw-bold border-0 py-3">Qty</th>
-                                                            <th class="text-muted fw-bold border-0 py-3">To/From</th>
-                                                            <th class="pe-4 text-muted fw-bold border-0 py-3">Ref #</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="stockCardMovementBody" class="border-top-0">
-                                                        <!-- Dynamic -->
-                                                    </tbody>
-                                                </table>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-6">
+                                                <div class="p-3 bg-white rounded-4 border text-center shadow-sm">
+                                                    <div class="small text-muted fw-bold mb-1">STOCK LELVEL</div>
+                                                    <div id="stockCardQty" class="fw-bold fs-4" style="color: #004d40;">
+                                                        0</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="p-3 bg-white rounded-4 border text-center shadow-sm">
+                                                    <div class="small text-muted fw-bold mb-1">BIN LOCATION</div>
+                                                    <div id="stockCardBin" class="badge mt-2"
+                                                        style="background: #26a69a; font-size: 0.85rem;">N/A</div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="tab-pane fade h-100" id="sc-history">
-                                            <div class="table-responsive h-100" style="max-height: 500px;">
-                                                <table class="table table-hover align-middle mb-0 small">
-                                                    <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">
-                                                        <tr>
-                                                            <th class="ps-4 text-muted fw-bold border-0 py-3">Date</th>
-                                                            <th class="text-muted fw-bold border-0 py-3">Supplier</th>
-                                                            <th class="text-end text-muted fw-bold border-0 py-3">Cost</th>
-                                                            <th class="pe-4 text-muted fw-bold border-0 py-3">Invoice #</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="stockCardHistoryBody" class="border-top-0">
-                                                        <!-- Dynamic -->
-                                                    </tbody>
-                                                </table>
+
+                                        <div class="row g-2 mb-4">
+                                            <div class="col-6">
+                                                <label class="small text-muted fw-bold d-block mb-1">Cost</label>
+                                                <div id="stockCardCost"
+                                                    class="fw-bold border rounded-3 px-3 py-2 bg-white text-muted">₱0.00
+                                                </div>
                                             </div>
+                                            <div class="col-6">
+                                                <label class="small text-muted fw-bold d-block mb-1">Selling
+                                                    Price</label>
+                                                <div id="stockCardPrice"
+                                                    class="fw-bold border rounded-3 px-3 py-2 bg-white text-success">
+                                                    ₱0.00</div>
+                                            </div>
+                                        </div>
+
+                                        <label class="small text-muted fw-bold d-block mb-2">Compatibility Tags</label>
+                                        <div id="stockCardCompatibility" class="d-flex flex-wrap gap-2">
+                                            <!-- Badges -->
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Right Panel: History Tabs -->
+                            <div class="col-md-7">
+                                <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                                        <ul class="nav nav-tabs border-bottom-0 gap-2" role="tablist">
+                                            <li class="nav-item">
+                                                <button class="nav-link active fw-bold px-4 border-0 rounded-top pb-3"
+                                                    style="color: #004d40; border-bottom: 3px solid #26a69a !important; background: transparent;"
+                                                    data-bs-toggle="tab" data-bs-target="#sc-movement">Movement
+                                                    Log</button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button
+                                                    class="nav-link fw-bold px-4 border-0 rounded-top text-muted pb-3"
+                                                    style="background: transparent;" data-bs-toggle="tab"
+                                                    data-bs-target="#sc-history"
+                                                    onclick="$(this).css('border-bottom', '3px solid #26a69a').css('color', '#004d40'); $(this).parent().siblings().find('button').css('border-bottom', 'none').css('color', '#6c757d');">Cost
+                                                    History</button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="tab-content h-100">
+                                            <div class="tab-pane fade show active h-100" id="sc-movement">
+                                                <div class="table-responsive h-100" style="max-height: 500px;">
+                                                    <table class="table table-hover align-middle mb-0 small">
+                                                        <thead
+                                                            style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">
+                                                            <tr>
+                                                                <th class="ps-4 text-muted fw-bold border-0 py-3">Date
+                                                                </th>
+                                                                <th class="text-muted fw-bold border-0 py-3">Type</th>
+                                                                <th
+                                                                    class="text-center text-muted fw-bold border-0 py-3">
+                                                                    Qty</th>
+                                                                <th class="text-muted fw-bold border-0 py-3">To/From
+                                                                </th>
+                                                                <th class="pe-4 text-muted fw-bold border-0 py-3">Ref #
+                                                                </th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="stockCardMovementBody" class="border-top-0">
+                                                            <!-- Dynamic -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="tab-pane fade h-100" id="sc-history">
+                                                <div class="table-responsive h-100" style="max-height: 500px;">
+                                                    <table class="table table-hover align-middle mb-0 small">
+                                                        <thead
+                                                            style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">
+                                                            <tr>
+                                                                <th class="ps-4 text-muted fw-bold border-0 py-3">Date
+                                                                </th>
+                                                                <th class="text-muted fw-bold border-0 py-3">Supplier
+                                                                </th>
+                                                                <th class="text-end text-muted fw-bold border-0 py-3">
+                                                                    Cost</th>
+                                                                <th class="pe-4 text-muted fw-bold border-0 py-3">
+                                                                    Invoice #</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="stockCardHistoryBody" class="border-top-0">
+                                                            <!-- Dynamic -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
                     </div>
                 </div> <!-- End modal-body -->
             </div>
@@ -1535,74 +1583,74 @@ endif; ?>
                 </div>
                 <div class='modal-body p-4 bg-light'>
                     <div class="modal-fs-container">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h6 class="fw-bold mb-1">Refine Sales Preview List</h6>
-                            <p class="small text-muted mb-0">Review the records below before finalized printing or
-                                exporting.</p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <input type="text" id="salesPreviewSearch" class="form-control form-control-sm"
-                                placeholder="Filter sales..." style="width: 200px;">
-                            <div class="dropdown">
-                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown">
-                                    <i class="bi bi-layout-three-columns me-1"></i>Columns
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end p-3" id="salesPreviewColumnToggles"
-                                    style="min-width: 200px;">
-                                    <li>
-                                        <div class="form-check"><input class="form-check-input sales-col-toggle"
-                                                type="checkbox" value="0" checked id="scol0"><label
-                                                class="form-check-label" for="scol0">Date</label></div>
-                                    </li>
-                                    <li>
-                                        <div class="form-check"><input class="form-check-input sales-col-toggle"
-                                                type="checkbox" value="1" checked id="scol1"><label
-                                                class="form-check-label" for="scol1">Customer</label></div>
-                                    </li>
-                                    <li>
-                                        <div class="form-check"><input class="form-check-input sales-col-toggle"
-                                                type="checkbox" value="2" checked id="scol2"><label
-                                                class="form-check-label" for="scol2">SI #</label></div>
-                                    </li>
-                                    <li>
-                                        <div class="form-check"><input class="form-check-input sales-col-toggle"
-                                                type="checkbox" value="3" checked id="scol3"><label
-                                                class="form-check-label" for="scol3">Total</label></div>
-                                    </li>
-                                    <li>
-                                        <div class="form-check"><input class="form-check-input sales-col-toggle"
-                                                type="checkbox" value="4" checked id="scol4"><label
-                                                class="form-check-label" for="scol4">Balance</label></div>
-                                    </li>
-                                </ul>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h6 class="fw-bold mb-1">Refine Sales Preview List</h6>
+                                <p class="small text-muted mb-0">Review the records below before finalized printing or
+                                    exporting.</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <input type="text" id="salesPreviewSearch" class="form-control form-control-sm"
+                                    placeholder="Filter sales..." style="width: 200px;">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown">
+                                        <i class="bi bi-layout-three-columns me-1"></i>Columns
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end p-3" id="salesPreviewColumnToggles"
+                                        style="min-width: 200px;">
+                                        <li>
+                                            <div class="form-check"><input class="form-check-input sales-col-toggle"
+                                                    type="checkbox" value="0" checked id="scol0"><label
+                                                    class="form-check-label" for="scol0">Date</label></div>
+                                        </li>
+                                        <li>
+                                            <div class="form-check"><input class="form-check-input sales-col-toggle"
+                                                    type="checkbox" value="1" checked id="scol1"><label
+                                                    class="form-check-label" for="scol1">Customer</label></div>
+                                        </li>
+                                        <li>
+                                            <div class="form-check"><input class="form-check-input sales-col-toggle"
+                                                    type="checkbox" value="2" checked id="scol2"><label
+                                                    class="form-check-label" for="scol2">SI #</label></div>
+                                        </li>
+                                        <li>
+                                            <div class="form-check"><input class="form-check-input sales-col-toggle"
+                                                    type="checkbox" value="3" checked id="scol3"><label
+                                                    class="form-check-label" for="scol3">Total</label></div>
+                                        </li>
+                                        <li>
+                                            <div class="form-check"><input class="form-check-input sales-col-toggle"
+                                                    type="checkbox" value="4" checked id="scol4"><label
+                                                    class="form-check-label" for="scol4">Balance</label></div>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="table-responsive" style="max-height: 50vh; overflow-y: auto;">
-                        <table class="table table-sm table-bordered align-middle" id="salesPreviewTable">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>SI #</th>
-                                    <th class="text-end">Total</th>
-                                    <th class="text-end">Balance</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="salesPreviewTableBody"></tbody>
-                            <tfoot class="table-light fw-bold">
-                                <tr>
-                                    <td colspan="3" class="text-end">TOTALS:</td>
-                                    <td class="text-end text-success" id="salesPreviewTotalAmount">₱0.00</td>
-                                    <td class="text-end text-danger" id="salesPreviewTotalBalance">₱0.00</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
+                        <div class="table-responsive" style="max-height: 50vh; overflow-y: auto;">
+                            <table class="table table-sm table-bordered align-middle" id="salesPreviewTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Customer</th>
+                                        <th>SI #</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-end">Balance</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="salesPreviewTableBody"></tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <td colspan="3" class="text-end">TOTALS:</td>
+                                        <td class="text-end text-success" id="salesPreviewTotalAmount">₱0.00</td>
+                                        <td class="text-end text-danger" id="salesPreviewTotalBalance">₱0.00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
                 <div class='modal-footer bg-light'>
@@ -1635,10 +1683,12 @@ endif; ?>
                 </div>
                 <div class='modal-footer border-0 bg-light'>
                     <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
-                    <button type='button' class='btn btn-outline-dark fw-bold' id="btnPrintTransferSummary" style="display: none;">
+                    <button type='button' class='btn btn-outline-dark fw-bold' id="btnPrintTransferSummary"
+                        style="display: none;">
                         <i class="bi bi-printer me-1"></i> Print Summary
                     </button>
-                    <button type='button' class='btn btn-warning text-dark fw-bold d-none' id="cancelTransferBtn">Cancel Transfer</button>
+                    <button type='button' class='btn btn-warning text-dark fw-bold d-none' id="cancelTransferBtn">Cancel
+                        Transfer</button>
                     <button type='button' class='btn btn-danger d-none' id="rejectTransferBtn">Reject Transfer</button>
                     <button type='button' class='btn btn-success d-none' id="confirmReceiveBtn">Receive Items</button>
                 </div>
@@ -1855,7 +1905,6 @@ endif; ?>
                     <!-- PRINT HEADER (Hidden on Screen) -->
                     <div class="report-header-print d-none d-print-block">
                         <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                        <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                         <div class="system-name">Spareparts Management System</div>
                         <div class="report-title-container" style="margin-top: 15px;">
                             <div class="report-title" id="printReportTitleDisplay"></div>
@@ -2186,7 +2235,7 @@ endif; ?>
     <script src='../js/spareparts_inventory.js?v=<?php echo time(); ?>'></script>
     <script src="../js/spareparts_dashboard.js?v=<?php echo time(); ?>"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (typeof updatePendingTransfers === 'function') {
                 updatePendingTransfers();
                 setInterval(updatePendingTransfers, 30000);

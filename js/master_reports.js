@@ -1,5 +1,5 @@
-$(document).ready(function() {
-    
+$(document).ready(function () {
+
     // Config for different report categories
     const reportConfigs = {
         inventory: {
@@ -53,7 +53,7 @@ $(document).ready(function() {
     };
 
     let currentCategory = 'inventory';
-    
+
     // Check URL parameter for default category
     const urlParams = new URLSearchParams(window.location.search);
     const catParam = urlParams.get('category');
@@ -61,7 +61,7 @@ $(document).ready(function() {
         currentCategory = catParam;
         $('.nav-link-custom').removeClass('active');
         $(`.nav-link-custom[data-category="${currentCategory}"]`).addClass('active');
-        
+
         const config = reportConfigs[currentCategory];
         $('#activeReportTitle').text(config.title);
         $('#activeReportDesc').text(config.desc);
@@ -91,18 +91,18 @@ $(document).ready(function() {
     updateReportOptions(currentCategory);
 
     // Category Switcher
-    $('.nav-link-custom').on('click', function(e) {
+    $('.nav-link-custom').on('click', function (e) {
         e.preventDefault();
         const cat = $(this).data('category');
         currentCategory = cat;
-        
+
         $('.nav-link-custom').removeClass('active');
         $(this).addClass('active');
-        
+
         const config = reportConfigs[cat];
         $('#activeReportTitle').text(config.title);
         $('#activeReportDesc').text(config.desc);
-        
+
         updateReportOptions(cat);
         $('#previewArea').fadeOut();
     });
@@ -116,10 +116,10 @@ $(document).ready(function() {
     }
 
     // Period Switcher
-    $('#period').on('change', function() {
+    $('#period').on('change', function () {
         const val = $(this).val();
         $('.date-input-wrap').addClass('d-none');
-        
+
         if (val === 'monthly') {
             $('#month_input_wrap').removeClass('d-none');
         } else if (val === 'daily') {
@@ -130,7 +130,7 @@ $(document).ready(function() {
     });
 
     // Form Submission
-    $('#masterReportForm').on('submit', function(e) {
+    $('#masterReportForm').on('submit', function (e) {
         e.preventDefault();
         generateReportPreview();
     });
@@ -139,7 +139,7 @@ $(document).ready(function() {
         const formData = new FormData($('#masterReportForm')[0]);
         const type = $('#report_type').val();
         const period = $('#period').val();
-        
+
         // Map UI values to API expected fields
         let date_value = '';
         if (period === 'monthly') date_value = $('#month_value').val();
@@ -165,9 +165,9 @@ $(document).ready(function() {
             url: '../api/reports_master.php',
             type: 'GET',
             data: params,
-            success: function(response) {
+            success: function (response) {
                 btn.prop('disabled', false).html('<i class="bi bi-play-circle"></i> Generate Report Preview');
-                
+
                 if (response.success) {
                     lastReportData = response.data;
                     lastReportConfig = response.config;
@@ -176,7 +176,7 @@ $(document).ready(function() {
                     showStatus('error', 'Failed to generate report', response.message);
                 }
             },
-            error: function() {
+            error: function () {
                 btn.prop('disabled', false).html('<i class="bi bi-play-circle"></i> Generate Report Preview');
                 showStatus('error', 'Connection Error', 'Please check your internet connection and try again.');
             }
@@ -188,9 +188,9 @@ $(document).ready(function() {
         const tbody = $('#previewTbody');
         const tfoot = $('#previewTfoot');
         const summaryBox = $('#reportSummaryBox');
-        
+
         thead.empty(); tbody.empty(); tfoot.empty(); summaryBox.empty();
-        
+
         if (!data || data.length === 0) {
             tbody.html('<tr><td colspan="10" class="text-center py-5 text-muted">No records found for the selected criteria.</td></tr>');
             $('#recordsCount').text('Showing 0 records');
@@ -213,17 +213,17 @@ $(document).ready(function() {
             config.keys.forEach(key => {
                 let cellVal = row[key];
                 let displayVal = cellVal !== undefined && cellVal !== null ? cellVal : '-';
-                
+
                 if (config.formatters?.[key] === 'currency' && displayVal !== '-') {
                     displayVal = formatCurrency(displayVal);
                 }
                 rowHtml += `<td>${displayVal}</td>`;
             });
-            
+
             if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
                 rowHtml += `<td class="text-center"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
             }
-            
+
             rowHtml += '</tr>';
             tbody.append(rowHtml);
         });
@@ -279,7 +279,7 @@ $(document).ready(function() {
     }
 
     // Print Logic
-    $('#printReportBtn').on('click', function() {
+    $('#printReportBtn').on('click', function () {
         if (!lastReportData || lastReportData.length === 0) {
             showStatus('warning', 'No data to print', 'Please generate a report preview first.');
             return;
@@ -295,7 +295,7 @@ $(document).ready(function() {
 
         $('#printTitle').text(reportTitle.toUpperCase());
         $('#printCriteria').text(`Generated on: ${new Date().toLocaleString()} | Branch: ${branch.toUpperCase()}`);
-        
+
         // Update footer based on category
         if (currentCategory === 'payments' || currentCategory === 'sales') {
             $('#notedByLabel').text('NOTED / RECEIVED BY');
@@ -319,7 +319,7 @@ $(document).ready(function() {
     });
 
     // Export Logic
-    $('.export-btn').on('click', function() {
+    $('.export-btn').on('click', function () {
         if (!lastReportData || lastReportData.length === 0) {
             showStatus('warning', 'No data to export', 'Please generate a report preview first.');
             return;
@@ -349,7 +349,7 @@ $(document).ready(function() {
                 return val;
             }))
         ];
-        
+
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
@@ -365,7 +365,7 @@ $(document).ready(function() {
         }
 
         const doc = new jsPDF('l', 'mm', 'a4');
-        
+
         // Ensure autoTable plugin is registered on this instance
         if (typeof doc.autoTable !== 'function') {
             showStatus('error', 'PDF Error', 'AutoTable plugin not detected.');
@@ -423,8 +423,8 @@ $(document).ready(function() {
         if (mm < 10) mm = '0' + mm;
         const formattedDate = `${yyyy}-${mm}-${dd}`;
         const formattedMonth = `${yyyy}-${mm}`;
-        
-        $(container).find('input[type="date"], input[type="month"], input[type="datetime-local"]').each(function() {
+
+        $(container).find('input[type="date"], input[type="month"], input[type="datetime-local"]').each(function () {
             if (!$(this).val()) {
                 if ($(this).attr('type') === 'date') {
                     $(this).val(formattedDate);
@@ -450,7 +450,7 @@ $(document).ready(function() {
     function showStatus(type, title, msg) {
         const icon = $('#statusIcon');
         icon.empty();
-        
+
         if (type === 'success') icon.append('<i class="bi bi-check-circle text-success fs-1"></i>');
         else if (type === 'error') icon.append('<i class="bi bi-x-circle text-danger fs-1"></i>');
         else icon.append('<i class="bi bi-exclamation-triangle text-warning fs-1"></i>');
@@ -460,7 +460,7 @@ $(document).ready(function() {
         new bootstrap.Modal('#statusModal').show();
     }
 
-    window.viewCustomerHistory = function(customerName) {
+    window.viewCustomerHistory = function (customerName) {
         const period = $('#period').val();
         let date_value = '';
         if (period === 'monthly') date_value = $('#month_value').val();
@@ -469,16 +469,16 @@ $(document).ready(function() {
 
         $('#ledgerCustomerName').text(customerName.toUpperCase());
         $('#ledgerPeriods').text(`Transaction History | ${date_value}`);
-        
+
         $('#printLedgerCustomerName').text(customerName.toUpperCase());
         $('#printLedgerPeriods').text(`Transaction History | ${date_value}`);
-        
+
         let now = new Date();
-        $('#printLedgerDateFooter').text(now.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'2-digit' }));
+        $('#printLedgerDateFooter').text(now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }));
         $('#printLedgerTimeFooter').text(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
 
         $('#ledgerModalTbody').html('<tr><td colspan="6" class="text-center py-5"><div class="spinner-border spinner-border-sm me-2"></div>Loading ledger...</td></tr>');
-        
+
         const modal = new bootstrap.Modal('#customerLedgerModal');
         modal.show();
 
@@ -493,7 +493,7 @@ $(document).ready(function() {
             customer_name: customerName
         };
 
-        $.get('../api/reports_master.php', params, function(response) {
+        $.get('../api/reports_master.php', params, function (response) {
             if (response.success && response.data.length > 0) {
                 let html = '';
                 response.data.forEach(row => {
@@ -513,7 +513,7 @@ $(document).ready(function() {
         });
     };
 
-    window.printLedger = function() {
+    window.printLedger = function () {
         const customerName = $('#printLedgerCustomerName').text();
         const period = $('#printLedgerPeriods').text();
         const tbodyHtml = $('#ledgerModalTbody').html();
@@ -560,7 +560,6 @@ $(document).ready(function() {
         <body onload="window.print();">
             <div class="report-header-print">
                 <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                 <div class="system-name">Spareparts Management System</div>
                 <div class="report-title-container">
                     <div class="report-title">STATEMENT OF ACCOUNT</div>

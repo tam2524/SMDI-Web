@@ -9,9 +9,9 @@ function updateWarehouseSummary() {
                     if (el) el.textContent = val;
                 };
                 setT('received-qty', Number(s.received.qty).toLocaleString());
-                setT('received-amount', '₱' + Number(s.received.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('received-amount', '₱' + Number(s.received.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }));
                 setT('transferred-qty', Number(s.transferred.qty).toLocaleString());
-                setT('transferred-amount', '₱' + Number(s.transferred.amount).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('transferred-amount', '₱' + Number(s.transferred.amount).toLocaleString(undefined, { minimumFractionDigits: 2 }));
             }
         });
 }
@@ -26,7 +26,7 @@ function updateSalesSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
-                const fmt = (v) => '₱' + Number(v).toLocaleString(undefined, {minimumFractionDigits: 2});
+                const fmt = (v) => '₱' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 });
 
                 setT('cash-sales-amount', fmt(s.cash.amount));
                 setT('charge-sales-amount', fmt(s.charge.amount));
@@ -48,7 +48,7 @@ function updateConsolidatedSummary() {
                     const el = document.getElementById(id);
                     if (el) el.textContent = val;
                 };
-                const fmt = (v) => '₱' + Number(v).toLocaleString(undefined, {minimumFractionDigits: 2});
+                const fmt = (v) => '₱' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 });
 
                 setT('global-cash-sales-amount', fmt(s.cash.amount));
                 setT('global-charge-sales-amount', fmt(s.charge.amount));
@@ -71,9 +71,9 @@ function updateGlobalInventoryStats() {
                     if (el) el.textContent = val;
                 };
                 setT('total-inv-qty', Number(s.total_qty).toLocaleString());
-                setT('total-inv-value', '₱' + Number(s.total_value).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('total-monthly-sales', '₱' + Number(s.monthly_sales).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                setT('total-yearly-sales', '₱' + Number(s.yearly_sales).toLocaleString(undefined, {minimumFractionDigits: 2}));
+                setT('total-inv-value', '₱' + Number(s.total_value).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                setT('total-monthly-sales', '₱' + Number(s.monthly_sales).toLocaleString(undefined, { minimumFractionDigits: 2 }));
+                setT('total-yearly-sales', '₱' + Number(s.yearly_sales).toLocaleString(undefined, { minimumFractionDigits: 2 }));
             }
         });
 }
@@ -85,34 +85,34 @@ function updateInventorySummary() {
             if (data.success) {
                 const container = document.getElementById('inventory-summary-container');
                 if (!container) return;
-                
+
                 let html = '';
                 let totalQty = 0;
                 let totalValue = 0;
-                
+
                 data.summary.forEach(item => {
                     const qty = Number(item.qty);
                     const val = Number(item.value);
                     totalQty += qty;
                     totalValue += val;
-                    
+
                     html += `
                         <div class="summary-row">
                             <span class="summary-row-label text-truncate me-2" title="${item.brand || 'No Brand'}">${item.brand || 'No Brand'}</span>
                             <div class="text-end flex-shrink-0">
                                 <div class="summary-row-val">${qty.toLocaleString()} Qty</div>
-                                <div class="text-muted small" style="font-size: 0.7rem;">₱${val.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                                <div class="text-muted small" style="font-size: 0.7rem;">₱${val.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                             </div>
                         </div>
                     `;
                 });
-                
+
                 container.innerHTML = html || '<div class="text-center py-3 text-muted small">No stock available today.</div>';
-                
+
                 const qtyEl = document.getElementById('inv-total-qty');
                 const valEl = document.getElementById('inv-total-value');
                 if (qtyEl) qtyEl.textContent = totalQty.toLocaleString();
-                if (valEl) valEl.textContent = '₱' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 2});
+                if (valEl) valEl.textContent = '₱' + totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 });
             }
         });
 }
@@ -124,34 +124,34 @@ function updateInventorySummaryByBranch() {
             if (data.success) {
                 const container = document.getElementById('inventory-branch-summary-container');
                 if (!container) return;
-                
+
                 let html = '';
                 let totalQty = 0;
                 let totalValue = 0;
-                
+
                 data.summary.forEach(item => {
                     const qty = Number(item.qty);
                     const val = Number(item.value);
                     totalQty += qty;
                     totalValue += val;
-                    
+
                     html += `
                         <div class="summary-row">
                             <span class="summary-row-label text-truncate me-2">${item.branch}</span>
                             <div class="text-end flex-shrink-0">
                                 <div class="summary-row-val">${qty.toLocaleString()} Sold</div>
-                                <div class="text-muted small" style="font-size: 0.7rem;">₱${val.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                                <div class="text-muted small" style="font-size: 0.7rem;">₱${val.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                             </div>
                         </div>
                     `;
                 });
-                
+
                 container.innerHTML = html || '<div class="text-center py-3 text-muted small">No global sales available today.</div>';
-                
+
                 const qtyEl = document.getElementById('global-inv-total-qty');
                 const valEl = document.getElementById('global-inv-total-value');
                 if (qtyEl) qtyEl.textContent = totalQty.toLocaleString();
-                if (valEl) valEl.textContent = '₱' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 2});
+                if (valEl) valEl.textContent = '₱' + totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 });
             }
         });
 }
@@ -160,7 +160,7 @@ async function updatePendingTransfers() {
     const container = document.getElementById('pending-transfers-container');
     const modalBody = document.getElementById('incoming-alert-modal-body');
     const modalEl = document.getElementById('incomingTransferAlertModal');
-    
+
     try {
         const [transfersRes, returnsRes] = await Promise.all([
             fetch('../api/spareparts_dashboard_api.php?action=get_pending_transfers').then(r => r.json()),
@@ -175,7 +175,7 @@ async function updatePendingTransfers() {
 
             if (modalBody) {
                 let modalHtml = '<div class="list-group list-group-flush shadow-sm bg-light">';
-                
+
                 // Show Pending Transfers first
                 if (hasTransfers) {
                     modalHtml += `<div class="p-3 bg-danger text-white small fw-bold text-uppercase ls-1"><i class="bi bi-box-arrow-in-down me-1"></i> Pending Incoming Transfers</div>`;
@@ -274,11 +274,11 @@ async function updatePendingTransfers() {
 function viewTransferDetailsUI(transferId, fromBranch) {
     const modalBody = document.getElementById('incoming-alert-modal-body');
     const modalTitle = document.querySelector('#incomingTransferAlertModal .modal-title');
-    
+
     if (modalTitle) {
         modalTitle.innerHTML = `<i class="bi bi-box-seam-fill me-2"></i>TRANSFER FROM: ${fromBranch}`;
     }
-    
+
     modalBody.innerHTML = `
         <div class="p-5 text-center text-muted">
             <div class="spinner-border text-danger mb-3" role="status"></div>
@@ -381,7 +381,7 @@ function submitPartialProcessing(transferId) {
     document.querySelectorAll('#transfer-process-table tbody tr').forEach(row => {
         const check = row.querySelector('.item-check');
         const id = check.dataset.id;
-        
+
         if (check.checked) {
             acceptedIds.push(id);
         } else {
@@ -416,51 +416,51 @@ function submitPartialProcessing(transferId) {
         method: 'POST',
         body: formData
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            // Close selection modal first
-            const modalEl = document.getElementById('incomingTransferAlertModal');
-            const m = bootstrap.Modal.getInstance(modalEl);
-            if (m) m.hide();
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Close selection modal first
+                const modalEl = document.getElementById('incomingTransferAlertModal');
+                const m = bootstrap.Modal.getInstance(modalEl);
+                if (m) m.hide();
 
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: 'Transfer Success!',
-                    text: data.message + ' What would you like to do next?',
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="bi bi-printer me-2"></i>Preview & Print',
-                    cancelButtonText: 'Done',
-                    confirmButtonColor: '#004d40',
-                    cancelButtonColor: '#6c757d',
-                    reverseButtons: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        if (typeof printTransferSummaryUI === 'function') {
-                            printTransferSummaryUI(data.transfer_id, data.from_branch);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Transfer Success!',
+                        text: data.message + ' What would you like to do next?',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="bi bi-printer me-2"></i>Preview & Print',
+                        cancelButtonText: 'Done',
+                        confirmButtonColor: '#004d40',
+                        cancelButtonColor: '#6c757d',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            if (typeof printTransferSummaryUI === 'function') {
+                                printTransferSummaryUI(data.transfer_id, data.from_branch);
+                            }
                         }
-                    }
+                        updatePendingTransfers();
+                        if (window.location.href.includes('transfer_stock.php')) {
+                            location.reload();
+                        }
+                    });
+                } else {
+                    alert(data.message);
                     updatePendingTransfers();
                     if (window.location.href.includes('transfer_stock.php')) {
-                        location.reload(); 
+                        location.reload();
                     }
-                });
+                }
             } else {
-                alert(data.message);
-                updatePendingTransfers();
-                if (window.location.href.includes('transfer_stock.php')) {
-                    location.reload(); 
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Error', data.message, 'error');
+                } else {
+                    alert(data.message);
                 }
             }
-        } else {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire('Error', data.message, 'error');
-            } else {
-                alert(data.message);
-            }
-        }
-    });
+        });
 }
 
 function printTransferSummaryUI(transferId, fromBranch) {
@@ -537,7 +537,6 @@ function printTransferSummaryUI(transferId, fromBranch) {
         <body>
             <div class="report-header-print">
                 <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-                <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
                 <div class="system-name">Spareparts Management System</div>
                 <div class="report-title-container" style="margin-top: 15px;">
                     <div class="report-title">${typeLabel}</div>

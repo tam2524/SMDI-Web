@@ -70,11 +70,11 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
     <div class="container-fluid">
         <div class="report-header-print d-none d-print-block">
             <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
-            <div class="company-address">Pueblo de Panay, Lawaan, Roxas City, Capiz</div>
             <div class="system-name">Spareparts Management System</div>
             <div class="report-title-container" style="margin-top: 15px;">
                 <div class="report-title">ACCOUNTS PAYABLE (SUPPLIER AGING)</div>
-                <div class="report-timestamp">Branch: <?php echo htmlspecialchars($branch); ?> | Generated on: <?php echo date('F d, Y h:i A'); ?></div>
+                <div class="report-timestamp">Branch: <?php echo htmlspecialchars($branch); ?> | Generated on:
+                    <?php echo date('F d, Y h:i A'); ?></div>
             </div>
         </div>
 
