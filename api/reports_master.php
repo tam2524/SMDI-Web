@@ -280,22 +280,26 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
 
-            $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.part_no, t.description, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch
+            $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.part_no, t.description, t.quantity, 
+                           t.price as unit_cost, t.total_amount, t.from_location as source_branch, t.to_location as receiving_branch
                     FROM spareparts_transactions t 
                     WHERE $whereM ORDER BY t.transaction_date DESC";
-            $headers = ['Date', 'Reference', 'Part No', 'Description', 'Qty', 'Source Branch', 'Receiving Branch'];
-            $keys = ['transaction_date', 'reference', 'part_no', 'description', 'quantity', 'source_branch', 'receiving_branch'];
+            $headers = ['Date', 'Reference', 'Part No', 'Description', 'Qty', 'Unit Cost', 'Subtotal', 'Source Branch', 'Receiving Branch'];
+            $keys = ['transaction_date', 'reference', 'part_no', 'description', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
+            $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
             
             $res = exe($sql, $mTypes, $mParams);
             $totalTransferred = array_sum(array_column($res, 'quantity'));
+            $totalAmount = array_sum(array_column($res, 'total_amount'));
             
             return [ 
                 'success' => true, 
                 'data' => $res, 
-                'config' => ['headers' => $headers, 'keys' => $keys], 
+                'config' => ['headers' => $headers, 'keys' => $keys, 'formatters' => $formatters], 
                 'summary' => [
                     ['label' => 'Total Transfer Out (Tx)', 'value' => count($res)],
-                    ['label' => 'Total Transferred Qty', 'value' => $totalTransferred]
+                    ['label' => 'Total Transferred Qty', 'value' => $totalTransferred],
+                    ['label' => 'Total Value', 'value' => $totalAmount, 'format' => 'currency']
                 ] 
             ];
             

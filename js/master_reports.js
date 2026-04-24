@@ -211,10 +211,10 @@ $(document).ready(function () {
         // Render Header
         let headerHtml = '<tr>';
         config.headers.forEach(h => headerHtml += `<th>${h}</th>`);
-        if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
-            headerHtml += '<th class="text-center d-print-none">Action</th>';
-        }
-        if (currentCategory === 'inventory' && $('#report_type').val() === 'supplier_received_stocks') {
+        const reportType = $('#report_type').val();
+        const hasAction = (currentCategory === 'payments' && reportType === 'ar_aging') || 
+                          (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary'));
+        if (hasAction) {
             headerHtml += '<th class="text-center d-print-none">Action</th>';
         }
         headerHtml += '</tr>';
@@ -246,7 +246,7 @@ $(document).ready(function () {
             if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
                 rowHtml += `<td class="text-center d-print-none"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
             }
-            if (currentCategory === 'inventory' && $('#report_type').val() === 'supplier_received_stocks') {
+            if (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary')) {
                 rowHtml += `<td class="text-center d-print-none">
                                 <button class="btn btn-sm btn-outline-danger fw-bold" onclick="printSingleRR('${row.reference.replace(/'/g, "\\'")}')">
                                     <i class="bi bi-printer"></i> Print RR
@@ -706,10 +706,12 @@ $(document).ready(function () {
         if (items.length === 0) return;
         
         const first = items[0];
-        const supplier = first.supplier || 'N/A';
+        const supplier = first.supplier || first.source_branch || 'N/A';
         const date = first.transaction_date;
         const branch = first.receiving_branch || 'ROXAS';
-        const paymentMode = first.payment_method || 'CASH';
+        const paymentMode = first.payment_method || 'N/A';
+        const isTransfer = !!first.source_branch;
+        const reportTitle = isTransfer ? 'TRANSFER REPORT (RR/OUT)' : 'RECEIVING REPORT (RR/IN)';
         const dateNow = new Date().toLocaleString();
         
         let totalQty = 0;
@@ -785,16 +787,16 @@ $(document).ready(function () {
                     <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
                     <div class="system-name">Spareparts Management System</div>
                     <div class="report-title-box">
-                        <div class="report-title">RECEIVING REPORT (RR/IN)</div>
+                        <div class="report-title">${reportTitle}</div>
                         <div class="report-meta">Generated on: ${dateNow} | Branch: ${branch}</div>
                     </div>
                 </div>
                 
                 <div class="info-grid">
                     <div class="info-col">
-                        <div class="info-label">Supplier:</div>
+                        <div class="info-label">${isTransfer ? 'Source Branch' : 'Supplier'}:</div>
                         <div class="info-value">${supplier}</div>
-                        <div class="info-label">Date Received:</div>
+                        <div class="info-label">Date ${isTransfer ? 'Transferred' : 'Received'}:</div>
                         <div class="info-value" style="font-size:11pt">${date}</div>
                     </div>
                     <div class="info-col" style="text-align: right;">
