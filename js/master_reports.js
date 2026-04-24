@@ -116,7 +116,25 @@ $(document).ready(function () {
         reportConfigs[cat].options.forEach(opt => {
             select.append(`<option value="${opt.value}">${opt.text}</option>`);
         });
+        select.trigger('change');
     }
+
+    $('#report_type').on('change', function () {
+        const type = $(this).val();
+        const refLabel = $('label[for="ref_no_search"]');
+        const refInput = $('#ref_no_search');
+
+        if (type === 'transferred_stocks_summary') {
+            refLabel.text('Transfer Number');
+            refInput.attr('placeholder', 'Enter Transfer # (ST...)');
+        } else if (type === 'supplier_received_stocks' || type === 'received_stocks_summary') {
+            refLabel.text('Invoice / DR Number');
+            refInput.attr('placeholder', 'Enter Invoice #');
+        } else {
+            refLabel.text('Reference Number');
+            refInput.attr('placeholder', 'Enter Reference #');
+        }
+    });
 
     // Period Switcher
     $('#period').on('change', function () {
@@ -213,7 +231,7 @@ $(document).ready(function () {
         config.headers.forEach(h => headerHtml += `<th>${h}</th>`);
         const reportType = $('#report_type').val();
         const hasAction = (currentCategory === 'payments' && reportType === 'ar_aging') || 
-                          (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary'));
+                          (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary' || reportType === 'received_stocks_summary'));
         if (hasAction) {
             headerHtml += '<th class="text-center d-print-none">Action</th>';
         }
@@ -246,7 +264,7 @@ $(document).ready(function () {
             if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
                 rowHtml += `<td class="text-center d-print-none"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
             }
-            if (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary')) {
+            if (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary' || reportType === 'received_stocks_summary')) {
                 rowHtml += `<td class="text-center d-print-none">
                                 <button class="btn btn-sm btn-outline-danger fw-bold" onclick="printSingleRR('${(row.reference || row.transfer_no || '').replace(/'/g, "\\'")}')">
                                     <i class="bi bi-printer"></i> Print

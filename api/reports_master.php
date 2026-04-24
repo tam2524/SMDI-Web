@@ -207,15 +207,18 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND t.or_number LIKE ?";
-                $mParams[] = "%$refNo%"; $mTypes .= "s";
+                $whereM .= " AND (t.or_number LIKE ? OR t.transfer_no LIKE ?)";
+                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "ss";
             }
             
-            $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch
+            $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch,
+                           COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0) as unit_cost,
+                           COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0)) as total_amount
                     FROM spareparts_transactions t 
                     WHERE $whereM ORDER BY t.transaction_date DESC";
-            $headers = ['Date', 'Reference', 'Part No', 'Description', 'Receive Type', 'Qty', 'Source', 'Receiving Branch'];
-            $keys = ['transaction_date', 'reference', 'part_no', 'description', 'receive_type', 'quantity', 'source_branch', 'receiving_branch'];
+            $headers = ['Date', 'Reference', 'Part No', 'Description', 'Receive Type', 'Qty', 'Unit Cost', 'Subtotal', 'Source', 'Receiving Branch'];
+            $keys = ['transaction_date', 'reference', 'part_no', 'description', 'receive_type', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
+            $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
             
             $res = exe($sql, $mTypes, $mParams);
             $totalReceived = array_sum(array_column($res, 'quantity'));
@@ -223,7 +226,7 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             return [ 
                 'success' => true, 
                 'data' => $res, 
-                'config' => ['headers' => $headers, 'keys' => $keys], 
+                'config' => ['headers' => $headers, 'keys' => $keys, 'formatters' => $formatters], 
                 'summary' => [
                     ['label' => 'Total Transactions', 'value' => count($res)],
                     ['label' => 'Total Received Qty', 'value' => $totalReceived]
@@ -288,6 +291,10 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             if ($branch !== 'all') {
                 $whereM .= " AND t.from_location = ?";
                 $mParams[] = $branch; $mTypes .= "s";
+            }
+            if (!empty($refNo)) {
+                $whereM .= " AND (t.transfer_no LIKE ? OR t.or_number LIKE ?)";
+                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "ss";
             }
 
             $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as transfer_no, 
