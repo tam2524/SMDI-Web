@@ -249,7 +249,7 @@ $(document).ready(function () {
             if (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary')) {
                 rowHtml += `<td class="text-center d-print-none">
                                 <button class="btn btn-sm btn-outline-danger fw-bold" onclick="printSingleRR('${row.reference.replace(/'/g, "\\'")}')">
-                                    <i class="bi bi-printer"></i> Print RR
+                                    <i class="bi bi-printer"></i> Print ONLY
                                 </button>
                             </td>`;
             }
