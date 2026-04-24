@@ -207,8 +207,8 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.or_number LIKE ? OR t.transfer_no LIKE ? OR st.transfer_no LIKE ?)";
-                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "sss";
+                $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR st.transfer_no = ?)";
+                $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
             
             $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch,
@@ -296,8 +296,8 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.transfer_no LIKE ? OR t.or_number LIKE ? OR st.transfer_no LIKE ?)";
-                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "sss";
+                $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR st.transfer_no = ?)";
+                $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
 
             $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as transfer_no, 

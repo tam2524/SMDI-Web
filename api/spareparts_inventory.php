@@ -1443,7 +1443,7 @@ function getInventoryHistory()
     $id = sanitizeInput($_GET['id'] ?? '');
     $part_no = sanitizeInput($_GET['part_no'] ?? '');
 
-    $sql = "SELECT transaction_date, or_number, part_no, description, customer_name, type, quantity, price, total_amount, from_location, to_location, status, reason 
+    $sql = "SELECT transaction_date, or_number, transfer_no, part_no, description, customer_name, type, quantity, price, total_amount, from_location, to_location, status, reason 
             FROM spareparts_transactions 
             WHERE 1=1 ";
 
