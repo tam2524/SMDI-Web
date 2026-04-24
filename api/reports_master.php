@@ -207,7 +207,13 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR st.transfer_no = ?)";
+                $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR EXISTS (
+                    SELECT 1 FROM spareparts_transfers st2 
+                    WHERE st2.transfer_no = ? 
+                    AND st2.from_branch = t.from_location 
+                    AND st2.to_branch = t.to_location 
+                    AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1
+                ))";
                 $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
             
@@ -296,7 +302,13 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR st.transfer_no = ?)";
+                $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR EXISTS (
+                    SELECT 1 FROM spareparts_transfers st2 
+                    WHERE st2.transfer_no = ? 
+                    AND st2.from_branch = t.from_location 
+                    AND st2.to_branch = t.to_location 
+                    AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1
+                ))";
                 $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
 
@@ -307,7 +319,10 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                            t.from_location as source_branch, 
                            t.to_location as receiving_branch
                     FROM spareparts_transactions t 
-                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
+                    LEFT JOIN spareparts_transfers st ON (
+                        st.transfer_no = t.transfer_no OR 
+                        (NULLIF(t.transfer_no, '') IS NULL AND st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
+                    )
                     WHERE $whereM 
                     GROUP BY t.id 
                     ORDER BY t.transaction_date DESC";
