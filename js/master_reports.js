@@ -895,11 +895,10 @@ $(document).ready(function () {
             `;
         });
 
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(\`
+        printWindow.document.write(`
             <html>
             <head>
-                <title>Stock Transfer Outgoing - \${reference}</title>
+                <title>Stock Transfer Outgoing - ${reference}</title>
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
                     @page { size: portrait; margin: 15mm 10mm; }
@@ -938,18 +937,18 @@ $(document).ready(function () {
                 
                 <div class="title-section">
                     <div class="report-title">STOCK TRANSFER (OUTGOING)</div>
-                    <div class="gen-date">Generated on: \${new Date().toLocaleString()}</div>
+                    <div class="gen-date">Generated on: ${new Date().toLocaleString()}</div>
                 </div>
                 
                 <div class="meta-info">
                     <div class="meta-col" style="width: 60%;">
-                        <div class="meta-row"><span class="meta-label">TRANSFER ID:</span> <span class="meta-value">\${transferId}</span></div>
-                        <div class="meta-row"><span class="meta-label">ORIGIN:</span> <span class="meta-value">\${origin}</span></div>
-                        <div class="meta-row"><span class="meta-label">DESTINATION:</span> <span class="meta-value">\${destination}</span></div>
+                        <div class="meta-row"><span class="meta-label">TRANSFER ID:</span> <span class="meta-value">${transferId}</span></div>
+                        <div class="meta-row"><span class="meta-label">ORIGIN:</span> <span class="meta-value">${origin}</span></div>
+                        <div class="meta-row"><span class="meta-label">DESTINATION:</span> <span class="meta-value">${destination}</span></div>
                     </div>
                     <div class="meta-col" style="width: 40%; text-align: right;">
                         <div class="meta-label">PRINT DATE:</div>
-                        <div class="meta-value" style="font-size: 9pt;">\${dateNow}</div>
+                        <div class="meta-value" style="font-size: 9pt;">${dateNow}</div>
                     </div>
                 </div>
                 
@@ -962,7 +961,7 @@ $(document).ready(function () {
                         </tr>
                     </thead>
                     <tbody>
-                        \${rowsHtml}
+                        ${rowsHtml}
                     </tbody>
                 </table>
                 
@@ -982,7 +981,7 @@ $(document).ready(function () {
                 </div>
             </body>
             </html>
-        \`);
+        `);
         printWindow.document.close();
     };
 });
