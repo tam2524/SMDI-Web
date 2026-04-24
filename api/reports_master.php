@@ -206,30 +206,35 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $whereM .= " AND t.to_location = ?";
                 $mParams[] = $branch; $mTypes .= "s";
             }
-            if (!empty($refNo)) {
-                $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR EXISTS (
+                $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR (NULLIF(t.transfer_no, '') IS NULL AND EXISTS (
                     SELECT 1 FROM spareparts_transfers st2 
                     WHERE st2.transfer_no = ? 
                     AND st2.from_branch = t.from_location 
                     AND st2.to_branch = t.to_location 
                     AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1
-                ))";
+                )))";
                 $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
             
-            $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch,
+            $sql = "SELECT t.transaction_date, 
+                           COALESCE(NULLIF(t.transfer_no, ''), 
+                                   (SELECT st.transfer_no FROM spareparts_transfers st WHERE st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1 ORDER BY (st.transfer_no = ?) DESC, st.transfer_date ASC LIMIT 1),
+                                   t.or_number, 'N/A') as reference, 
+                           t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch,
                            COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0) as unit_cost,
                            COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0)) as total_amount
                     FROM spareparts_transactions t 
-                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
                     WHERE $whereM 
-                    GROUP BY t.id
                     ORDER BY t.transaction_date DESC";
             $headers = ['Date', 'Reference', 'Part No', 'Description', 'Receive Type', 'Qty', 'Unit Cost', 'Subtotal', 'Source', 'Receiving Branch'];
             $keys = ['transaction_date', 'reference', 'part_no', 'description', 'receive_type', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
             $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
             
-            $res = exe($sql, $mTypes, $mParams);
+            // Add refNo to params for the SELECT subquery
+            $finalParams = array_merge([$refNo], $mParams);
+            $finalTypes = "s" . $mTypes;
+            
+            $res = exe($sql, $finalTypes, $finalParams);
             $totalReceived = array_sum(array_column($res, 'quantity'));
             
             return [ 
@@ -302,35 +307,38 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR EXISTS (
+                $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR (NULLIF(t.transfer_no, '') IS NULL AND EXISTS (
                     SELECT 1 FROM spareparts_transfers st2 
                     WHERE st2.transfer_no = ? 
                     AND st2.from_branch = t.from_location 
                     AND st2.to_branch = t.to_location 
                     AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1
-                ))";
+                )))";
                 $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
 
-            $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as transfer_no, 
+            $sql = "SELECT t.transaction_date, 
+                           COALESCE(NULLIF(t.transfer_no, ''), 
+                                   (SELECT st.transfer_no FROM spareparts_transfers st WHERE st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1 ORDER BY (st.transfer_no = ?) DESC, st.transfer_date ASC LIMIT 1),
+                                   t.or_number, 'N/A') as transfer_no,
                            t.part_no, t.description, t.quantity, 
-                           COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_transfer_items WHERE transfer_id = st.id AND part_no = t.part_no LIMIT 1), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.from_location LIMIT 1), 0) as unit_cost,
-                           COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_transfer_items WHERE transfer_id = st.id AND part_no = t.part_no LIMIT 1), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.from_location LIMIT 1), 0)) as total_amount,
+                           COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.from_location LIMIT 1), 0) as unit_cost,
+                           COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.from_location LIMIT 1), 0)) as total_amount,
                            t.from_location as source_branch, 
-                           t.to_location as receiving_branch
+                           t.to_location as receiving_branch,
+                           (SELECT id FROM spareparts_transfers WHERE (transfer_no = t.transfer_no OR (NULLIF(t.transfer_no, '') IS NULL AND from_branch = t.from_location AND to_branch = t.to_location AND ABS(DATEDIFF(transfer_date, t.transaction_date)) <= 1)) LIMIT 1) as transfer_id
                     FROM spareparts_transactions t 
-                    LEFT JOIN spareparts_transfers st ON (
-                        st.transfer_no = t.transfer_no OR 
-                        (NULLIF(t.transfer_no, '') IS NULL AND st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
-                    )
                     WHERE $whereM 
-                    GROUP BY t.id 
                     ORDER BY t.transaction_date DESC";
             $headers = ['Date', 'Transfer #', 'Part No', 'Description', 'Qty', 'Unit Cost', 'Subtotal', 'Source Branch', 'Receiving Branch'];
             $keys = ['transaction_date', 'transfer_no', 'part_no', 'description', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
             $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
             
-            $res = exe($sql, $mTypes, $mParams);
+            // Add refNo to params for the SELECT subquery
+            $finalParams = array_merge([$refNo], $mParams);
+            $finalTypes = "s" . $mTypes;
+            
+            $res = exe($sql, $finalTypes, $finalParams);
             $totalTransferred = array_sum(array_column($res, 'quantity'));
             $totalAmount = array_sum(array_column($res, 'total_amount'));
             

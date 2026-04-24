@@ -265,8 +265,9 @@ $(document).ready(function () {
                 rowHtml += `<td class="text-center d-print-none"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
             }
             if (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary' || reportType === 'received_stocks_summary')) {
+                const printFn = reportType === 'transferred_stocks_summary' ? 'printStockTransferOutgoing' : 'printSingleRR';
                 rowHtml += `<td class="text-center d-print-none">
-                                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="printSingleRR('${(row.reference || row.transfer_no || '').replace(/'/g, "\\'")}')">
+                                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="${printFn}('${(row.reference || row.transfer_no || '').replace(/'/g, "\\'")}')">
                                     <i class="bi bi-printer"></i> Print
                                 </button>
                             </td>`;
@@ -868,6 +869,120 @@ $(document).ready(function () {
             </body>
             </html>
         `);
+        printWindow.document.close();
+    };
+
+    window.printStockTransferOutgoing = function(reference) {
+        if (!lastReportData) return;
+        
+        const items = lastReportData.filter(i => (i.transfer_no === reference || i.reference === reference));
+        if (items.length === 0) return;
+        
+        const first = items[0];
+        const origin = first.source_branch || 'ROXAS';
+        const destination = first.receiving_branch || 'N/A';
+        const transferId = first.transfer_id ? '#' + first.transfer_id : reference;
+        const dateNow = new Date().toLocaleString();
+        
+        let rowsHtml = '';
+        items.forEach(item => {
+            rowsHtml += `
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ccc;">${item.part_no}</td>
+                    <td style="padding: 12px; border: 1px solid #ccc;">${item.description}</td>
+                    <td style="padding: 12px; border: 1px solid #ccc; text-align: center; font-weight: bold;">${item.quantity}</td>
+                </tr>
+            `;
+        });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(\`
+            <html>
+            <head>
+                <title>Stock Transfer Outgoing - \${reference}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+                    @page { size: portrait; margin: 15mm 10mm; }
+                    body { font-family: 'Inter', sans-serif; color: #333; margin: 20px; font-size: 10pt; }
+                    
+                    .header { text-align: center; margin-bottom: 20px; }
+                    .company { font-size: 18pt; font-weight: 800; color: #004d40; text-transform: uppercase; margin-bottom: 2px; }
+                    .sub-system { font-size: 9pt; color: #666; font-style: italic; }
+                    
+                    .title-section { text-align: center; margin-top: 15px; border-top: 2px solid #004d40; padding-top: 15px; margin-bottom: 25px; }
+                    .report-title { font-size: 14pt; font-weight: 700; text-decoration: underline; text-transform: uppercase; }
+                    .gen-date { font-size: 8pt; color: #888; margin-top: 5px; }
+                    
+                    .meta-info { width: 100%; margin-bottom: 25px; display: table; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+                    .meta-col { display: table-cell; vertical-align: top; }
+                    .meta-row { margin-bottom: 5px; }
+                    .meta-label { font-weight: bold; width: 120px; display: inline-block; font-size: 8pt; color: #555; }
+                    .meta-value { font-weight: 800; font-size: 10pt; text-transform: uppercase; }
+                    
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1.5px solid #333; }
+                    th { background: #fdfdfd; border: 1px solid #333; padding: 10px; text-align: left; font-size: 9pt; text-transform: uppercase; font-weight: 800; }
+                    
+                    .footer-sigs { margin-top: 60px; width: 100%; display: table; }
+                    .sig-box { display: table-cell; width: 50%; text-align: center; }
+                    .sig-line { border-bottom: 1.5px solid #333; width: 80%; margin: 0 auto 5px auto; }
+                    .sig-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #666; }
+                    
+                    .footer-note { text-align: center; font-size: 7.5pt; color: #999; margin-top: 60px; }
+                </style>
+            </head>
+            <body onload="window.print();">
+                <div class="header">
+                    <div class="company">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="sub-system">Spareparts Management System</div>
+                </div>
+                
+                <div class="title-section">
+                    <div class="report-title">STOCK TRANSFER (OUTGOING)</div>
+                    <div class="gen-date">Generated on: \${new Date().toLocaleString()}</div>
+                </div>
+                
+                <div class="meta-info">
+                    <div class="meta-col" style="width: 60%;">
+                        <div class="meta-row"><span class="meta-label">TRANSFER ID:</span> <span class="meta-value">\${transferId}</span></div>
+                        <div class="meta-row"><span class="meta-label">ORIGIN:</span> <span class="meta-value">\${origin}</span></div>
+                        <div class="meta-row"><span class="meta-label">DESTINATION:</span> <span class="meta-value">\${destination}</span></div>
+                    </div>
+                    <div class="meta-col" style="width: 40%; text-align: right;">
+                        <div class="meta-label">PRINT DATE:</div>
+                        <div class="meta-value" style="font-size: 9pt;">\${dateNow}</div>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>PART NUMBER</th>
+                            <th>DESCRIPTION</th>
+                            <th style="text-align: center; width: 20%;">QTY TRANSFERRED</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        \${rowsHtml}
+                    </tbody>
+                </table>
+                
+                <div class="footer-sigs">
+                    <div class="sig-box">
+                        <div class="sig-line" style="margin-top: 40px;"></div>
+                        <div class="sig-label">RELEASED BY</div>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line" style="margin-top: 40px;"></div>
+                        <div class="sig-label">RECEIVED / ACCEPTED BY</div>
+                    </div>
+                </div>
+                
+                <div class="footer-note">
+                    Generated by Spare Parts Management System © 2026
+                </div>
+            </body>
+            </html>
+        \`);
         printWindow.document.close();
     };
 });
