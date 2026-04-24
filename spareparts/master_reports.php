@@ -564,6 +564,12 @@ if ($position === 'Spareparts-Owner') {
                                     placeholder="e.g. 123456">
                             </div>
 
+                            <div class="col-md-3">
+                                <label class="form-label">Invoice / DR #</label>
+                                <input type="text" class="form-control" id="ref_no_search" name="ref_no"
+                                    placeholder="e.g. INV-1001">
+                            </div>
+
                             <div class="col-md-6">
                                 <label class="form-label">Customer Search</label>
                                 <input type="text" class="form-control" id="customer_search" name="customer"

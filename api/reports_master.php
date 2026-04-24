@@ -21,6 +21,7 @@ if ($action === 'generate_master_report') {
     $dateVal = $_GET['date_value'] ?? date('Y-m');
     $branch = $_GET['branch'] ?? 'all';
     $brand = $_GET['brand'] ?? '';
+    $refNo = $_GET['ref_no'] ?? '';
 
     // Enforce branch security
     if (!$isAdmin) {
@@ -35,7 +36,7 @@ if ($action === 'generate_master_report') {
     try {
         switch ($category) {
             case 'inventory':
-                $finalResponse = handleInventoryReports($type, $period, $dateVal, $branch, $brand);
+                $finalResponse = handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refNo);
                 break;
             case 'sales':
                 $finalResponse = handleSalesReports($type, $period, $dateVal, $branch, $brand);
@@ -154,7 +155,7 @@ function handlePayableReports($type, $period, $dateVal, $branch, $brand) {
     }
 }
 
-function handleInventoryReports($type, $period, $dateVal, $branch, $brand) {
+function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refNo = '') {
     global $conn;
     $where = "i.current_stock >= 0";
     $params = [];
@@ -205,6 +206,10 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand) {
                 $whereM .= " AND t.to_location = ?";
                 $mParams[] = $branch; $mTypes .= "s";
             }
+            if (!empty($refNo)) {
+                $whereM .= " AND t.or_number LIKE ?";
+                $mParams[] = "%$refNo%"; $mTypes .= "s";
+            }
             
             $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch
                     FROM spareparts_transactions t 
@@ -222,6 +227,45 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand) {
                 'summary' => [
                     ['label' => 'Total Transactions', 'value' => count($res)],
                     ['label' => 'Total Received Qty', 'value' => $totalReceived]
+                ] 
+            ];
+            
+        case 'supplier_received_stocks':
+            $dateRange = parseDateRange($period, $dateVal);
+            $whereM = "t.type = 'IN' AND t.transaction_date BETWEEN ? AND ?";
+            $mParams = [$dateRange['start'], $dateRange['end']];
+            $mTypes = "ss";
+
+            if ($branch !== 'all') {
+                $whereM .= " AND t.to_location = ?";
+                $mParams[] = $branch; $mTypes .= "s";
+            }
+            if (!empty($refNo)) {
+                $whereM .= " AND t.or_number LIKE ?";
+                $mParams[] = "%$refNo%"; $mTypes .= "s";
+            }
+
+            $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.from_location as supplier, 
+                           t.part_no, t.description, t.quantity, t.price as unit_cost, t.total_amount, t.payment_method, t.to_location as receiving_branch
+                    FROM spareparts_transactions t 
+                    WHERE $whereM ORDER BY t.transaction_date DESC, t.or_number DESC";
+            $headers = ['Date', 'Invoice / DR #', 'Supplier', 'Part No', 'Description', 'Qty', 'Unit Cost', 'Subtotal', 'Branch'];
+            $keys = ['transaction_date', 'reference', 'supplier', 'part_no', 'description', 'quantity', 'unit_cost', 'total_amount', 'receiving_branch'];
+            $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
+            
+            $res = exe($sql, $mTypes, $mParams);
+            $totalReceived = array_sum(array_column($res, 'quantity'));
+            $totalAmount = array_sum(array_column($res, 'total_amount'));
+            $uniqueInvoices = count(array_unique(array_column($res, 'reference')));
+            
+            return [ 
+                'success' => true, 
+                'data' => $res, 
+                'config' => ['headers' => $headers, 'keys' => $keys, 'formatters' => $formatters], 
+                'summary' => [
+                    ['label' => 'Total Invoices', 'value' => $uniqueInvoices],
+                    ['label' => 'Total Received Qty', 'value' => $totalReceived],
+                    ['label' => 'Total Value', 'value' => $totalAmount, 'format' => 'currency']
                 ] 
             ];
 

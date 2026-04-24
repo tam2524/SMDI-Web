@@ -12,6 +12,7 @@ $(document).ready(function () {
                 { value: "inventory_aging", text: "Inventory Aging Report" },
                 { value: "inventory_movement", text: "Inventory Movement History" },
                 { value: "received_stocks_summary", text: "Summary of Received Stocks" },
+                { value: "supplier_received_stocks", text: "Supplier Stock-In Summary (By Invoice/Date)" },
                 { value: "transferred_stocks_summary", text: "Summary of Transferred Stocks" }
             ]
         },
@@ -163,6 +164,7 @@ $(document).ready(function () {
             branch: $('#branch_filter').val(),
             brand: $('#brand_search').val(),
             part_no: $('#part_no_search').val(),
+            ref_no: $('#ref_no_search').val(),
             customer_name: customerVal
         };
 
@@ -212,6 +214,9 @@ $(document).ready(function () {
         if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
             headerHtml += '<th class="text-center d-print-none">Action</th>';
         }
+        if (currentCategory === 'inventory' && $('#report_type').val() === 'supplier_received_stocks') {
+            headerHtml += '<th class="text-center d-print-none">Action</th>';
+        }
         headerHtml += '</tr>';
         thead.append(headerHtml);
 
@@ -240,6 +245,13 @@ $(document).ready(function () {
 
             if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
                 rowHtml += `<td class="text-center d-print-none"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
+            }
+            if (currentCategory === 'inventory' && $('#report_type').val() === 'supplier_received_stocks') {
+                rowHtml += `<td class="text-center d-print-none">
+                                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="printSingleRR('${row.reference.replace(/'/g, "\\'")}')">
+                                    <i class="bi bi-printer"></i> Print RR
+                                </button>
+                            </td>`;
             }
 
             rowHtml += '</tr>';
@@ -682,6 +694,157 @@ $(document).ready(function () {
             </div>
         </body>
         </html>
+        `);
+        printWindow.document.close();
+    };
+
+    window.printSingleRR = function(reference) {
+        if (!lastReportData) return;
+        
+        // Filter items with the same reference
+        const items = lastReportData.filter(i => i.reference === reference);
+        if (items.length === 0) return;
+        
+        const first = items[0];
+        const supplier = first.supplier || 'N/A';
+        const date = first.transaction_date;
+        const branch = first.receiving_branch || 'ROXAS';
+        const paymentMode = first.payment_method || 'CASH';
+        const dateNow = new Date().toLocaleString();
+        
+        let totalQty = 0;
+        let totalValue = 0;
+        let rowsHtml = '';
+        
+        items.forEach(item => {
+            let qty = parseInt(item.quantity) || 0;
+            let cost = parseFloat(item.unit_cost) || 0;
+            let subtotal = parseFloat(item.total_amount) || 0;
+            totalQty += qty;
+            totalValue += subtotal;
+            
+            rowsHtml += `
+                <tr>
+                    <td>
+                        <div style="font-weight:bold; text-transform:lowercase">${item.description}</div>
+                        <div style="font-size:8pt;color:#777; font-style:italic">${item.part_no}</div>
+                    </td>
+                    <td style="text-align:center; color:#1a237e; font-weight:bold">${qty}</td>
+                    <td style="text-align:right">₱${cost.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    <td style="text-align:right;font-weight:bold">₱${subtotal.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                </tr>
+            `;
+        });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Receiving Report - ${reference}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
+                    @page { size: portrait; margin: 15mm 10mm; }
+                    body { font-family: 'Inter', 'Segoe UI', sans-serif; color: #333; margin: 20px; font-size: 10pt; }
+                    
+                    .report-header { text-align: center; border-bottom: 3px double #004d40; padding-bottom: 15px; margin-bottom: 25px; }
+                    .company-name { font-size: 20pt; font-weight: 800; color: #004d40; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+                    .system-name { font-size: 10pt; font-weight: 600; color: #666; font-style: italic; }
+                    
+                    .report-title-box { margin-top: 15px; text-align: center; }
+                    .report-title { font-size: 16pt; font-weight: 700; color: #000; text-decoration: underline; text-transform: uppercase; margin-bottom: 5px; }
+                    .report-meta { font-size: 9pt; color: #777; font-style: italic; }
+                    
+                    .info-grid { margin-top: 30px; margin-bottom: 25px; width: 100%; display: table; }
+                    .info-col { display: table-cell; width: 50%; }
+                    .info-label { font-size: 8pt; color: #555; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+                    .info-value { font-size: 12pt; font-weight: 800; text-transform: uppercase; color: #000; margin-bottom: 10px; }
+                    .highlight-red { color: #d32f2f !important; }
+                    
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; border: 1.5px solid #333; }
+                    th { background-color: #f8f9fa !important; color: #000; font-size: 9pt; font-weight: 700; text-transform: uppercase; border: 1.5px solid #333; padding: 10px; text-align: left; }
+                    td { font-size: 10pt; vertical-align: middle; border: 1px solid #ccc; padding: 8px 12px; }
+                    
+                    .total-row { background-color: #fdfdfd; font-weight: 800; }
+                    .total-label { text-align: right; text-transform: uppercase; padding-right: 20px; }
+                    
+                    .sig-container { margin-top: 80px; display: table; width: 100%; }
+                    .sig-box { display: table-cell; width: 33.33%; text-align: center; }
+                    .sig-line { border-bottom: 1.5px solid #000; width: 85%; margin: 0 auto 8px auto; }
+                    .sig-text { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; color: #444; }
+                    
+                    .footer-note { text-align: center; font-size: 8.5pt; font-style: italic; color: #888; margin-top: 60px; border-top: 1px solid #eee; padding-top: 15px; }
+                    
+                    @media print {
+                        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        body { margin: 0; }
+                    }
+                </style>
+            </head>
+            <body onload="window.print();">
+                <div class="report-header">
+                    <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="system-name">Spareparts Management System</div>
+                    <div class="report-title-box">
+                        <div class="report-title">RECEIVING REPORT (RR/IN)</div>
+                        <div class="report-meta">Generated on: ${dateNow} | Branch: ${branch}</div>
+                    </div>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-col">
+                        <div class="info-label">Supplier:</div>
+                        <div class="info-value">${supplier}</div>
+                        <div class="info-label">Date Received:</div>
+                        <div class="info-value" style="font-size:11pt">${date}</div>
+                    </div>
+                    <div class="info-col" style="text-align: right;">
+                        <div class="info-label">Invoice / DR #:</div>
+                        <div class="info-value highlight-red" style="font-size:16pt">${reference}</div>
+                        <div class="info-label">Payment Mode:</div>
+                        <div class="info-value" style="font-size:11pt">${paymentMode}</div>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:55%">Item Details</th>
+                            <th style="text-align:center; width:10%">Qty</th>
+                            <th style="text-align:right; width:15%">Unit Cost</th>
+                            <th style="text-align:right; width:20%">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                        <tr class="total-row">
+                            <td class="total-label">Grand Totals</td>
+                            <td style="text-align:center; color:#1a237e">${totalQty}</td>
+                            <td></td>
+                            <td style="text-align:right">₱${totalValue.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="sig-container">
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-text">Prepared By</div>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-text">Verified By</div>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-text">Authorized Signature</div>
+                    </div>
+                </div>
+                
+                <div class="footer-note">
+                    This is a system-generated Receiving Report summary.
+                </div>
+            </body>
+            </html>
         `);
         printWindow.document.close();
     };
