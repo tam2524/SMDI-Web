@@ -3593,7 +3593,7 @@ $(document).ready(function () {
         salesFilteredData = filtered;
 
         if (!filtered || filtered.length === 0) {
-            tbody.html('<tr><td colspan="10" class="text-center text-muted py-4">No sales records found.</td></tr>');
+            tbody.html('<tr><td colspan="9" class="text-center text-muted py-4">No sales records found.</td></tr>');
             if ($('#salesPageInfo').length) renderPagination('salesPagination', 'salesPageInfo', 0, 1, () => { });
             return;
         }
@@ -3605,8 +3605,6 @@ $(document).ready(function () {
             const isPDC = s.payment_method === 'PDC';
             const typeBadge = s.transaction_type === 'charge' ? (isPDC ? 'bg-info text-dark' : 'bg-info text-dark') : 'bg-success text-white';
             const typeText = isPDC ? 'CHARGE w/ PDC' : s.transaction_type.toUpperCase();
-            const balanceVal = Number(s.balance || 0);
-            const balanceText = s.transaction_type === 'charge' ? formatCurrency(balanceVal) : '-';
 
             tbody.append(`
             <tr class="align-middle">
@@ -3621,7 +3619,6 @@ $(document).ready(function () {
                 <td><div class="small text-muted">${escapeHtml(s.sales_force || 'N/A')}</div></td>
                 <td class="text-end fw-bold">${formatCurrency(s.total_amount)}</td>
                 <td class="text-center"><span class="badge ${typeBadge}">${escapeHtml(typeText)}</span></td>
-                <td class="text-end ${balanceVal > 0 ? 'text-danger' : ''}">${balanceText}</td>
                 <td class="text-center">
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-primary view-sale-btn" data-id="${s.id}" data-or="${s.or_number}" data-branch="${s.from_location}" title="View Sale">

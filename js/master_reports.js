@@ -10,7 +10,9 @@ $(document).ready(function () {
                 { value: "inventory_balance", text: "Inventory Balance (In/Out)" },
                 { value: "reorder_point", text: "Reorder Point (To Buy List)" },
                 { value: "inventory_aging", text: "Inventory Aging Report" },
-                { value: "inventory_movement", text: "Inventory Movement History" }
+                { value: "inventory_movement", text: "Inventory Movement History" },
+                { value: "received_stocks_summary", text: "Summary of Received Stocks" },
+                { value: "transferred_stocks_summary", text: "Summary of Transferred Stocks" }
             ]
         },
         sales: {
@@ -139,6 +141,12 @@ $(document).ready(function () {
         const formData = new FormData($('#masterReportForm')[0]);
         const type = $('#report_type').val();
         const period = $('#period').val();
+        const customerVal = $('#customer_search').val().trim();
+
+        if (type === 'customer_ledger' && !customerVal) {
+            showStatus('warning', 'Missing Information', 'Please enter a Customer Name to generate the Customer Ledger preview.');
+            return;
+        }
 
         // Map UI values to API expected fields
         let date_value = '';
@@ -155,7 +163,7 @@ $(document).ready(function () {
             branch: $('#branch_filter').val(),
             brand: $('#brand_search').val(),
             part_no: $('#part_no_search').val(),
-            customer_name: $('#customer_search').val()
+            customer_name: customerVal
         };
 
         const btn = $('.btn-generate');
@@ -171,7 +179,7 @@ $(document).ready(function () {
                 if (response.success) {
                     lastReportData = response.data;
                     lastReportConfig = response.config;
-                    renderPreview(response.data, response.config, response.summary);
+                    renderPreview(response.data, response.config, response.summary, response.customer_info);
                 } else {
                     showStatus('error', 'Failed to generate report', response.message);
                 }
@@ -183,7 +191,7 @@ $(document).ready(function () {
         });
     }
 
-    function renderPreview(data, config, summary) {
+    function renderPreview(data, config, summary, customerInfo) {
         const thead = $('#previewThead');
         const tbody = $('#previewTbody');
         const tfoot = $('#previewTfoot');
@@ -202,7 +210,7 @@ $(document).ready(function () {
         let headerHtml = '<tr>';
         config.headers.forEach(h => headerHtml += `<th>${h}</th>`);
         if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
-            headerHtml += '<th class="text-center">Action</th>';
+            headerHtml += '<th class="text-center d-print-none">Action</th>';
         }
         headerHtml += '</tr>';
         thead.append(headerHtml);
@@ -217,11 +225,21 @@ $(document).ready(function () {
                 if (config.formatters?.[key] === 'currency' && displayVal !== '-') {
                     displayVal = formatCurrency(displayVal);
                 }
-                rowHtml += `<td>${displayVal}</td>`;
+                let alignClass = '';
+                if (config.formatters?.[key] === 'currency') alignClass = 'text-end';
+                
+                let extraClass = '';
+                if (row.debit_credit_type === 'Grand Totals') {
+                    if (key === 'debit_credit_type') extraClass = 'text-end fw-bold text-dark';
+                    if (config.formatters?.[key] === 'currency') extraClass = 'fw-bold bg-light';
+                    if (key === 'balance') extraClass += ' text-primary'; // To match blueish tint in photo
+                }
+
+                rowHtml += `<td class="${alignClass} ${extraClass}">${displayVal}</td>`;
             });
 
             if (currentCategory === 'payments' && $('#report_type').val() === 'ar_aging') {
-                rowHtml += `<td class="text-center"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
+                rowHtml += `<td class="text-center d-print-none"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
             }
 
             rowHtml += '</tr>';
@@ -247,12 +265,36 @@ $(document).ready(function () {
         const reportTitle = $('#report_type option:selected').text();
         const branch = $('#branch_filter').val();
         const period = $('#period').val();
-        let date_value = '';
-        if (period === 'monthly') date_value = $('#month_value').val();
-        else if (period === 'daily') date_value = $('#date_value').val();
-        else date_value = $('#start_date').val() + ' to ' + $('#end_date').val();
 
-        $('#printTitle').text(reportTitle.toUpperCase());
+        if (customerInfo && Object.keys(customerInfo).length > 0) {
+            const limitStr = '₱' + parseFloat(customerInfo.credit_limit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+            $('#customerInfoPrintWrap').html(`
+                <table style="width: 100%; border: none; margin-top: 20px;">
+                    <tr>
+                        <td style="border: none !important; width: 60%; vertical-align: top; padding: 0;">
+                            <div style="font-size: 8pt; font-weight: bold; color: #555;">CUSTOMER INFORMATION:</div>
+                            <div style="font-size: 11pt; font-weight: 800; text-transform: uppercase;">${customerInfo.name}</div>
+                            <div style="font-size: 9pt; color: #555;">${customerInfo.address || ''}</div>
+                            <div style="font-size: 9pt; color: #555;">${customerInfo.contact || ''}</div>
+                        </td>
+                        <td style="border: none !important; width: 40%; vertical-align: bottom; text-align: right; padding: 0;">
+                            <div style="margin-bottom: 5px;">
+                                <span style="font-size: 8pt; font-weight: bold; color: #555;">RANK LEVEL:</span> 
+                                <span style="font-size: 10pt; font-weight: 800; margin-left: 10px;">${customerInfo.rank}</span>
+                            </div>
+                            <div>
+                                <span style="font-size: 8pt; font-weight: bold; color: #555;">CREDIT LIMIT:</span> 
+                                <span style="font-size: 10pt; font-weight: 800; margin-left: 10px;">${limitStr}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            `).removeClass('d-none');
+            $('#printTitle').text('STATEMENT OF ACCOUNT');
+        } else {
+            $('#customerInfoPrintWrap').addClass('d-none').empty();
+            $('#printTitle').text(reportTitle.toUpperCase());
+        }
         $('#printCriteria').text(`Generated on: ${new Date().toLocaleString()} | Branch: ${branch.toUpperCase()}`);
 
         // Update footer based on category
@@ -271,7 +313,13 @@ $(document).ready(function () {
         } else {
             $('#notedByLabel').text('NOTED / CHECKED BY');
             $('#notedBySub').text('Manager / Supervisor');
-            $('#footerDisclaimerText').text('This is a system-generated report.');
+        }
+
+        // Apply Landscape dynamically for AR Aging during Preview render so it's ready when printed
+        if ($('#report_type').val() === 'ar_aging' || $('#report_type').val() === 'inventory_aging') {
+            $('#dynamicPrintOrientation').text('@media print { @page { size: landscape !important; margin: 10mm; } }');
+        } else {
+            $('#dynamicPrintOrientation').text('@media print { @page { size: portrait !important; margin: 15mm 10mm; } }');
         }
 
         $('#previewArea').fadeIn();
@@ -317,6 +365,9 @@ $(document).ready(function () {
 
         window.print();
     });
+
+    // Disable any dynamically injected event handlers for inline preview print
+    $(document).off('click', 'button[onclick="window.print()"]');
 
     // Export Logic
     $('.export-btn').on('click', function () {
@@ -496,16 +547,37 @@ $(document).ready(function () {
         $.get('../api/reports_master.php', params, function (response) {
             if (response.success && response.data.length > 0) {
                 let html = '';
+                let totalDebit = 0;
+                let totalCredit = 0;
+                let finalBalance = 0;
+
                 response.data.forEach(row => {
+                    const debit = parseFloat(row.debit || 0);
+                    const credit = parseFloat(row.credit || 0);
+                    const balance = parseFloat(row.balance || 0);
+
+                    totalDebit += debit;
+                    totalCredit += credit;
+                    finalBalance = balance;
+
                     html += `<tr>
                                 <td>${row.date}</td>
-                                <td><code class="text-dark">${row.ref}</code></td>
+                                <td><code class="text-dark">${row.ref || '-'}</code></td>
                                 <td>${row.debit_credit_type}</td>
-                                <td class="text-end text-danger">${row.debit > 0 ? formatCurrency(row.debit) : '-'}</td>
-                                <td class="text-end text-success">${row.credit > 0 ? formatCurrency(row.credit) : '-'}</td>
-                                <td class="text-end fw-bold">${formatCurrency(row.balance)}</td>
+                                <td class="text-end text-danger">${debit > 0 ? formatCurrency(debit) : '-'}</td>
+                                <td class="text-end text-success">${credit > 0 ? formatCurrency(credit) : '-'}</td>
+                                <td class="text-end fw-bold">${formatCurrency(balance)}</td>
                              </tr>`;
                 });
+
+                // Summary Row
+                html += `<tr class="table-light shadow-sm">
+                    <td colspan="3" class="text-end fw-bold py-3 text-uppercase border-top-2">Grand Totals</td>
+                    <td class="text-end fw-bold text-danger border-top-2">${formatCurrency(totalDebit)}</td>
+                    <td class="text-end fw-bold text-success border-top-2">${formatCurrency(totalCredit)}</td>
+                    <td class="text-end fw-bold text-primary border-top-2" style="background: #f0faff;">${formatCurrency(finalBalance)}</td>
+                </tr>`;
+
                 $('#ledgerModalTbody').html(html);
             } else {
                 $('#ledgerModalTbody').html('<tr><td colspan="6" class="text-center py-5 text-muted">No transactions found for this period.</td></tr>');
@@ -526,6 +598,7 @@ $(document).ready(function () {
         <head>
             <title>Statement of Account - ${customerName}</title>
             <style>
+                @page { size: portrait; margin: 15mm 10mm; }
                 body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; margin: 20px; font-size: 10pt; }
                 .report-header-print { text-align: center; border-bottom: 3px double #004d40; padding-bottom: 15px; margin-bottom: 25px; display: block; width: 100%; }
                 .report-header-print .company-name { font-size: 18pt; font-weight: 800; color: #004d40; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }

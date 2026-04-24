@@ -105,7 +105,7 @@ $(document).ready(function () {
         const tbody = $('#customersTableBody');
         tbody.empty();
         if (!data || data.length === 0) {
-            tbody.append('<tr><td colspan="5" class="text-center text-muted p-4">No customers found.</td></tr>');
+            tbody.append('<tr><td colspan="4" class="text-center text-muted p-4">No customers found.</td></tr>');
             return;
         }
 
@@ -115,7 +115,6 @@ $(document).ready(function () {
                     <td class="py-3 ps-4 fw-bold" style="color: #2c3e50;">${cust.name}</td>
                     <td class="py-3" style="color: #6c757d;">${cust.contact_no || '-'}</td>
                     <td class="py-3" style="color: #6c757d;">${cust.address || '-'}</td>
-                    <td class="py-3 text-end"><span class="badge-balance">₱${parseFloat(cust.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></td>
                     <td class="py-3 pe-4 text-center">
                         <button class="btn btn-sm btn-outline-primary btn-edit-customer" 
                             data-id="${cust.id}" 
@@ -316,11 +315,11 @@ $(document).ready(function () {
                     });
 
                     // Add Summary Row
-                    html += `<tr class="table-light">
-                        <td colspan="3" class="text-end fw-bold py-3 text-uppercase small bg-white border-top-2">Grand Totals</td>
-                        <td class="text-end fw-bold fs-6 text-danger border-top-2">₱${totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                        <td class="text-end fw-bold fs-6 text-success border-top-2">₱${totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                        <td class="text-end pe-3 fw-bold fs-5 text-primary border-top-2" style="background:#f0f7ff;">₱${finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    html += `<tr class="table-light shadow-sm">
+                        <td colspan="3" class="text-end fw-bold py-3 text-uppercase border-top-2 bg-white small">Grand Totals</td>
+                        <td class="text-end fw-bold text-danger border-top-2">₱${totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td class="text-end fw-bold text-success border-top-2">₱${totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td class="text-end pe-3 fw-bold text-primary border-top-2" style="background:#f0faff;">₱${finalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     </tr>`;
                 }
                 $('#ledgerModalTbody').html(html);

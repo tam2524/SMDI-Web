@@ -806,8 +806,6 @@ $showTabs = !isset($_GET['tab']);
                                     style="letter-spacing: 0.5px; font-size: 0.85rem;">Contact No</th>
                                 <th class="py-3 text-uppercase fw-semibold"
                                     style="letter-spacing: 0.5px; font-size: 0.85rem;">Address</th>
-                                <th class="py-3 text-end text-uppercase fw-semibold"
-                                    style="letter-spacing: 0.5px; font-size: 0.85rem;">Balance</th>
                                 <th class="py-3 pe-4 text-center text-uppercase fw-semibold"
                                     style="letter-spacing: 0.5px; font-size: 0.85rem;">Actions</th>
                             </tr>
@@ -1044,7 +1042,6 @@ $showTabs = !isset($_GET['tab']);
                                 <th>Sales Force</th>
                                 <th class="text-end">Total Amount</th>
                                 <th class="text-center">Type</th>
-                                <th class="text-end col-balance">Balance</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>

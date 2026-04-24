@@ -839,6 +839,9 @@ function isVisible($menuId) {
                                     <button id="submitStockIn" class="btn btn-success w-100 py-3 fw-bold shadow-sm" style="border-radius:12px;">
                                         <span id="confirmReceiptBtnInner"><i class="bi bi-save me-2"></i> CONFIRM RECEIPT</span>
                                     </button>
+                                    <button id="printCurrentSummary" class="btn btn-outline-secondary w-100 mt-2 py-2 fw-bold" style="border-radius:12px;">
+                                        <i class="bi bi-printer me-2"></i> PRINT SUMMARY
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -910,6 +913,7 @@ function isVisible($menuId) {
     <script src="../js/spareparts_inventory_in.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        window.currentBranch = '<?php echo $branch; ?>';
         document.addEventListener('DOMContentLoaded', function() {
             updateWarehouseSummary();
             updateInventorySummary();

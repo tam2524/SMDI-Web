@@ -773,10 +773,6 @@ endif; ?>
                             <h4 class="mb-0 fw-bold"><i class="bi bi-cash-coin me-2"></i>Payment Management</h4>
                             <div class="d-flex gap-3 align-items-center">
                                 <div class="btn-group shadow-sm">
-                                    <button class='btn btn-sm btn-info text-dark fw-bold px-3' data-bs-toggle='modal'
-                                        data-bs-target='#paymentsAgingModal'>
-                                        <i class='bi bi-clock-history me-1'></i>Aging View
-                                    </button>
                                     <button class='btn btn-sm btn-primary text-white fw-bold px-3'
                                         data-bs-toggle='modal' data-bs-target='#recordPaymentModal'>
                                         <i class='bi bi-cash-coin me-1'></i>Record Payment
@@ -2230,59 +2226,6 @@ endif; ?>
         <script src='../js/spareparts_inventory.js?v=<?php echo time(); ?>'></script>
         <script src='../js/sales_spareparts.js?v=<?php echo time(); ?>'></script>
 
-        <div class="modal fade" id="paymentsAgingModal" tabindex="-1">
-            <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header bg-info text-dark">
-                        <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>Payments Aging View
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body bg-light">
-                        <div class="row mb-3 align-items-end aging-branch-filter-container">
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small text-muted">Filter by Branch</label>
-                                <select id="agingBranchFilter" class="form-select border-secondary">
-                                    <option value="All">All Branches</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small text-muted">Search Customer</label>
-                                <input type='text' id='paymentsAgingSearch' class='form-control border-secondary'
-                                    placeholder='Search customer...'>
-                            </div>
-                            <div class="col text-end">
-                                <button class="btn btn-outline-dark fw-bold" id="printAgingSummaryBtn">
-                                    <i class="bi bi-printer me-1"></i> Print Summary
-                                </button>
-                            </div>
-                        </div>
-                        <div class='table-responsive rounded shadow-sm bg-white'>
-                            <table class='table table-hover align-middle mb-0' id='paymentsAgingTable'>
-                                <thead class="bg-light border-bottom border-2">
-                                    <tr>
-                                        <th style="width: 40px;"></th>
-                                        <th>Branch</th>
-                                        <th>Customer</th>
-                                        <th class="text-end">0-30 Days</th>
-                                        <th class="text-end">31-60 Days</th>
-                                        <th class="text-end">61-90 Days</th>
-                                        <th class="text-end">90+ Days</th>
-                                        <th class="text-end">Total Balance</th>
-                                        <th class="text-center">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id='paymentsAgingTableBody'></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-top-0 bg-light">
-                        <button type="button" class="btn btn-secondary px-4 fw-bold"
-                            data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
 
     <!-- SHARED UTILITY MODALS -->
     <div class='modal fade' id='successModal' tabindex='-1'>

@@ -194,7 +194,67 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand) {
             
             $res = exe($sql, $mTypes, $mParams);
             return [ 'success' => true, 'data' => $res, 'config' => ['headers' => $headers, 'keys' => $keys], 'summary' => [['label' => 'Total Transactions', 'value' => count($res)]] ];
-        
+            
+        case 'received_stocks_summary':
+            $dateRange = parseDateRange($period, $dateVal);
+            $whereM = "t.type IN ('IN', 'TRANSFER_IN', 'RETURN') AND t.transaction_date BETWEEN ? AND ?";
+            $mParams = [$dateRange['start'], $dateRange['end']];
+            $mTypes = "ss";
+            
+            if ($branch !== 'all') {
+                $whereM .= " AND t.to_location = ?";
+                $mParams[] = $branch; $mTypes .= "s";
+            }
+            
+            $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch
+                    FROM spareparts_transactions t 
+                    WHERE $whereM ORDER BY t.transaction_date DESC";
+            $headers = ['Date', 'Reference', 'Part No', 'Description', 'Receive Type', 'Qty', 'Source', 'Receiving Branch'];
+            $keys = ['transaction_date', 'reference', 'part_no', 'description', 'receive_type', 'quantity', 'source_branch', 'receiving_branch'];
+            
+            $res = exe($sql, $mTypes, $mParams);
+            $totalReceived = array_sum(array_column($res, 'quantity'));
+            
+            return [ 
+                'success' => true, 
+                'data' => $res, 
+                'config' => ['headers' => $headers, 'keys' => $keys], 
+                'summary' => [
+                    ['label' => 'Total Transactions', 'value' => count($res)],
+                    ['label' => 'Total Received Qty', 'value' => $totalReceived]
+                ] 
+            ];
+
+        case 'transferred_stocks_summary':
+            $dateRange = parseDateRange($period, $dateVal);
+            $whereM = "t.type IN ('TRANSFER_OUT') AND t.transaction_date BETWEEN ? AND ?";
+            $mParams = [$dateRange['start'], $dateRange['end']];
+            $mTypes = "ss";
+
+            if ($branch !== 'all') {
+                $whereM .= " AND t.from_location = ?";
+                $mParams[] = $branch; $mTypes .= "s";
+            }
+
+            $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.part_no, t.description, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch
+                    FROM spareparts_transactions t 
+                    WHERE $whereM ORDER BY t.transaction_date DESC";
+            $headers = ['Date', 'Reference', 'Part No', 'Description', 'Qty', 'Source Branch', 'Receiving Branch'];
+            $keys = ['transaction_date', 'reference', 'part_no', 'description', 'quantity', 'source_branch', 'receiving_branch'];
+            
+            $res = exe($sql, $mTypes, $mParams);
+            $totalTransferred = array_sum(array_column($res, 'quantity'));
+            
+            return [ 
+                'success' => true, 
+                'data' => $res, 
+                'config' => ['headers' => $headers, 'keys' => $keys], 
+                'summary' => [
+                    ['label' => 'Total Transfer Out (Tx)', 'value' => count($res)],
+                    ['label' => 'Total Transferred Qty', 'value' => $totalTransferred]
+                ] 
+            ];
+            
         case 'stock_status':
             $sql = "SELECT i.part_no, i.description, i.brand, i.category, i.current_stock, i.cost, (i.current_stock * i.cost) as total_value, i.current_branch as branch
                     FROM spareparts_inventory i WHERE $where ORDER BY i.current_branch, i.part_no";
@@ -436,15 +496,21 @@ function handlePaymentReports($type, $period, $dateVal, $branch, $brand) {
             }
             
             // Age should be calculated from sale_date which reflects when the transaction actually occurred
-            $sql = "SELECT a.customer_name, a.or_number, a.balance, DATEDIFF(NOW(), a.sale_date) as age, a.branch 
-                    FROM spareparts_aging a WHERE $whereA ORDER BY age DESC";
+            $sql = "SELECT a.customer_name, 
+                           SUM(CASE WHEN DATEDIFF(NOW(), a.sale_date) <= 30 THEN a.balance ELSE 0 END) as age_0_30,
+                           SUM(CASE WHEN DATEDIFF(NOW(), a.sale_date) BETWEEN 31 AND 60 THEN a.balance ELSE 0 END) as age_31_60,
+                           SUM(CASE WHEN DATEDIFF(NOW(), a.sale_date) BETWEEN 61 AND 90 THEN a.balance ELSE 0 END) as age_61_90,
+                           SUM(CASE WHEN DATEDIFF(NOW(), a.sale_date) > 90 THEN a.balance ELSE 0 END) as age_90_plus,
+                           SUM(a.balance) as total_balance,
+                           a.branch 
+                    FROM spareparts_aging a WHERE $whereA GROUP BY a.customer_name, a.branch ORDER BY a.customer_name ASC";
             
-            $headers = ['Customer Name', 'SI # / Reference #', 'Balance', 'Days Outstanding', 'Branch'];
-            $keys = ['customer_name', 'or_number', 'balance', 'age', 'branch'];
-            $formatters = ['balance' => 'currency'];
+            $headers = ['Customer Name', '0-30 Days', '31-60 Days', '61-90 Days', '90+ Days', 'Total Balance'];
+            $keys = ['customer_name', 'age_0_30', 'age_31_60', 'age_61_90', 'age_90_plus', 'total_balance'];
+            $formatters = ['age_0_30' => 'currency', 'age_31_60' => 'currency', 'age_61_90' => 'currency', 'age_90_plus' => 'currency', 'total_balance' => 'currency'];
             
             $res = exe($sql, $aTypes, $aParams);
-            $totalAR = array_sum(array_column($res, 'balance'));
+            $totalAR = array_sum(array_column($res, 'total_balance'));
             
             return [
                 'success' => true,
@@ -460,21 +526,23 @@ function handlePaymentReports($type, $period, $dateVal, $branch, $brand) {
             
             // IF a specific customer is searched, show DETAILED STATEMENT (Ledger)
             if (!empty($customerSearch)) {
-                $whereL = "t.customer_name LIKE ? AND (t.transaction_date BETWEEN ? AND ?)";
-                $lParams = ["%{$customerSearch}%", $dateRange['start'], $dateRange['end']];
-                $lTypes = "sss";
+                // Ignore the date period and fetch ALL history for accurate running balance
+                $whereL = "t.customer_name LIKE ?";
+                $lParams = ["%{$customerSearch}%"];
+                $lTypes = "s";
                 
                 if ($branch !== 'all') {
                     $whereL .= " AND t.from_location = ?";
                     $lParams[] = $branch; $lTypes .= "s";
                 }
                 
-                // Fetch all OUT (charge) and PAYMENT transactions for the period
+                // Fetch all OUT (charge), PAYMENT, and RETURN transactions
                 // For payments: t.or_number is the receipt, t.transaction_type stores the SI# targeted
                 // For sales: t.or_number is the SI#
+                // For returns: acts as a credit memo
                 $sql = "SELECT t.transaction_date as date, t.or_number, t.type, t.transaction_type, t.total_amount as amount, t.customer_name
                         FROM spareparts_transactions t 
-                        WHERE $whereL AND (t.type = 'PAYMENT' OR (t.type = 'OUT' AND t.transaction_type = 'charge'))
+                        WHERE $whereL AND (t.type IN ('PAYMENT', 'RETURN') OR (t.type = 'OUT' AND t.transaction_type = 'charge'))
                         ORDER BY t.transaction_date ASC, t.id ASC";
                 
                 $details = exe($sql, $lTypes, $lParams);
@@ -482,26 +550,42 @@ function handlePaymentReports($type, $period, $dateVal, $branch, $brand) {
                 // Calculate Running Balance
                 $ledgerData = [];
                 $runningBalance = 0;
+                $totalDebit = 0;
+                $totalCredit = 0;
                 
                 foreach ($details as $row) {
                     if ($row['type'] === 'OUT') {
                         $runningBalance += (float) $row['amount'];
+                        $totalDebit += (float) $row['amount'];
                         $row['ref'] = $row['or_number']; // SI #
                         $row['debit_credit_type'] = "Sale SI# " . $row['or_number'];
                         $row['debit'] = $row['amount'];
-                        $row['credit'] = 0;
+                        $row['credit'] = null; // Render as '-'
                     } else {
                         $runningBalance -= (float) $row['amount'];
-                        $row['ref'] = $row['or_number']; // Receipt #
-                        $row['debit_credit_type'] = "Payment for SI# " . ($row['transaction_type'] ?? '-');
-                        $row['debit'] = 0;
+                        $totalCredit += (float) $row['amount'];
+                        $row['ref'] = $row['or_number']; // Receipt or CM #
+                        $row['debit_credit_type'] = ($row['type'] === 'RETURN') ? "Credit Memo (Return)" : "Payment for SI# " . ($row['transaction_type'] ?? '-');
+                        $row['debit'] = null; // Render as '-'
                         $row['credit'] = $row['amount'];
                     }
                     $row['balance'] = $runningBalance;
                     $ledgerData[] = $row;
                 }
                 
-                $headers = ['Date', 'Reference #', 'Transaction Info', 'Amount (SI)', 'Amount (Pay)', 'Running Balance'];
+                // Retrieve Customer Information
+                $cSql = "SELECT * FROM spareparts_customers WHERE name LIKE ? LIMIT 1";
+                $cData = exe($cSql, "s", ["%{$customerSearch}%"]);
+                $cDetails = !empty($cData) ? $cData[0] : [];
+                $customerInfo = [
+                    'name' => $cDetails['name'] ?? $customerSearch,
+                    'address' => $cDetails['address'] ?? '',
+                    'contact' => $cDetails['contact_no'] ?? '',
+                    'rank' => $cDetails['rank_level'] ?? '1',
+                    'credit_limit' => $cDetails['credit_limit'] ?? 0
+                ];
+
+                $headers = ['Date', 'Reference #', 'Transaction Info', 'Debit (Charge)', 'Credit (Payment)', 'Running Balance'];
                 $keys = ['date', 'ref', 'debit_credit_type', 'debit', 'credit', 'balance'];
                 $formatters = ['debit' => 'currency', 'credit' => 'currency', 'balance' => 'currency'];
                 
@@ -511,7 +595,8 @@ function handlePaymentReports($type, $period, $dateVal, $branch, $brand) {
                     'config' => ['headers' => $headers, 'keys' => $keys, 'formatters' => $formatters],
                     'summary' => [
                         ['label' => 'Total Outstanding Balance', 'value' => $runningBalance, 'format' => 'currency']
-                    ]
+                    ],
+                    'customer_info' => $customerInfo
                 ];
             }
             

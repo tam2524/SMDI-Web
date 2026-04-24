@@ -39,6 +39,7 @@ if ($position === 'Spareparts-Owner') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <style id="dynamicPrintOrientation"></style>
     <style>
         :root {
             --green-900: #003d33;
@@ -476,6 +477,9 @@ if ($position === 'Spareparts-Owner') {
                                 <div class="report-title" id="printTitle"></div>
                                 <div class="report-criteria" id="printCriteria"
                                     style="font-size: 9pt; color: #777; font-style: italic; margin-top: 5px;"></div>
+                            </div>
+                            <div id="customerInfoPrintWrap" class="d-none mt-4 text-start">
+                                <!-- Dynamically filled for SOA -->
                             </div>
                         </div>
                         <p class="report-desc" id="activeReportDesc">Maintain optimal stock levels and prevent

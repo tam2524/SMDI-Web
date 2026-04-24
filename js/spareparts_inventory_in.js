@@ -100,6 +100,19 @@ function initInventoryIn() {
         let pno = currentlyScannedItem ? currentlyScannedItem.part_no : '';
         if (pno) showInCostHistory(pno);
     });
+
+    $('#printCurrentSummary').on('click', function() {
+        if (inCart.length === 0) {
+            Swal.fire('Empty List', 'Add some items to the list first before printing.', 'info');
+            return;
+        }
+        printReceivedStocksSummary(
+            inCart, 
+            $('#invoiceNo').val().trim() || 'DRAFT', 
+            $('#supplier').val().trim() || 'N/A', 
+            $('#dateReceived').val()
+        );
+    });
 }
 
 function doInSearch(q) {
@@ -373,6 +386,8 @@ function renderInCart() {
     
     $('#summaryTotalQty').text(totalQty);
     $('#summaryTotalValue').text('₱' + totalVal.toLocaleString('en-PH', {minimumFractionDigits:2}));
+
+    $('#printCurrentSummary').prop('disabled', inCart.length === 0);
 }
 
 function updateInCartItem(index, key, value) {
@@ -456,8 +471,20 @@ function submitStockInAction() {
                         title: 'Receipt Confirmed!',
                         html: 'Stock received and inventory updated successfully.',
                         icon: 'success',
+                        showDenyButton: true,
+                        confirmButtonText: '<i class="bi bi-check2-circle me-1"></i> Close',
+                        denyButtonText: '<i class="bi bi-printer me-1"></i> Print Summary',
+                        denyButtonColor: '#1a237e',
                         confirmButtonColor: '#004d40'
-                    }).then(() => {
+                    }).then((res) => {
+                        if (res.isDenied) {
+                            printReceivedStocksSummary(
+                                response.saved_items || inCart, // Prefer server response if available
+                                invoice,
+                                $('#supplier').val().trim() || 'N/A',
+                                $('#dateReceived').val()
+                            );
+                        }
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('inventoryInModal')).hide();
                         if (typeof updateWarehouseSummary === 'function') updateWarehouseSummary();
                         if (typeof updateSalesSummary === 'function') updateSalesSummary();
@@ -478,6 +505,138 @@ function submitStockInAction() {
             }
         });
     });
+}
+
+function printReceivedStocksSummary(items, invoice, supplier, date) {
+    const branch = window.currentBranch || 'HEADOFFICE';
+    const dateNow = new Date().toLocaleString();
+    let totalQty = 0;
+    let totalValue = 0;
+    
+    let rowsHtml = '';
+    items.forEach(item => {
+        let subtotal = item.quantity * item.cost;
+        totalQty += item.quantity;
+        totalValue += subtotal;
+        rowsHtml += `
+            <tr>
+                <td>
+                    <div style="font-weight:bold">${item.description}</div>
+                    <div style="font-size:8pt;color:#555">${item.part_no}${item.brand ? ' · ' + item.brand : ''}</div>
+                </td>
+                <td style="text-align:center">${item.quantity}</td>
+                <td style="text-align:right">₱${item.cost.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="text-align:right;font-weight:bold">₱${subtotal.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+            </tr>
+        `;
+    });
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Receiving Report - ${invoice}</title>
+            <style>
+                @page { size: portrait; margin: 15mm 10mm; }
+                body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; margin: 20px; font-size: 10pt; }
+                .report-header-print { text-align: center; border-bottom: 3px double #004d40; padding-bottom: 15px; margin-bottom: 25px; display: block; width: 100%; }
+                .report-header-print .company-name { font-size: 18pt; font-weight: 800; color: #004d40; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+                .report-header-print .system-name { font-size: 9pt; font-weight: 600; color: #666; font-style: italic; }
+                .report-title-container { margin-top: 15px; }
+                .report-title { font-size: 14pt; font-weight: 700; color: #000; text-decoration: underline; text-transform: uppercase; margin-bottom: 5px; }
+                .report-timestamp { font-size: 9pt; color: #777; font-style: italic; }
+                
+                .info-box { margin-bottom: 15px; width: 100%; display: table; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+                .info-left { display: table-cell; width: 50%; }
+                .info-right { display: table-cell; width: 50%; text-align: right; vertical-align: top; }
+                .info-label { font-size: 8pt; color: #555; text-transform: uppercase; font-weight: bold; }
+                .info-value { font-size: 11pt; font-weight: 700; text-transform: uppercase; color: #000; margin-bottom: 3px; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th { background-color: #f2f2f2 !important; color: #000 !important; font-size: 9pt; font-weight: 700; text-transform: uppercase; border: 1px solid #333 !important; padding: 8px; text-align: left; }
+                th.text-end, td.text-end { text-align: right !important; }
+                td { font-size: 9pt; vertical-align: middle; border: 1px solid #ddd !important; padding: 6px 8px; }
+                
+                .sig-section { margin-top: 50px; display: flex; width: 100%; }
+                .sig-box { flex: 1; text-align: center; }
+                .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 40px auto 5px auto; }
+                .sig-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #555; }
+                .footer-stamp { text-align: center; font-size: 8pt; font-style: italic; color: #777; margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; }
+                
+                @media print {
+                    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body onload="window.print();">
+            <div class="report-header-print">
+                <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                <div class="system-name">Spareparts Management System</div>
+                <div class="report-title-container">
+                    <div class="report-title">RECEIVING REPORT (RR/IN)</div>
+                    <div class="report-timestamp">Generated on: ${dateNow} | Branch: ${branch}</div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-left">
+                    <div class="info-label">Supplier:</div>
+                    <div class="info-value">${supplier || 'N/A'}</div>
+                    <div class="info-label">Date Received:</div>
+                    <div class="info-value" style="font-size:10pt">${date}</div>
+                </div>
+                <div class="info-right">
+                    <div class="info-label">Invoice / DR #:</div>
+                    <div class="info-value" style="font-size:14pt;color:#d32f2f">${invoice}</div>
+                    <div class="info-label">Payment Mode:</div>
+                    <div class="info-value" style="font-size:10pt">${$('#paymentMode').val() || 'Cash'}</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:50%">Item Details</th>
+                        <th style="text-align:center">Qty</th>
+                        <th style="text-align:right">Unit Cost</th>
+                        <th style="text-align:right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+                <tfoot>
+                    <tr style="background:#f9f9f9;font-weight:bold">
+                        <td style="text-align:right">GRAND TOTALS</td>
+                        <td style="text-align:center">${totalQty}</td>
+                        <td></td>
+                        <td style="text-align:right">₱${totalValue.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <div class="sig-section">
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Prepared By</div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Verified By</div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Authorized Signature</div>
+                </div>
+            </div>
+            
+            <div class="footer-stamp">
+                This is a system-generated Receiving Report summary.
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 // Initial Call
