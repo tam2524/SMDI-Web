@@ -270,6 +270,9 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             ];
 
         case 'transferred_stocks_summary':
+            // Ensure transfer_no exists in transactions for transfers
+            try { $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL"); } catch(Exception $e) {}
+
             $dateRange = parseDateRange($period, $dateVal);
             $whereM = "t.type IN ('TRANSFER_OUT') AND t.transaction_date BETWEEN ? AND ?";
             $mParams = [$dateRange['start'], $dateRange['end']];
@@ -280,12 +283,12 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
 
-            $sql = "SELECT t.transaction_date, COALESCE(t.or_number, 'N/A') as reference, t.part_no, t.description, t.quantity, 
+            $sql = "SELECT t.transaction_date, COALESCE(t.transfer_no, t.or_number, 'N/A') as transfer_no, t.part_no, t.description, t.quantity, 
                            t.price as unit_cost, t.total_amount, t.from_location as source_branch, t.to_location as receiving_branch
                     FROM spareparts_transactions t 
                     WHERE $whereM ORDER BY t.transaction_date DESC";
-            $headers = ['Date', 'Reference', 'Part No', 'Description', 'Qty', 'Unit Cost', 'Subtotal', 'Source Branch', 'Receiving Branch'];
-            $keys = ['transaction_date', 'reference', 'part_no', 'description', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
+            $headers = ['Date', 'Transfer #', 'Part No', 'Description', 'Qty', 'Unit Cost', 'Subtotal', 'Source Branch', 'Receiving Branch'];
+            $keys = ['transaction_date', 'transfer_no', 'part_no', 'description', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
             $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
             
             $res = exe($sql, $mTypes, $mParams);

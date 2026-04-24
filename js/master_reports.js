@@ -248,8 +248,8 @@ $(document).ready(function () {
             }
             if (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary')) {
                 rowHtml += `<td class="text-center d-print-none">
-                                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="printSingleRR('${row.reference.replace(/'/g, "\\'")}')">
-                                    <i class="bi bi-printer"></i> Print ONLY
+                                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="printSingleRR('${(row.reference || row.transfer_no || '').replace(/'/g, "\\'")}')">
+                                    <i class="bi bi-printer"></i> Print
                                 </button>
                             </td>`;
             }
@@ -702,7 +702,7 @@ $(document).ready(function () {
         if (!lastReportData) return;
         
         // Filter items with the same reference
-        const items = lastReportData.filter(i => i.reference === reference);
+        const items = lastReportData.filter(i => (i.reference === reference || i.transfer_no === reference));
         if (items.length === 0) return;
         
         const first = items[0];
@@ -800,10 +800,12 @@ $(document).ready(function () {
                         <div class="info-value" style="font-size:11pt">${date}</div>
                     </div>
                     <div class="info-col" style="text-align: right;">
-                        <div class="info-label">Invoice / DR #:</div>
-                        <div class="info-value highlight-red" style="font-size:16pt">${reference}</div>
-                        <div class="info-label">Payment Mode:</div>
-                        <div class="info-value" style="font-size:11pt">${paymentMode}</div>
+                        <div class="info-label">${isTransfer ? 'Transfer #' : 'Invoice / DR #'}:</div>
+                        <div class="info-value highlight-red" style="font-size:16pt">${first.transfer_no || reference}</div>
+                        ${isTransfer ? '' : `
+                            <div class="info-label">Payment Mode:</div>
+                            <div class="info-value" style="font-size:11pt">${paymentMode}</div>
+                        `}
                     </div>
                 </div>
                 

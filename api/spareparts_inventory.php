@@ -16,6 +16,7 @@ $canDelete = $isAdmin;
 // Auto-repair tools removed to prevent PHP exceptions from halting script execution
 try {
     $conn->query("ALTER TABLE spareparts_transfers ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER id");
+    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER or_number");
     $conn->query("ALTER TABLE spareparts_sales_force ADD COLUMN IF NOT EXISTS position VARCHAR(255) DEFAULT NULL AFTER employee_name");
     $conn->query("ALTER TABLE spareparts_sales_force ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
     $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
@@ -1540,10 +1541,10 @@ function transferMultipleParts()
             $liStmt->bind_param('issid', $transferId, $pno, $desc, $qty, $cost);
             $liStmt->execute();
 
-            $txStmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, status) 
-                                     VALUES (?, 'TRANSFER_OUT', ?, ?, ?, ?, ?, ?, ?, 'In-Transit')");
+            $txStmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, status, transfer_no) 
+                                     VALUES (?, 'TRANSFER_OUT', ?, ?, ?, ?, ?, ?, ?, 'In-Transit', ?)");
             $total_cost = $qty * $cost;
-            $txStmt->bind_param('sssiddss', $transferDate, $pno, $desc, $qty, $cost, $total_cost, $currentBranch, $toBranch);
+            $txStmt->bind_param('sssiddsss', $transferDate, $pno, $desc, $qty, $cost, $total_cost, $currentBranch, $toBranch, $transferNo);
             $txStmt->execute();
         }
         $conn->commit();
@@ -1702,10 +1703,17 @@ function acceptTransfer()
             $stmt->execute();
 
             // Log TRANSFER_IN
-            $logStmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, status) 
-                                       VALUES (CURDATE(), 'TRANSFER_IN', ?, ?, ?, ?, ?, ?, ?, 'Completed')");
+            $logStmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, status, transfer_no) 
+                                       VALUES (CURDATE(), 'TRANSFER_IN', ?, ?, ?, ?, ?, ?, ?, 'Completed', ?)");
             $total_amount = $quantity * $cost;
-            $logStmt->bind_param('ssiddss', $part_no, $description, $quantity, $cost, $total_amount, $from_branch, $currentBranch);
+            // Get transfer_no from transfer record
+            $tNoQuery = "SELECT transfer_no FROM spareparts_transfers WHERE id = ?";
+            $tNoStmt = $conn->prepare($tNoQuery);
+            $tNoStmt->bind_param('i', $transferId);
+            $tNoStmt->execute();
+            $tNo = $tNoStmt->get_result()->fetch_assoc()['transfer_no'] ?? '';
+            
+            $logStmt->bind_param('ssiddssss', $part_no, $description, $quantity, $cost, $total_amount, $from_branch, $currentBranch, $tNo);
             $logStmt->execute();
         }
 
