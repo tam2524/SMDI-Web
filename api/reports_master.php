@@ -270,8 +270,15 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             ];
 
         case 'transferred_stocks_summary':
-            // Ensure transfer_no exists in transactions for transfers
-            try { $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL"); } catch(Exception $e) {}
+            // Ensure transfer_no exists in transactions and backfill for older records
+            try { 
+                $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER or_number"); 
+                // Heuristic backfill: Match by date, branches, and type
+                $conn->query("UPDATE spareparts_transactions t
+                             JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND st.transfer_date = t.transaction_date)
+                             SET t.transfer_no = st.transfer_no
+                             WHERE t.type = 'TRANSFER_OUT' AND (t.transfer_no IS NULL OR t.transfer_no = '')");
+            } catch(Exception $e) {}
 
             $dateRange = parseDateRange($period, $dateVal);
             $whereM = "t.type IN ('TRANSFER_OUT') AND t.transaction_date BETWEEN ? AND ?";
@@ -283,10 +290,17 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
 
-            $sql = "SELECT t.transaction_date, COALESCE(t.transfer_no, t.or_number, 'N/A') as transfer_no, t.part_no, t.description, t.quantity, 
-                           t.price as unit_cost, t.total_amount, t.from_location as source_branch, t.to_location as receiving_branch
+            $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as transfer_no, 
+                           t.part_no, t.description, t.quantity, 
+                           COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_transfer_items WHERE transfer_id = st.id AND part_no = t.part_no LIMIT 1), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.from_location LIMIT 1), 0) as unit_cost,
+                           COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_transfer_items WHERE transfer_id = st.id AND part_no = t.part_no LIMIT 1), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.from_location LIMIT 1), 0)) as total_amount,
+                           t.from_location as source_branch, 
+                           t.to_location as receiving_branch
                     FROM spareparts_transactions t 
-                    WHERE $whereM ORDER BY t.transaction_date DESC";
+                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND st.transfer_date = t.transaction_date)
+                    WHERE $whereM 
+                    GROUP BY t.id 
+                    ORDER BY t.transaction_date DESC";
             $headers = ['Date', 'Transfer #', 'Part No', 'Description', 'Qty', 'Unit Cost', 'Subtotal', 'Source Branch', 'Receiving Branch'];
             $keys = ['transaction_date', 'transfer_no', 'part_no', 'description', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
             $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
