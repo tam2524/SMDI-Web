@@ -207,15 +207,18 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.or_number LIKE ? OR t.transfer_no LIKE ?)";
-                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "ss";
+                $whereM .= " AND (t.or_number LIKE ? OR t.transfer_no LIKE ? OR st.transfer_no LIKE ?)";
+                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "sss";
             }
             
-            $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch,
+            $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as reference, t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch,
                            COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0) as unit_cost,
                            COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0)) as total_amount
                     FROM spareparts_transactions t 
-                    WHERE $whereM ORDER BY t.transaction_date DESC";
+                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND st.transfer_date = t.transaction_date)
+                    WHERE $whereM 
+                    GROUP BY t.id
+                    ORDER BY t.transaction_date DESC";
             $headers = ['Date', 'Reference', 'Part No', 'Description', 'Receive Type', 'Qty', 'Unit Cost', 'Subtotal', 'Source', 'Receiving Branch'];
             $keys = ['transaction_date', 'reference', 'part_no', 'description', 'receive_type', 'quantity', 'unit_cost', 'total_amount', 'source_branch', 'receiving_branch'];
             $formatters = ['unit_cost' => 'currency', 'total_amount' => 'currency'];
@@ -293,8 +296,8 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.transfer_no LIKE ? OR t.or_number LIKE ?)";
-                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "ss";
+                $whereM .= " AND (t.transfer_no LIKE ? OR t.or_number LIKE ? OR st.transfer_no LIKE ?)";
+                $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mParams[] = "%$refNo%"; $mTypes .= "sss";
             }
 
             $sql = "SELECT t.transaction_date, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no, t.or_number, 'N/A') as transfer_no, 
