@@ -206,6 +206,7 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $whereM .= " AND t.to_location = ?";
                 $mParams[] = $branch; $mTypes .= "s";
             }
+            if (!empty($refNo)) {
                 $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR (NULLIF(t.transfer_no, '') IS NULL AND EXISTS (
                     SELECT 1 FROM spareparts_transfers st2 
                     WHERE st2.transfer_no = ? 
