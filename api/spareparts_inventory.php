@@ -852,14 +852,18 @@ function getStockCardData()
 
         // 3. Movement Log (Uses part_no consistently in this table)
         $txStmt = $conn->prepare("
-            SELECT * FROM spareparts_transactions 
-            WHERE part_no = ? 
+            SELECT t.*, COALESCE(NULLIF(t.transfer_no, ''), st.transfer_no) as recovered_transfer_no
+            FROM spareparts_transactions t
+            LEFT JOIN spareparts_transfers st ON (
+                (st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
+            )
+            WHERE t.part_no = ? 
               AND (
-                  (from_location = ? AND type NOT IN ('IN', 'TRANSFER_IN', 'RETURN', 'ADJUSTMENT_IN')) 
+                  (t.from_location = ? AND t.type NOT IN ('IN', 'TRANSFER_IN', 'RETURN', 'ADJUSTMENT_IN')) 
                   OR 
-                  (to_location = ? AND type NOT IN ('OUT', 'TRANSFER_OUT', 'SALE', 'ADJUSTMENT_OUT'))
+                  (t.to_location = ? AND t.type NOT IN ('OUT', 'TRANSFER_OUT', 'SALE', 'ADJUSTMENT_OUT'))
               )
-            ORDER BY transaction_date DESC, id DESC LIMIT 50
+            ORDER BY t.transaction_date DESC, t.id DESC LIMIT 50
         ");
         if (!$txStmt) {
             echo json_encode(['success' => false, 'message' => 'Query preparation failed (Transactions): ' . $conn->error]);

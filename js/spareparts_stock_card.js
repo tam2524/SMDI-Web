@@ -62,7 +62,7 @@ function showStockCard(partNo, branch = '') {
                         <td class="${typeClass} fw-bold py-3"><i class="bi ${icon} me-2"></i>${typeText}</td>
                         <td class="text-center py-3 fw-bold ${typeClass}">${displayQty}</td>
                         <td class="py-3">${fromTo || '-'}</td>
-                        <td class="pe-4 py-3 text-muted">${t.transfer_no || t.or_number || t.invoice_no || '-'}</td>
+                        <td class="pe-4 py-3 text-muted">${t.recovered_transfer_no || t.transfer_no || t.or_number || t.invoice_no || '-'}</td>
                     </tr>
                 `;
             });

@@ -20,8 +20,8 @@ if ($action === 'generate_master_report') {
     $period = $_GET['period'] ?? 'monthly';
     $dateVal = $_GET['date_value'] ?? date('Y-m');
     $branch = $_GET['branch'] ?? 'all';
-    $brand = $_GET['brand'] ?? '';
-    $refNo = $_GET['ref_no'] ?? '';
+    $brand = trim($_REQUEST['brand'] ?? '');
+    $refNo = trim($_REQUEST['ref_no'] ?? '');
 
     // Enforce branch security
     if (!$isAdmin) {
@@ -215,7 +215,7 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                            COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0) as unit_cost,
                            COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0)) as total_amount
                     FROM spareparts_transactions t 
-                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND st.transfer_date = t.transaction_date)
+                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
                     WHERE $whereM 
                     GROUP BY t.id
                     ORDER BY t.transaction_date DESC";
@@ -279,9 +279,9 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             // Ensure transfer_no exists in transactions and backfill for older records
             try { 
                 $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER or_number"); 
-                // Heuristic backfill: Match by date, branches, and type
+                // Improved Heuristic backfill: Match by branches, items, and allow 1-day date margin for midnight transfers
                 $conn->query("UPDATE spareparts_transactions t
-                             JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND st.transfer_date = t.transaction_date)
+                             JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
                              SET t.transfer_no = st.transfer_no
                              WHERE t.type = 'TRANSFER_OUT' AND (t.transfer_no IS NULL OR t.transfer_no = '')");
             } catch(Exception $e) {}
@@ -307,7 +307,7 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                            t.from_location as source_branch, 
                            t.to_location as receiving_branch
                     FROM spareparts_transactions t 
-                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND st.transfer_date = t.transaction_date)
+                    LEFT JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
                     WHERE $whereM 
                     GROUP BY t.id 
                     ORDER BY t.transaction_date DESC";
