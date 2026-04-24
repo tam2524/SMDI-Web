@@ -895,6 +895,7 @@ $(document).ready(function () {
             `;
         });
 
+        const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html>
             <head>
