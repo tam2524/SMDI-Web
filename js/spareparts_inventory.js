@@ -193,7 +193,10 @@ $(document).ready(function () {
         // Search Handlers
         $('#salesSearch').on('input', e => { salesCurrentPage = 1; renderSales(filterData(salesData, $(e.target).val(), ['customer_name', 'or_number'])); });
         $('#paymentsSearch').on('input', e => { paymentsCurrentPage = 1; renderPayments(filterData(paymentsData, $(e.target).val(), ['customer_name', 'or_number'])); });
-        $('#transfersSearch').on('input', e => { transfersCurrentPage = 1; renderTransfers(filterData(transfersData, $(e.target).val(), ['from_branch', 'to_branch'])); });
+        $('#transfersSearch').on('input', e => { 
+            transfersCurrentPage = 1; 
+            renderTransfers(filterData(transfersData, $(e.target).val(), ['from_branch', 'to_branch', 'transfer_no', 'id'])); 
+        });
         $('#paymentsAgingSearch').on('input', () => loadAging());
         $('#agingBranchFilter').on('change', () => loadAging());
 
@@ -3951,8 +3954,55 @@ $(document).ready(function () {
     function loadGlobalTransfers() {
         loadApiData('get_global_transfers', data => {
             globalTransfersData = data;
-            renderGlobalTransfers(data);
+            populateGlobalTransferBranchFilter(data);
+            applyGlobalTransferFilters();
         });
+    }
+
+    function populateGlobalTransferBranchFilter(data) {
+        const branches = new Set();
+        data.forEach(t => {
+            if (t.from_branch) branches.add(t.from_branch);
+            if (t.to_branch) branches.add(t.to_branch);
+        });
+
+        const $select = $('#globalTransfersBranchFilter');
+        if (!$select.length) return;
+
+        const currentVal = $select.val();
+        $select.empty().append('<option value="">All Branches</option>');
+        Array.from(branches).sort().forEach(b => {
+            $select.append(`<option value="${b}">${b}</option>`);
+        });
+        $select.val(currentVal);
+    }
+
+    function applyGlobalTransferFilters() {
+        const query = $('#globalTransfersSearch').val().toLowerCase().trim();
+        const branch = $('#globalTransfersBranchFilter').val();
+        const date = $('#globalTransfersDateFilter').val();
+
+        let filtered = globalTransfersData;
+
+        if (branch) {
+            filtered = filtered.filter(t => t.from_branch === branch || t.to_branch === branch);
+        }
+
+        if (date) {
+            filtered = filtered.filter(t => t.transfer_date === date);
+        }
+
+        if (query !== '') {
+            filtered = filtered.filter(t =>
+                (t.id && t.id.toString().includes(query)) ||
+                (t.transfer_no && t.transfer_no.toLowerCase().includes(query)) ||
+                (t.from_branch && t.from_branch.toLowerCase().includes(query)) ||
+                (t.to_branch && t.to_branch.toLowerCase().includes(query)) ||
+                (t.transfer_date && t.transfer_date.includes(query))
+            );
+        }
+
+        renderGlobalTransfers(filtered);
     }
 
     function renderGlobalTransfers(data) {
@@ -4005,24 +4055,24 @@ $(document).ready(function () {
 
 
     // Global Transfers search
-    $('#globalTransfersSearch').on('keyup', function () {
-        const query = $(this).val().toLowerCase().trim();
-        if (query === '') {
-            renderGlobalTransfers(globalTransfersData);
-        } else {
-            const filtered = globalTransfersData.filter(t =>
-                (t.id && t.id.toString().includes(query)) ||
-                (t.from_branch && t.from_branch.toLowerCase().includes(query)) ||
-                (t.to_branch && t.to_branch.toLowerCase().includes(query)) ||
-                (t.transfer_date && t.transfer_date.includes(query))
-            );
-            renderGlobalTransfers(filtered);
-        }
+    $('#globalTransfersSearch').on('keyup input', function () {
+        applyGlobalTransferFilters();
+    });
+
+    $('#globalTransfersBranchFilter, #globalTransfersDateFilter').on('change', function () {
+        applyGlobalTransferFilters();
+    });
+
+    $('#resetGlobalTransferFilters').on('click', function () {
+        $('#globalTransfersSearch').val('');
+        $('#globalTransfersBranchFilter').val('');
+        $('#globalTransfersDateFilter').val('');
+        applyGlobalTransferFilters();
     });
 
     // Global Transfers search button
     $('#globalTransfersSearchBtn').on('click', function () {
-        $('#globalTransfersSearch').trigger('keyup');
+        applyGlobalTransferFilters();
     });
 
     // Global Transfers refresh btn

@@ -783,8 +783,18 @@ $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $admi
                                         <i class="bi bi-file-earmark-bar-graph me-1"></i> Reports
                                     </button>
                                 </div>
-                                <input type='text' id='globalTransfersSearch' class='form-control form-control-sm'
-                                    style="width: 250px;" placeholder='Search all transfers...' autocomplete="off">
+                                <div class="d-flex gap-2">
+                                    <select id="globalTransfersBranchFilter" class="form-select form-select-sm" style="width: 180px;">
+                                        <option value="">All Branches</option>
+                                        <!-- Will be populated via JS -->
+                                    </select>
+                                    <input type="date" id="globalTransfersDateFilter" class="form-control form-control-sm" style="width: 150px;">
+                                    <input type='text' id='globalTransfersSearch' class='form-control form-control-sm'
+                                        style="width: 200px;" placeholder='Search all transfers...' autocomplete="off">
+                                    <button class="btn btn-sm btn-outline-secondary" id="resetGlobalTransferFilters" title="Reset Filters">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

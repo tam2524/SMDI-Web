@@ -802,12 +802,19 @@ endif; ?>
                     <div class='tab-pane fade <?php echo($activePane === "global-transfer") ? "show active" : "d-none"; ?>' id='global-transfer' role='tabpanel'>
                         <div class='d-flex justify-content-between align-items-center mb-4'>
                             <h4 class='mb-0 text-primary fw-bold'>GLOBAL TRANSFERS OVERVIEW</h4>
-                            <div class="d-flex gap-2">
-                                <div class="input-group" style="width: 300px;">
-                                    <input type="text" id="globalTransfersSearch" class="form-control"
+                            <div class="d-flex gap-2 align-items-center">
+                                <select id="globalTransfersBranchFilter" class="form-select shadow-sm" style="width: 180px;">
+                                    <option value="">All Branches</option>
+                                </select>
+                                <input type="date" id="globalTransfersDateFilter" class="form-control shadow-sm" style="width: 150px;">
+                                <div class="input-group" style="width: 250px;">
+                                    <input type="text" id="globalTransfersSearch" class="form-control shadow-sm"
                                         placeholder="Search REF, Branch, Part...">
                                     <button class="btn btn-primary shadow-sm" id="globalTransfersSearchBtn"><i class="bi bi-search text-white"></i></button>
                                 </div>
+                                <button class="btn btn-outline-secondary shadow-sm" id="resetGlobalTransferFilters" title="Reset Filters">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
                                 <button class='btn btn-outline-primary shadow-sm border-2 fw-bold'
                                     id="refreshGlobalTransfersBtn">
                                     <i class='bi bi-arrow-clockwise me-2'></i>REFRESH

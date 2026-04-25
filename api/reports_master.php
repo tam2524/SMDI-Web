@@ -795,8 +795,9 @@ function handleTransferReports($type, $period, $dateVal, $branch, $brand, $refNo
             $hTypes = "";
             
             if (!empty($refNo)) {
-                $whereH .= " AND (st.transfer_no = ? OR st.id = ?)";
-                $hParams[] = $refNo;
+                $whereH .= " AND (st.transfer_no LIKE ? OR st.id = ?)";
+                $term = "%$refNo%";
+                $hParams[] = $term;
                 $hParams[] = $refNo;
                 $hTypes .= "ss";
             } else {
@@ -813,12 +814,12 @@ function handleTransferReports($type, $period, $dateVal, $branch, $brand, $refNo
                 $hTypes .= "ss";
             }
 
-            $sql = "SELECT st.id, st.transfer_date, st.from_branch, st.to_branch, st.status, COUNT(sti.id) as item_count, SUM(sti.quantity) as total_qty
+            $sql = "SELECT st.id, st.transfer_no, st.transfer_date, st.from_branch, st.to_branch, st.status, COUNT(sti.id) as item_count, SUM(sti.quantity) as total_qty
                     FROM spareparts_transfers st
                     JOIN spareparts_transfer_items sti ON st.id = sti.transfer_id
                     WHERE $whereH GROUP BY st.id ORDER BY st.transfer_date DESC";
-            $headers = ['Transfer ID', 'Date', 'From', 'To', 'Status', '# Items', 'Total Qty'];
-            $keys = ['id', 'transfer_date', 'from_branch', 'to_branch', 'status', 'item_count', 'total_qty'];
+            $headers = ['ID', 'Transfer #', 'Date', 'From', 'To', 'Status', '# Items', 'Total Qty'];
+            $keys = ['id', 'transfer_no', 'transfer_date', 'from_branch', 'to_branch', 'status', 'item_count', 'total_qty'];
             
             $res = exe($sql, $hTypes, $hParams);
             return [ 'success' => true, 'data' => $res, 'config' => ['headers' => $headers, 'keys' => $keys], 'summary' => [['label' => 'Total Transfers', 'value' => count($res)]] ];
