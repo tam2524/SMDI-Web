@@ -39,16 +39,16 @@ if ($action === 'generate_master_report') {
                 $finalResponse = handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refNo);
                 break;
             case 'sales':
-                $finalResponse = handleSalesReports($type, $period, $dateVal, $branch, $brand);
+                $finalResponse = handleSalesReports($type, $period, $dateVal, $branch, $brand, $refNo);
                 break;
             case 'payments':
-                $finalResponse = handlePaymentReports($type, $period, $dateVal, $branch, $brand);
+                $finalResponse = handlePaymentReports($type, $period, $dateVal, $branch, $brand, $refNo);
                 break;
             case 'transfer':
-                $finalResponse = handleTransferReports($type, $period, $dateVal, $branch, $brand);
+                $finalResponse = handleTransferReports($type, $period, $dateVal, $branch, $brand, $refNo);
                 break;
             case 'payables':
-                $finalResponse = handlePayableReports($type, $period, $dateVal, $branch, $brand);
+                $finalResponse = handlePayableReports($type, $period, $dateVal, $branch, $brand, $refNo);
                 break;
         }
     } catch (Exception $e) {
@@ -80,7 +80,7 @@ if ($action === 'customer_ledger') {
     exit();
 }
 
-function handlePayableReports($type, $period, $dateVal, $branch, $brand) {
+function handlePayableReports($type, $period, $dateVal, $branch, $brand, $refNo = '') {
     global $conn;
     $dateRange = parseDateRange($period, $dateVal);
     
@@ -492,7 +492,7 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
     }
 }
 
-function handleSalesReports($type, $period, $dateVal, $branch, $brand) {
+function handleSalesReports($type, $period, $dateVal, $branch, $brand, $refNo = '') {
     global $conn;
     $dateRange = parseDateRange($period, $dateVal);
     $where = "t.type = 'OUT' AND t.transaction_date BETWEEN ? AND ?";
@@ -582,7 +582,7 @@ function handleSalesReports($type, $period, $dateVal, $branch, $brand) {
     }
 }
 
-function handlePaymentReports($type, $period, $dateVal, $branch, $brand) {
+function handlePaymentReports($type, $period, $dateVal, $branch, $brand, $refNo = '') {
     global $conn;
     $dateRange = parseDateRange($period, $dateVal);
     $where = "t.type = 'PAYMENT' AND t.transaction_date BETWEEN ? AND ?";
@@ -770,7 +770,7 @@ function handlePaymentReports($type, $period, $dateVal, $branch, $brand) {
     }
 }
 
-function handleTransferReports($type, $period, $dateVal, $branch, $brand) {
+function handleTransferReports($type, $period, $dateVal, $branch, $brand, $refNo = '') {
     global $conn;
     $dateRange = parseDateRange($period, $dateVal);
     
