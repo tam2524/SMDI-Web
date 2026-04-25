@@ -223,7 +223,8 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                                    t.or_number, 'N/A') as reference, 
                            t.part_no, t.description, t.type as receive_type, t.quantity, t.from_location as source_branch, t.to_location as receiving_branch,
                            COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0) as unit_cost,
-                           COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0)) as total_amount
+                           COALESCE(NULLIF(t.total_amount, 0), t.quantity * COALESCE(NULLIF(t.price, 0), (SELECT cost FROM spareparts_inventory WHERE part_no = t.part_no AND current_branch = t.to_location LIMIT 1), 0)) as total_amount,
+                           (SELECT id FROM spareparts_transfers WHERE (transfer_no = t.transfer_no OR (NULLIF(t.transfer_no, '') IS NULL AND from_branch = t.from_location AND to_branch = t.to_location AND ABS(DATEDIFF(transfer_date, t.transaction_date)) <= 1)) LIMIT 1) as transfer_id
                     FROM spareparts_transactions t 
                     WHERE $whereM 
                     ORDER BY t.transaction_date DESC";

@@ -265,7 +265,8 @@ $(document).ready(function () {
                 rowHtml += `<td class="text-center d-print-none"><button class="btn btn-sm btn-outline-success fw-bold" onclick="viewCustomerHistory('${row.customer_name.replace(/'/g, "\\'")}')"><i class="bi bi-eye"></i> Aging View</button></td>`;
             }
             if (currentCategory === 'inventory' && (reportType === 'supplier_received_stocks' || reportType === 'transferred_stocks_summary' || reportType === 'received_stocks_summary')) {
-                const printFn = reportType === 'transferred_stocks_summary' ? 'printStockTransferOutgoing' : 'printSingleRR';
+                const isTransfer = (reportType === 'transferred_stocks_summary') || (row.receive_type && row.receive_type.includes('TRANSFER'));
+                const printFn = isTransfer ? 'printStockTransfer' : 'printSingleRR';
                 rowHtml += `<td class="text-center d-print-none">
                                 <button class="btn btn-sm btn-outline-danger fw-bold" onclick="${printFn}('${(row.reference || row.transfer_no || '').replace(/'/g, "\\'")}')">
                                     <i class="bi bi-printer"></i> Print
@@ -293,7 +294,10 @@ $(document).ready(function () {
         }
 
         // Set Print Titles so it's ready when user clicks Print This Preview
-        const reportTitle = $('#report_type option:selected').text();
+        let reportTitle = $('#report_type option:selected').text();
+        if ($('#report_type').val() === 'received_stocks_summary') {
+            reportTitle = 'STOCK TRANSFER (INCOMING)';
+        }
         const branch = $('#branch_filter').val();
         const period = $('#period').val();
 
@@ -872,7 +876,7 @@ $(document).ready(function () {
         printWindow.document.close();
     };
 
-    window.printStockTransferOutgoing = function(reference) {
+    window.printStockTransfer = function(reference) {
         if (!lastReportData) return;
         
         const items = lastReportData.filter(i => (i.transfer_no === reference || i.reference === reference));
@@ -883,6 +887,15 @@ $(document).ready(function () {
         const destination = first.receiving_branch || 'N/A';
         const transferId = first.transfer_id ? '#' + first.transfer_id : reference;
         const dateNow = new Date().toLocaleString();
+        
+        // Detect if Incoming or Outgoing
+        const reportType = $('#report_type').val();
+        let reportTitle = "STOCK TRANSFER";
+        if (reportType === 'transferred_stocks_summary') {
+            reportTitle = "STOCK TRANSFER (OUTGOING)";
+        } else if (reportType === 'received_stocks_summary' || (first.receive_type && first.receive_type.includes('TRANSFER'))) {
+            reportTitle = "STOCK TRANSFER (INCOMING)";
+        }
         
         let rowsHtml = '';
         items.forEach(item => {
@@ -899,7 +912,7 @@ $(document).ready(function () {
         printWindow.document.write(`
             <html>
             <head>
-                <title>Stock Transfer Outgoing - ${reference}</title>
+                <title>${reportTitle} - ${reference}</title>
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
                     @page { size: portrait; margin: 15mm 10mm; }
@@ -937,7 +950,7 @@ $(document).ready(function () {
                 </div>
                 
                 <div class="title-section">
-                    <div class="report-title">STOCK TRANSFER (OUTGOING)</div>
+                    <div class="report-title">${reportTitle}</div>
                     <div class="gen-date">Generated on: ${new Date().toLocaleString()}</div>
                 </div>
                 
