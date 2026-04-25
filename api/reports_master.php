@@ -198,10 +198,16 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             
         case 'received_stocks_summary':
             $dateRange = parseDateRange($period, $dateVal);
-            $whereM = "t.type IN ('IN', 'TRANSFER_IN', 'RETURN') AND t.transaction_date BETWEEN ? AND ?";
-            $mParams = [$dateRange['start'], $dateRange['end']];
-            $mTypes = "ss";
+            $whereM = "t.type IN ('IN', 'TRANSFER_IN', 'RETURN')";
+            $mParams = [];
+            $mTypes = "";
             
+            if (empty($refNo)) {
+                $whereM .= " AND t.transaction_date BETWEEN ? AND ?";
+                $mParams[] = $dateRange['start']; $mParams[] = $dateRange['end'];
+                $mTypes .= "ss";
+            }
+
             if ($branch !== 'all') {
                 $whereM .= " AND t.to_location = ?";
                 $mParams[] = $branch; $mTypes .= "s";
@@ -316,9 +322,15 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             } catch(Exception $e) {}
 
             $dateRange = parseDateRange($period, $dateVal);
-            $whereM = "t.type IN ('TRANSFER_OUT') AND t.transaction_date BETWEEN ? AND ?";
-            $mParams = [$dateRange['start'], $dateRange['end']];
-            $mTypes = "ss";
+            $whereM = "t.type IN ('TRANSFER_OUT')";
+            $mParams = [];
+            $mTypes = "";
+            
+            if (empty($refNo)) {
+                $whereM .= " AND t.transaction_date BETWEEN ? AND ?";
+                $mParams[] = $dateRange['start']; $mParams[] = $dateRange['end'];
+                $mTypes .= "ss";
+            }
 
             if ($branch !== 'all') {
                 $whereM .= " AND t.from_location = ?";
