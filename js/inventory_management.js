@@ -867,7 +867,7 @@ function filterByModel(brand, model) {
 
 function loadInventoryTable(page = 1, sort = "", query = "") {
   $("#inventoryTableBody").html(
-    '<tr><td colspan="11" class="text-center py-5"><div class="spinner-border text-black" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>'
+    '<tr><td colspan="14" class="text-center py-5"><div class="spinner-border text-black" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>'
   );
 
   $.ajax({
@@ -888,14 +888,14 @@ function loadInventoryTable(page = 1, sort = "", query = "") {
         updateInventoryPaginationControls(totalInventoryPages);
       } else {
         $("#inventoryTableBody").html(
-          '<tr><td colspan="11" class="text-center py-5 text-danger">Error loading inventory data</td></tr>'
+          '<tr><td colspan="14" class="text-center py-5 text-danger">Error loading inventory data</td></tr>'
         );
         showErrorModal(response.message || "Error loading table data");
       }
     },
     error: function (xhr, status, error) {
       $("#inventoryTableBody").html(
-        '<tr><td colspan="11" class="text-center py-5 text-danger">Error loading inventory data: ' +
+        '<tr><td colspan="14" class="text-center py-5 text-danger">Error loading inventory data: ' +
           error +
           "</td></tr>"
       );
@@ -909,7 +909,7 @@ function renderInventoryTable(data) {
 
   if (data.length === 0) {
     html =
-      '<tr><td colspan="12" class="text-center py-5 text-muted">No inventory data found</td></tr>';
+      '<tr><td colspan="14" class="text-center py-5 text-muted">No inventory data found</td></tr>';
   } else {
     data.forEach((item) => {
       let categoryBadge = "";
@@ -917,6 +917,20 @@ function renderInventoryTable(data) {
         categoryBadge = '<span class="badge bg-success">BRANDNEW</span>';
       } else if (item.category === "repo") {
         categoryBadge = '<span class="badge bg-warning text-dark">REPO</span>';
+      }
+
+      let statusBadge = "";
+      const status = item.status ? item.status.toLowerCase() : "";
+      if (status === "available") {
+        statusBadge = '<span class="badge bg-success">AVAILABLE</span>';
+      } else if (status === "sold") {
+        statusBadge = '<span class="badge bg-danger">SOLD</span>';
+      } else if (status === "transferred") {
+        statusBadge = '<span class="badge bg-primary">TRANSFERRED</span>';
+      } else if (status === "scrapped") {
+        statusBadge = '<span class="badge bg-warning text-dark">SCRAPPED</span>';
+      } else {
+        statusBadge = `<span class="badge bg-secondary">${status.toUpperCase()}</span>`;
       }
 
        const withTBA = item.with_tba ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>';
@@ -939,6 +953,7 @@ const withStockReport = item.stock_report_number && item.stock_report_number !==
           <td>${item.engine_number}</td>
           <td>${item.frame_number}</td>
           <td>${item.color}</td>
+          <td>${statusBadge}</td>
           <td>${formatCurrency(item.inventory_cost)}</td>
           <td class="text-center">${withTBA}</td>
           <td class="text-center">${withStockReport}</td>

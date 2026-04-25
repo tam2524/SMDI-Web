@@ -156,6 +156,7 @@
                                         <th>Engine No.</th>
                                         <th>Frame No.</th>
                                         <th>Color</th>
+                                        <th class='sortable-header' data-sort='status'>Status</th>
                                         <th>Inventory Cost</th>
                                         <th class="text-center">With TBA</th>
         <th class="text-center">With Stock Report</th>
