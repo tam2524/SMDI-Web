@@ -206,10 +206,23 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $whereM .= " AND t.to_location = ?";
                 $mParams[] = $branch; $mTypes .= "s";
             }
+            
+            // Precise heuristic backfill for incoming transfers
+            try { 
+                $conn->query("UPDATE spareparts_transactions t
+                             JOIN spareparts_transfer_items sti ON sti.part_no = t.part_no AND ABS(sti.quantity) = ABS(t.quantity)
+                             JOIN spareparts_transfers st ON st.id = sti.transfer_id 
+                                  AND (st.from_branch = t.from_location AND st.to_branch = t.to_location)
+                                  AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1
+                             SET t.transfer_no = st.transfer_no
+                             WHERE t.type = 'TRANSFER_IN' AND (t.transfer_no IS NULL OR t.transfer_no = '')");
+            } catch(Exception $e) {}
             if (!empty($refNo)) {
                 $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR (NULLIF(t.transfer_no, '') IS NULL AND EXISTS (
                     SELECT 1 FROM spareparts_transfers st2 
+                    JOIN spareparts_transfer_items sti2 ON sti2.transfer_id = st2.id
                     WHERE st2.transfer_no = ? 
+                    AND sti2.part_no = t.part_no AND ABS(sti2.quantity) = ABS(t.quantity)
                     AND st2.from_branch = t.from_location 
                     AND st2.to_branch = t.to_location 
                     AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1
@@ -292,9 +305,12 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             // Ensure transfer_no exists in transactions and backfill for older records
             try { 
                 $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER or_number"); 
-                // Improved Heuristic backfill: Match by branches, items, and allow 1-day date margin for midnight transfers
+                // Much more precise heuristic: Match by branches, date margin, AND the actual part_no/quantity from transfer items
                 $conn->query("UPDATE spareparts_transactions t
-                             JOIN spareparts_transfers st ON (st.from_branch = t.from_location AND st.to_branch = t.to_location AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1)
+                             JOIN spareparts_transfer_items sti ON sti.part_no = t.part_no AND ABS(sti.quantity) = ABS(t.quantity)
+                             JOIN spareparts_transfers st ON st.id = sti.transfer_id 
+                                  AND (st.from_branch = t.from_location AND st.to_branch = t.to_location)
+                                  AND ABS(DATEDIFF(st.transfer_date, t.transaction_date)) <= 1
                              SET t.transfer_no = st.transfer_no
                              WHERE t.type = 'TRANSFER_OUT' AND (t.transfer_no IS NULL OR t.transfer_no = '')");
             } catch(Exception $e) {}
@@ -311,7 +327,9 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
             if (!empty($refNo)) {
                 $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR (NULLIF(t.transfer_no, '') IS NULL AND EXISTS (
                     SELECT 1 FROM spareparts_transfers st2 
+                    JOIN spareparts_transfer_items sti2 ON sti2.transfer_id = st2.id
                     WHERE st2.transfer_no = ? 
+                    AND sti2.part_no = t.part_no AND ABS(sti2.quantity) = ABS(t.quantity)
                     AND st2.from_branch = t.from_location 
                     AND st2.to_branch = t.to_location 
                     AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1

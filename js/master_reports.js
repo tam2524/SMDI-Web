@@ -885,7 +885,7 @@ $(document).ready(function () {
         const first = items[0];
         const origin = first.source_branch || 'ROXAS';
         const destination = first.receiving_branch || 'N/A';
-        const transferId = first.transfer_id ? '#' + first.transfer_id : reference;
+        const displayRef = reference;
         const dateNow = new Date().toLocaleString();
         
         // Detect if Incoming or Outgoing
@@ -956,7 +956,7 @@ $(document).ready(function () {
                 
                 <div class="meta-info">
                     <div class="meta-col" style="width: 60%;">
-                        <div class="meta-row"><span class="meta-label">TRANSFER ID:</span> <span class="meta-value">${transferId}</span></div>
+                        <div class="meta-row"><span class="meta-label">TRANSFER #:</span> <span class="meta-value">${displayRef}</span></div>
                         <div class="meta-row"><span class="meta-label">ORIGIN:</span> <span class="meta-value">${origin}</span></div>
                         <div class="meta-row"><span class="meta-label">DESTINATION:</span> <span class="meta-value">${destination}</span></div>
                     </div>
