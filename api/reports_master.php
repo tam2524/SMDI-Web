@@ -224,15 +224,15 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                              WHERE t.type = 'TRANSFER_IN' AND (t.transfer_no IS NULL OR t.transfer_no = '')");
             } catch(Exception $e) {}
             if (!empty($refNo)) {
-                $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR (NULLIF(t.transfer_no, '') IS NULL AND EXISTS (
+                $whereM .= " AND (t.or_number = ? OR t.transfer_no = ? OR EXISTS (
                     SELECT 1 FROM spareparts_transfers st2 
                     JOIN spareparts_transfer_items sti2 ON sti2.transfer_id = st2.id
                     WHERE st2.transfer_no = ? 
                     AND sti2.part_no = t.part_no AND ABS(sti2.quantity) = ABS(t.quantity)
                     AND st2.from_branch = t.from_location 
                     AND st2.to_branch = t.to_location 
-                    AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1
-                )))";
+                    AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 2
+                ))";
                 $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
             
@@ -337,15 +337,15 @@ function handleInventoryReports($type, $period, $dateVal, $branch, $brand, $refN
                 $mParams[] = $branch; $mTypes .= "s";
             }
             if (!empty($refNo)) {
-                $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR (NULLIF(t.transfer_no, '') IS NULL AND EXISTS (
+                $whereM .= " AND (t.transfer_no = ? OR t.or_number = ? OR EXISTS (
                     SELECT 1 FROM spareparts_transfers st2 
                     JOIN spareparts_transfer_items sti2 ON sti2.transfer_id = st2.id
                     WHERE st2.transfer_no = ? 
                     AND sti2.part_no = t.part_no AND ABS(sti2.quantity) = ABS(t.quantity)
                     AND st2.from_branch = t.from_location 
                     AND st2.to_branch = t.to_location 
-                    AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 1
-                )))";
+                    AND ABS(DATEDIFF(st2.transfer_date, t.transaction_date)) <= 2
+                ))";
                 $mParams[] = $refNo; $mParams[] = $refNo; $mParams[] = $refNo; $mTypes .= "sss";
             }
 
@@ -790,9 +790,21 @@ function handleTransferReports($type, $period, $dateVal, $branch, $brand) {
             return [ 'success' => true, 'data' => $res, 'config' => ['headers' => $headers, 'keys' => $keys], 'summary' => [['label' => 'Open Transfers', 'value' => count($res)]] ];
 
         case 'transfer_history':
-            $whereH = "st.transfer_date BETWEEN ? AND ?";
-            $hParams = [$dateRange['start'], $dateRange['end']];
-            $hTypes = "ss";
+            $whereH = "1=1";
+            $hParams = [];
+            $hTypes = "";
+            
+            if (!empty($refNo)) {
+                $whereH .= " AND (st.transfer_no = ? OR st.id = ?)";
+                $hParams[] = $refNo;
+                $hParams[] = $refNo;
+                $hTypes .= "ss";
+            } else {
+                $whereH .= " AND st.transfer_date BETWEEN ? AND ?";
+                $hParams[] = $dateRange['start'];
+                $hParams[] = $dateRange['end'];
+                $hTypes .= "ss";
+            }
 
             if ($branch !== 'all') {
                 $whereH .= " AND (st.from_branch = ? OR st.to_branch = ?)";
