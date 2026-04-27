@@ -763,8 +763,9 @@ function getPartDetailsWithCompatibility()
     $part = $stmt->get_result()->fetch_assoc();
 
     if ($part) {
-        // Fetch Compatibility
-        $compStmt = $conn->prepare("SELECT model_name FROM spareparts_compatibility WHERE part_no = ?");
+        // Fetch Compatibility (Dynamic column detection)
+        $compCol = getPartColumnName('spareparts_compatibility');
+        $compStmt = $conn->prepare("SELECT model_name FROM spareparts_compatibility WHERE $compCol = ?");
         $compStmt->bind_param('s', $part_no);
         $compStmt->execute();
         $compRes = $compStmt->get_result();
@@ -790,7 +791,8 @@ function getPriceHistory()
         return;
     }
 
-    $stmt = $conn->prepare("SELECT * FROM spareparts_price_history WHERE part_no = ? ORDER BY transaction_date DESC");
+    $histCol = getPartColumnName('spareparts_price_history');
+    $stmt = $conn->prepare("SELECT * FROM spareparts_price_history WHERE $histCol = ? ORDER BY transaction_date DESC");
     $stmt->bind_param('s', $part_no);
     $stmt->execute();
     $result = $stmt->get_result();
