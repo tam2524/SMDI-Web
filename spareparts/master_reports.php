@@ -11,7 +11,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 
 // Role-based title
 $roleTitle = "Master Reports";
-$isAdmin = in_array($position, ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-Admin', 'Spareparts-Owner']);
+$isAdmin = in_array(strtoupper(trim($position)), ['ADMIN', 'HEAD', 'ITSUPERADMIN', 'ADMIN SPAREPARTS', 'SPAREPARTS-ADMIN', 'SPAREPARTS-OWNER']);
 $backLink = "admin_dashboard.php";
 
 if ($position === 'Spareparts-Owner') {

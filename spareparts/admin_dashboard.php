@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-Admin', 'Spareparts-Owner'])) {
+if (!isset($_SESSION['username']) || !in_array(strtoupper(trim($_SESSION['position'])), ['ADMIN', 'HEAD', 'ITSUPERADMIN', 'ADMIN SPAREPARTS', 'SPAREPARTS-ADMIN', 'SPAREPARTS-OWNER'])) {
     header('Location: ../login.html');
     exit();
 }

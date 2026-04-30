@@ -4478,7 +4478,7 @@ function updateBranchDropdownForReportType() {
       .val("all")
       .prop("disabled", false);
   } 
-  else if (currentUserBranch === "HEADOFFICE" || ["ADMIN", "IT STAFF", "HEAD"].includes(currentUserPosition)) {
+  else if (isHeadOffice || isAdminUser) {
     // For admin users on other reports - show all branches
     populateBranchesDropdown();
     $branchDropdown.prop("disabled", false);
@@ -4505,10 +4505,7 @@ function showMonthlyReportOptions() {
   $("#reportMonth").val(currentMonth);
 
   
-  if (
-    currentUserBranch === "HEADOFFICE" ||
-    ["ADMIN", "IT STAFF", "HEAD"].includes(currentUserPosition)
-  ) {
+  if (isHeadOffice || isAdminUser) {
     populateBranchesDropdown();
     $("#reportBranch").prop("disabled", false);
     $("#brandFilterContainer").show();

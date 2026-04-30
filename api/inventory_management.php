@@ -4212,17 +4212,9 @@ function getDeliveredStocksSummary() {
     $conditions = "mi.date_delivered BETWEEN ? AND ? AND mi.deleted_at IS NULL";
     
     // CRITICAL: Exclude units that were transferred from another branch
-    // This assumes you have fields to track transfer history
-    $conditions .= " AND (mi.transferred_from IS NULL OR mi.transferred_from = '')";
-    
-    // Alternative approach if you have an 'origin_branch' or 'original_branch' field:
-    // $conditions .= " AND mi.current_branch = mi.origin_branch";
-    
-    // Or if you have a 'delivery_type' field:
-    // $conditions .= " AND mi.delivery_type = 'initial'";
-    
-    // Or if transfers have a specific pattern in initial_dr_number:
-    // $conditions .= " AND mi.initial_dr_number NOT LIKE 'TRANSFER-%'";
+    // We identify direct deliveries by comparing initial_dr_number with the invoice number.
+    // If they match, it's a direct delivery from the supplier.
+    $conditions .= " AND (mi.initial_dr_number = i.invoice_number OR mi.initial_dr_number IS NULL OR i.invoice_number IS NULL)";
 
     if ($branch !== 'all') {
         $conditions .= " AND mi.current_branch = ? ";
@@ -4267,10 +4259,7 @@ function getDeliveredStocksSummary() {
             mi.date_delivered,
             mi.initial_dr_number,
             mi.current_branch,
-            i.invoice_number,
-            mi.transferred_from,
-            mi.origin_branch,
-            mi.delivery_type
+            i.invoice_number
         FROM motorcycle_inventory mi
         LEFT JOIN invoices i ON mi.invoice_id = i.id
         WHERE $conditions
@@ -4304,10 +4293,7 @@ function getDeliveredStocksSummary() {
             'invoice_number' => $row['invoice_number'],
             'date_delivered' => $row['date_delivered'],
             'initial_dr_number' => $row['initial_dr_number'],
-            'branch' => $row['current_branch'],
-            'transferred_from' => $row['transferred_from'],
-            'origin_branch' => $row['origin_branch'],
-            'delivery_type' => $row['delivery_type']
+            'branch' => $row['current_branch']
         ];
         $totalDelivered++;
         $totalCost += (float)$row['inventory_cost'];
