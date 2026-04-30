@@ -244,7 +244,7 @@ function isVisible($menuId) {
         .bg-menu-gray { background: #64748b !important; }
         .bg-menu-red { background: #ef4444 !important; }
         .bg-menu-purple { background: #8b5cf6 !important; }
-        .bg-menu-orange { background: #f97316 !important; }
+        .bg-menu-navy { background: #001f3f !important; }
         .bg-menu-blue { background: #3b82f6 !important; }
         .bg-menu-teal { background: #0d9488 !important; }
         .bg-menu-cyan { background: #06b6d4 !important; }
@@ -479,7 +479,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('find-stocks-warehouse')): ?>
-                    <a href="find_stocks.php" class="module-card bg-menu-indigo">
+                    <a href="find_stocks.php" class="module-card bg-menu-navy">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
                             <div class="module-title">Find Stocks</div>

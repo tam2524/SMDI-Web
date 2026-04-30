@@ -241,10 +241,10 @@ function isVisible($menuId) {
         .total-row-label { color: var(--gray-700); }
         .total-row-val { color: var(--green-800); font-size: 1rem; font-weight: 800; }
 
+        .bg-menu-navy { background: #001f3f !important; }
         .bg-menu-gray { background: #64748b !important; }
         .bg-menu-red { background: #ef4444 !important; }
         .bg-menu-purple { background: #8b5cf6 !important; }
-        .bg-menu-orange { background: #f97316 !important; }
         .bg-menu-blue { background: #3b82f6 !important; }
         .bg-menu-teal { background: #0d9488 !important; }
         .bg-menu-cyan { background: #06b6d4 !important; }
@@ -428,7 +428,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('sales')): ?>
-                    <a href="sales_spareparts.php?tab=sales" class="module-card bg-menu-orange">
+                    <a href="sales_spareparts.php?tab=sales" class="module-card bg-menu-navy">
                         <div class="module-icon-wrap"><i class="bi bi-receipt"></i></div>
                         <div>
                             <div class="module-title">Sales</div>
