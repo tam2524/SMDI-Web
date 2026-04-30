@@ -251,6 +251,13 @@ function isVisible($menuId) {
         .bg-menu-green { background: #10b981 !important; }
         .bg-menu-indigo { background: #6366f1 !important; }
         .bg-menu-pink { background: #ec4899 !important; }
+        .bg-menu-emerald { background: #059669 !important; }
+        .bg-menu-violet { background: #7c3aed !important; }
+        .bg-menu-amber { background: #f59e0b !important; }
+        .bg-menu-rose { background: #e11d48 !important; }
+        .bg-menu-fuchsia { background: #d946ef !important; }
+        .bg-menu-sky { background: #0ea5e9 !important; }
+        .bg-menu-lime { background: #84cc16 !important; }
 
         .module-card[class*="bg-menu-"] {
             border: none !important;
@@ -461,7 +468,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('stock-transfer-warehouse')): ?>
-                    <a href="transfer_stock.php" class="module-card bg-menu-blue">
+                    <a href="transfer_stock.php" class="module-card bg-menu-sky">
                         <div class="module-icon-wrap"><i class="bi bi-truck"></i></div>
                         <div>
                             <div class="module-title">Stock Transfer</div>
@@ -494,7 +501,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('beginning-inventory-warehouse')): ?>
-                    <a href="beginning_inventory.php" class="module-card bg-menu-pink" id="beginning-inventory-card">
+                    <a href="beginning_inventory.php" class="module-card bg-menu-rose" id="beginning-inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
                             <div class="module-title">Beginning Inventory</div>
@@ -505,7 +512,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('barcode-generator')): ?>
-                    <a href="barcode_generator.php" class="module-card bg-menu-cyan">
+                    <a href="barcode_generator.php" class="module-card bg-menu-fuchsia">
                         <div class="module-icon-wrap"><i class="bi bi-upc-scan"></i></div>
                         <div>
                             <div class="module-title">Barcode Generator</div>

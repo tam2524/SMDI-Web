@@ -253,6 +253,11 @@ function isVisible($menuId) {
         .bg-menu-pink { background: #ec4899 !important; }
         .bg-menu-emerald { background: #059669 !important; }
         .bg-menu-violet { background: #7c3aed !important; }
+        .bg-menu-amber { background: #f59e0b !important; }
+        .bg-menu-rose { background: #e11d48 !important; }
+        .bg-menu-fuchsia { background: #d946ef !important; }
+        .bg-menu-sky { background: #0ea5e9 !important; }
+        .bg-menu-lime { background: #84cc16 !important; }
 
 
         .module-card[class*="bg-menu-"] {
@@ -500,7 +505,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('pricelist')): ?>
-                    <a href="sales_spareparts.php?tab=pricelists" class="module-card bg-menu-green">
+                    <a href="sales_spareparts.php?tab=pricelists" class="module-card bg-menu-lime">
                         <div class="module-icon-wrap"><i class="bi bi-tags"></i></div>
                         <div>
                             <div class="module-title">Pricelist</div>
@@ -511,7 +516,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('master-reports')): ?>
-                    <a href="master_reports.php" class="module-card bg-menu-violet">
+                    <a href="master_reports.php" class="module-card bg-menu-sky">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
                             <div class="module-title">Master Reports</div>
@@ -522,7 +527,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('beginning-inventory')): ?>
-                    <a href="beginning_inventory.php" class="module-card bg-menu-pink" id="beginning-inventory-card">
+                    <a href="beginning_inventory.php" class="module-card bg-menu-rose" id="beginning-inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
                             <div class="module-title">Beginning Inventory</div>
@@ -533,7 +538,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('beginning-customer-bal')): ?>
-                    <a href="beginning_customer_balance.php" class="module-card bg-menu-emerald" id="beginning-customer-bal-card">
+                    <a href="beginning_customer_balance.php" class="module-card bg-menu-amber" id="beginning-customer-bal-card">
                         <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
                         <div>
                             <div class="module-title">Customer Beginning Balance</div>
@@ -544,7 +549,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('pdc-payment')): ?>
-                    <a href="sales_pdc_payments.php" class="module-card bg-menu-indigo">
+                    <a href="sales_pdc_payments.php" class="module-card bg-menu-fuchsia">
                         <div class="module-icon-wrap"><i class="bi bi-calendar-check"></i></div>
                         <div>
                             <div class="module-title">PDC Payment</div>

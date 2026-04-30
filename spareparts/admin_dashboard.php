@@ -437,6 +437,11 @@ function isVisible($menuId)
         .bg-menu-pink { background: #ec4899 !important; }
         .bg-menu-emerald { background: #059669 !important; }
         .bg-menu-violet { background: #7c3aed !important; }
+        .bg-menu-amber { background: #f59e0b !important; }
+        .bg-menu-rose { background: #e11d48 !important; }
+        .bg-menu-fuchsia { background: #d946ef !important; }
+        .bg-menu-sky { background: #0ea5e9 !important; }
+        .bg-menu-lime { background: #84cc16 !important; }
 
 
         .module-card[class*="bg-menu-"] {
@@ -564,7 +569,7 @@ function isVisible($menuId)
                 <div class="modules-grid">
 
                     <?php if (isVisible('sys-dashboard-card')): ?>
-                        <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-blue"
+                        <a href="admin_spareparts.php?tab=dashboard" class="module-card bg-menu-sky"
                             id="sys-dashboard-card">
                             <div class="module-icon-wrap"><i class="bi bi-speedometer2"></i></div>
                             <div>
@@ -610,7 +615,7 @@ function isVisible($menuId)
                     <?php endif; ?>
 
                     <?php if (isVisible('payments-mgmt-card')): ?>
-                        <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-indigo"
+                        <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-fuchsia"
                             id="payments-mgmt-card">
                             <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
                             <div>
