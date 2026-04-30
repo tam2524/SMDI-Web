@@ -56,58 +56,69 @@ $(document).ready(function () {
         info.textContent = totalItems === 0 ? 'No items found' : `Showing ${start}-${end} of ${totalItems} items`;
 
         pag.innerHTML = '';
-        if (totalPages <= 1) return;
+        if (totalItems === 0) return;
 
-        const mkItem = (label, pageNumber, disabled, active) => {
-            const li = document.createElement('li');
-            li.className = `page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
-            const a = document.createElement('a');
-            a.className = `page-link rounded-pill px-3 ${active ? 'text-white' : ''}`;
-            a.href = '#';
-            a.dataset.page = pageNumber;
-            a.style.cssText = active ? 'background:var(--smdi-green);border-color:var(--smdi-green);' : 'border-color:#dee2e6;';
-            a.innerHTML = label;
-            li.appendChild(a);
-            return li;
-        };
+        if (totalPages > 1) {
+            pag.appendChild(mkItem('<i class="bi bi-chevron-left"></i>', currentPage - 1, currentPage === 1, false));
 
-        pag.appendChild(mkItem('<i class="bi bi-chevron-left"></i>', currentPage - 1, currentPage === 1, false));
+            const delta = 2;
+            const rangeStart = Math.max(1, currentPage - delta);
+            const rangeEnd = Math.min(totalPages, currentPage + delta);
 
-        const delta = 2;
-        const rangeStart = Math.max(1, currentPage - delta);
-        const rangeEnd = Math.min(totalPages, currentPage + delta);
-
-        if (rangeStart > 1) {
-            pag.appendChild(mkItem('1', 1, false, false));
-            if (rangeStart > 2) {
-                const li = document.createElement('li');
-                li.className = 'page-item disabled';
-                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
-                pag.appendChild(li);
+            if (rangeStart > 1) {
+                pag.appendChild(mkItem('1', 1, false, false));
+                if (rangeStart > 2) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                    pag.appendChild(li);
+                }
             }
-        }
 
-        for (let p = rangeStart; p <= rangeEnd; p++) {
-            pag.appendChild(mkItem(p, p, false, p === currentPage));
-        }
-
-        if (rangeEnd < totalPages) {
-            if (rangeEnd < totalPages - 1) {
-                const li = document.createElement('li');
-                li.className = 'page-item disabled';
-                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
-                pag.appendChild(li);
+            for (let p = rangeStart; p <= rangeEnd; p++) {
+                pag.appendChild(mkItem(p, p, false, p === currentPage));
             }
-            pag.appendChild(mkItem(totalPages, totalPages, false, false));
-        }
 
-        pag.appendChild(mkItem('<i class="bi bi-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false));
+            if (rangeEnd < totalPages) {
+                if (rangeEnd < totalPages - 1) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                    pag.appendChild(li);
+                }
+                pag.appendChild(mkItem(totalPages, totalPages, false, false));
+            }
+
+            pag.appendChild(mkItem('<i class="bi bi-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false));
+
+            // Add "Go to page" input
+            const jumpLi = document.createElement('li');
+            jumpLi.className = 'page-item ms-3 d-flex align-items-center';
+            jumpLi.innerHTML = `
+                <span class="small text-muted me-2">Go to:</span>
+                <input type="number" class="form-control form-control-sm text-center jump-to-page" 
+                       value="${currentPage}" min="1" max="${totalPages}" 
+                       style="width: 55px; border-radius: 20px; padding: 2px 5px; height: 28px;">
+            `;
+            pag.appendChild(jumpLi);
+        }
 
         $(pag).off('click', '.page-link').on('click', '.page-link', function (e) {
             e.preventDefault();
             const pg = parseInt($(this).data('page'));
             if (pg && pg >= 1 && pg <= totalPages && pg !== currentPage) {
                 onChangePage(pg);
+            }
+        });
+
+        $(pag).off('keypress', '.jump-to-page').on('keypress', '.jump-to-page', function (e) {
+            if (e.which === 13) {
+                const pg = parseInt($(this).val());
+                if (pg && pg >= 1 && pg <= totalPages && pg !== currentPage) {
+                    onChangePage(pg);
+                } else {
+                    $(this).val(currentPage);
+                }
             }
         });
     }
@@ -334,7 +345,7 @@ $(document).ready(function () {
                 $.post(`../api/spareparts_inventory.php?action=delete_part`, { id: id }, response => {
                     if (response.success) {
                         showSuccessModal('Part deleted successfully.');
-                        loadInventory();
+                        loadInventory(true);
                     } else {
                         showErrorModal(response.message);
                     }
@@ -559,7 +570,7 @@ $(document).ready(function () {
                     if (response.success) {
                         showSuccessModal('Sale record deleted successfully.');
                         loadSales();
-                        loadInventory();
+                        loadInventory(true);
                         loadDashboardStats();
                     } else {
                         showErrorModal(response.message);
@@ -608,7 +619,7 @@ $(document).ready(function () {
                         $('#addPartModal').modal('hide');
                         $('#addPartForm')[0].reset();
                         showSuccessModal('Part registered successfully!');
-                        loadInventory(); // Reload the table
+                        loadInventory(true); // Reload the table
                     } else {
                         showErrorModal(res.message || 'Error occurred.');
                     }
@@ -637,7 +648,7 @@ $(document).ready(function () {
                     if (res.success) {
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('editPartModal')).hide();
                         showSuccessModal('Part updated successfully.');
-                        loadInventory();
+                        loadInventory(true);
                     } else {
                         showErrorModal(res.message);
                     }
@@ -664,7 +675,7 @@ $(document).ready(function () {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('editSaleModal')).hide();
                     showSuccessModal(response.message);
                     loadSales();
-                    loadInventory(); // Reload inventory as levels might have shifted
+                    loadInventory(true); // Reload inventory as levels might have shifted
                 } else {
                     showErrorModal(response.message);
                 }
@@ -801,7 +812,7 @@ $(document).ready(function () {
                         showSuccessModal('Inventory updated successfully.');
                         partsInCart = [];
                         renderPartsInCart();
-                        loadInventory();
+                        loadInventory(true);
                     } else {
                         showErrorModal(response.message);
                     }
@@ -953,7 +964,7 @@ $(document).ready(function () {
 
                     transferCart = [];
                     renderTransferCart();
-                    loadInventory();
+                    loadInventory(true);
                     if (typeof loadTransfers === 'function') loadTransfers();
                 } else {
                     showErrorModal(response.message);
@@ -1116,13 +1127,13 @@ $(document).ready(function () {
                                         printTransferSummaryUI(response.transfer_id, response.from_branch);
                                     }
                                 }
-                                loadInventory();
+                                loadInventory(true);
                                 loadTransfers();
                                 loadIncomingTransfers();
                             });
                         } else {
                             showSuccessModal('Transfer accepted and inventory updated.');
-                            loadInventory();
+                            loadInventory(true);
                             loadTransfers();
                             loadIncomingTransfers();
                         }
@@ -1154,7 +1165,7 @@ $(document).ready(function () {
                 $.post('../api/spareparts_inventory.php?action=delete_transfer', { id: id }, response => {
                     if (response.success) {
                         showSuccessModal('Transfer cancelled.');
-                        loadInventory();
+                        loadInventory(true);
                         loadTransfers();
                     } else {
                         showErrorModal(response.message);
@@ -1170,7 +1181,7 @@ $(document).ready(function () {
                     if (response.success) {
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('viewTransferDetailsModal')).hide();
                         showSuccessModal('Transfer cancelled successfully.');
-                        loadInventory();
+                        loadInventory(true);
                         loadTransfers();
                     } else {
                         showErrorModal(response.message);
@@ -1628,7 +1639,7 @@ $(document).ready(function () {
                     saleCart = [];
                     renderSaleCart();
                     loadDashboardStats();
-                    loadInventory();
+                    loadInventory(true);
                     loadSales();
                 } else {
                     showErrorModal(response.message);
@@ -3442,19 +3453,19 @@ $(document).ready(function () {
     }
 
     // ——— INVENTORY PAGINATION —————————————————————————————————————————————————
-    function loadInventory() {
+    function loadInventory(preservePage = false) {
         loadApiData('get_inventory_list', data => {
             inventoryData = data;
-            inventoryFilteredData = data;
-            inventoryCurrentPage = 1;
-            renderInventory();
+            // Instead of resetting to page 1, we call applyInventorySearch 
+            // which will handle pagination preservation if requested.
+            applyInventorySearch($('#inventorySearch').val() || '', preservePage);
         }, 'inventoryTableBody');
     }
 
     // ─── Quick-Filter state for the inventory table ──────────────────────────
     window._invFilter = { type: '' };
 
-    function applyInventorySearch(query) {
+    function applyInventorySearch(query, preservePage = false) {
         const q = query.trim().toLowerCase();
         const f = window._invFilter;
 
@@ -3478,7 +3489,17 @@ $(document).ready(function () {
         }
 
         inventoryFilteredData = base;
-        inventoryCurrentPage = 1;
+        
+        if (!preservePage) {
+            inventoryCurrentPage = 1;
+        } else {
+            // Ensure the current page is still valid after data refresh/filtering
+            const totalItems = inventoryFilteredData.length;
+            const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
+            if (inventoryCurrentPage > totalPages) inventoryCurrentPage = totalPages;
+            if (inventoryCurrentPage < 1) inventoryCurrentPage = 1;
+        }
+        
         renderInventory();
     }
 

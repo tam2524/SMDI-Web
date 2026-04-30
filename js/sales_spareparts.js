@@ -15,31 +15,47 @@ $(document).ready(function () {
         const end = Math.min(currentPage * SALES_PAGE_SIZE, totalItems);
         info.textContent = totalItems === 0 ? 'No records' : `Showing ${start}–${end} of ${totalItems} records`;
         pag.innerHTML = '';
-        if (totalPages <= 1) return;
-        const mkItem = (label, page, disabled, active) => {
-            const li = document.createElement('li');
-            li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-            const a = document.createElement('a');
-            a.className = 'page-link rounded-pill px-3' + (active ? ' text-white' : '');
-            a.href = '#';
-            a.dataset.page = page;
-            a.style.cssText = active ? 'background:var(--smdi-green,#004d40);border-color:var(--smdi-green,#004d40);' : 'border-color:#dee2e6;';
-            a.innerHTML = label;
-            li.appendChild(a);
-            return li;
-        };
-        pag.appendChild(mkItem('<i class="bi bi-chevron-left" style="font-size:.7rem"></i>', currentPage - 1, currentPage === 1, false));
-        const d = 2, rs = Math.max(1, currentPage - d), re = Math.min(totalPages, currentPage + d);
-        if (rs > 1) {
-            pag.appendChild(mkItem('1', 1, false, false));
-            if (rs > 2) { const li = document.createElement('li'); li.className = 'page-item disabled'; li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">…</span>'; pag.appendChild(li); }
+        if (totalItems === 0) return;
+
+        if (totalPages > 1) {
+            const mkItem = (label, page, disabled, active) => {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                const a = document.createElement('a');
+                a.className = 'page-link rounded-pill px-3' + (active ? ' text-white' : '');
+                a.href = '#';
+                a.dataset.page = page;
+                a.style.cssText = active ? 'background:var(--smdi-green,#004d40);border-color:var(--smdi-green,#004d40);' : 'border-color:#dee2e6;';
+                a.innerHTML = label;
+                li.appendChild(a);
+                return li;
+            };
+
+            pag.appendChild(mkItem('<i class="bi bi-chevron-left" style="font-size:.7rem"></i>', currentPage - 1, currentPage === 1, false));
+            const d = 2, rs = Math.max(1, currentPage - d), re = Math.min(totalPages, currentPage + d);
+            if (rs > 1) {
+                pag.appendChild(mkItem('1', 1, false, false));
+                if (rs > 2) { const li = document.createElement('li'); li.className = 'page-item disabled'; li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">…</span>'; pag.appendChild(li); }
+            }
+            for (let p = rs; p <= re; p++) pag.appendChild(mkItem(p, p, false, p === currentPage));
+            if (re < totalPages) {
+                if (re < totalPages - 1) { const li = document.createElement('li'); li.className = 'page-item disabled'; li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">…</span>'; pag.appendChild(li); }
+                pag.appendChild(mkItem(totalPages, totalPages, false, false));
+            }
+            pag.appendChild(mkItem('<i class="bi bi-chevron-right" style="font-size:.7rem"></i>', currentPage + 1, currentPage === totalPages, false));
+
+            // Add "Go to page" input
+            const jumpLi = document.createElement('li');
+            jumpLi.className = 'page-item ms-3 d-flex align-items-center';
+            jumpLi.innerHTML = `
+                <span class="small text-muted me-2">Go to:</span>
+                <input type="number" class="form-control form-control-sm text-center jump-to-page" 
+                       value="${currentPage}" min="1" max="${totalPages}" 
+                       style="width: 55px; border-radius: 20px; padding: 2px 5px; height: 28px;">
+            `;
+            pag.appendChild(jumpLi);
         }
-        for (let p = rs; p <= re; p++) pag.appendChild(mkItem(p, p, false, p === currentPage));
-        if (re < totalPages) {
-            if (re < totalPages - 1) { const li = document.createElement('li'); li.className = 'page-item disabled'; li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">…</span>'; pag.appendChild(li); }
-            pag.appendChild(mkItem(totalPages, totalPages, false, false));
-        }
-        pag.appendChild(mkItem('<i class="bi bi-chevron-right" style="font-size:.7rem"></i>', currentPage + 1, currentPage === totalPages, false));
+
         pag.addEventListener('click', function handler(e) {
             e.preventDefault();
             const a = e.target.closest('a[data-page]');
@@ -48,6 +64,18 @@ $(document).ready(function () {
             if (!pg || pg < 1 || pg > totalPages) return;
             pag.removeEventListener('click', handler);
             onChangePage(pg);
+        });
+
+        // Jump to page listener
+        pag.addEventListener('keypress', function (e) {
+            if (e.which === 13 && e.target.classList.contains('jump-to-page')) {
+                const pg = parseInt(e.target.value);
+                if (pg && pg >= 1 && pg <= totalPages && pg !== currentPage) {
+                    onChangePage(pg);
+                } else {
+                    e.target.value = currentPage;
+                }
+            }
         });
     }
     // ===================== END SHARED PAGINATION HELPER =====================

@@ -94,12 +94,113 @@ function applyStockCardFilter(type) {
     }
 }
 
+// ─── Pagination state ────────────────────────────────────────
+let stockCardFullData = [];
+let stockCardCurrentPage = 1;
+const STOCK_CARD_PAGE_SIZE = 15;
+
+function renderPagination(pagId, infoId, totalItems, currentPage, onChangePage) {
+    const totalPages = Math.max(1, Math.ceil(totalItems / STOCK_CARD_PAGE_SIZE));
+    const pag = document.getElementById(pagId);
+    const info = document.getElementById(infoId);
+    if (!pag || !info) return;
+
+    const start = totalItems === 0 ? 0 : (currentPage - 1) * STOCK_CARD_PAGE_SIZE + 1;
+    const end = Math.min(currentPage * STOCK_CARD_PAGE_SIZE, totalItems);
+    info.textContent = totalItems === 0 ? 'No items found' : `Showing ${start}-${end} of ${totalItems} items`;
+
+    pag.innerHTML = '';
+    if (totalItems === 0) return;
+
+    if (totalPages > 1) {
+        const mkItem = (label, pageNumber, disabled, active) => {
+            const li = document.createElement('li');
+            li.className = `page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
+            const a = document.createElement('a');
+            a.className = `page-link rounded-pill px-3 ${active ? 'text-white' : ''}`;
+            a.href = '#';
+            a.dataset.page = pageNumber;
+            a.style.cssText = active ? 'background:#004d40;border-color:#004d40;' : 'border-color:#dee2e6;';
+            a.innerHTML = label;
+            li.appendChild(a);
+            return li;
+        };
+
+        pag.appendChild(mkItem('<i class="bi bi-chevron-left"></i>', currentPage - 1, currentPage === 1, false));
+
+        const delta = 2;
+        const rangeStart = Math.max(1, currentPage - delta);
+        const rangeEnd = Math.min(totalPages, currentPage + delta);
+
+        if (rangeStart > 1) {
+            pag.appendChild(mkItem('1', 1, false, false));
+            if (rangeStart > 2) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                pag.appendChild(li);
+            }
+        }
+
+        for (let p = rangeStart; p <= rangeEnd; p++) {
+            pag.appendChild(mkItem(p, p, false, p === currentPage));
+        }
+
+        if (rangeEnd < totalPages) {
+            if (rangeEnd < totalPages - 1) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                pag.appendChild(li);
+            }
+            pag.appendChild(mkItem(totalPages, totalPages, false, false));
+        }
+
+        pag.appendChild(mkItem('<i class="bi bi-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false));
+
+        // Add "Go to page" input
+        const jumpLi = document.createElement('li');
+        jumpLi.className = 'page-item ms-3 d-flex align-items-center';
+        jumpLi.innerHTML = `
+            <span class="small text-muted me-2">Go to:</span>
+            <input type="number" class="form-control form-control-sm text-center jump-to-page" 
+                   value="${currentPage}" min="1" max="${totalPages}" 
+                   style="width: 55px; border-radius: 20px; padding: 2px 5px; height: 28px;">
+        `;
+        pag.appendChild(jumpLi);
+    }
+
+    $(pag).off('click', '.page-link').on('click', '.page-link', function (e) {
+        e.preventDefault();
+        const pg = parseInt($(this).data('page'));
+        if (pg && pg >= 1 && pg <= totalPages && pg !== currentPage) {
+            onChangePage(pg);
+        }
+    });
+
+    $(pag).off('keypress', '.jump-to-page').on('keypress', '.jump-to-page', function (e) {
+        if (e.which === 13) {
+            const pg = parseInt($(this).val());
+            if (pg && pg >= 1 && pg <= totalPages && pg !== currentPage) {
+                onChangePage(pg);
+            } else {
+                $(this).val(currentPage);
+            }
+        }
+    });
+}
+
 // ─── Render results table ─────────────────────────────────────
 function renderStockCardResults(data) {
+    if (!data) return;
+    stockCardFullData = data;
     const f = window._stockCardFilter;
 
+    const startIdx = (stockCardCurrentPage - 1) * STOCK_CARD_PAGE_SIZE;
+    const pagedData = data.slice(startIdx, startIdx + STOCK_CARD_PAGE_SIZE);
+
     let rowsHtml = '';
-    data.forEach(item => {
+    pagedData.forEach(item => {
         const isLow      = Number(item.current_stock) <= Number(item.min_stock || 1);
         const stockClass = isLow ? 'text-danger fw-bold' : 'text-success fw-bold';
         const lowBadge   = isLow ? `<span class="badge bg-danger ms-1" style="font-size:0.6rem;">LOW</span>` : '';
@@ -147,9 +248,9 @@ function renderStockCardResults(data) {
 
     const tableHtml = `
         <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-            <span class="text-muted small">${data.length} result(s) found</span>
+            <span id="stockCardPageInfo" class="text-muted small"></span>
         </div>
-        <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 16px;">
+        <div class="card border-0 shadow-sm overflow-hidden mb-3" style="border-radius: 16px;">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="bg-light">
@@ -168,8 +269,16 @@ function renderStockCardResults(data) {
                 </table>
             </div>
         </div>
+        <nav class="d-flex justify-content-end">
+            <ul id="stockCardPagination" class="pagination pagination-sm mb-0"></ul>
+        </nav>
     `;
     $('#partList').html(tableHtml);
+
+    renderPagination('stockCardPagination', 'stockCardPageInfo', data.length, stockCardCurrentPage, pg => {
+        stockCardCurrentPage = pg;
+        renderStockCardResults(stockCardFullData);
+    });
 }
 
 // ─── Inject the filter bar into the page ─────────────────────
