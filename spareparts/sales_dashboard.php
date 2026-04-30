@@ -251,6 +251,8 @@ function isVisible($menuId) {
         .bg-menu-green { background: #10b981 !important; }
         .bg-menu-indigo { background: #6366f1 !important; }
         .bg-menu-pink { background: #ec4899 !important; }
+        .bg-menu-emerald { background: #059669 !important; }
+        .bg-menu-violet { background: #7c3aed !important; }
 
 
         .module-card[class*="bg-menu-"] {
@@ -410,7 +412,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('find-stocks')): ?>
-                    <a href="find_stocks.php" class="module-card bg-menu-purple">
+                    <a href="find_stocks.php" class="module-card bg-menu-indigo">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
                             <div class="module-title">Find Stocks</div>
@@ -443,7 +445,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('received-stocks-rr')): ?>
-                    <a href="#" class="module-card bg-menu-gray" data-bs-toggle="modal" data-bs-target="#inventoryInModal">
+                    <a href="#" class="module-card bg-menu-teal" data-bs-toggle="modal" data-bs-target="#inventoryInModal">
                         <div class="module-icon-wrap"><i class="bi bi-box-arrow-in-down"></i></div>
                         <div>
                             <div class="module-title">Received Stocks (RR/IN)</div>
@@ -465,7 +467,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('stock-transfer')): ?>
-                    <a href="transfer_stock.php" class="module-card bg-menu-teal">
+                    <a href="transfer_stock.php" class="module-card bg-menu-emerald">
                         <div class="module-icon-wrap"><i class="bi bi-truck"></i></div>
                         <div>
                             <div class="module-title">Stock Transfer</div>
@@ -509,7 +511,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('master-reports')): ?>
-                    <a href="master_reports.php" class="module-card bg-menu-indigo">
+                    <a href="master_reports.php" class="module-card bg-menu-violet">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                         <div>
                             <div class="module-title">Master Reports</div>
@@ -520,7 +522,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('beginning-inventory')): ?>
-                    <a href="beginning_inventory.php" class="module-card bg-menu-red" id="beginning-inventory-card">
+                    <a href="beginning_inventory.php" class="module-card bg-menu-pink" id="beginning-inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
                             <div class="module-title">Beginning Inventory</div>
@@ -531,7 +533,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('beginning-customer-bal')): ?>
-                    <a href="beginning_customer_balance.php" class="module-card bg-menu-green" id="beginning-customer-bal-card">
+                    <a href="beginning_customer_balance.php" class="module-card bg-menu-emerald" id="beginning-customer-bal-card">
                         <div class="module-icon-wrap"><i class="bi bi-person-fill-add"></i></div>
                         <div>
                             <div class="module-title">Customer Beginning Balance</div>

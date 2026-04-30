@@ -425,45 +425,18 @@ function isVisible($menuId)
             font-weight: 800;
         }
 
-        .bg-menu-gray {
-            background: #64748b !important;
-        }
-
-        .bg-menu-red {
-            background: #ef4444 !important;
-        }
-
-        .bg-menu-purple {
-            background: #8b5cf6 !important;
-        }
-
-        .bg-menu-orange {
-            background: #f97316 !important;
-        }
-
-        .bg-menu-blue {
-            background: #3b82f6 !important;
-        }
-
-        .bg-menu-teal {
-            background: #0d9488 !important;
-        }
-
-        .bg-menu-cyan {
-            background: #06b6d4 !important;
-        }
-
-        .bg-menu-green {
-            background: #10b981 !important;
-        }
-
-        .bg-menu-indigo {
-            background: #6366f1 !important;
-        }
-
-        .bg-menu-pink {
-            background: #ec4899 !important;
-        }
+        .bg-menu-gray { background: #64748b !important; }
+        .bg-menu-red { background: #ef4444 !important; }
+        .bg-menu-purple { background: #8b5cf6 !important; }
+        .bg-menu-orange { background: #f97316 !important; }
+        .bg-menu-blue { background: #3b82f6 !important; }
+        .bg-menu-teal { background: #0d9488 !important; }
+        .bg-menu-cyan { background: #06b6d4 !important; }
+        .bg-menu-green { background: #10b981 !important; }
+        .bg-menu-indigo { background: #6366f1 !important; }
+        .bg-menu-pink { background: #ec4899 !important; }
+        .bg-menu-emerald { background: #059669 !important; }
+        .bg-menu-violet { background: #7c3aed !important; }
 
 
         .module-card[class*="bg-menu-"] {
@@ -625,7 +598,7 @@ function isVisible($menuId)
                     <?php endif; ?>
 
                     <?php if (isVisible('transfer-card')): ?>
-                        <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-blue"
+                        <a href="admin_spareparts.php?tab=global-transfer" class="module-card bg-menu-teal"
                             id="transfer-card">
                             <div class="module-icon-wrap"><i class="bi bi-arrow-left-right"></i></div>
                             <div>
@@ -637,7 +610,7 @@ function isVisible($menuId)
                     <?php endif; ?>
 
                     <?php if (isVisible('payments-mgmt-card')): ?>
-                        <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-purple"
+                        <a href="admin_spareparts.php?tab=payments" class="module-card bg-menu-indigo"
                             id="payments-mgmt-card">
                             <div class="module-icon-wrap"><i class="bi bi-cash-coin"></i></div>
                             <div>
@@ -649,7 +622,7 @@ function isVisible($menuId)
                     <?php endif; ?>
 
                     <?php if (isVisible('audit-card')): ?>
-                        <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-teal" id="audit-card">
+                        <a href="admin_spareparts.php?tab=activity-log" class="module-card bg-menu-emerald" id="audit-card">
                             <div class="module-icon-wrap"><i class="bi bi-shield-check"></i></div>
                             <div>
                                 <div class="module-title">Audit Logs</div>
@@ -671,7 +644,7 @@ function isVisible($menuId)
                     <?php endif; ?>
 
                     <?php if (isVisible('reports-card')): ?>
-                        <a href="master_reports.php" class="module-card bg-menu-green" id="reports-card">
+                        <a href="master_reports.php" class="module-card bg-menu-violet" id="reports-card">
                             <div class="module-icon-wrap"><i class="bi bi-file-earmark-bar-graph"></i></div>
                             <div>
                                 <div class="module-title">Master Reports</div>

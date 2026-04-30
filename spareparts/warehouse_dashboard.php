@@ -250,20 +250,21 @@ function isVisible($menuId) {
         .bg-menu-cyan { background: #06b6d4 !important; }
         .bg-menu-green { background: #10b981 !important; }
         .bg-menu-indigo { background: #6366f1 !important; }
+        .bg-menu-pink { background: #ec4899 !important; }
 
         .module-card[class*="bg-menu-"] {
             border: none !important;
             color: white !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         .module-card[class*="bg-menu-"] .module-title {
             color: white !important;
         }
         .module-card[class*="bg-menu-"] .module-desc {
-            color: rgba(255,255,255,0.8) !important;
+            color: rgba(255, 255, 255, 0.8) !important;
         }
         .module-card[class*="bg-menu-"] .module-icon-wrap {
-            background: rgba(255,255,255,0.2) !important;
+            background: rgba(255, 255, 255, 0.2) !important;
         }
         .module-card[class*="bg-menu-"] .module-icon-wrap i {
             color: white !important;
@@ -273,7 +274,7 @@ function isVisible($menuId) {
         }
         .module-card[class*="bg-menu-"]:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
             filter: brightness(1.05);
         }
 
@@ -471,7 +472,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('find-stocks-warehouse')): ?>
-                    <a href="find_stocks.php" class="module-card bg-menu-purple">
+                    <a href="find_stocks.php" class="module-card bg-menu-indigo">
                         <div class="module-icon-wrap"><i class="bi bi-search"></i></div>
                         <div>
                             <div class="module-title">Find Stocks</div>
@@ -493,7 +494,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('beginning-inventory-warehouse')): ?>
-                    <a href="beginning_inventory.php" class="module-card bg-menu-red" id="beginning-inventory-card">
+                    <a href="beginning_inventory.php" class="module-card bg-menu-pink" id="beginning-inventory-card">
                         <div class="module-icon-wrap"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div>
                         <div>
                             <div class="module-title">Beginning Inventory</div>
@@ -504,7 +505,7 @@ function isVisible($menuId) {
                     <?php endif; ?>
 
                     <?php if (isVisible('barcode-generator')): ?>
-                    <a href="barcode_generator.php" class="module-card bg-menu-indigo">
+                    <a href="barcode_generator.php" class="module-card bg-menu-cyan">
                         <div class="module-icon-wrap"><i class="bi bi-upc-scan"></i></div>
                         <div>
                             <div class="module-title">Barcode Generator</div>

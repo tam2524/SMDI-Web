@@ -112,7 +112,7 @@ function renderPagination(pagId, infoId, totalItems, currentPage, onChangePage) 
     pag.innerHTML = '';
     if (totalItems === 0) return;
 
-    if (totalPages > 1) {
+    if (totalItems > 0) {
         const mkItem = (label, pageNumber, disabled, active) => {
             const li = document.createElement('li');
             li.className = `page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
@@ -126,37 +126,39 @@ function renderPagination(pagId, infoId, totalItems, currentPage, onChangePage) 
             return li;
         };
 
-        pag.appendChild(mkItem('<i class="bi bi-chevron-left"></i>', currentPage - 1, currentPage === 1, false));
+        if (totalPages > 1) {
+            pag.appendChild(mkItem('<i class="bi bi-chevron-left"></i>', currentPage - 1, currentPage === 1, false));
 
-        const delta = 2;
-        const rangeStart = Math.max(1, currentPage - delta);
-        const rangeEnd = Math.min(totalPages, currentPage + delta);
+            const delta = 2;
+            const rangeStart = Math.max(1, currentPage - delta);
+            const rangeEnd = Math.min(totalPages, currentPage + delta);
 
-        if (rangeStart > 1) {
-            pag.appendChild(mkItem('1', 1, false, false));
-            if (rangeStart > 2) {
-                const li = document.createElement('li');
-                li.className = 'page-item disabled';
-                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
-                pag.appendChild(li);
+            if (rangeStart > 1) {
+                pag.appendChild(mkItem('1', 1, false, false));
+                if (rangeStart > 2) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                    pag.appendChild(li);
+                }
             }
-        }
 
-        for (let p = rangeStart; p <= rangeEnd; p++) {
-            pag.appendChild(mkItem(p, p, false, p === currentPage));
-        }
-
-        if (rangeEnd < totalPages) {
-            if (rangeEnd < totalPages - 1) {
-                const li = document.createElement('li');
-                li.className = 'page-item disabled';
-                li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
-                pag.appendChild(li);
+            for (let p = rangeStart; p <= rangeEnd; p++) {
+                pag.appendChild(mkItem(p, p, false, p === currentPage));
             }
-            pag.appendChild(mkItem(totalPages, totalPages, false, false));
-        }
 
-        pag.appendChild(mkItem('<i class="bi bi-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false));
+            if (rangeEnd < totalPages) {
+                if (rangeEnd < totalPages - 1) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = '<span class="page-link px-2 border-0 bg-transparent">...</span>';
+                    pag.appendChild(li);
+                }
+                pag.appendChild(mkItem(totalPages, totalPages, false, false));
+            }
+
+            pag.appendChild(mkItem('<i class="bi bi-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false));
+        }
 
         // Add "Go to page" input
         const jumpLi = document.createElement('li');
