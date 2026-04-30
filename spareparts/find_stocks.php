@@ -147,7 +147,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 100px; max-width: 1000px;">
+    <div class="container" style="margin-top: 100px; max-width: 1100px;">
         <div class="search-card p-4 mb-4">
             <div class="text-center mb-4">
                 <h3 class="fw-bold text-dark-green">Global Stock Search</h3>
@@ -161,7 +161,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
             </div>
         </div>
 
-        <div id="searchResultsArea">
+        <div id="partList">
             <div class="text-center py-5">
                 <div class="mb-4">
                     <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle" style="width: 100px; height: 100px;">
@@ -169,7 +169,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                     </div>
                 </div>
                 <h5 class="fw-bold">Ready to search?</h5>
-                <p class="text-muted">Results will appear here in a professional list view.</p>
+                <p class="text-muted">Use the search box above or pick a Quick Filter to browse inventory.</p>
             </div>
         </div>
     </div>
@@ -177,76 +177,5 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/spareparts_stock_card.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#globalSearchBtn').on('click', function() {
-                const query = $('#globalSearchInput').val().trim();
-                if (query.length < 2) return;
-
-                $('#searchResultsArea').html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
-
-                $.get('../api/spareparts_inventory.php?action=search_parts_global', { term: query }, function(response) {
-                    if (response.success) {
-                        renderGlobalResults(response.data);
-                    } else {
-                        $('#searchResultsArea').html('<div class="alert alert-danger shadow-sm border-0 rounded-4"> Error: ' + response.message + '</div>');
-                    }
-                }, 'json');
-            });
-
-            $('#globalSearchInput').on('keypress', function(e) {
-                if (e.which == 13) $('#globalSearchBtn').click();
-            });
-
-            function renderGlobalResults(data) {
-                if (!data || data.length === 0) {
-                    $('#searchResultsArea').html('<div class="text-center py-5"><i class="bi bi-exclamation-circle text-muted fs-1 d-block mb-3"></i><p class="text-muted">No parts found matching your criteria.</p></div>');
-                    return;
-                }
-
-                let html = `
-                <div class="card search-card overflow-hidden">
-                    <div class="table-responsive">
-                        <table class="table result-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4">Part Details</th>
-                                    <th class="text-center">Branch</th>
-                                    <th class="text-center">Bin / Warehouse</th>
-                                    <th class="text-end">Price</th>
-                                    <th class="text-center pe-4">Available</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-
-                data.forEach(item => {
-                    const stockClass = Number(item.current_stock) <= 5 ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success';
-                    html += `
-                        <tr>
-                            <td class="ps-4">
-                                <div class="fw-bold text-dark">${item.part_no}</div>
-                                <div class="small text-muted">${item.description}</div>
-                                <div class="badge bg-light text-dark border small mt-1">${item.brand}</div>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-primary px-3 py-2 rounded-pill">${item.current_branch}</span>
-                            </td>
-                            <td class="text-center text-muted small fw-bold">
-                                <i class="bi bi-geo-alt me-1"></i>${item.bin_location ? item.bin_location + ' — ' + item.current_branch : item.current_branch}
-                            </td>
-                            <td class="text-end fw-bold text-primary">
-                                ₱${Number(item.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                            </td>
-                            <td class="text-center pe-4">
-                                <span class="stock-badge ${stockClass}">${item.current_stock}</span>
-                            </td>
-                        </tr>`;
-                });
-
-                html += `</tbody></table></div></div>`;
-                $('#searchResultsArea').html(html);
-            }
-        });
-    </script>
 </body>
 </html>

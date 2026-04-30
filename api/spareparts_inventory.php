@@ -4197,27 +4197,54 @@ function batchRejectTransfers()
 function searchPartsGlobal()
 {
     global $conn;
-    $term = sanitizeInput($_GET['term'] ?? $_GET['search'] ?? '');
-    
-    if (empty($term)) {
-        echo json_encode(['success' => true, 'data' => []]);
-        exit();
+    $term        = sanitizeInput($_GET['term'] ?? $_GET['search'] ?? '');
+    $filterType  = sanitizeInput($_GET['filter'] ?? '');      // 'low_price' | 'low_stock' | 'bin' | ''
+    $binFilter   = sanitizeInput($_GET['bin_location'] ?? ''); // used when filter=bin
+
+    $where  = [];
+    $params = [];
+    $types  = '';
+
+    // Term search (optional — allow filter-only queries)
+    if (!empty($term)) {
+        $searchTerm = "%{$term}%";
+        $where[]  = '(part_no LIKE ? OR description LIKE ? OR brand LIKE ?)';
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $types   .= 'sss';
     }
 
-    $searchTerm = "%{$term}%";
+    // Active filter
+    if ($filterType === 'low_price') {
+        // Parts whose cost is 5 pesos or below
+        $where[] = 'cost <= 5';
+    } elseif ($filterType === 'low_stock') {
+        // Parts at or below their minimum stock threshold
+        $where[] = 'current_stock <= GREATEST(COALESCE(min_stock, 1), 1)';
+    } elseif ($filterType === 'bin' && !empty($binFilter)) {
+        $binTerm  = "%{$binFilter}%";
+        $where[]  = 'bin_location LIKE ?';
+        $params[] = $binTerm;
+        $types   .= 's';
+    }
 
-    $stmt = $conn->prepare("SELECT brand, part_no, description, current_stock, price, current_branch
-                            FROM spareparts_inventory 
-                            WHERE (part_no LIKE ? OR description LIKE ? OR brand LIKE ?) 
-                            AND current_stock > 0
-                            ORDER BY current_branch ASC, part_no ASC
-                            LIMIT 50");
+    // Build SQL
+    $whereSql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : 'WHERE 1=1';
+    $sql = "SELECT brand, part_no, description, current_stock, cost, price, bin_location,
+                   COALESCE(min_stock, 1) AS min_stock, current_branch
+            FROM spareparts_inventory
+            {$whereSql}
+            ORDER BY current_branch ASC, part_no ASC
+            LIMIT 100";
 
-    $stmt->bind_param('sss', $searchTerm, $searchTerm, $searchTerm);
-
+    $stmt = $conn->prepare($sql);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
-    $data = [];
+    $data   = [];
     while ($row = $result->fetch_assoc()) {
         $data[] = $row;
     }

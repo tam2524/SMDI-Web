@@ -383,6 +383,26 @@ $filterType = $_GET['filter'] ?? 'all';
             border-color: #f2f2f2;
         }
 
+        /* ─── Inventory Quick-Filter Buttons ─── */
+        .inv-filter-btn {
+            background: #fff;
+            color: #555;
+            border: 1px solid #dee2e6;
+            border-radius: 50px;
+            padding: 5px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all .18s;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+        .inv-filter-btn:hover, .inv-filter-btn.active {
+            background: var(--smdi-green);
+            color: #fff !important;
+            border-color: var(--smdi-green) !important;
+        }
+        .inv-filter-btn.active .bi { color: #fff !important; }
+
     </style>
     <script>
         window.canDelete = <?php echo $canDelete ? 'true' : 'false'; ?>;
@@ -526,6 +546,21 @@ endif; ?>
                                 </div>
                             </div>
 
+
+                            <!-- Quick-Filter Bar -->
+                            <div class="d-flex flex-wrap align-items-center gap-2 px-1 py-2 border-bottom bg-white mb-2">
+                                <span class="text-muted small fw-semibold me-1">
+                                    <i class="bi bi-funnel me-1"></i>Quick Filters:
+                                </span>
+                                <button class="inv-filter-btn" data-filter="low_price"
+                                        title="Show parts with cost ≤ ₱5.00">
+                                    <i class="bi bi-currency-exchange me-1 text-warning"></i>Cost ≤ ₱5
+                                </button>
+                                <button class="inv-filter-btn" data-filter="low_stock"
+                                        title="Show parts at or below minimum stock level">
+                                    <i class="bi bi-graph-down-arrow me-1 text-danger"></i>Low Stocks
+                                </button>
+                            </div>
 
                             <div class='table-responsive'>
                                 <table class='table table-hover align-middle' id='inventoryTable'>

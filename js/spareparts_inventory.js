@@ -3451,18 +3451,33 @@ $(document).ready(function () {
         }, 'inventoryTableBody');
     }
 
+    // ─── Quick-Filter state for the inventory table ──────────────────────────
+    window._invFilter = { type: '' };
+
     function applyInventorySearch(query) {
         const q = query.trim().toLowerCase();
-        if (!q) {
-            inventoryFilteredData = inventoryData;
-        } else {
-            inventoryFilteredData = inventoryData.filter(item =>
+        const f = window._invFilter;
+
+        let base = inventoryData || [];
+
+        // 1. Text search
+        if (q) {
+            base = base.filter(item =>
                 (item.part_no || '').toLowerCase().includes(q) ||
                 (item.description || '').toLowerCase().includes(q) ||
                 (item.brand || '').toLowerCase().includes(q) ||
                 (item.bin_location || '').toLowerCase().includes(q)
             );
         }
+
+        // 2. Quick filter
+        if (f.type === 'low_price') {
+            base = base.filter(item => Number(item.cost || 0) <= 5);
+        } else if (f.type === 'low_stock') {
+            base = base.filter(item => Number(item.current_stock) <= Math.max(Number(item.min_stock || 1), 1));
+        }
+
+        inventoryFilteredData = base;
         inventoryCurrentPage = 1;
         renderInventory();
     }
@@ -3473,6 +3488,27 @@ $(document).ready(function () {
         clearTimeout(inventorySearchTimer);
         inventorySearchTimer = setTimeout(() => applyInventorySearch($(this).val()), 280);
     });
+
+    // Wire up quick-filter buttons (delegated — works for dynamically injected HTML)
+    $(document).on('click', '.inv-filter-btn', function () {
+        const type = $(this).data('filter');
+        const f = window._invFilter;
+
+        if (type === f.type) {
+            f.type = '';
+        } else {
+            f.type = type;
+        }
+
+        // Refresh button active states
+        $('.inv-filter-btn').removeClass('active');
+        if (f.type) $(`.inv-filter-btn[data-filter="${f.type}"]`).addClass('active');
+
+        applyInventorySearch($('#inventorySearch').val() || '');
+    });
+
+
+
 
     function renderInventory() {
         const tbody = $('#inventoryTableBody');
