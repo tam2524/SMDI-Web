@@ -2469,7 +2469,13 @@ function getMonthlyInventory() {
                  WHERE it.motorcycle_id = mi.id 
                    AND it.transfer_status = 'completed' 
                    AND it.transfer_date <= ?
-                 ORDER BY it.transfer_date DESC 
+                 ORDER BY it.transfer_date DESC, it.id DESC 
+                 LIMIT 1),
+                (SELECT it.from_branch
+                 FROM inventory_transfers it
+                 WHERE it.motorcycle_id = mi.id
+                   AND it.transfer_status = 'completed'
+                 ORDER BY it.transfer_date ASC, it.id ASC
                  LIMIT 1),
                 mi.current_branch
             ) = ?
@@ -2518,7 +2524,13 @@ function getMonthlyInventory() {
                  WHERE it.motorcycle_id = mi.id 
                    AND it.transfer_status = 'completed' 
                    AND it.transfer_date <= ?
-                 ORDER BY it.transfer_date DESC 
+                 ORDER BY it.transfer_date DESC, it.id DESC 
+                 LIMIT 1),
+                (SELECT it.from_branch
+                 FROM inventory_transfers it
+                 WHERE it.motorcycle_id = mi.id
+                   AND it.transfer_status = 'completed'
+                 ORDER BY it.transfer_date ASC, it.id ASC
                  LIMIT 1),
                 mi.current_branch
             ) = ?
@@ -2656,7 +2668,13 @@ function getMonthlyInventory() {
                  WHERE it.motorcycle_id = mi.id
                    AND it.transfer_status = 'completed'
                    AND it.transfer_date <= ms.sale_date
-                 ORDER BY it.transfer_date DESC
+                 ORDER BY it.transfer_date DESC, it.id DESC
+                 LIMIT 1),
+                (SELECT it.from_branch
+                 FROM inventory_transfers it
+                 WHERE it.motorcycle_id = mi.id
+                   AND it.transfer_status = 'completed'
+                 ORDER BY it.transfer_date ASC, it.id ASC
                  LIMIT 1),
                 mi.current_branch
             ) = ?
@@ -2714,7 +2732,13 @@ function getMonthlyInventory() {
                  WHERE it.motorcycle_id = mi.id 
                    AND it.transfer_status = 'completed' 
                    AND it.transfer_date <= ?
-                 ORDER BY it.transfer_date DESC 
+                 ORDER BY it.transfer_date DESC, it.id DESC 
+                 LIMIT 1),
+                (SELECT it.from_branch
+                 FROM inventory_transfers it
+                 WHERE it.motorcycle_id = mi.id
+                   AND it.transfer_status = 'completed'
+                 ORDER BY it.transfer_date ASC, it.id ASC
                  LIMIT 1),
                 mi.current_branch
             ) = ?
@@ -2760,7 +2784,13 @@ function getMonthlyInventory() {
              WHERE it.motorcycle_id = mi.id 
                AND it.transfer_status = 'completed' 
                AND it.transfer_date <= ?
-             ORDER BY it.transfer_date DESC 
+             ORDER BY it.transfer_date DESC, it.id DESC 
+             LIMIT 1),
+            (SELECT it.from_branch
+             FROM inventory_transfers it
+             WHERE it.motorcycle_id = mi.id
+               AND it.transfer_status = 'completed'
+             ORDER BY it.transfer_date ASC, it.id ASC
              LIMIT 1),
             mi.current_branch
         ) AS branch_as_of_report_date
