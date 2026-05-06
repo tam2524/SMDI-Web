@@ -1441,11 +1441,12 @@ $(document).ready(function () {
                 let html = '';
                 if (response.success && Array.isArray(response.data)) {
                     response.data.forEach(item => {
+                        const displayCost = parseFloat(item.cost || 0);
                         html += `<button type="button" class="list-group-item list-group-item-action add-to-sale-cart" 
                             data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}'>
                             <div class="d-flex justify-content-between">
                                 <strong>${item.part_no}</strong>
-                                <small class="text-muted">₱${formatCurrency(item.price)}</small>
+                                <small class="text-muted">Cost: ₱${formatCurrency(displayCost)}</small>
                             </div>
                             <div class="small">${item.description} (${item.current_stock} available)</div>
                         </button>`;
@@ -1470,12 +1471,11 @@ $(document).ready(function () {
                     renderSaleCart();
                 }
             } else {
-                // Instantly add to cart with default price for better UX
-                const newItem = { ...item, quantity: 1 };
+                // Auto-fill unit price with the item's cost (user can still edit it manually)
+                const costPrice = parseFloat(item.cost || 0);
+                const newItem = { ...item, quantity: 1, price: costPrice };
                 saleCart.push(newItem);
                 renderSaleCart();
-
-                // Removed automatic rank-based price fetch to prioritize manual user input
             }
         }
 
