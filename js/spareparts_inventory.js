@@ -1311,15 +1311,8 @@ $(document).ready(function () {
         });
 
         function updateCartPricesForRank() {
-            if (saleCart.length === 0) return;
-            saleCart.forEach(item => {
-                $.get('../api/spareparts_inventory.php?action=get_rank_price', { part_no: item.part_no, rank_level: currentCustomerRank }, function (res) {
-                    if (res.success) {
-                        item.price = parseFloat(res.price);
-                        renderSaleCart();
-                    }
-                }, 'json');
-            });
+            // Feature removed as per user request to allow manual price entry
+            return;
         }
 
         $(document).on('click', function (e) {
@@ -1482,21 +1475,7 @@ $(document).ready(function () {
                 saleCart.push(newItem);
                 renderSaleCart();
 
-                // Then fetch rank-based price if available
-                $.get('../api/spareparts_inventory.php?action=get_rank_price', {
-                    part_no: item.part_no,
-                    rank_level: currentCustomerRank || 'Standard'
-                }, function (res) {
-                    if (res.success) {
-                        const updated = saleCart.find(p => String(p.id) === String(item.id));
-                        if (updated) {
-                            updated.price = parseFloat(res.price);
-                            renderSaleCart();
-                        }
-                    }
-                }, 'json').fail(function () {
-                    console.warn("Could not fetch rank price for " + item.part_no);
-                });
+                // Removed automatic rank-based price fetch to prioritize manual user input
             }
         }
 

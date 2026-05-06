@@ -125,7 +125,7 @@ function saveBeginningInventory()
             $description = sanitizeInput($item['description']);
             $qty = (int) $item['qty'];
             $cost = (float) $item['cost'];
-            $price = $cost * 1.30; 
+            $price = (float)($item['price'] ?? 0);
 
             // Check if already exists in this branch
             $checkStmt = $conn->prepare("SELECT id FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
