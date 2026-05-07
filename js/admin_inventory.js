@@ -5281,6 +5281,7 @@ function renderMonthlyInventoryReport(response) {
   const totalIn = summary?.in || 0;
   const transfersOut = summary?.transfers_out || 0;
   const soldDuringMonth = summary?.sold_during_month || 0;
+  const scrappedDuringMonth = summary?.scrapped_during_month || 0;
   const totalOut = summary?.out || 0;
   const endingActual = summary?.ending_actual || 0;
   const costReceived = summary?.inventory_cost?.received_transfers || 0;
@@ -5288,6 +5289,7 @@ function renderMonthlyInventoryReport(response) {
   const costTotalIn = summary?.inventory_cost?.in || 0;
   const costTransfersOut = summary?.inventory_cost?.transfers_out || 0;
   const costSoldDuringMonth = summary?.inventory_cost?.sold_during_month || 0;
+  const costScrappedDuringMonth = summary?.inventory_cost?.scrapped_during_month || 0;
   const costTotalOut = summary?.inventory_cost?.out || 0;
   const costEndingActual = summary?.inventory_cost?.ending_actual || 0;
 
@@ -5460,6 +5462,18 @@ function renderMonthlyInventoryReport(response) {
                 <span class="fw-bold" style="color: #dc3545;">${soldDuringMonth}</span>
                 <div class="small text-muted">${formatCurrency(
                   costSoldDuringMonth
+                )}</div>
+              </div>
+            </div>
+
+            <div class="summary-item d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f1f3f4;">
+              <div>
+                <div class="fw-semibold small" style="color: #495057;">Scrapped During Month</div>
+              </div>
+              <div class="text-end">
+                <span class="fw-bold" style="color: #dc3545;">${scrappedDuringMonth}</span>
+                <div class="small text-muted">${formatCurrency(
+                  costScrappedDuringMonth
                 )}</div>
               </div>
             </div>

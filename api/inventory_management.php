@@ -2698,6 +2698,54 @@ function getMonthlyInventory() {
     $countSold = (int)($soldResult['count_sold'] ?? 0);
     $costSold = (float)($soldResult['cost_sold'] ?? 0);
 
+    // === CALCULATE SCRAPPED UNITS (Current Month) ===
+    $countScrapped = 0;
+    $costScrapped = 0;
+
+    $sqlScrapped = "
+    SELECT COUNT(*) as count_scrapped, COALESCE(SUM(mi.inventory_cost), 0) as cost_scrapped
+    FROM motorcycle_scraps ms
+    JOIN motorcycle_inventory mi ON ms.motorcycle_id = mi.id
+    WHERE ms.scrap_date BETWEEN ? AND ?
+      $brandCondition
+      $categoryCondition
+      $modelCondition
+    ";
+
+    if ($branch !== 'all') {
+        $sqlScrapped .= "
+        AND (
+            COALESCE(
+                (SELECT it.to_branch
+                 FROM inventory_transfers it
+                 WHERE it.motorcycle_id = mi.id
+                   AND it.transfer_status = 'completed'
+                   AND it.transfer_date <= ms.scrap_date
+                 ORDER BY it.transfer_date DESC, it.id DESC
+                 LIMIT 1),
+                (SELECT it.from_branch
+                 FROM inventory_transfers it
+                 WHERE it.motorcycle_id = mi.id
+                   AND it.transfer_status = 'completed'
+                 ORDER BY it.transfer_date ASC, it.id ASC
+                 LIMIT 1),
+                mi.current_branch
+            ) = ?
+        )";
+    }
+
+    $stmtScrapped = $conn->prepare($sqlScrapped);
+    $paramsScrapped = array_merge([$startDate, $endDate], $params);
+    if ($branch !== 'all') {
+        $paramsScrapped[] = strtoupper($branch);
+    }
+    bindParams($stmtScrapped, $paramsScrapped);
+
+    $stmtScrapped->execute();
+    $scrappedResult = $stmtScrapped->get_result()->fetch_assoc();
+    $countScrapped = (int)($scrappedResult['count_scrapped'] ?? 0);
+    $costScrapped = (float)($scrappedResult['cost_scrapped'] ?? 0);
+
     // === CALCULATE ENDING BALANCE (Current Month End) - FIXED ===
     $countEndingActual = 0;
     $costEndingActual = 0;
@@ -2767,8 +2815,8 @@ function getMonthlyInventory() {
     $countIn = $countNewDeliveries + $countReceivedTransfers;
     $costIn = $costNewDeliveries + $costReceivedTransfers;
     
-    $countOut = $countTransfersOut + $countSold;
-    $costOut = $costTransfersOut + $costSold;
+    $countOut = $countTransfersOut + $countSold + $countScrapped;
+    $costOut = $costTransfersOut + $costSold + $costScrapped;
     
     $countEndingCalculated = $countBeginning + $countIn - $countOut;
     $costEndingCalculated = $costBeginning + $costIn - $costOut;
@@ -2892,6 +2940,7 @@ function getMonthlyInventory() {
             'in' => $countIn,
             'transfers_out' => $countTransfersOut,
             'sold_during_month' => $countSold,
+            'scrapped_during_month' => $countScrapped,
             'out' => $countOut,
             'ending_calculated' => $countEndingCalculated,
             'ending_actual' => $countEndingActual,
@@ -2902,6 +2951,7 @@ function getMonthlyInventory() {
                 'in' => $costIn,
                 'transfers_out' => $costTransfersOut,
                 'sold_during_month' => $costSold,
+                'scrapped_during_month' => $costScrapped,
                 'out' => $costOut,
                 'ending_calculated' => $costEndingCalculated,
                 'ending_actual' => $costEndingActual
@@ -4815,40 +4865,59 @@ function revertTransaction() {
     try {
         switch ($type) {
             case 'sold':
-                
-                $conn->query("INSERT INTO motorcycle_sales_history (id, motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization, created_at) SELECT id, motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization, created_at FROM motorcycle_sales WHERE motorcycle_id = $id");
-                $conn->query("DELETE FROM motorcycle_sales WHERE motorcycle_id = $id");
-                $conn->query("UPDATE motorcycle_inventory SET status = 'available' WHERE id = $id");
+                if (!$conn->query("INSERT INTO motorcycle_sales_history (id, motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization, created_at) SELECT id, motorcycle_id, sale_date, customer_name, payment_type, dr_number, cod_amount, terms, monthly_amortization, created_at FROM motorcycle_sales WHERE motorcycle_id = $id")) {
+                    throw new Exception("Failed to archive sale record: " . $conn->error);
+                }
+                if (!$conn->query("DELETE FROM motorcycle_sales WHERE motorcycle_id = $id")) {
+                    throw new Exception("Failed to delete sale record: " . $conn->error);
+                }
+                if (!$conn->query("UPDATE motorcycle_inventory SET status = 'available' WHERE id = $id")) {
+                    throw new Exception("Failed to update inventory status: " . $conn->error);
+                }
                 $log_details = "Reverted sale for Motorcycle ID {$id}. Unit is now 'available'.";
                 break;
 
             case 'repo':
-                
                 $last_sale_query = $conn->query("SELECT * FROM motorcycle_sales_history WHERE motorcycle_id = $id ORDER BY archived_at ASC LIMIT 1");
-                if ($last_sale_query->num_rows > 0) {
+                if ($last_sale_query && $last_sale_query->num_rows > 0) {
                     $last_sale = $last_sale_query->fetch_assoc();
                     $sale_id = $last_sale['id'];
-                    $conn->query("INSERT INTO motorcycle_sales SELECT * FROM motorcycle_sales_history WHERE id = $sale_id");
-                    $conn->query("DELETE FROM motorcycle_sales_history WHERE id = $sale_id");
+                    if (!$conn->query("INSERT INTO motorcycle_sales SELECT * FROM motorcycle_sales_history WHERE id = $sale_id")) {
+                        throw new Exception("Failed to restore sale record: " . $conn->error);
+                    }
+                    if (!$conn->query("DELETE FROM motorcycle_sales_history WHERE id = $sale_id")) {
+                        throw new Exception("Failed to delete archived sale record: " . $conn->error);
+                    }
                 }
-                $conn->query("DELETE FROM motorcycle_repo_history WHERE motorcycle_id = $id");
-                $conn->query("UPDATE motorcycle_inventory SET status = 'sold', category = 'brandnew' WHERE id = $id");
+                if (!$conn->query("DELETE FROM motorcycle_repo_history WHERE motorcycle_id = $id")) {
+                    throw new Exception("Failed to delete repossession record: " . $conn->error);
+                }
+                if (!$conn->query("UPDATE motorcycle_inventory SET status = 'sold', category = 'brandnew' WHERE id = $id")) {
+                    throw new Exception("Failed to update inventory status: " . $conn->error);
+                }
                 $log_details = "Reverted repossession for Motorcycle ID {$id}. Unit is now 'sold'.";
                 break;
 
             case 'scrapped':
-                
-                $conn->query("DELETE FROM motorcycle_scraps WHERE motorcycle_id = $id");
-                $conn->query("UPDATE motorcycle_inventory SET status = 'available' WHERE id = $id");
+                if (!$conn->query("DELETE FROM motorcycle_scraps WHERE motorcycle_id = $id")) {
+                    throw new Exception("Failed to delete scrap record: " . $conn->error);
+                }
+                if (!$conn->query("UPDATE motorcycle_inventory SET status = 'available' WHERE id = $id")) {
+                    throw new Exception("Failed to update inventory status: " . $conn->error);
+                }
                 $log_details = "Reverted scrap status for Motorcycle ID {$id}. Unit is now 'available'.";
                 break;
 
             case 'redeemed':
-                
-                $conn->query("DELETE FROM motorcycle_redeems WHERE motorcycle_id = $id");
-                
-                $conn->query("DELETE FROM motorcycle_sales WHERE motorcycle_id = $id");
-                $conn->query("UPDATE motorcycle_inventory SET status = 'available', category = 'repo' WHERE id = $id");
+                if (!$conn->query("DELETE FROM motorcycle_redeems WHERE motorcycle_id = $id")) {
+                    throw new Exception("Failed to delete redemption record: " . $conn->error);
+                }
+                if (!$conn->query("DELETE FROM motorcycle_sales WHERE motorcycle_id = $id")) {
+                    throw new Exception("Failed to delete associated sale record: " . $conn->error);
+                }
+                if (!$conn->query("UPDATE motorcycle_inventory SET status = 'available', category = 'repo' WHERE id = $id")) {
+                    throw new Exception("Failed to update inventory status: " . $conn->error);
+                }
                 $log_details = "Reverted redemption for Motorcycle ID {$id}. Unit is now 'available' and 'repo'.";
                 break;
 

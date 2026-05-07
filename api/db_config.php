@@ -11,7 +11,7 @@ $dbusername = "mbc-smdi";
 $dbpassword = "mbccreations0331";
 $dbname = "smdi_website_db";
 
-$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname);
+$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, 3308);
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
