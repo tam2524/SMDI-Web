@@ -198,6 +198,11 @@ $showTabs = !isset($_GET['tab']);
         #sellPartsOutModal .modal-body {
             flex: 1 1 auto !important;
             overflow-y: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        #sellPartsOutModal .modal-body > .row {
+            flex: 1 0 auto !important;
         }
 
         #sellPartsOutModal .sale-summary-sidebar {
@@ -1333,11 +1338,11 @@ $showTabs = !isset($_GET['tab']);
                     <div class="row g-4">
 
                         <!-- LEFT: Customer & Sale Details -->
-                        <div class="col-lg-3">
+                        <div class="col-lg-3 d-flex flex-column" style="position: relative; z-index: 1002 !important;">
 
                             <!-- Sale Info Card -->
                             <div class="card border-0 shadow-sm rounded-4 mb-3"
-                                style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
+                                style="border-top: 5px solid #198754 !important; position: relative; z-index: 1005 !important; overflow: visible !important;">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">
                                         <i class="bi bi-file-earmark-text me-2"></i>Step 1: Sale Details
@@ -1351,7 +1356,7 @@ $showTabs = !isset($_GET['tab']);
                                             <div id="or_availability_feedback" class="small mt-1"></div>
                                         </div>
                                         <div class="col-12 position-relative"
-                                            style="z-index: 9999 !important; overflow: visible !important;">
+                                            style="z-index: 1006 !important; overflow: visible !important;">
                                             <label for='out_customer_name' class='small fw-bold text-muted'>Customer
                                                 Name *</label>
                                             <input type='text' class='form-control' id='out_customer_name' required
@@ -1379,8 +1384,8 @@ $showTabs = !isset($_GET['tab']);
                             </div>
 
                             <!-- Sales Force Card -->
-                            <div class="card border-0 shadow-sm rounded-4"
-                                style="border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
+                            <div class="card border-0 shadow-sm rounded-4 mt-auto mb-3 mb-lg-0"
+                                style="border-top: 5px solid #198754 !important; position: relative; z-index: 1004 !important; overflow: visible !important;">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-3 text-muted text-uppercase small">
                                         <i class="bi bi-person-badge me-2"></i>Step 2: Sales Force
@@ -1406,11 +1411,11 @@ $showTabs = !isset($_GET['tab']);
                         </div>
 
                         <!-- RIGHT: Part Search + Cart -->
-                        <div class="col-lg-9" style="position: relative; z-index: 9999 !important;">
+                        <div class="col-lg-9" style="position: relative; z-index: 1001 !important;">
 
                             <!-- Part Search Card -->
                             <div class="card border-0 shadow-sm rounded-4 mb-3"
-                                style="padding: 24px; border-top: 5px solid #198754 !important; position: relative; z-index: 9999 !important; overflow: visible !important;">
+                                style="padding: 24px; border-top: 5px solid #198754 !important; position: relative; z-index: 1003 !important; overflow: visible !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h6 class="mb-0 fw-bold text-muted text-uppercase small">
                                         <i class="bi bi-upc-scan me-2"></i>Step 3: Scan / Search Part

@@ -178,7 +178,7 @@ $(document).ready(function () {
   }, 300);
 
   
-  setInterval(checkIncomingTransfers, 1000);
+  setInterval(checkIncomingTransfers, 30000);
 
   
   $(document).on("show.bs.modal", ".modal", function () {

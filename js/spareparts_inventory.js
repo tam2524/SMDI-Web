@@ -1221,7 +1221,7 @@ $(document).ready(function () {
                         const limit = parseFloat(item.credit_limit || 0);
                         const limitFormatted = '₱' + limit.toLocaleString(undefined, { minimumFractionDigits: 2 });
                         if (!custName) return;
-                        html += `<button type="button" class="list-group-item list-group-item-action fill-sale-cu                                     data-name="${escapeHtml(custName)}" data-rank="${rank}" data-limit="${limit}" data-balance="${item.current_balance}">
+                        html += `<button type="button" class="list-group-item list-group-item-action fill-sale-customer" data-name="${escapeHtml(custName)}" data-rank="${rank}" data-limit="${limit}" data-balance="${item.current_balance}">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="fw-bold"><i class="bi bi-person text-secondary me-2"></i>${escapeHtml(custName)}</div>
                                         <div class="text-end">
