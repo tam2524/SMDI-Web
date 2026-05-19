@@ -161,6 +161,90 @@ function saveBeginningInventory()
     }
 }
 
+function editTransactionDate()
+{
+    global $conn, $isAdmin;
+
+    if (!$isAdmin) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized access. Only Admins can edit transaction dates.']);
+        return;
+    }
+
+    $id = (int)($_POST['id'] ?? 0);
+    $new_date = sanitizeInput($_POST['new_date'] ?? '');
+
+    if ($id <= 0 || empty($new_date)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid transaction ID or date.']);
+        return;
+    }
+
+    // Retrieve original transaction details
+    $txStmt = $conn->prepare("SELECT * FROM spareparts_transactions WHERE id = ? LIMIT 1");
+    $txStmt->bind_param('i', $id);
+    $txStmt->execute();
+    $tx = $txStmt->get_result()->fetch_assoc();
+    $txStmt->close();
+
+    if (!$tx) {
+        echo json_encode(['success' => false, 'message' => 'Transaction not found.']);
+        return;
+    }
+
+    $conn->begin_transaction();
+    try {
+        // 1. Update spareparts_transactions date
+        $updateStmt = $conn->prepare("UPDATE spareparts_transactions SET transaction_date = ? WHERE id = ?");
+        $updateStmt->bind_param('si', $new_date, $id);
+        $updateStmt->execute();
+        $updateStmt->close();
+
+        // 2. Sync date with spareparts_aging if it exists (for sales/ledger balance entries)
+        if (!empty($tx['or_number'])) {
+            $agingStmt = $conn->prepare("UPDATE spareparts_aging SET sale_date = ? WHERE or_number = ?");
+            $agingStmt->bind_param('ss', $new_date, $tx['or_number']);
+            $agingStmt->execute();
+            $agingStmt->close();
+            
+            // Also sync any other items in transactions with this OR number
+            $syncOrStmt = $conn->prepare("UPDATE spareparts_transactions SET transaction_date = ? WHERE or_number = ?");
+            $syncOrStmt->bind_param('ss', $new_date, $tx['or_number']);
+            $syncOrStmt->execute();
+            $syncOrStmt->close();
+        }
+
+        // 3. Sync date with spareparts_transfers if it is a transfer
+        if (!empty($tx['transfer_no'])) {
+            $transferStmt = $conn->prepare("UPDATE spareparts_transfers SET transfer_date = ? WHERE transfer_no = ?");
+            $transferStmt->bind_param('ss', $new_date, $tx['transfer_no']);
+            $transferStmt->execute();
+            $transferStmt->close();
+
+            // Also sync other items in transactions with this transfer number
+            $syncTransStmt = $conn->prepare("UPDATE spareparts_transactions SET transaction_date = ? WHERE transfer_no = ?");
+            $syncTransStmt->bind_param('ss', $new_date, $tx['transfer_no']);
+            $syncTransStmt->execute();
+            $syncTransStmt->close();
+        }
+
+        $conn->commit();
+
+        // Log audit trail
+        $details = "Updated date of transaction ID $id ({$tx['part_no']}) from {$tx['transaction_date']} to $new_date";
+        if (!empty($tx['or_number'])) {
+            $details .= " (OR #: {$tx['or_number']})";
+        }
+        if (!empty($tx['transfer_no'])) {
+            $details .= " (Transfer #: {$tx['transfer_no']})";
+        }
+        addAuditLog('UPDATE', 'spareparts_transactions', $id, $details);
+
+        echo json_encode(['success' => true, 'message' => 'Transaction date updated successfully.']);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'message' => 'Failed to update transaction date: ' . $e->getMessage()]);
+    }
+}
+
 function saveBeginningCustomerBalance()
 {
     global $conn, $currentBranch;
@@ -316,6 +400,9 @@ switch ($action) {
         break;
     case 'edit_sale':
         editSale();
+        break;
+    case 'edit_transaction_date':
+        editTransactionDate();
         break;
     case 'search_parts_global':
         searchPartsGlobal();

@@ -416,10 +416,27 @@ function showStockCard(partNo, branch) {
                 }
 
                 let displayQty = isIncoming ? '+' + Math.abs(qty) : '-' + Math.abs(qty);
+                let dateOnly = t.transaction_date.split(' ')[0];
+                let dateDisplay = dateOnly;
+                if (window.canDelete) {
+                    dateDisplay = `
+                        <div class="d-flex align-items-center gap-1">
+                            <span>${dateOnly}</span>
+                            <button class="btn btn-sm btn-link p-0 text-primary edit-tx-date-btn" 
+                                    data-id="${t.id}" 
+                                    data-date="${dateOnly}" 
+                                    data-part="${partNo}" 
+                                    data-branch="${branch}" 
+                                    title="Edit Date">
+                                <i class="bi bi-pencil-square" style="font-size: 0.85rem;"></i>
+                            </button>
+                        </div>
+                    `;
+                }
 
                 moveHtml += `
                     <tr>
-                        <td class="ps-4 py-3 text-muted">${t.transaction_date.split(' ')[0]}</td>
+                        <td class="ps-4 py-3 text-muted">${dateDisplay}</td>
                         <td class="${typeClass} fw-bold py-3"><i class="bi ${icon} me-2"></i>${typeText}</td>
                         <td class="text-center py-3 fw-bold ${typeClass}">${displayQty}</td>
                         <td class="py-3">${fromTo || '-'}</td>
@@ -518,5 +535,95 @@ $(document).ready(function() {
     $(document).on('click', '.view-stock-card-btn', function() {
         const partNo = $(this).data('part-no');
         if (partNo) showStockCard(partNo);
+    });
+
+    // Edit transaction date (For Spareparts-Admin / Admin)
+    $(document).on('click', '.edit-tx-date-btn', function(e) {
+        e.preventDefault();
+        const txId = $(this).data('id');
+        const currentDate = $(this).data('date');
+        const partNo = $(this).data('part');
+        const branch = $(this).data('branch');
+
+        Swal.fire({
+            title: 'Edit Date of Activity Log',
+            html: `
+                <div class="text-start p-2">
+                    <label class="form-label fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.75rem;">New Transaction Date</label>
+                    <input type="date" id="swalTxDate" class="form-control form-control-lg border-2" value="${currentDate}" style="border-radius: 8px;">
+                    <p class="text-muted small mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>Note: Editing this date will update the logs and synchronize it across any linked sale aging entries or transfer entries.</p>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-check-circle me-1"></i>Save Changes',
+            confirmButtonColor: '#004d40',
+            cancelButtonText: 'Cancel',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                confirmButton: 'px-4 py-2 rounded-pill fw-bold',
+                cancelButton: 'px-4 py-2 rounded-pill fw-bold'
+            },
+            preConfirm: () => {
+                const newDate = $('#swalTxDate').val();
+                if (!newDate) {
+                    Swal.showValidationMessage('Please select a valid date.');
+                    return false;
+                }
+                return newDate;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const newDate = result.value;
+                
+                // Show loading spinner
+                Swal.fire({
+                    title: 'Updating transaction date...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: '../api/spareparts_inventory.php',
+                    type: 'POST',
+                    data: {
+                        action: 'edit_transaction_date',
+                        id: txId,
+                        new_date: newDate
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: response.message,
+                                icon: 'success',
+                                confirmButtonColor: '#004d40',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                // Refresh the stock card modal view without page reload
+                                showStockCard(partNo, branch);
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: response.message,
+                                icon: 'error',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Failed to communicate with the server.',
+                            icon: 'error',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                });
+            }
+        });
     });
 });
