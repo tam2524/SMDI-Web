@@ -62,6 +62,16 @@ if ($colCheck && $colCheck->num_rows == 0) {
     $conn->query("ALTER TABLE spareparts_returns ADD COLUMN part_no VARCHAR(100) DEFAULT '' AFTER or_number");
 }
 
+$conn->query("
+CREATE TABLE IF NOT EXISTS spareparts_settings (
+    setting_key VARCHAR(100) PRIMARY KEY,
+    setting_value TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)
+");
+// Insert default if not exists
+$conn->query("INSERT IGNORE INTO spareparts_settings (setting_key, setting_value) VALUES ('credit_limit_enabled', '1')");
+
 $action = $_GET['action'] ?? '';
 $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 $userRole = $_SESSION['position'] ?? $_SESSION['user_role'] ?? 'user';
@@ -334,6 +344,31 @@ switch ($action) {
         } catch (Exception $e) {
             $conn->rollback();
             echo json_encode(['success' => false, 'message' => 'Return failed: ' . $e->getMessage()]);
+        }
+        break;
+
+    case 'get_setting':
+        $key = $_GET['key'] ?? '';
+        $stmt = $conn->prepare("SELECT setting_value FROM spareparts_settings WHERE setting_key = ?");
+        $stmt->bind_param('s', $key);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        echo json_encode(["success" => true, "value" => $res ? $res['setting_value'] : null]);
+        break;
+
+    case 'update_setting':
+        if (!$isAdmin) {
+            echo json_encode(["success" => false, "message" => "Unauthorized"]);
+            break;
+        }
+        $key = $_POST['key'] ?? '';
+        $value = $_POST['value'] ?? '';
+        $stmt = $conn->prepare("INSERT INTO spareparts_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+        $stmt->bind_param('sss', $key, $value, $value);
+        if ($stmt->execute()) {
+            echo json_encode(["success" => true, "message" => "Setting updated"]);
+        } else {
+            echo json_encode(["success" => false, "message" => "Failed to update setting"]);
         }
         break;
 

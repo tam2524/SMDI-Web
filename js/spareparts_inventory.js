@@ -1345,6 +1345,7 @@ $(document).ready(function () {
         $('#sellPartsOutModal').on('show.bs.modal', function () {
             $('#customerSelectionInfo').remove();
             $('#out_sales_force_info').remove();
+            $('#pos-discount').val('0.00');
             setTimeout(() => {
                 $('#out_transaction_type').trigger('change');
             }, 50);
@@ -1441,12 +1442,12 @@ $(document).ready(function () {
                 let html = '';
                 if (response.success && Array.isArray(response.data)) {
                     response.data.forEach(item => {
-                        const displayCost = parseFloat(item.cost || 0);
+                        const displayPrice = parseFloat(item.price || 0);
                         html += `<button type="button" class="list-group-item list-group-item-action add-to-sale-cart" 
                             data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}'>
                             <div class="d-flex justify-content-between">
                                 <strong>${item.part_no}</strong>
-                                <small class="text-muted">Cost: ₱${formatCurrency(displayCost)}</small>
+                                <small class="text-success fw-bold">Price: ₱${formatCurrency(displayPrice)}</small>
                             </div>
                             <div class="small">${item.description} (${item.current_stock} available)</div>
                         </button>`;
@@ -1471,9 +1472,9 @@ $(document).ready(function () {
                     renderSaleCart();
                 }
             } else {
-                // Auto-fill unit price with the item's cost (user can still edit it manually)
-                const costPrice = parseFloat(item.cost || 0);
-                const newItem = { ...item, quantity: 1, price: costPrice };
+                // Auto-fill unit price with the item's selling price (user can still edit it manually)
+                const sellingPrice = parseFloat(item.price || 0);
+                const newItem = { ...item, quantity: 1, price: sellingPrice };
                 saleCart.push(newItem);
                 renderSaleCart();
             }
@@ -1519,8 +1520,15 @@ $(document).ready(function () {
                     `);
                 });
             }
-            $('#pos-grand-total').text('₱' + formatCurrency(grandTotal));
+            
+            const discount = parseFloat($('#pos-discount').val()) || 0;
+            const finalTotal = Math.max(0, grandTotal - discount);
+            $('#pos-grand-total').text('₱' + formatCurrency(finalTotal));
         }
+
+        $(document).on('input', '#pos-discount', function() {
+            renderSaleCart();
+        });
 
         $(document).on('change', '.sale-qty-input', function () {
             const index = $(this).data('index');
@@ -1618,6 +1626,7 @@ $(document).ready(function () {
                 pdc_maturity_date: $('input[name="pdc_maturity_date"]').val(),
                 pdc_amount: $('input[name="pdc_amount"]').val(),
                 pdc_remarks: $('textarea[name="pdc_remarks"]').val(),
+                discount: $('#pos-discount').val() || 0,
                 items: JSON.stringify(saleCart.map(p => ({ id: p.id, part_no: p.part_no, description: p.description, quantity: p.quantity, price: p.price })))
             };
 
@@ -1625,6 +1634,7 @@ $(document).ready(function () {
                 if (response.success) {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('sellPartsOutModal')).hide();
                     $('input[name="pdc_bank"], input[name="pdc_check_no"], input[name="pdc_maturity_date"], input[name="pdc_amount"], textarea[name="pdc_remarks"]').val('');
+                    $('#pos-discount').val('0.00');
 
                     // Generate and show receipt
                     renderSaleReceipt(saleData, saleCart);
@@ -1702,9 +1712,15 @@ $(document).ready(function () {
                     </table>
 
                     <div style="border-top: 1px dashed #000; padding-top: 10px;">
+                        ${parseFloat(data.discount) > 0 ? `
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; color: #dc3545;">
+                            <span>DISCOUNT:</span>
+                            <span>-₱${formatCurrency(data.discount)}</span>
+                        </div>
+                        ` : ''}
                         <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold;">
                             <span>GRAND TOTAL:</span>
-                            <span>₱${formatCurrency(grandTotal)}</span>
+                            <span>₱${formatCurrency(Math.max(0, grandTotal - (parseFloat(data.discount) || 0)))}</span>
                         </div>
                     </div>
 

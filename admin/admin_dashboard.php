@@ -185,6 +185,7 @@
                 <button class="nav-link" id="sales-tab" data-bs-toggle="tab" data-bs-target="#sales" type="button"
                     role="tab" aria-controls="sales" aria-selected="false">Sales</button>
             </li>
+
         </ul>
 
         <!-- Tab Content -->
@@ -988,6 +989,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
 
 

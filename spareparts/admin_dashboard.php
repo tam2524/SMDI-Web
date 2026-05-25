@@ -771,6 +771,10 @@ function isVisible($menuId)
                                 onclick="loadInvoiceSequences()"><i class="bi bi-123 me-2"></i>Invoice
                                 Sequences</button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold py-3" id="system-settings-tab" data-bs-toggle="tab"
+                                data-bs-target="#system-settings-pane" type="button" role="tab"><i class="bi bi-gear me-2"></i>System Settings</button>
+                        </li>
                     </ul>
                     <div class="tab-content" id="settingsTabsContent">
 
@@ -823,6 +827,20 @@ function isVisible($menuId)
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        <!-- System Settings Tab Pane -->
+                        <div class="tab-pane fade p-4" id="system-settings-pane" role="tabpanel" tabindex="0">
+                            <div class="card border shadow-sm rounded-3">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-1">Customer Credit Limit Enforcement</h6>
+                                    <p class="text-muted small mb-3">Enable or disable credit limit validation during charge and PDC sales across all branches.</p>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input fs-5" type="checkbox" id="toggleCreditLimit">
+                                        <label class="form-check-label pt-1 ms-2" for="toggleCreditLimit">Enable Credit Limit Validation</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1043,6 +1061,46 @@ function isVisible($menuId)
                     updateInventorySummaryByBranch();
                     updatePendingTransfers();
                 }, 30000);
+
+                // Load Credit Limit Setting
+                if ($('#toggleCreditLimit').length) {
+                    $.get('../api/sales_features_api.php?action=get_setting&key=credit_limit_enabled', function(res) {
+                        try {
+                            const response = typeof res === 'string' ? JSON.parse(res) : res;
+                            if (response.success && response.value !== null) {
+                                $('#toggleCreditLimit').prop('checked', response.value === '1');
+                            } else {
+                                $('#toggleCreditLimit').prop('checked', true); // Default
+                            }
+                        } catch(e) {}
+                    });
+
+                    // Save Credit Limit Setting
+                    $('#toggleCreditLimit').on('change', function() {
+                        const isEnabled = $(this).is(':checked') ? '1' : '0';
+                        $.post('../api/sales_features_api.php?action=update_setting', {
+                            key: 'credit_limit_enabled',
+                            value: isEnabled
+                        }, function(res) {
+                            try {
+                                const response = typeof res === 'string' ? JSON.parse(res) : res;
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: 'Updated!',
+                                        text: 'Credit limit setting saved successfully.',
+                                        icon: 'success',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    });
+                                } else {
+                                    Swal.fire('Error', response.message || 'Failed to update setting', 'error');
+                                }
+                            } catch(e) {
+                                Swal.fire('Error', 'Invalid server response', 'error');
+                            }
+                        });
+                    });
+                }
             });
         </script>
 </body>

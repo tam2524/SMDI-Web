@@ -2056,6 +2056,7 @@ function sellMultiplePartsOut()
     $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS sales_force VARCHAR(150) DEFAULT NULL");
     $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT NULL");
     $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS check_date DATE DEFAULT NULL");
+    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS discount DECIMAL(10,2) DEFAULT 0");
 
     $items = json_decode($_POST['items'], true);
     $or_number = sanitizeInput($_POST['or_number']);
@@ -2063,6 +2064,7 @@ function sellMultiplePartsOut()
     $date = sanitizeInput($_POST['date']);
     $transaction_type = sanitizeInput($_POST['transaction_type']);
     $sales_force = sanitizeInput($_POST['sales_force'] ?? '');
+    $discount = isset($_POST['discount']) ? (float)$_POST['discount'] : 0;
     
     // Captured fields for PDC
     $payment_method = sanitizeInput($_POST['payment_method'] ?? 'Cash');
@@ -2084,33 +2086,43 @@ function sellMultiplePartsOut()
 
     // Server-side Credit Limit Validation for Charge/PDC sales
     if ($transaction_type === 'charge' || $payment_method === 'PDC') {
-        // Fetch customer credit limit
-        $stmt_l = $conn->prepare("SELECT credit_limit FROM spareparts_customers WHERE name = ? AND branch = ? LIMIT 1");
-        $stmt_l->bind_param('ss', $customer_name, $currentBranch);
-        $stmt_l->execute();
-        $res_l = $stmt_l->get_result()->fetch_assoc();
-        $limit = (float)($res_l['credit_limit'] ?? 0);
+        // Check if credit limit enforcement is enabled globally
+        $clSetting = $conn->query("SELECT setting_value FROM spareparts_settings WHERE setting_key = 'credit_limit_enabled' LIMIT 1");
+        $clEnabled = true;
+        if ($clSetting && $clRow = $clSetting->fetch_assoc()) {
+            $clEnabled = ($clRow['setting_value'] !== '0');
+        }
 
-        if ($limit > 0) {
-            // Fetch current outstanding balance
-            $stmt_b = $conn->prepare("SELECT SUM(balance) as current_balance FROM spareparts_aging WHERE customer_name = ? AND status = 'Active' AND branch = ?");
-            $stmt_b->bind_param('ss', $customer_name, $currentBranch);
-            $stmt_b->execute();
-            $res_b = $stmt_b->get_result()->fetch_assoc();
-            $current_balance = (float)($res_b['current_balance'] ?? 0);
+        if ($clEnabled) {
+            // Fetch customer credit limit
+            $stmt_l = $conn->prepare("SELECT credit_limit FROM spareparts_customers WHERE name = ? AND branch = ? LIMIT 1");
+            $stmt_l->bind_param('ss', $customer_name, $currentBranch);
+            $stmt_l->execute();
+            $res_l = $stmt_l->get_result()->fetch_assoc();
+            $limit = (float)($res_l['credit_limit'] ?? 0);
 
-            $total_sale_est = 0;
-            foreach ($items as $item) {
-                $total_sale_est += ($item['quantity'] * $item['price']);
-            }
+            if ($limit > 0) {
+                // Fetch current outstanding balance
+                $stmt_b = $conn->prepare("SELECT SUM(balance) as current_balance FROM spareparts_aging WHERE customer_name = ? AND status = 'Active' AND branch = ?");
+                $stmt_b->bind_param('ss', $customer_name, $currentBranch);
+                $stmt_b->execute();
+                $res_b = $stmt_b->get_result()->fetch_assoc();
+                $current_balance = (float)($res_b['current_balance'] ?? 0);
 
-            if (($current_balance + $total_sale_est) > $limit) {
-                $excess = ($current_balance + $total_sale_est) - $limit;
-                echo json_encode([
-                    'success' => false, 
-                    'message' => "Credit Limit Exceeded! \nLimit: PHP " . number_format($limit, 2) . "\nCurrent Bal: PHP " . number_format($current_balance, 2) . "\nThis Sale: PHP " . number_format($total_sale_est, 2) . "\nExceeds by PHP " . number_format($excess, 2)
-                ]);
-                return;
+                $total_sale_est = 0;
+                foreach ($items as $item) {
+                    $total_sale_est += ($item['quantity'] * $item['price']);
+                }
+                $total_sale_est = max(0, $total_sale_est - $discount);
+
+                if (($current_balance + $total_sale_est) > $limit) {
+                    $excess = ($current_balance + $total_sale_est) - $limit;
+                    echo json_encode([
+                        'success' => false, 
+                        'message' => "Credit Limit Exceeded! \nLimit: PHP " . number_format($limit, 2) . "\nCurrent Bal: PHP " . number_format($current_balance, 2) . "\nThis Sale: PHP " . number_format($total_sale_est, 2) . "\nExceeds by PHP " . number_format($excess, 2)
+                    ]);
+                    return;
+                }
             }
         }
     }
@@ -2118,6 +2130,7 @@ function sellMultiplePartsOut()
     $conn->begin_transaction();
     try {
         $total_sale_amount = 0;
+        $isFirstItem = true;
         foreach ($items as $item) {
             $part_no = sanitizeInput($item['part_no']);
             $description = sanitizeInput($item['description'] ?? '');
@@ -2134,13 +2147,18 @@ function sellMultiplePartsOut()
             if ($stmt->affected_rows === 0)
                 throw new Exception("Part $part_no not found or insufficient stock.");
 
-            // Log transaction
+            // Log transaction - put the entire discount on the first item to avoid duplicating the discount across rows in sums
+            $item_discount = $isFirstItem ? $discount : 0;
+            $isFirstItem = false;
+
             $division = getCurrentDivision();
-            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force, category, payment_method, check_date) 
-                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssssiddsssss', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division, $payment_method, $check_date);
+            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force, category, payment_method, check_date, discount) 
+                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssssiddsssssd', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division, $payment_method, $check_date, $item_discount);
             $stmt->execute();
         }
+        
+        $total_sale_amount = max(0, $total_sale_amount - $discount);
 
         // Add to aging if charge
         if ($transaction_type === 'charge') {
@@ -2780,15 +2798,15 @@ function editPart()
             }
         }
 
-        // Update history (cascading part_no, brand, description, and price)
+        // Update history (cascade ONLY part_no, brand, description — NOT price/total_amount to preserve historical sale values)
         $updHist = $isAdmin
-            ? $conn->prepare("UPDATE spareparts_transactions SET price = ?, total_amount = quantity * ?, part_no = ?, brand = ?, description = ? WHERE part_no = ?")
-            : $conn->prepare("UPDATE spareparts_transactions SET price = ?, total_amount = quantity * ?, part_no = ?, brand = ?, description = ? WHERE part_no = ? AND from_location = ?");
+            ? $conn->prepare("UPDATE spareparts_transactions SET part_no = ?, brand = ?, description = ? WHERE part_no = ?")
+            : $conn->prepare("UPDATE spareparts_transactions SET part_no = ?, brand = ?, description = ? WHERE part_no = ? AND from_location = ?");
 
         if ($isAdmin) {
-            $updHist->bind_param('ddssss', $price, $price, $part_no, $brand, $description, $oldPNo);
+            $updHist->bind_param('ssss', $part_no, $brand, $description, $oldPNo);
         } else {
-            $updHist->bind_param('ddsssss', $price, $price, $part_no, $brand, $description, $oldPNo, $currentBranch);
+            $updHist->bind_param('sssss', $part_no, $brand, $description, $oldPNo, $currentBranch);
         }
         $updHist->execute();
 

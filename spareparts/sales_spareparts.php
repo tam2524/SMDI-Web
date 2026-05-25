@@ -1466,7 +1466,13 @@ $showTabs = !isset($_GET['tab']);
                                 </div>
                                 <!-- Grand Total Footer -->
                                 <div class="card-footer bg-white py-3 px-4">
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-muted fw-semibold">Discount (₱)</span>
+                                        <div style="width: 150px;">
+                                            <input type="number" id="pos-discount" class="form-control text-end" value="0.00" step="0.01" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center border-top pt-2">
                                         <span class="text-muted fw-semibold">Grand Total</span>
                                         <span id="pos-grand-total" class="fw-bold fs-4 text-success">₱0.00</span>
                                     </div>
