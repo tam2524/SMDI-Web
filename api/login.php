@@ -10,6 +10,8 @@ $stmt->execute();
 
 $result = $stmt->get_result();
 
+$isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') || (isset($_POST['ajax']) && $_POST['ajax'] == 1);
+
 if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
 
@@ -21,71 +23,81 @@ if ($result->num_rows > 0) {
         $_SESSION['report_header_title'] = $user['report_header_title'] ?? 'ROXAS CITY SOLID MERCHANDISING';
         $position = trim($user['position']);
 
+        $redirectUrl = "../login.html";
         switch ($position) {
             case 'IT Staff':
             case 'Admin':
-                // header("Location: ../under_repair.html");
-                header("Location: ../admin/admin_dashboard.php");
+                $redirectUrl = "../admin/admin_dashboard.php";
                 break;
             case 'Head':
             case 'Branch Manager':
-                header("Location: ../staff/staff_dashboard.html");
+                $redirectUrl = "../staff/staff_dashboard.html";
                 break;
             case 'Liaison':
-                header("Location: ../liaison/liaison_dashboard.php");
+                $redirectUrl = "../liaison/liaison_dashboard.php";
                 break;
             case 'Sales':
-                header("Location: ../sales/sales_dashboard.php");
+                $redirectUrl = "../sales/sales_dashboard.php";
                 break;
             case 'BM':
-                header("Location: ../inventory/branch_inventory.php");
-                // header("Location: ../under_repair.html");
+                $redirectUrl = "../inventory/branch_inventory.php";
                 break;
             case 'Inventory':
-                header("Location: ../inventory/headoffice_inventory.php");
-                // header("Location: ../under_repair.html");
+                $redirectUrl = "../inventory/headoffice_inventory.php";
                 break;
             case 'Admin Inventory':
-                header("Location: ../inventory/admin_inventory.php");
-                // header("Location: ../under_repair.html");
+                $redirectUrl = "../inventory/admin_inventory.php";
                 break;
             case 'Spareparts-Warehouse':
-                header("Location: ../spareparts/warehouse_dashboard.php");
+                $redirectUrl = "../spareparts/warehouse_dashboard.php";
                 break;
             case 'Spareparts-Sales':
-                header("Location: ../spareparts/sales_dashboard.php");
+                $redirectUrl = "../spareparts/sales_dashboard.php";
                 break;
             case 'Spareparts-Retail':
-                header("Location: ../spareparts/sales_dashboard.php");
+                $redirectUrl = "../spareparts/sales_dashboard.php";
                 break;
             case 'Spareparts-Owner':
-                header("Location: ../spareparts/owner_dashboard.php");
+                $redirectUrl = "../spareparts/owner_dashboard.php";
                 break;
             case 'Spareparts-Admin':
-                header("Location: ../spareparts/admin_dashboard.php");
+                $redirectUrl = "../spareparts/admin_dashboard.php";
                 break;
             case 'Disable':
-                header("Location: ../under_repair.html");
+                $redirectUrl = "../under_repair.html";
                 break;
             default:
-                // Fallback if no matching case
-                header("Location: ../login.html");
+                $redirectUrl = "../login.html";
                 break;
+        }
+
+        if ($isAjax) {
+            echo json_encode(['success' => true, 'redirect' => $redirectUrl]);
+        } else {
+            header("Location: " . $redirectUrl);
         }
         exit();
     }
     else {
-        echo '<script>
-            alert("Invalid password");
-            window.location.href = "../login.html";
-        </script>';
+        if ($isAjax) {
+            echo json_encode(['success' => false, 'message' => 'Invalid password']);
+        } else {
+            echo '<script>
+                alert("Invalid password");
+                window.location.href = "../login.html";
+            </script>';
+        }
     }
 }
 else {
-    echo '<script>
-        alert("User not found");
-        window.location.href = "../login.html";
-    </script>';
+    if ($isAjax) {
+        echo json_encode(['success' => false, 'message' => 'User not found']);
+    } else {
+        echo '<script>
+            alert("User not found");
+            window.location.href = "../login.html";
+        </script>';
+    }
 }
 
 $stmt->close();
