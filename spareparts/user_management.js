@@ -208,7 +208,13 @@ function openReportHeadersModal() {
                     tbody.innerHTML = '<tr><td colspan="2" class="text-center py-3 text-muted">No users found</td></tr>';
                     return;
                 }
+                let renderedCount = 0;
                 data.users.forEach(user => {
+                    const pos = (user.position || '').toLowerCase().trim();
+                    if (pos !== 'spareparts-sales' && pos !== 'spareparts-warehouse') {
+                        return;
+                    }
+                    renderedCount++;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td class="ps-3 align-middle fw-bold">${user.username} <small class="text-muted d-block" style="font-size:0.8em;">${user.position} | ${user.branch || 'HEADOFFICE'}</small></td>
@@ -221,6 +227,9 @@ function openReportHeadersModal() {
                     `;
                     tbody.appendChild(tr);
                 });
+                if (renderedCount === 0) {
+                    tbody.innerHTML = '<tr><td colspan="2" class="text-center py-3 text-muted">No Sales or Warehouse users found</td></tr>';
+                }
             } else {
                 tbody.innerHTML = `<tr><td colspan="2" class="text-center py-3 text-danger">${data.message || 'Failed to load users'}</td></tr>`;
             }
