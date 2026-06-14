@@ -6,7 +6,13 @@
 @media print {
     @page {
         size: auto;
-        margin: 15mm 10mm 15mm 10mm;
+        margin: 15mm 10mm 20mm 10mm;
+        @bottom-center {
+            content: "Page " counter(page);
+            font-size: 8pt;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            color: #555;
+        }
     }
 
     body {
@@ -163,17 +169,6 @@
         border: none !important;
     }
 
-    /* Dynamic Page Numbering Footer */
-    body::after {
-        content: "Page " counter(page);
-        counter-increment: page;
-        position: fixed;
-        bottom: -5mm;
-        right: 0;
-        font-size: 8pt;
-        color: #777;
-        font-family: inherit;
-    }
 
     /* Signatories and Footer container - avoid orphans/splitting */
     .summary-and-footer-container,

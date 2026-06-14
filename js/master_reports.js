@@ -657,7 +657,16 @@ $(document).ready(function () {
         <head>
             <title>Statement of Account - ${customerName}</title>
             <style>
-                @page { size: portrait; margin: 15mm 10mm; }
+                @page {
+                    size: portrait;
+                    margin: 15mm 10mm 20mm 10mm;
+                    @bottom-center {
+                        content: "Page " counter(page);
+                        font-size: 8pt;
+                        font-family: 'Segoe UI', Arial, sans-serif;
+                        color: #555;
+                    }
+                }
                 body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; margin: 20px; font-size: 10pt; }
                 .report-header-print { text-align: center; border-bottom: 3px double #004d40; padding-bottom: 15px; margin-bottom: 25px; display: block; width: 100%; }
                 .report-header-print .company-name { font-size: 18pt; font-weight: 800; color: #004d40; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
@@ -687,16 +696,6 @@ $(document).ready(function () {
                 
                 @media print {
                     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                    body::after {
-                        content: "Page " counter(page);
-                        counter-increment: page;
-                        position: fixed;
-                        bottom: -10px;
-                        right: 0;
-                        font-size: 8pt;
-                        color: #777;
-                        font-family: inherit;
-                    }
                 }
             </style>
         </head>
@@ -805,7 +804,16 @@ $(document).ready(function () {
                 <title>Receiving Report - ${reference}</title>
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
-                    @page { size: portrait; margin: 15mm 10mm; }
+                    @page {
+                        size: portrait;
+                        margin: 15mm 10mm 20mm 10mm;
+                        @bottom-center {
+                            content: "Page " counter(page);
+                            font-size: 8pt;
+                            font-family: 'Inter', sans-serif;
+                            color: #555;
+                        }
+                    }
                     body { font-family: 'Inter', 'Segoe UI', sans-serif; color: #333; margin: 20px; font-size: 10pt; }
                     
                     .report-header { text-align: center; border-bottom: 3px double #004d40; padding-bottom: 15px; margin-bottom: 25px; }
@@ -840,16 +848,6 @@ $(document).ready(function () {
                     @media print {
                         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                         body { margin: 0; }
-                        body::after {
-                            content: "Page " counter(page);
-                            counter-increment: page;
-                            position: fixed;
-                            bottom: -10px;
-                            right: 0;
-                            font-size: 8pt;
-                            color: #777;
-                            font-family: inherit;
-                        }
                     }
                 </style>
             </head>
@@ -965,7 +963,16 @@ $(document).ready(function () {
                 <title>${reportTitle} - ${reference}</title>
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-                    @page { size: portrait; margin: 15mm 10mm; }
+                    @page {
+                        size: portrait;
+                        margin: 15mm 10mm 20mm 10mm;
+                        @bottom-center {
+                            content: "Page " counter(page);
+                            font-size: 8pt;
+                            font-family: 'Inter', sans-serif;
+                            color: #555;
+                        }
+                    }
                     body { font-family: 'Inter', sans-serif; color: #333; margin: 20px; font-size: 10pt; }
                     
                     .header { text-align: center; margin-bottom: 20px; }
@@ -995,16 +1002,6 @@ $(document).ready(function () {
                     
                     @media print {
                         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        body::after {
-                            content: "Page " counter(page);
-                            counter-increment: page;
-                            position: fixed;
-                            bottom: -10px;
-                            right: 0;
-                            font-size: 8pt;
-                            color: #777;
-                            font-family: inherit;
-                        }
                     }
                 </style>
             </head>
