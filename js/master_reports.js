@@ -678,14 +678,25 @@ $(document).ready(function () {
                 td { font-size: 9pt; vertical-align: middle; border: 1px solid #ddd !important; padding: 6px 8px; }
                 td code { border: none !important; padding: 0 !important; font-weight: bold; background: none !important; color: #000 !important; font-family: inherit; }
                 
-                .sig-section { margin-top: 40px; display: flex; width: 100%; }
+                .sig-section { margin-top: 25px; display: flex; width: 100%; }
                 .sig-box { flex: 1; text-align: center; }
-                .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 40px auto 5px auto; }
+                .sig-line { border-bottom: 1.5px solid #000; width: 80%; margin: 30px auto 5px auto; }
                 .sig-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #555; }
-                .footer-stamp { text-align: center; font-size: 8pt; font-style: italic; color: #777; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }
+                .footer-stamp { text-align: center; font-size: 8pt; font-style: italic; color: #777; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+                .sig-and-footer-wrap { page-break-inside: avoid !important; break-inside: avoid !important; page-break-before: avoid !important; break-before: avoid !important; }
                 
                 @media print {
                     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    body::after {
+                        content: "Page " counter(page);
+                        counter-increment: page;
+                        position: fixed;
+                        bottom: -10px;
+                        right: 0;
+                        font-size: 8pt;
+                        color: #777;
+                        font-family: inherit;
+                    }
                 }
             </style>
         </head>
@@ -723,21 +734,23 @@ $(document).ready(function () {
                 </tbody>
             </table>
             
-            <div class="sig-section">
-                <div class="sig-box">
-                    <div class="sig-line"></div>
-                    <div class="sig-label">Prepared By</div>
-                    <div style="font-size: 7.5pt; color: #777;">Authorized Personnel</div>
+            <div class="sig-and-footer-wrap">
+                <div class="sig-section">
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Prepared By</div>
+                        <div style="font-size: 7.5pt; color: #777;">Authorized Personnel</div>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Noted / Received By</div>
+                        <div style="font-size: 7.5pt; color: #777;">Customer / Representative</div>
+                    </div>
                 </div>
-                <div class="sig-box">
-                    <div class="sig-line"></div>
-                    <div class="sig-label">Noted / Received By</div>
-                    <div style="font-size: 7.5pt; color: #777;">Customer / Representative</div>
+                
+                <div class="footer-stamp">
+                    This is a system-generated statement. Please settle outstanding balances to maintain your good credit standing.
                 </div>
-            </div>
-            
-            <div class="footer-stamp">
-                This is a system-generated statement. Please settle outstanding balances to maintain your good credit standing.
             </div>
         </body>
         </html>
@@ -816,16 +829,27 @@ $(document).ready(function () {
                     .total-row { background-color: #fdfdfd; font-weight: 800; }
                     .total-label { text-align: right; text-transform: uppercase; padding-right: 20px; }
                     
-                    .sig-container { margin-top: 80px; display: table; width: 100%; }
+                    .sig-container { margin-top: 35px; display: table; width: 100%; }
                     .sig-box { display: table-cell; width: 33.33%; text-align: center; }
                     .sig-line { border-bottom: 1.5px solid #000; width: 85%; margin: 0 auto 8px auto; }
                     .sig-text { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; color: #444; }
                     
-                    .footer-note { text-align: center; font-size: 8.5pt; font-style: italic; color: #888; margin-top: 60px; border-top: 1px solid #eee; padding-top: 15px; }
+                    .footer-note { text-align: center; font-size: 8.5pt; font-style: italic; color: #888; margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; }
+                    .sig-and-footer-wrap { page-break-inside: avoid !important; break-inside: avoid !important; page-break-before: avoid !important; break-before: avoid !important; }
                     
                     @media print {
                         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                         body { margin: 0; }
+                        body::after {
+                            content: "Page " counter(page);
+                            counter-increment: page;
+                            position: fixed;
+                            bottom: -10px;
+                            right: 0;
+                            font-size: 8pt;
+                            color: #777;
+                            font-family: inherit;
+                        }
                     }
                 </style>
             </head>
@@ -876,23 +900,25 @@ $(document).ready(function () {
                     </tbody>
                 </table>
                 
-                <div class="sig-container">
-                    <div class="sig-box">
-                        <div class="sig-line"></div>
-                        <div class="sig-text">Prepared By</div>
+                <div class="sig-and-footer-wrap">
+                    <div class="sig-container">
+                        <div class="sig-box">
+                            <div class="sig-line"></div>
+                            <div class="sig-text">Prepared By</div>
+                        </div>
+                        <div class="sig-box">
+                            <div class="sig-line"></div>
+                            <div class="sig-text">Verified By</div>
+                        </div>
+                        <div class="sig-box">
+                            <div class="sig-line"></div>
+                            <div class="sig-text">Approved By</div>
+                        </div>
                     </div>
-                    <div class="sig-box">
-                        <div class="sig-line"></div>
-                        <div class="sig-text">Verified By</div>
+                    
+                    <div class="footer-note">
+                        This is a system-generated document and does not require a physical signature for validity.
                     </div>
-                    <div class="sig-box">
-                        <div class="sig-line"></div>
-                        <div class="sig-text">Authorized Signature</div>
-                    </div>
-                </div>
-                
-                <div class="footer-note">
-                    This is a system-generated Receiving Report summary.
                 </div>
             </body>
             </html>
@@ -959,12 +985,27 @@ $(document).ready(function () {
                     table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1.5px solid #333; }
                     th { background: #fdfdfd; border: 1px solid #333; padding: 10px; text-align: left; font-size: 9pt; text-transform: uppercase; font-weight: 800; }
                     
-                    .footer-sigs { margin-top: 60px; width: 100%; display: table; }
+                    .footer-sigs { margin-top: 30px; width: 100%; display: table; }
                     .sig-box { display: table-cell; width: 50%; text-align: center; }
                     .sig-line { border-bottom: 1.5px solid #333; width: 80%; margin: 0 auto 5px auto; }
                     .sig-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #666; }
                     
-                    .footer-note { text-align: center; font-size: 7.5pt; color: #999; margin-top: 60px; }
+                    .footer-note { text-align: center; font-size: 7.5pt; color: #999; margin-top: 30px; }
+                    .sig-and-footer-wrap { page-break-inside: avoid !important; break-inside: avoid !important; page-break-before: avoid !important; break-before: avoid !important; }
+                    
+                    @media print {
+                        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        body::after {
+                            content: "Page " counter(page);
+                            counter-increment: page;
+                            position: fixed;
+                            bottom: -10px;
+                            right: 0;
+                            font-size: 8pt;
+                            color: #777;
+                            font-family: inherit;
+                        }
+                    }
                 </style>
             </head>
             <body onload="window.print();">
@@ -1003,19 +1044,21 @@ $(document).ready(function () {
                     </tbody>
                 </table>
                 
-                <div class="footer-sigs">
-                    <div class="sig-box">
-                        <div class="sig-line" style="margin-top: 40px;"></div>
-                        <div class="sig-label">RELEASED BY</div>
+                <div class="sig-and-footer-wrap">
+                    <div class="footer-sigs">
+                        <div class="sig-box">
+                            <div class="sig-line" style="margin-top: 30px;"></div>
+                            <div class="sig-label">RELEASED BY</div>
+                        </div>
+                        <div class="sig-box">
+                            <div class="sig-line" style="margin-top: 30px;"></div>
+                            <div class="sig-label">RECEIVED / ACCEPTED BY</div>
+                        </div>
                     </div>
-                    <div class="sig-box">
-                        <div class="sig-line" style="margin-top: 40px;"></div>
-                        <div class="sig-label">RECEIVED / ACCEPTED BY</div>
+                    
+                    <div class="footer-note">
+                        Generated by Spare Parts Management System © 2026
                     </div>
-                </div>
-                
-                <div class="footer-note">
-                    Generated by Spare Parts Management System © 2026
                 </div>
             </body>
             </html>

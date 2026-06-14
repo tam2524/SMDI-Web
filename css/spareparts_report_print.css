@@ -162,4 +162,30 @@
     .print-no-border {
         border: none !important;
     }
+
+    /* Dynamic Page Numbering Footer */
+    body::after {
+        content: "Page " counter(page);
+        counter-increment: page;
+        position: fixed;
+        bottom: -5mm;
+        right: 0;
+        font-size: 8pt;
+        color: #777;
+        font-family: inherit;
+    }
+
+    /* Signatories and Footer container - avoid orphans/splitting */
+    .summary-and-footer-container,
+    #dynamicPrintFooter,
+    .print-footer-layout,
+    .signature-section,
+    .sig-section,
+    .sig-container,
+    .footer-sigs {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+    }
 }

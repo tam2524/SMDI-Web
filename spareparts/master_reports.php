@@ -626,30 +626,33 @@ if ($position === 'Spareparts-Owner') {
                         </table>
                     </div>
 
-                    <div class="mt-4 p-3 bg-white border rounded shadow-sm d-flex justify-content-between"
-                        id="reportSummaryBox">
-                        <!-- Summary stats here -->
-                    </div>
-
-                    <!-- Dynamic Print Footer -->
-                    <div class="d-none d-print-block mt-5 pt-5 text-center" id="dynamicPrintFooter">
-                        <div style="display: flex; justify-content: space-around; margin-top: 50px;">
-                            <div style="width: 250px;">
-                                <div style="border-bottom: 1.5px solid #000; height: 30px; margin-bottom: 5px;"></div>
-                                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;">PREPARED BY
-                                </div>
-                                <div style="font-size: 9pt; color: #666;">Authorized Personnel</div>
-                            </div>
-                            <div style="width: 250px;" id="dynamicNotedBy">
-                                <div style="border-bottom: 1.5px solid #000; height: 30px; margin-bottom: 5px;"></div>
-                                <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;"
-                                    id="notedByLabel">NOTED / CHECKED BY</div>
-                                <div style="font-size: 9pt; color: #666;" id="notedBySub">Manager / Supervisor</div>
-                            </div>
+                    <!-- Wrap summary and print footer to keep them together in print -->
+                    <div class="summary-and-footer-container">
+                        <div class="mt-4 p-3 bg-white border rounded shadow-sm d-flex justify-content-between"
+                            id="reportSummaryBox">
+                            <!-- Summary stats here -->
                         </div>
-                        <div style="margin-top: 40px; font-size: 9pt; font-style: italic; color: #777; border-top: 1px solid #eee; padding-top: 15px;"
-                            id="footerDisclaimerText">
-                            This is a system-generated report.
+
+                        <!-- Dynamic Print Footer -->
+                        <div class="d-none d-print-block print-footer-layout text-center" id="dynamicPrintFooter">
+                            <div style="display: flex; justify-content: space-around; margin-top: 35px;">
+                                <div style="width: 250px;">
+                                    <div style="border-bottom: 1.5px solid #000; height: 30px; margin-bottom: 5px;"></div>
+                                    <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;">PREPARED BY
+                                    </div>
+                                    <div style="font-size: 9pt; color: #666;">Authorized Personnel</div>
+                                </div>
+                                <div style="width: 250px;" id="dynamicNotedBy">
+                                    <div style="border-bottom: 1.5px solid #000; height: 30px; margin-bottom: 5px;"></div>
+                                    <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase;"
+                                        id="notedByLabel">NOTED / CHECKED BY</div>
+                                    <div style="font-size: 9pt; color: #666;" id="notedBySub">Manager / Supervisor</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 30px; font-size: 9pt; font-style: italic; color: #777; border-top: 1px solid #eee; padding-top: 15px;"
+                                id="footerDisclaimerText">
+                                This is a system-generated report.
+                            </div>
                         </div>
                     </div>
                 </div>
