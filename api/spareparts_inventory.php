@@ -23,6 +23,15 @@ try {
     $conn->query("ALTER TABLE spareparts_aging ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
     // Attempt to add category to customers if table exists
     @$conn->query("ALTER TABLE spareparts_customers ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
+    
+    // Auto-update price history schema and core columns
+    @$conn->query("ALTER TABLE spareparts_price_history MODIFY COLUMN transaction_date DATETIME");
+    @$conn->query("ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS price DECIMAL(10, 2) DEFAULT 0.00 AFTER cost");
+    @$conn->query("ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS change_reason VARCHAR(255) DEFAULT NULL");
+    @$conn->query("ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS changed_by VARCHAR(255) DEFAULT NULL");
+    @$conn->query("ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS bin_location VARCHAR(100) AFTER quantity");
+    @$conn->query("ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS thumbnail_image VARCHAR(255) AFTER bin_location");
+    @$conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS cost DECIMAL(10, 2) DEFAULT 0.00 AFTER price");
 } catch (Exception $e) {
 }
 
@@ -1924,9 +1933,12 @@ function addMultiplePartsIn()
             id INT AUTO_INCREMENT PRIMARY KEY,
             part_no VARCHAR(100) NOT NULL,
             cost DECIMAL(10,2) NOT NULL,
+            price DECIMAL(10,2) DEFAULT 0.00,
             supplier VARCHAR(255),
             invoice_no VARCHAR(100),
-            transaction_date DATE,
+            transaction_date DATETIME,
+            change_reason VARCHAR(255) DEFAULT NULL,
+            changed_by VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
         $conn->query("CREATE TABLE IF NOT EXISTS spareparts_supplier_aging (
