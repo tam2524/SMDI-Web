@@ -109,6 +109,9 @@ $backLink = ($_SESSION['position'] === 'Spareparts-Owner') ? 'owner_dashboard.ph
                 <h4 class="mb-0 fw-bold"><i class="bi bi-people me-2"></i>Spareparts Users</h4>
             </div>
             <div class="d-flex gap-3 align-items-center">
+                <button class='btn btn-outline-primary fw-bold px-3 shadow-sm' onclick="openReportHeadersModal()">
+                    <i class='bi bi-file-earmark-text me-1'></i>Manage Report Headers
+                </button>
                 <button class='btn btn-primary fw-bold px-3 shadow-sm text-white' onclick="openAddUserModal()">
                     <i class='bi bi-person-plus me-1'></i>Add User
                 </button>
@@ -204,6 +207,38 @@ $backLink = ($_SESSION['position'] === 'Spareparts-Owner') ? 'owner_dashboard.ph
                         <button type="submit" class="btn btn-premium-save" id="saveUserBtn">Save</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Headers Modal -->
+    <div class="modal fade" id="reportHeadersModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-text me-2"></i>Manage Report Headers</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <p class="text-muted small">Update custom PDF and Print report headers for all users at once. Changes are saved when you click 'Save All Changes'.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle bg-white">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="ps-3" style="width: 35%;">Username</th>
+                                    <th class="ps-3" style="width: 65%;">Report Header Title</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportHeadersTableBody">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary text-white" onclick="saveAllReportHeaders()">Save All Changes</button>
+                </div>
             </div>
         </div>
     </div>

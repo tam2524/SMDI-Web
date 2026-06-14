@@ -26,6 +26,10 @@ try {
             getUsers($conn);
             break;
 
+        case 'get_all_users':
+            getAllUsers($conn);
+            break;
+
         case 'get_user':
             getUser($conn);
             break;
@@ -40,6 +44,10 @@ try {
 
         case 'delete_user':
             deleteUser($conn, $data);
+            break;
+
+        case 'update_report_headers':
+            updateReportHeaders($conn, $data);
             break;
 
         default:
@@ -297,6 +305,41 @@ function deleteUser($conn, $data)
         }
     } else {
         throw new Exception('Failed to delete user: ' . $stmt->error);
+    }
+}
+
+function getAllUsers($conn)
+{
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f') ORDER BY username ASC");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $users = [];
+    while ($row = $result->fetch_assoc()) {
+        $users[] = $row;
+    }
+    echo json_encode(['success' => true, 'users' => $users]);
+}
+
+function updateReportHeaders($conn, $data)
+{
+    if (empty($data['headers']) || !is_array($data['headers'])) {
+        throw new Exception('No headers provided');
+    }
+    
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare("UPDATE users SET report_header_title = ? WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
+        foreach ($data['headers'] as $item) {
+            $id = intval($item['id']);
+            $title = !empty($item['report_header_title']) ? trim($item['report_header_title']) : null;
+            $stmt->bind_param("si", $title, $id);
+            $stmt->execute();
+        }
+        $conn->commit();
+        echo json_encode(['success' => true, 'message' => 'Report headers updated successfully']);
+    } catch (Exception $e) {
+        $conn->rollback();
+        throw $e;
     }
 }
 

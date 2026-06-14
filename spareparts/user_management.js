@@ -192,3 +192,92 @@ function deleteUser(id) {
         }
     });
 }
+
+function openReportHeadersModal() {
+    const tbody = document.getElementById('reportHeadersTableBody');
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center py-3">Loading users...</td></tr>';
+    
+    new bootstrap.Modal(document.getElementById('reportHeadersModal')).show();
+
+    fetch('api_user_management.php?action=get_all_users')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                tbody.innerHTML = '';
+                if (data.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="2" class="text-center py-3 text-muted">No users found</td></tr>';
+                    return;
+                }
+                data.users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="ps-3 align-middle fw-bold">${user.username} <small class="text-muted d-block" style="font-size:0.8em;">${user.position} | ${user.branch || 'HEADOFFICE'}</small></td>
+                        <td class="pe-3 align-middle">
+                            <input type="text" class="form-control form-control-sm report-header-input" 
+                                   data-user-id="${user.id}" 
+                                   value="${user.report_header_title || ''}" 
+                                   placeholder="e.g. ROXAS CITY SOLID MERCHANDISING - BRANCH X">
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="2" class="text-center py-3 text-danger">${data.message || 'Failed to load users'}</td></tr>`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-3 text-danger">Error loading data</td></tr>';
+        });
+}
+
+function saveAllReportHeaders() {
+    const inputs = document.querySelectorAll('.report-header-input');
+    const headers = [];
+    
+    inputs.forEach(input => {
+        headers.push({
+            id: input.getAttribute('data-user-id'),
+            report_header_title: input.value
+        });
+    });
+
+    Swal.fire({
+        title: 'Save Changes?',
+        text: 'Are you sure you want to update all report headers?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, save all!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Saving...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch('api_user_management.php?action=update_report_headers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ headers: headers })
+            })
+            .then(r => r.json())
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    Swal.fire('Saved!', 'All report header titles updated successfully.', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('reportHeadersModal')).hide();
+                    loadUsers();
+                } else {
+                    Swal.fire('Error', data.message || 'Failed to update headers', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'An error occurred while saving', 'error');
+            });
+        }
+    });
+}
