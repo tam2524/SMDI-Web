@@ -36,6 +36,14 @@ mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 try {
     $conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, $dbport);
     $conn->set_charset("utf8mb4");
+    
+    // Auto-patch missing report_header_title in users table
+    try {
+        $check = $conn->query("SHOW COLUMNS FROM users LIKE 'report_header_title'");
+        if ($check && $check->num_rows === 0) {
+            $conn->query("ALTER TABLE users ADD COLUMN report_header_title VARCHAR(255) DEFAULT NULL");
+        }
+    } catch (Exception $e) {}
 } catch (mysqli_sql_exception $e) {
     http_response_code(503);
     die(json_encode([
