@@ -25,7 +25,11 @@ $sql = [
 
     // Update spareparts_inventory
     "ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS bin_location VARCHAR(100) AFTER quantity;",
-    "ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS thumbnail_image VARCHAR(255) AFTER bin_location;"
+    "ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS thumbnail_image VARCHAR(255) AFTER bin_location;",
+    "ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS price DECIMAL(10, 2) DEFAULT 0.00 AFTER cost",
+    "ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS cost DECIMAL(10, 2) DEFAULT 0.00 AFTER price",
+    "ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS change_reason VARCHAR(255) DEFAULT NULL",
+    "ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS changed_by VARCHAR(255) DEFAULT NULL"
 ];
 
 foreach ($sql as $query) {

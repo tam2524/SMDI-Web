@@ -11,6 +11,14 @@ $userRole = $_SESSION['position'] ?? $_SESSION['user_role'] ?? 'user';
 $adminRoles = ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-Admin', 'Spareparts-Owner'];
 $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $adminRoles));
 
+require_once __DIR__ . '/../api/db_config.php';
+$stmt = $conn->prepare("SELECT report_header_title FROM users WHERE username = ?");
+$stmt->bind_param("s", $_SESSION['username']);
+$stmt->execute();
+$dbUser = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_header_title'] : 'ROXAS CITY SOLID MERCHANDISING';
+
 $userRoleLower = strtolower(trim($userRole));
 $backLink = 'sales_dashboard.php';
 if ($userRoleLower === 'spareparts-owner') {
@@ -1978,7 +1986,7 @@ $showTabs = !isset($_GET['tab']);
                 <div class='modal-body p-4'>
                     <!-- PRINT HEADER (Hidden on Screen) -->
                     <div class="report-header-print d-none d-print-block">
-                        <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                        <div class="company-name"><?php echo htmlspecialchars($reportHeaderTitle); ?></div>
                         <div class="system-name">Spareparts Management System</div>
                         <div class="report-title-container" style="margin-top: 15px;">
                             <div class="report-title">INVENTORY ITEM REPORT</div>
@@ -2348,7 +2356,7 @@ $showTabs = !isset($_GET['tab']);
                     <!-- PRINT HEADER (Hidden on Screen) -->
                     <div class="print-only d-none mb-4">
                         <div class="text-center">
-                            <h4 class="fw-bold mb-0">ROXAS CITY SOLID MERCHANDISING</h4>
+                            <h4 class="fw-bold mb-0"><?php echo htmlspecialchars($reportHeaderTitle); ?></h4>
                             <p class="small mb-0">1031 Victoria Bldg.,Roxas Avenue, Roxas City, Capiz</p>
                             <div style="border-bottom: 2px solid #333; margin-bottom: 20px;"></div>
                             <h5 class="text-uppercase fw-bold mb-1" id="printReportTitleDisplay">OFFICIAL REPORT
@@ -2556,7 +2564,7 @@ $showTabs = !isset($_GET['tab']);
 
                     <!-- Standardized Report Header (Print only) -->
                     <div class="report-header-print d-none d-print-block">
-                        <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                        <div class="company-name"><?php echo htmlspecialchars($reportHeaderTitle); ?></div>
                         <div class="system-name">Spareparts Management System</div>
                         <div class="report-title-container" style="margin-top: 15px;">
                             <div class="report-title">STATEMENT OF ACCOUNT</div>

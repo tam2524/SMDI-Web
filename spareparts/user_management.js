@@ -108,6 +108,7 @@ function editUser(id) {
                 document.getElementById('formFullName').value = u.fullName || '';
                 document.getElementById('formPosition').value = u.position || 'Spareparts-Retail';
                 document.getElementById('formBranch').value = u.branch || '';
+                document.getElementById('formReportHeaderTitle').value = u.report_header_title || '';
                 
                 document.getElementById('formPassword').value = '';
                 document.getElementById('formConfirmPassword').value = '';

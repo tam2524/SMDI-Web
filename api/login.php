@@ -18,6 +18,7 @@ if ($result->num_rows > 0) {
         $_SESSION['username'] = $user['username'];
         $_SESSION['position'] = $user['position'];
         $_SESSION['user_branch'] = $user['branch'];
+        $_SESSION['report_header_title'] = $user['report_header_title'] ?? 'ROXAS CITY SOLID MERCHANDISING';
         $position = trim($user['position']);
 
         switch ($position) {

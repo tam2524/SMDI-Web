@@ -184,6 +184,10 @@ $backLink = ($_SESSION['position'] === 'Spareparts-Owner') ? 'owner_dashboard.ph
                                 <input type="text" class="form-control" id="formBranch" name="branch" value="HEADOFFICE">
                             </div>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Report Header Title (Custom PDF/Print Header)</label>
+                            <input type="text" class="form-control" id="formReportHeaderTitle" name="report_header_title" placeholder="e.g. ROXAS CITY SOLID MERCHANDISING - BRANCH X">
+                        </div>
                         <div class="row g-3">
                             <div class="col-6">
                                 <label class="form-label fw-bold text-muted small">Password</label>

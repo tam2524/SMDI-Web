@@ -448,17 +448,23 @@ function showStockCard(partNo, branch) {
 
             // Price History
             let histHtml = '';
-            d.price_history.forEach(h => {
+            d.price_history.forEach((h, index) => {
+                let isLatest = index === 0;
+                let rowStyle = isLatest ? 'style="background-color: rgba(25, 135, 84, 0.08);"' : '';
+                let latestBadge = isLatest ? '<span class="badge bg-success text-white ms-2" style="font-size: 0.65rem; padding: 2px 6px;">LATEST</span>' : '';
                 histHtml += `
-                    <tr>
+                    <tr ${rowStyle}>
                         <td class="ps-4 py-3 text-muted">${h.transaction_date.split(' ')[0]}</td>
-                        <td class="py-3 fw-bold">${h.supplier}</td>
+                        <td class="py-3 fw-bold d-flex align-items-center">${h.supplier}${latestBadge}</td>
                         <td class="text-end py-3 text-primary fw-bold">₱${formatCurrency(h.cost)}</td>
+                        <td class="text-end py-3 text-success fw-bold">₱${formatCurrency(h.price)}</td>
+                        <td class="py-3 fw-semibold text-secondary small">${h.change_reason || '-'}</td>
+                        <td class="py-3 fw-bold text-dark small">${h.changed_by || '-'}</td>
                         <td class="pe-4 py-3 text-muted">${h.invoice_no || '-'}</td>
                     </tr>
                 `;
             });
-            $('#stockCardHistoryBody').html(histHtml || '<tr><td colspan="4" class="text-center text-muted py-5">No price history found.</td></tr>');
+            $('#stockCardHistoryBody').html(histHtml || '<tr><td colspan="7" class="text-center text-muted py-5">No price history found.</td></tr>');
 
             bootstrap.Modal.getOrCreateInstance(document.getElementById('stockCardModal')).show();
         } else {
@@ -618,6 +624,187 @@ $(document).ready(function() {
                         Swal.fire({
                             title: 'Error',
                             text: 'Failed to communicate with the server.',
+                            icon: 'error',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    // Bulk Price Preview Handler
+    $('#bulkPriceForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        let formData = new FormData(this);
+        
+        Swal.fire({
+            title: 'Parsing Excel/CSV File...',
+            text: 'Please wait while we extract pricing data.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        $.ajax({
+            url: '../api/bulk_price_preview.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            success: function(response) {
+                Swal.close();
+                if (response.success) {
+                    let html = '';
+                    if (response.data.length === 0) {
+                        html = '<tr><td colspan="7" class="text-center py-4 text-muted">No pricing changes detected. All parts in file match current inventory prices.</td></tr>';
+                        $('#confirmBulkBtn').prop('disabled', true);
+                    } else {
+                        response.data.forEach(item => {
+                            let statusBadge = '';
+                            if (item.status === 'Update') {
+                                statusBadge = '<span class="badge bg-success">UPDATE</span>';
+                            } else {
+                                statusBadge = '<span class="badge bg-danger">NOT FOUND</span>';
+                            }
+                            
+                            html += `
+                                <tr>
+                                    <td class="fw-bold">${item.part_no}</td>
+                                    <td>${item.description}</td>
+                                    <td class="text-end text-muted">₱${formatCurrency(item.current_cost)}</td>
+                                    <td class="text-end text-success fw-bold">₱${formatCurrency(item.new_cost)}</td>
+                                    <td class="text-end text-muted">₱${formatCurrency(item.current_price)}</td>
+                                    <td class="text-end text-primary fw-bold">₱${formatCurrency(item.new_price)}</td>
+                                    <td class="text-center">${statusBadge}</td>
+                                </tr>
+                            `;
+                        });
+                        $('#confirmBulkBtn').prop('disabled', response.total_updates === 0);
+                    }
+                    $('#bulkPreviewTbody').html(html);
+                    $('#previewSummaryText').text(`${response.total_updates} item(s) will be updated. Unmatched items will be ignored.`);
+                    $('#uploadView').addClass('d-none');
+                    $('#previewView').removeClass('d-none');
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: response.message,
+                        icon: 'error',
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            },
+            error: function() {
+                Swal.close();
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to upload and preview Excel file. Ensure file is not corrupt and formats are correct.',
+                    icon: 'error',
+                    confirmButtonColor: '#d33'
+                });
+            }
+        });
+    });
+
+    // Back to Upload View
+    $('#btnBackToUpload').on('click', function() {
+        $('#previewView').addClass('d-none');
+        $('#uploadView').removeClass('d-none');
+    });
+
+    // Reset Modal on Close/Hide
+    $('#bulkPriceUploadModal').on('hidden.bs.modal', function() {
+        $('#bulkPriceForm')[0].reset();
+        $('#bulkPreviewTbody').html('');
+        $('#previewView').addClass('d-none');
+        $('#uploadView').removeClass('d-none');
+    });
+
+    // Cancel Preview / Reset
+    $('#cancelBulkBtn').on('click', function() {
+        $('#bulkPriceUploadModal').modal('hide');
+    });
+
+    // Confirm Bulk Pricing Upload
+    $('#confirmBulkBtn').on('click', function() {
+        const reason = $('#bulkChangeReason').val();
+        if (!reason) {
+            Swal.fire({
+                title: 'Reason Required',
+                text: 'Please select a reason for change before applying updates.',
+                icon: 'warning',
+                confirmButtonColor: '#004d40'
+            });
+            return;
+        }
+        const changedBy = $('#bulkChangedBy').val();
+
+        Swal.fire({
+            title: 'Apply Pricing Updates?',
+            text: "This will update the cost and selling prices of the matched parts and log this in the price history. This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#004d40',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Apply Pricing!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Applying updates...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: '../api/bulk_price_update.php',
+                    type: 'POST',
+                    data: {
+                        change_reason: reason,
+                        changed_by: changedBy
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        Swal.close();
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: response.message,
+                                icon: 'success',
+                                confirmButtonColor: '#004d40'
+                            }).then(() => {
+                                $('#bulkPriceUploadModal').modal('hide');
+                                // Refresh list if search is active
+                                if (typeof buildQueryParams === 'function' && typeof loadStockCardResults === 'function') {
+                                    const qParams = buildQueryParams();
+                                    if (!$.isEmptyObject(qParams)) {
+                                        loadStockCardResults(qParams);
+                                    }
+                                }
+                                if (typeof loadPricingData === 'function') {
+                                    loadPricingData();
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: response.message,
+                                icon: 'error',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.close();
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Failed to communicate with the server to apply updates.',
                             icon: 'error',
                             confirmButtonColor: '#d33'
                         });

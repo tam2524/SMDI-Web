@@ -8,6 +8,14 @@ $currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 $userRole = $_SESSION['position'] ?? $_SESSION['user_role'] ?? 'user';
 $adminRoles = ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-Admin', 'Spareparts-Owner'];
 $canDelete = in_array(strtolower(trim($userRole)), array_map('strtolower', $adminRoles));
+
+require_once __DIR__ . '/../api/db_config.php';
+$stmt = $conn->prepare("SELECT report_header_title FROM users WHERE username = ?");
+$stmt->bind_param("s", $_SESSION['username']);
+$stmt->execute();
+$dbUser = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_header_title'] : 'ROXAS CITY SOLID MERCHANDISING';
 $filterType = $_GET['filter'] ?? 'all';
 ?>
 <script>
@@ -716,9 +724,8 @@ $filterType = $_GET['filter'] ?? 'all';
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Branch</label>
-                                <input type="text" class="form-control" name="branch" id="edit_branch" required>
-                                <small class="text-muted" style="font-size: 0.7em;">Note: Only Admin can re-assign
-                                    branch</small>
+                                <input type="text" class="form-control bg-light" name="branch" id="edit_branch" readonly required>
+                                <small class="text-danger fw-bold d-block mt-1" style="font-size: 0.75em;"><i class="bi bi-exclamation-circle-fill me-1"></i>To change branch, please use the transfer feature.</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Brand</label>
@@ -1844,7 +1851,7 @@ $filterType = $_GET['filter'] ?? 'all';
                     <!-- PRINT HEADER (Hidden on Screen) -->
                     <div class="print-only d-none mb-4">
                         <div class="text-center">
-                            <h4 class="fw-bold mb-0">ROXAS CITY SOLID MERCHANDISING</h4>
+                            <h4 class="fw-bold mb-0"><?php echo htmlspecialchars($reportHeaderTitle); ?></h4>
                             <p class="small mb-0">1031 Victoria Bldg.,Roxas Avenue, Roxas City, Capiz</p>
                             <div style="border-bottom: 2px solid #333; margin-bottom: 20px;"></div>
                             <h5 class="text-uppercase fw-bold mb-1" id="printReportTitleDisplay">OFFICIAL REPORT</h5>

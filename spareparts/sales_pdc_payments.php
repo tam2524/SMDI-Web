@@ -7,6 +7,14 @@ if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], ['Sparepar
 $username = $_SESSION['username'];
 $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 $today = date('l, F j, Y');
+
+require_once __DIR__ . '/../api/db_config.php';
+$stmt = $conn->prepare("SELECT report_header_title FROM users WHERE username = ?");
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$dbUser = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_header_title'] : 'ROXAS CITY SOLID MERCHANDISING';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -329,7 +337,7 @@ $today = date('l, F j, Y');
     <div class="main-content mt-4">
         <!-- Standardized Report Header (Print only) -->
         <div class="report-header-print d-none d-print-block">
-            <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+            <div class="company-name"><?php echo htmlspecialchars($reportHeaderTitle); ?></div>
             <div class="system-name">Spareparts Management System</div>
             <div class="report-title-container" style="margin-top: 15px;">
                 <div class="report-title">PDC PAYMENTS REPORT</div>

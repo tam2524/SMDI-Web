@@ -6,13 +6,15 @@ if (!isset($_SESSION['username']) || !in_array($_SESSION['position'], ['Sparepar
 }
 $username = $_SESSION['username'];
 $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
+$role = $_SESSION['position'] ?? '';
+$isAdminOrSales = in_array(strtolower(trim($role)), ['spareparts-admin', 'spareparts-owner', 'admin', 'owner', 'itsuperadmin', 'admin spareparts', 'spareparts-sales']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find Stocks - Spareparts MS</title>
+    <title>Pricing Management - Spareparts MS</title>
     <link rel="icon" href="../assets/img/smdi_logosmall.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -73,8 +75,10 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
         .text-primary { color: var(--smdi-green) !important; }
         .bg-primary { background-color: var(--smdi-green) !important; }
         .btn-primary { background-color: var(--smdi-green) !important; border-color: var(--smdi-green) !important; }
-        
-        .search-card {
+        .btn-outline-primary { color: var(--smdi-green) !important; border-color: var(--smdi-green) !important; }
+        .btn-outline-primary:hover { background-color: var(--smdi-green) !important; color: white !important; }
+
+        .pricing-card {
             border: none;
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
@@ -83,7 +87,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 
         .search-input {
             border-radius: 50px;
-            padding: 12px 25px;
+            padding: 10px 20px;
             border: 2px solid #eee;
             transition: all 0.3s;
         }
@@ -93,28 +97,54 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
             box-shadow: 0 0 10px rgba(38, 166, 154, 0.2);
         }
 
-        .result-table thead th {
+        .table-container {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+        }
+
+        .table thead th {
             background-color: var(--smdi-green-bg);
             color: var(--smdi-green);
             font-weight: 700;
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.5px;
-            padding: 15px;
             border: none;
-        }
-
-        .result-table tbody td {
             padding: 15px;
-            vertical-align: middle;
-            border-bottom: 1px solid #f0f0f0;
         }
 
-        .stock-badge {
-            font-weight: 700;
-            padding: 6px 12px;
+        .table tbody td {
+            padding: 14px 15px;
+            border-bottom: 1px solid #f2f2f2;
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(0, 77, 64, 0.02);
+        }
+
+        .branch-badge {
+            background-color: #e2e8f0;
+            color: #475569;
+            font-weight: 600;
+            padding: 4px 10px;
             border-radius: 50px;
             font-size: 0.75rem;
+        }
+
+        .pagination-container .page-link {
+            color: var(--smdi-green);
+            border: none;
+            margin: 0 3px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .pagination-container .page-item.active .page-link {
+            background-color: var(--smdi-green) !important;
+            color: white !important;
         }
     </style>
 </head>
@@ -123,7 +153,6 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
         <div class="container-fluid">
             <div class="d-flex align-items-center">
                 <a href="<?php 
-                    $role = $_SESSION['position'] ?? '';
                     if ($role === 'Spareparts-Sales' || $role === 'Spareparts-Retail') {
                         echo 'sales_dashboard.php';
                     } elseif ($role === 'Spareparts-Owner') {
@@ -136,7 +165,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                 ?>" class="back-btn">
                     <i class="bi bi-arrow-left"></i>
                 </a>
-                <span class="navbar-brand fw-bold mb-0 text-uppercase">Find Stocks</span>
+                <span class="navbar-brand fw-bold mb-0 text-uppercase"><i class="bi bi-tags-fill me-2"></i>Pricing Management</span>
             </div>
             <div class="ms-auto d-flex align-items-center">
                 <div class="user-profile me-3">
@@ -148,26 +177,11 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 100px; max-width: 1100px;">
-        <div class="search-card p-4 mb-4">
-            <div class="text-center mb-4">
-                <h3 class="fw-bold text-dark-green">Global Stock Search</h3>
-                <p class="text-muted">Search for parts across all branches and locations</p>
-            </div>
-            <div class="input-group">
-                <input type="text" id="globalSearchInput" class="form-control search-input" placeholder="Type Part No, Description, or Brand..." autofocus>
-                <button class="btn btn-primary px-4 ms-2 rounded-pill fw-bold" id="globalSearchBtn">
-                    <i class="bi bi-search me-2"></i> SEARCH
-                </button>
-            </div>
-        </div>
-
-        <?php 
-        $role = $_SESSION['position'] ?? $_SESSION['user_role'] ?? '';
-        $isAdmin = in_array(strtolower(trim($role)), ['spareparts-admin', 'spareparts-owner', 'admin', 'owner', 'itsuperadmin', 'admin spareparts', 'spareparts-sales']);
-        if ($isAdmin): 
-        ?>
-        <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+    <div class="container" style="margin-top: 100px; max-width: 1200px;">
+        
+        <?php if ($isAdminOrSales): ?>
+        <!-- Bulk Pricing Update Card -->
+        <div class="card border-0 shadow-sm mb-4 pricing-card" style="border-radius: 15px;">
             <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div class="d-flex align-items-center">
                     <div class="p-3 bg-success bg-opacity-10 rounded-4 me-3 text-success">
@@ -190,15 +204,53 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
         </div>
         <?php endif; ?>
 
-        <div id="partList">
-            <div class="text-center py-5">
-                <div class="mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle" style="width: 100px; height: 100px;">
-                        <i class="bi bi-search text-white" style="font-size: 3rem;"></i>
+        <!-- Pricing Master Table Card -->
+        <div class="card border-0 shadow-sm pricing-card">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">Parts Price List</h4>
+                        <p class="text-muted mb-0">Browse and manage buying cost and selling prices for all inventory parts.</p>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="branchFilter" class="form-select border-2 rounded-pill px-3" style="width: auto; max-width: 200px;">
+                            <option value="ALL">All Branches</option>
+                        </select>
+                        <input type="text" id="pricingSearchInput" class="form-control search-input" placeholder="Search Part No, Brand, Desc..." style="width: 280px;">
                     </div>
                 </div>
-                <h5 class="fw-bold">Ready to search?</h5>
-                <p class="text-muted">Use the search box above or pick a Quick Filter to browse inventory.</p>
+
+                <div class="table-responsive table-container">
+                    <table class="table table-hover mb-0" id="pricingTable">
+                        <thead>
+                            <tr>
+                                <th>Part No</th>
+                                <th>Brand</th>
+                                <th>Description</th>
+                                <th class="text-end">Buying Cost</th>
+                                <th class="text-end">Selling Price</th>
+                                <th class="text-center">Branch</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricingTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <div class="spinner-border text-success spinner-border-sm me-2" role="status"></div>
+                                    Loading pricing database...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination controls -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="small text-muted" id="paginationStats">Showing 0 to 0 of 0 entries</div>
+                    <nav aria-label="Pricing navigation" class="pagination-container">
+                        <ul class="pagination pagination-sm mb-0" id="pricingPagination"></ul>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
@@ -213,7 +265,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                 </div>
                 <div class="modal-body p-4 bg-light">
                     <div class="modal-fs-container">
-                        <!-- Upload View -->
+                    <!-- Upload View -->
                     <div id="uploadView">
                         <div class="alert alert-success bg-success bg-opacity-10 border-0 p-3 mb-4" style="border-radius: 10px;">
                             <h6 class="fw-bold text-success mb-2 d-flex align-items-center">
@@ -227,7 +279,7 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                                     <label for="bulkExcelFile" class="form-label fw-bold text-secondary small text-uppercase mb-2">Select Excel / CSV File</label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-file-earmark-spreadsheet text-success"></i></span>
-                                        <input type="file" class="form-control" id="bulkExcelFile" name="excel_file" accept=".xlsx, .xls, .csv" required>
+                                        <input type="file" class="form-control border-start-0 ps-0" id="bulkExcelFile" name="excel_file" accept=".xlsx, .xls, .csv" required>
                                     </div>
                                 </div>
                             </div>
@@ -424,11 +476,324 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
         </div>
     </div>
 
+    <!-- Edit Price Modal -->
+    <div class="modal fade" id="editPriceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <form id="editPriceForm">
+                    <input type="hidden" name="id" id="editPriceId">
+                    <input type="hidden" name="part_no" id="editPricePartNoHidden">
+                    <input type="hidden" name="branch" id="editPriceBranchHidden">
+                    
+                    <div class="modal-header bg-success text-white border-0 py-3">
+                        <h5 class="modal-title text-white fw-bold"><i class="bi bi-pencil-square me-2"></i>Update Specific Part Price</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 bg-light">
+                        <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px;">
+                            <div class="card-body p-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-muted text-uppercase mb-0">Part Number</label>
+                                        <div class="fw-bold text-dark" id="editPricePartNoText">-</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-muted text-uppercase mb-0">Branch</label>
+                                        <div class="fw-bold text-muted" id="editPriceBranchText">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px;">
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-cash-coin me-1 text-success"></i>Pricing Details</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="editPriceCost" class="form-label small fw-bold text-muted text-uppercase">Buying Cost</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0">₱</span>
+                                            <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold" name="cost" id="editPriceCost" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="editPriceSelling" class="form-label small fw-bold text-muted text-uppercase">Selling Price</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0 text-success fw-bold">₱</span>
+                                            <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold text-success" name="price" id="editPriceSelling" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-shield-check me-1 text-success"></i>Audit & Log Details</h6>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label for="editPriceReason" class="form-label small fw-bold text-muted text-uppercase">Reason for Change <span class="text-danger">*</span></label>
+                                        <select class="form-select fw-bold" name="change_reason" id="editPriceReason" required>
+                                            <option value="" disabled selected>-- Select Reason --</option>
+                                            <option value="Price Increase">Price Increase</option>
+                                            <option value="Price Decrease">Price Decrease</option>
+                                            <option value="Wrong Input">Wrong Input</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="editPriceChangedBy" class="form-label small fw-bold text-muted text-uppercase">Changed By</label>
+                                        <input type="text" class="form-control bg-light text-muted fw-bold" id="editPriceChangedBy" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-white border-0 py-3 px-4">
+                        <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success px-5 fw-bold text-white shadow-sm">
+                            <i class="bi bi-check-circle me-1"></i>Save Price
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/spareparts_stock_card.js"></script>
     <script>
-        window.canDelete = false; // standard user, can't delete logs on stock card detail from global search
+        window.canDelete = false;
+        window.isAdminOrSales = <?php echo $isAdminOrSales ? 'true' : 'false'; ?>;
+
+        let inventoryData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const itemsPerPage = 15;
+
+        function formatCurrency(val) {
+            let num = parseFloat(val);
+            return isNaN(num) ? '0.00' : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function loadPricingData() {
+            $.get('../api/spareparts_inventory.php?action=get_inventory_list', function(response) {
+                if (response.success) {
+                    inventoryData = response.data;
+                    
+                    // Extract unique branches for filter dropdown
+                    let branches = new Set();
+                    inventoryData.forEach(item => {
+                        if (item.current_branch) {
+                            branches.add(item.current_branch);
+                        }
+                    });
+                    
+                    let branchFilter = $('#branchFilter');
+                    branchFilter.html('<option value="ALL">All Branches</option>');
+                    branches.forEach(b => {
+                        branchFilter.append(`<option value="${b}">${b}</option>`);
+                    });
+
+                    applyFilters();
+                } else {
+                    Swal.fire('Error', response.message || 'Failed to load pricing data.', 'error');
+                }
+            }, 'json');
+        }
+
+        function applyFilters() {
+            let searchTerm = $('#pricingSearchInput').val().toLowerCase().trim();
+            let branchVal = $('#branchFilter').val();
+
+            filteredData = inventoryData.filter(item => {
+                let matchesSearch = !searchTerm || 
+                    (item.part_no && item.part_no.toLowerCase().includes(searchTerm)) ||
+                    (item.description && item.description.toLowerCase().includes(searchTerm)) ||
+                    (item.brand && item.brand.toLowerCase().includes(searchTerm));
+                
+                let matchesBranch = branchVal === 'ALL' || item.current_branch === branchVal;
+
+                return matchesSearch && matchesBranch;
+            });
+
+            currentPage = 1;
+            renderPricingTable();
+        }
+
+        function renderPricingTable() {
+            let start = (currentPage - 1) * itemsPerPage;
+            let end = start + itemsPerPage;
+            let pageItems = filteredData.slice(start, end);
+            
+            let tbody = $('#pricingTableBody');
+            tbody.empty();
+
+            if (pageItems.length === 0) {
+                tbody.html('<tr><td colspan="7" class="text-center py-5 text-muted">No matching parts found.</td></tr>');
+                $('#paginationStats').text('Showing 0 to 0 of 0 entries');
+                $('#pricingPagination').empty();
+                return;
+            }
+
+            pageItems.forEach(item => {
+                let escapedPartNo = $('<div>').text(item.part_no).html();
+                let escapedBranch = $('<div>').text(item.current_branch).html();
+                tbody.append(`
+                    <tr>
+                        <td class="fw-bold">${escapedPartNo}</td>
+                        <td>${$('<div>').text(item.brand || '').html()}</td>
+                        <td>${$('<div>').text(item.description || '').html()}</td>
+                        <td class="text-end fw-semibold text-secondary">₱${formatCurrency(item.cost)}</td>
+                        <td class="text-end fw-bold text-success">₱${formatCurrency(item.price)}</td>
+                        <td class="text-center">
+                            <span class="branch-badge">${escapedBranch}</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="showStockCard('${escapedPartNo}', '${escapedBranch}')">
+                                    <i class="bi bi-clock-history me-1"></i>Price History
+                                </button>
+                                ${window.isAdminOrSales ? `
+                                <button class="btn btn-sm btn-success text-white rounded-pill px-3 fw-bold" onclick="openEditPriceModal(${item.id}, '${escapedPartNo}', '${escapedBranch}', ${item.cost}, ${item.price})">
+                                    <i class="bi bi-pencil-square me-1"></i>Edit Price
+                                </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            // Update stats
+            let displayEnd = Math.min(end, filteredData.length);
+            $('#paginationStats').text(`Showing ${start + 1} to ${displayEnd} of ${filteredData.length} entries`);
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            let totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            let pagination = $('#pricingPagination');
+            pagination.empty();
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            pagination.append(`
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;"><i class="bi bi-chevron-left"></i></a>
+                </li>
+            `);
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    pagination.append(`
+                        <li class="page-item ${currentPage === i ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+                        </li>
+                    `);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+                }
+            }
+
+            // Next button
+            pagination.append(`
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;"><i class="bi bi-chevron-right"></i></a>
+                </li>
+            `);
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderPricingTable();
+        }
+
+        function openEditPriceModal(id, partNo, branch, cost, price) {
+            $('#editPriceId').val(id);
+            $('#editPricePartNoHidden').val(partNo);
+            $('#editPriceBranchHidden').val(branch);
+            $('#editPricePartNoText').text(partNo);
+            $('#editPriceBranchText').text(branch);
+            $('#editPriceCost').val(cost);
+            $('#editPriceSelling').val(price);
+            $('#editPriceReason').val('');
+            
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editPriceModal')).show();
+        }
+
+        $(document).ready(function() {
+            loadPricingData();
+
+            $('#pricingSearchInput').on('input', applyFilters);
+            $('#branchFilter').on('change', applyFilters);
+
+            // Form submit for specific part price edit
+            $('#editPriceForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const btn = $(this).find('button[type="submit"]');
+                const originalHtml = btn.html();
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
+                
+                const id = $('#editPriceId').val();
+                const cost = $('#editPriceCost').val();
+                const price = $('#editPriceSelling').val();
+                const reason = $('#editPriceReason').val();
+                
+                $.ajax({
+                    url: '../api/spareparts_inventory.php?action=edit_parts',
+                    method: 'POST',
+                    data: {
+                        id: id,
+                        cost: cost,
+                        price: price,
+                        change_reason: reason,
+                        part_no: $('#editPricePartNoHidden').val(),
+                        branch: $('#editPriceBranchHidden').val(),
+                        description: inventoryData.find(item => item.id == id)?.description || '',
+                        brand: inventoryData.find(item => item.id == id)?.brand || '',
+                        min_stock: inventoryData.find(item => item.id == id)?.min_stock || 5,
+                        bin_location: inventoryData.find(item => item.id == id)?.bin_location || '',
+                        invoice_no: 'PRICE UPDATE'
+                    },
+                    dataType: 'json',
+                    success: response => {
+                        btn.prop('disabled', false).html(originalHtml);
+                        if (response.success) {
+                            bootstrap.Modal.getOrCreateInstance(document.getElementById('editPriceModal')).hide();
+                            Swal.fire({
+                                title: 'Success!',
+                                text: 'Pricing updated successfully.',
+                                icon: 'success',
+                                confirmButtonColor: '#004d40'
+                            }).then(() => {
+                                loadPricingData();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: response.message || 'Failed to update pricing.',
+                                icon: 'error',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    },
+                    error: () => {
+                        btn.prop('disabled', false).html(originalHtml);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Connection error. Please try again.',
+                            icon: 'error',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

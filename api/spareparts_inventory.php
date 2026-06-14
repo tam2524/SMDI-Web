@@ -306,6 +306,17 @@ $action = $_REQUEST['action'] ?? '';
 
 switch ($action) {
     // READ
+    case 'get_user_info':
+        getUserInfo();
+        break;
+    case 'download_price_template':
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="spareparts_price_template.csv"');
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['part_no', 'cost', 'price']);
+        fputcsv($out, ['SAMPLE-PART-001', '150.00', '250.00']);
+        fclose($out);
+        exit();
     case 'get_dashboard_stats':
         getDashboardStats();
         break;
@@ -966,7 +977,7 @@ function getStockCardData()
 
         // 4. Cost History (Dynamic column detection)
         $histCol = getPartColumnName('spareparts_price_history');
-        $histStmt = $conn->prepare("SELECT * FROM spareparts_price_history WHERE $histCol = ? ORDER BY transaction_date DESC LIMIT 50");
+        $histStmt = $conn->prepare("SELECT * FROM spareparts_price_history WHERE $histCol = ? ORDER BY transaction_date DESC, id DESC LIMIT 50");
         if (!$histStmt) {
             echo json_encode(['success' => false, 'message' => "Query preparation failed (History on $histCol): " . $conn->error]);
             return;
@@ -992,6 +1003,26 @@ function getStockCardData()
         }
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Internal error: ' . $e->getMessage()]);
+    }
+}
+
+function getUserInfo() {
+    global $conn;
+    if (!isset($_SESSION['username'])) {
+        echo json_encode(['success' => false, 'message' => 'Not logged in']);
+        return;
+    }
+    
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title FROM users WHERE username = ?");
+    $stmt->bind_param("s", $_SESSION['username']);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    
+    if ($res) {
+        echo json_encode(['success' => true, 'data' => $res]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'User not found']);
     }
 }
 
@@ -1966,28 +1997,23 @@ function addMultiplePartsIn()
             $stmt->bind_param('sssidds', $brand, $part_no, $description, $quantity, $new_cost, $price, $currentBranch);
             $stmt->execute();
 
-            // Always log cost history
-            $histCheck = $conn->query("SHOW COLUMNS FROM spareparts_price_history LIKE 'part_no'");
-            if ($histCheck && $histCheck->num_rows > 0) {
-                $histStmt = $conn->prepare(
-                    "INSERT INTO spareparts_price_history (part_no, cost, supplier, invoice_no, transaction_date) VALUES (?, ?, ?, ?, ?)"
-                );
-            } else {
-                $histStmt = $conn->prepare(
-                    "INSERT INTO spareparts_price_history (part_number, cost, supplier, invoice_no, transaction_date) VALUES (?, ?, ?, ?, ?)"
-                );
-            }
-            $histStmt->bind_param('sdsss', $part_no, $new_cost, $supplier, $invoice_no, $date);
+            // Always log cost and price history
+            $histStmt = $conn->prepare(
+                "INSERT INTO spareparts_price_history (part_no, cost, price, supplier, invoice_no, transaction_date, change_reason, changed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+            $changeReason = 'New Stock / Receiving';
+            $changedBy = $_SESSION['username'] ?? 'System';
+            $histStmt->bind_param('sddsssss', $part_no, $new_cost, $price, $supplier, $invoice_no, $date, $changeReason, $changedBy);
             $histStmt->execute();
 
             // Log IN transaction
             $total = $quantity * $new_cost;
             $log = $conn->prepare(
                 "INSERT INTO spareparts_transactions
-                    (transaction_date, type, part_no, description, quantity, price, total_amount, from_location, to_location, or_number, status, payment_method)
-                 VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, 'Completed', ?)"
+                    (transaction_date, type, part_no, description, quantity, price, cost, total_amount, from_location, to_location, or_number, status, payment_method)
+                 VALUES (?, 'IN', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Completed', ?)"
             );
-            $log->bind_param('sssiddssss', $date, $part_no, $description, $quantity, $new_cost, $total, $supplier, $currentBranch, $invoice_no, $paymentMode);
+            $log->bind_param('sssidddssss', $date, $part_no, $description, $quantity, $price, $new_cost, $total, $supplier, $currentBranch, $invoice_no, $paymentMode);
             $log->execute();
         }
 
@@ -2090,7 +2116,8 @@ function sellMultiplePartsOut()
         $clSetting = $conn->query("SELECT setting_value FROM spareparts_settings WHERE setting_key = 'credit_limit_enabled' LIMIT 1");
         $clEnabled = true;
         if ($clSetting && $clRow = $clSetting->fetch_assoc()) {
-            $clEnabled = ($clRow['setting_value'] !== '0');
+            $val = trim($clRow['setting_value']);
+            $clEnabled = ($val !== '0' && strtolower($val) !== 'false' && $val !== '');
         }
 
         if ($clEnabled) {
@@ -2147,14 +2174,22 @@ function sellMultiplePartsOut()
             if ($stmt->affected_rows === 0)
                 throw new Exception("Part $part_no not found or insufficient stock.");
 
+            // Fetch current cost
+            $costStmt = $conn->prepare("SELECT cost FROM spareparts_inventory WHERE part_no = ? AND current_branch = ? LIMIT 1");
+            $costStmt->bind_param('ss', $part_no, $currentBranch);
+            $costStmt->execute();
+            $costRow = $costStmt->get_result()->fetch_assoc();
+            $item_cost = $costRow ? (float)$costRow['cost'] : 0.00;
+            $costStmt->close();
+
             // Log transaction - put the entire discount on the first item to avoid duplicating the discount across rows in sums
             $item_discount = $isFirstItem ? $discount : 0;
             $isFirstItem = false;
 
             $division = getCurrentDivision();
-            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, total_amount, from_location, sales_force, category, payment_method, check_date, discount) 
-                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssssiddsssssd', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $subtotal, $currentBranch, $sales_force, $division, $payment_method, $check_date, $item_discount);
+            $stmt = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, or_number, customer_name, transaction_type, type, part_no, description, quantity, price, cost, total_amount, from_location, sales_force, category, payment_method, check_date, discount) 
+                                    VALUES (?, ?, ?, ?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssssidddsssssd', $date, $or_number, $customer_name, $transaction_type, $part_no, $description, $quantity, $price, $item_cost, $subtotal, $currentBranch, $sales_force, $division, $payment_method, $check_date, $item_discount);
             $stmt->execute();
         }
         
@@ -2753,7 +2788,7 @@ function editPart()
     $conn->begin_transaction();
     try {
         // Fetch old data to update history and log adjustments
-        $partStmt = $conn->prepare("SELECT part_no, current_stock, current_branch FROM spareparts_inventory WHERE id = ?");
+        $partStmt = $conn->prepare("SELECT part_no, current_stock, current_branch, cost, price FROM spareparts_inventory WHERE id = ?");
         $partStmt->bind_param('i', $id);
         $partStmt->execute();
         $partRes = $partStmt->get_result()->fetch_assoc();
@@ -2761,6 +2796,8 @@ function editPart()
         $oldPNo = $partRes ? $partRes['part_no'] : $part_no;
         $oldStock = $partRes ? (int) $partRes['current_stock'] : 0;
         $originBranch = $partRes ? $partRes['current_branch'] : $branch;
+        $oldCost = $partRes ? (float) $partRes['cost'] : 0.00;
+        $oldPrice = $partRes ? (float) $partRes['price'] : 0.00;
 
         // Build base SQL and params based on whether image is updated
         $imgSql = $image_url ? ", image_url = ?" : "";
@@ -2796,6 +2833,19 @@ function editPart()
             if (!$adjStmt->execute()) {
                 throw new Exception("Failed to log inventory adjustment.");
             }
+        }
+
+        // Log price/cost adjustment if changed
+        if ($cost != $oldCost || $price != $oldPrice) {
+            $histStmt = $conn->prepare("INSERT INTO spareparts_price_history (part_no, cost, price, supplier, invoice_no, transaction_date, change_reason, changed_by) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)");
+            $supplierName = "Manual Adjustment";
+            $invNo = $invoice_no ?: "MANUAL";
+            $changedBy = $_SESSION['username'] ?? 'System';
+            $histStmt->bind_param('sddssss', $part_no, $cost, $price, $supplierName, $invNo, $change_reason, $changedBy);
+            if (!$histStmt->execute()) {
+                throw new Exception("Failed to log price history.");
+            }
+            $histStmt->close();
         }
 
         // Update history (cascade ONLY part_no, brand, description — NOT price/total_amount to preserve historical sale values)
@@ -2882,15 +2932,23 @@ function editSale()
             $subtotal = $qty * $price;
             $total_sale_amount += $subtotal;
 
+            // Fetch cost from inventory
+            $costStmt = $conn->prepare("SELECT cost FROM spareparts_inventory WHERE part_no = ? AND current_branch = ? LIMIT 1");
+            $costStmt->bind_param('ss', $pno, $new_branch);
+            $costStmt->execute();
+            $costRow = $costStmt->get_result()->fetch_assoc();
+            $item_cost = $costRow ? (float)$costRow['cost'] : 0.00;
+            $costStmt->close();
+
             // Deduct stock for new item
             $deduct = $conn->prepare("UPDATE spareparts_inventory SET current_stock = current_stock - ? WHERE part_no = ? AND current_branch = ?");
             $deduct->bind_param('iss', $qty, $pno, $new_branch);
             $deduct->execute();
 
             // Insert new transaction record
-            $ins = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, transaction_type, or_number, customer_name, part_no, description, quantity, price, total_amount, from_location, sales_force, reason) 
-                                   VALUES (?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $ins->bind_param('ssssssiddsss', $sale_date, $transaction_type, $new_or, $customer_name, $pno, $desc, $qty, $price, $subtotal, $new_branch, $sales_force, $reason);
+            $ins = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, transaction_type, or_number, customer_name, part_no, description, quantity, price, cost, total_amount, from_location, sales_force, reason) 
+                                   VALUES (?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $ins->bind_param('ssssssidddsss', $sale_date, $transaction_type, $new_or, $customer_name, $pno, $desc, $qty, $price, $item_cost, $subtotal, $new_branch, $sales_force, $reason);
             $ins->execute();
         }
 
@@ -3488,13 +3546,13 @@ function getInventorySummaryReport($period, $dateVal, $branch, $brand, $category
 
     if ($branch !== 'all') {
         $valQuery = "SELECT 
-            SUM(CASE WHEN t.transaction_date < ? AND ((t.type IN ('IN', 'TRANSFER_IN') AND t.to_location = ?) OR (t.type IN ('OUT', 'TRANSFER_OUT') AND t.from_location = ?)) THEN t.quantity * i.cost ELSE 0 END) as beg_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'IN' AND t.to_location = ? THEN t.quantity * i.cost ELSE 0 END) as in_new_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_IN' AND t.to_location = ? THEN t.quantity * i.cost ELSE 0 END) as in_rec_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'OUT' AND t.from_location = ? THEN t.quantity * i.cost ELSE 0 END) as out_sold_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_OUT' AND t.from_location = ? THEN t.quantity * i.cost ELSE 0 END) as out_xfer_val
+            SUM(CASE WHEN t.transaction_date < ? AND ((t.type IN ('IN', 'TRANSFER_IN') AND t.to_location = ?) OR (t.type IN ('OUT', 'TRANSFER_OUT') AND t.from_location = ?)) THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as beg_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'IN' AND t.to_location = ? THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as in_new_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_IN' AND t.to_location = ? THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as in_rec_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'OUT' AND t.from_location = ? THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as out_sold_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_OUT' AND t.from_location = ? THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as out_xfer_val
             FROM spareparts_transactions t
-            JOIN spareparts_inventory i ON t.part_no = i.part_no
+            LEFT JOIN spareparts_inventory i ON t.part_no = i.part_no
             WHERE $valWhere";
 
         $vParams = [
@@ -3517,13 +3575,13 @@ function getInventorySummaryReport($period, $dateVal, $branch, $brand, $category
         $vTypes = "sssssssssssssss"; // 15 params
     } else {
         $valQuery = "SELECT 
-            SUM(CASE WHEN t.transaction_date < ? THEN (CASE WHEN t.type IN ('IN', 'TRANSFER_IN') THEN t.quantity * i.cost ELSE -t.quantity * i.cost END) ELSE 0 END) as beg_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'IN' THEN t.quantity * i.cost ELSE 0 END) as in_new_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_IN' THEN t.quantity * i.cost ELSE 0 END) as in_rec_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'OUT' THEN t.quantity * i.cost ELSE 0 END) as out_sold_val,
-            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_OUT' THEN t.quantity * i.cost ELSE 0 END) as out_xfer_val
+            SUM(CASE WHEN t.transaction_date < ? THEN (CASE WHEN t.type IN ('IN', 'TRANSFER_IN') THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE -t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) END) ELSE 0 END) as beg_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'IN' THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as in_new_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_IN' THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as in_rec_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'OUT' THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as out_sold_val,
+            SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? AND t.type = 'TRANSFER_OUT' THEN t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price) ELSE 0 END) as out_xfer_val
             FROM spareparts_transactions t
-            JOIN spareparts_inventory i ON t.part_no = i.part_no
+            LEFT JOIN spareparts_inventory i ON t.part_no = i.part_no
             WHERE $valWhere";
 
         $vParams = [

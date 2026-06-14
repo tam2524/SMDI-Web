@@ -185,9 +185,8 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Branch</label>
-                            <input type="text" class="form-control" name="branch" id="edit_branch" required>
-                            <small class="text-muted" style="font-size: 0.7em;">Note: Only Admin can re-assign
-                                branch</small>
+                            <input type="text" class="form-control bg-light" name="branch" id="edit_branch" readonly required>
+                            <small class="text-danger fw-bold d-block mt-1" style="font-size: 0.75em;"><i class="bi bi-exclamation-circle-fill me-1"></i>To change branch, please use the transfer feature.</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Brand</label>

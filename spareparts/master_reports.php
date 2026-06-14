@@ -9,6 +9,14 @@ $username = $_SESSION['username'];
 $position = $_SESSION['position'] ?? 'User';
 $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 
+require_once __DIR__ . '/../api/db_config.php';
+$stmt = $conn->prepare("SELECT report_header_title FROM users WHERE username = ?");
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$dbUser = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_header_title'] : 'ROXAS CITY SOLID MERCHANDISING';
+
 // Role-based title
 $roleTitle = "Master Reports";
 $isAdmin = in_array(strtoupper(trim($position)), ['ADMIN', 'HEAD', 'ITSUPERADMIN', 'ADMIN SPAREPARTS', 'SPAREPARTS-ADMIN', 'SPAREPARTS-OWNER']);
@@ -311,6 +319,10 @@ if ($position === 'Spareparts-Owner') {
                 display: none !important;
             }
 
+            .report-header-print .report-title {
+                display: block !important;
+            }
+
             body {
                 background: white !important;
                 padding: 0 !important;
@@ -471,7 +483,7 @@ if ($position === 'Spareparts-Owner') {
                             <h2 class="report-title mb-0" id="activeReportTitle">Inventory Management Reports</h2>
                         </div>
                         <div class="report-header-print d-none d-print-block">
-                            <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                            <div class="company-name" id="printCompanyHeader"><?php echo htmlspecialchars($reportHeaderTitle); ?></div>
                             <div class="system-name">Spareparts Management System</div>
                             <div class="report-title-container" style="margin-top: 15px;">
                                 <div class="report-title" id="printTitle"></div>
@@ -602,6 +614,13 @@ if ($position === 'Spareparts-Owner') {
                         </div>
                     </div>
 
+                    <!-- On-Screen Report Header (Visible on Screen) -->
+                    <div class="p-4 bg-light border-bottom d-print-none" id="screenReportHeader">
+                        <div class="text-uppercase text-muted fw-bold small" id="screenCompanyHeader" style="letter-spacing: 1px;"><?php echo htmlspecialchars($reportHeaderTitle); ?></div>
+                        <h3 class="fw-bold text-dark mb-1" id="screenReportTitle">REPORT TITLE</h3>
+                        <div class="text-secondary small" id="screenReportCriteria">Generated on: - | Branch: -</div>
+                    </div>
+
                     <div class="table-responsive bg-white shadow-sm">
                         <table class="table table-hover mb-0" id="reportPreviewTable">
                             <thead id="previewThead"></thead>
@@ -668,7 +687,7 @@ if ($position === 'Spareparts-Owner') {
 
                     <!-- Standardized Report Header (Print only) -->
                     <div class="report-header-print d-none d-print-block">
-                        <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                        <div class="company-name"><?php echo htmlspecialchars($reportHeaderTitle); ?></div>
                         <div class="system-name">Spareparts Management System</div>
                         <div class="report-title-container" style="margin-top: 15px;">
                             <div class="report-title">STATEMENT OF ACCOUNT</div>

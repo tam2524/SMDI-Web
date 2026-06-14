@@ -62,7 +62,7 @@ function getUsers($conn)
     // STRICTLY ONLY SPAREPARTS USERS - Use parentheses for OR conditions to ensure AND search applies correctly
     $baseQuery = " FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f')";
     
-    $sql = "SELECT id, username, fullName, position, branch" . $baseQuery;
+    $sql = "SELECT id, username, fullName, position, branch, report_header_title" . $baseQuery;
     $countSql = "SELECT COUNT(*) as total" . $baseQuery;
 
     if (!empty($search)) {
@@ -112,7 +112,7 @@ function getUser($conn)
 
     $id = intval($_GET['id']);
     // Ensure we only fetch spareparts users
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -159,16 +159,19 @@ function addUser($conn, $data)
     $position = $data['position'];
     $branch = $data['branch'] ?? null;
 
-    $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password) 
-                           VALUES (?, ?, ?, ?, ?)");
+    $reportHeaderTitle = !empty($data['report_header_title']) ? trim($data['report_header_title']) : null;
+
+    $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password, report_header_title) 
+                           VALUES (?, ?, ?, ?, ?, ?)");
     $username = trim($data['username']);
     $stmt->bind_param(
-        "sssss",
+        "ssssss",
         $username,
         $fullName,
         $position,
         $branch,
-        $hashedPassword
+        $hashedPassword,
+        $reportHeaderTitle
     );
 
     if ($stmt->execute()) {
@@ -231,6 +234,12 @@ function editUser($conn, $data)
     if (isset($data['branch'])) {
         $updates[] = "branch = ?";
         $params[] = $data['branch'];
+        $types .= "s";
+    }
+
+    if (isset($data['report_header_title'])) {
+        $updates[] = "report_header_title = ?";
+        $params[] = !empty($data['report_header_title']) ? trim($data['report_header_title']) : null;
         $types .= "s";
     }
 

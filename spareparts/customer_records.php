@@ -41,7 +41,10 @@ if ($userRoleLower === 'spareparts-owner') {
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark mb-0"><i class="bi bi-people me-2"></i>Customer Records</h2>
-            <a href="<?php echo $backLink; ?>" class="btn btn-outline-secondary btn-sm">Back</a>
+            <div class="d-flex gap-2">
+                <input type="text" id="customerSearch" class="form-control" style="width: 280px;" placeholder="Search by name, address, contact, branch...">
+                <a href="<?php echo $backLink; ?>" class="btn btn-outline-secondary">Back</a>
+            </div>
         </div>
 
         <div class="card">
@@ -70,11 +73,12 @@ if ($userRoleLower === 'spareparts-owner') {
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
         $(document).ready(function() {
-            $.get('../api/spareparts_inventory.php', { action: 'searchUniqueCustomers' }, function(res) {
-                // searchUniqueCustomers returns an array
-                if (res.length) {
+            let customersData = [];
+
+            function renderCustomers(data) {
+                if (data && data.length) {
                     let html = '';
-                    res.forEach(c => {
+                    data.forEach(c => {
                         html += `
                             <tr>
                                 <td class="ps-4 fw-bold text-primary">${c.name}</td>
@@ -90,6 +94,29 @@ if ($userRoleLower === 'spareparts-owner') {
                 } else {
                     $('#customerBody').html('<tr><td colspan="6" class="text-center py-5 text-muted">No records found.</td></tr>');
                 }
+            }
+
+            $.get('../api/spareparts_inventory.php', { action: 'searchUniqueCustomers' }, function(res) {
+                if (typeof res === 'string') {
+                    try { res = JSON.parse(res); } catch(e) {}
+                }
+                customersData = res || [];
+                renderCustomers(customersData);
+            }, 'json');
+
+            $('#customerSearch').on('input', function() {
+                const q = $(this).val().toLowerCase().trim();
+                if (!q) {
+                    renderCustomers(customersData);
+                    return;
+                }
+                const filtered = customersData.filter(c => 
+                    (c.name || '').toLowerCase().includes(q) ||
+                    (c.address || '').toLowerCase().includes(q) ||
+                    (c.contact_no || '').toLowerCase().includes(q) ||
+                    (c.branch || '').toLowerCase().includes(q)
+                );
+                renderCustomers(filtered);
             });
         });
     </script>

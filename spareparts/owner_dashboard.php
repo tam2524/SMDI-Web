@@ -462,6 +462,17 @@ function isVisible($menuId) {
                         </div>
                         <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
                     </a>
+                    <?php if (isVisible('pricing-mgmt-card')): ?>
+                    <a href="pricing_management.php" class="module-card bg-menu-teal">
+                        <div class="module-icon-wrap"><i class="bi bi-tags-fill"></i></div>
+                        <div>
+                            <div class="module-title">Pricing Management</div>
+                            <div class="module-desc">Manage parts cost, prices &amp; bulk updates</div>
+                        </div>
+                        <div class="module-arrow">Open <i class="bi bi-arrow-right"></i></div>
+                    </a>
+                    <?php endif; ?>
+
                     <?php endif; ?>
 
                 </div>

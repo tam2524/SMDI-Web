@@ -539,10 +539,10 @@ function handleSalesReports($type, $period, $dateVal, $branch, $brand, $refNo = 
         case 'profit_margin':
             $sql = "SELECT t.part_no, t.description, SUM(t.quantity) as qty, 
                            SUM(t.total_amount) as revenue, 
-                           SUM(t.quantity * i.cost) as total_cost,
-                           (SUM(t.total_amount) - SUM(t.quantity * i.cost)) as profit
+                           SUM(t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price)) as total_cost,
+                           (SUM(t.total_amount) - SUM(t.quantity * COALESCE(NULLIF(t.cost, 0), i.cost, t.price))) as profit
                     FROM spareparts_transactions t
-                    JOIN spareparts_inventory i ON t.part_no = i.part_no AND t.from_location = i.current_branch
+                    LEFT JOIN spareparts_inventory i ON t.part_no = i.part_no AND t.from_location = i.current_branch
                     WHERE $where GROUP BY t.part_no ORDER BY profit DESC";
             $headers = ['Part No', 'Description', 'Qty', 'Revenue', 'Cost', 'G. Profit'];
             $keys = ['part_no', 'description', 'qty', 'revenue', 'total_cost', 'profit'];

@@ -666,6 +666,10 @@ endif; ?>
                                         data-bs-toggle='modal' data-bs-target='#addPartModal'>
                                         <i class='bi bi-plus-circle me-1'></i>Add New Part
                                     </button>
+                                    <button class='btn btn-sm btn-outline-success fw-bold px-3'
+                                        data-bs-toggle='modal' data-bs-target='#bulkPriceUploadModal'>
+                                        <i class='bi bi-file-earmark-excel me-1'></i>Bulk Price Update
+                                    </button>
                                 </div>
                                 <input type='text' id='inventorySearch' class='form-control form-control-sm'
                                     style="width: 250px;" placeholder='Search parts...' autocomplete="off">
@@ -1787,6 +1791,66 @@ endif; ?>
                 </div>
                 <div class='modal-footer'><button type='button' class='btn btn-danger'
                         data-bs-dismiss='modal'>OK</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Price Upload Modal -->
+    <div class='modal fade' id='bulkPriceUploadModal' tabindex='-1' aria-hidden='true'>
+        <div class='modal-dialog modal-lg'>
+            <div class='modal-content'>
+                <div class='modal-header bg-success text-white'>
+                    <h5 class='modal-title text-white'><i class="bi bi-file-earmark-excel me-2"></i>Bulk Price Update</h5>
+                    <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
+                </div>
+                <div class='modal-body p-4'>
+                    <div id="uploadView">
+                        <div class="alert alert-info small">
+                            <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>Excel Format Instructions:</h6>
+                            <p class="mb-0">Your Excel file must contain a header row with at least these columns: <strong>part_no</strong>, <strong>cost</strong>, and <strong>price</strong>. Existing parts will be updated based on matching <strong>part_no</strong>.</p>
+                        </div>
+                        <form id="bulkPriceForm" enctype="multipart/form-data">
+                            <div class="mb-4">
+                                <label for="bulkExcelFile" class="form-label fw-bold">Select Excel File (.xlsx, .xls, .csv)</label>
+                                <input type="file" class="form-control" id="bulkExcelFile" name="excel_file" accept=".xlsx, .xls, .csv" required>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-success fw-bold"><i class="bi bi-eye me-1"></i>Preview Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div id="previewView" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-1 text-success">Update Preview List</h6>
+                                <p class="small text-muted mb-0" id="previewSummaryText">Review changes before importing.</p>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnBackToUpload"><i class="bi bi-arrow-left me-1"></i>Back</button>
+                        </div>
+                        <div class="table-responsive" style="max-height: 40vh; overflow-y: auto;">
+                            <table class="table table-sm table-bordered align-middle table-hover small">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Part No</th>
+                                        <th>Description</th>
+                                        <th class="text-end">Current Cost</th>
+                                        <th class="text-end text-primary">New Cost</th>
+                                        <th class="text-end">Current Price</th>
+                                        <th class="text-end text-success">New Price</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkPreviewTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-success fw-bold" id="btnConfirmBulkUpdate"><i class="bi bi-check-circle me-1"></i>Apply Updates</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -80,30 +80,32 @@
         });
 
 function openNewWindow(branchName) {
+// All branches now resolved by the unified fetch_inquiries.php endpoint.
+// AllBranches → no ?branch param; all others → ?branch=<value>
+var BASE_URL = '../api/fetch_inquiries.php';
 var formUrls = {
-'AllBranches': '../api/fetch_AllBranches.php',
-'RoxasSuzuki': '../api/fetch_RoxasSuzuki.php',
-'RoxasHonda': '../api/fetch_RoxasHonda.php',
-'KridersRoxas': '../api/fetch_kridersRoxas.php',
-'Passi': '../api/fetch_passi.php',
-'Passi2': '../api/fetch_passi2.php',
-'KaliboSuzuki': '../api/fetch_KaliboSuzuki.php',
-'KaliboHonda': '../api/fetch_KaliboHonda.php',
-'Jaro1': '../api/fetch_jaro1.php',
-'Jaro2': '../api/fetch_jaro2.php',
-'Guimaras': '../api/fetch_guimaras.php',
-'DelgadoSuzuki': '../api/fetch_DelgadoSuzuki.php',
-'DelgadoHonda': '../api/fetch_DelgadoHonda.php',
-'Balasan': '../api/fetch_Balasan.php',
-'Antique1': '../api/fetch_Antique1.php',
-'Antique2': '../api/fetch_Antique2.php',
-'Culasi': '../api/fetch_Culasi.php',
-'Bacolod': '../api/fetch_Bacolod.php',
-'Ajuy': '../api/fetch_Ajuy.php',
-'EEMSIGuimaras': '../api/fetch_EEMSIGuimaras.php',
-'PEMDIBacolod': '../api/fetch_PEMDIBacolod.php',
-'Numancia': '../api/fetch_Numancia.php',
-
+    'AllBranches':  BASE_URL,
+    'RoxasSuzuki':  BASE_URL + '?branch=RoxasSuzuki',
+    'RoxasHonda':   BASE_URL + '?branch=RoxasHonda',
+    'KridersRoxas': BASE_URL + '?branch=KridersRoxas',
+    'Passi':        BASE_URL + '?branch=Passi',
+    'Passi2':       BASE_URL + '?branch=Passi2',
+    'KaliboSuzuki': BASE_URL + '?branch=KaliboSuzuki',
+    'KaliboHonda':  BASE_URL + '?branch=KaliboHonda',
+    'Jaro1':        BASE_URL + '?branch=Jaro1',
+    'Jaro2':        BASE_URL + '?branch=Jaro2',
+    'Guimaras':     BASE_URL + '?branch=Guimaras',
+    'DelgadoSuzuki':BASE_URL + '?branch=DelgadoSuzuki',
+    'DelgadoHonda': BASE_URL + '?branch=DelgadoHonda',
+    'Balasan':      BASE_URL + '?branch=balasan',
+    'Antique1':     BASE_URL + '?branch=Antique1',
+    'Antique2':     BASE_URL + '?branch=Antique2',
+    'Culasi':       BASE_URL + '?branch=Culasi',
+    'Bacolod':      BASE_URL + '?branch=Bacolod',
+    'Ajuy':         BASE_URL + '?branch=Ajuy',
+    'EEMSIGuimaras':BASE_URL + '?branch=EEMSIGuimaras',
+    'PEMDIBacolod': BASE_URL + '?branch=PEMDIBacolod',
+    'Numancia':     BASE_URL + '?branch=Numancia',
 };
 var formUrl = formUrls[branchName];
 

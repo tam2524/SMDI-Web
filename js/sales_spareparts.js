@@ -191,6 +191,21 @@ $(document).ready(function () {
     }
     loadCustomers();
 
+    // Client-side Customer Search
+    $('#customersSearch').on('input', function () {
+        const q = $(this).val().toLowerCase().trim();
+        if (!q) {
+            renderCustomers(customersData);
+            return;
+        }
+        const filtered = customersData.filter(cust =>
+            (cust.name || '').toLowerCase().includes(q) ||
+            (cust.contact_no || '').toLowerCase().includes(q) ||
+            (cust.address || '').toLowerCase().includes(q)
+        );
+        renderCustomers(filtered);
+    });
+
     // Manual triggers for Add Customer button
     $(document).on('click', '[data-bs-target="#addCustomerModal"]', function (e) {
         console.log("Add Customer button clicked");

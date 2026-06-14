@@ -1,4 +1,13 @@
 $(document).ready(function () {
+    window.reportHeaderTitle = 'ROXAS CITY SOLID MERCHANDISING';
+    $.get('../api/spareparts_inventory.php?action=get_user_info', function (res) {
+        try {
+            const data = typeof res === 'string' ? JSON.parse(res) : res;
+            if (data && data.success && data.data.report_header_title) {
+                window.reportHeaderTitle = data.data.report_header_title;
+            }
+        } catch (e) {}
+    }, 'json');
 
     // Config for different report categories
     const reportConfigs = {
@@ -326,11 +335,19 @@ $(document).ready(function () {
                 </table>
             `).removeClass('d-none');
             $('#printTitle').text('STATEMENT OF ACCOUNT');
+            $('#screenReportTitle').text('STATEMENT OF ACCOUNT');
         } else {
             $('#customerInfoPrintWrap').addClass('d-none').empty();
             $('#printTitle').text(reportTitle.toUpperCase());
+            $('#screenReportTitle').text(reportTitle.toUpperCase());
         }
-        $('#printCriteria').text(`Generated on: ${new Date().toLocaleString()} | Branch: ${branch.toUpperCase()}`);
+        const criteriaText = `Generated on: ${new Date().toLocaleString()} | Branch: ${branch.toUpperCase()}`;
+        $('#printCriteria').text(criteriaText);
+        $('#screenReportCriteria').text(criteriaText);
+        
+        const companyHeaderVal = window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING';
+        $('#printCompanyHeader').text(companyHeaderVal);
+        $('#screenCompanyHeader').text(companyHeaderVal);
 
         // Update footer based on category
         if (currentCategory === 'payments' || currentCategory === 'sales') {
@@ -378,6 +395,7 @@ $(document).ready(function () {
 
         $('#printTitle').text(reportTitle.toUpperCase());
         $('#printCriteria').text(`Generated on: ${new Date().toLocaleString()} | Branch: ${branch.toUpperCase()}`);
+        $('#printCompanyHeader').text(window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING');
 
         // Update footer based on category
         if (currentCategory === 'payments' || currentCategory === 'sales') {
@@ -420,7 +438,7 @@ $(document).ready(function () {
 
     function exportToExcel(data, config, title) {
         const worksheetData = [
-            ["ROXAS CITY SOLID MERCHANDISING"],
+            [window.reportHeaderTitle || "ROXAS CITY SOLID MERCHANDISING"],
             ["SPARE PARTS MANAGEMENT SYSTEM"],
             [`REPORT: ${title.toUpperCase()}`],
             [`Branch: ${$('#branch_filter').val().toUpperCase()} | Generated: ${new Date().toLocaleString()}`],
@@ -460,7 +478,7 @@ $(document).ready(function () {
 
         doc.setFontSize(22);
         doc.setTextColor(0, 61, 51); // --green-900
-        doc.text('ROXAS CITY SOLID MERCHANDISING', 14, 20);
+        doc.text(window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING', 14, 20);
 
         doc.setFontSize(11);
         doc.setTextColor(100);
@@ -667,7 +685,7 @@ $(document).ready(function () {
         </head>
         <body onload="window.print();">
             <div class="report-header-print">
-                <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                <div class="company-name">${window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING'}</div>
                 <div class="system-name">Spareparts Management System</div>
                 <div class="report-title-container">
                     <div class="report-title">STATEMENT OF ACCOUNT</div>
@@ -807,7 +825,7 @@ $(document).ready(function () {
             </head>
             <body onload="window.print();">
                 <div class="report-header">
-                    <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="company-name">${window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING'}</div>
                     <div class="system-name">Spareparts Management System</div>
                     <div class="report-title-box">
                         <div class="report-title">${reportTitle}</div>
@@ -945,7 +963,7 @@ $(document).ready(function () {
             </head>
             <body onload="window.print();">
                 <div class="header">
-                    <div class="company">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="company">${window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING'}</div>
                     <div class="sub-system">Spareparts Management System</div>
                 </div>
                 

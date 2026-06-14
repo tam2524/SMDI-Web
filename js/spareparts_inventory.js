@@ -8,6 +8,27 @@ $(document).ready(function () {
     const canDelete = typeof window.canDelete !== 'undefined' ? window.canDelete : false;
     const PAGE_SIZE = 10;
 
+    window.creditLimitEnabled = true;
+    $.get('../api/sales_features_api.php?action=get_setting&key=credit_limit_enabled', function (res) {
+        try {
+            const data = typeof res === 'string' ? JSON.parse(res) : res;
+            if (data && data.success && data.value !== null) {
+                const val = String(data.value).trim().toLowerCase();
+                window.creditLimitEnabled = (val === '1' || val === 'true');
+            }
+        } catch (e) {}
+    }, 'json');
+
+    window.reportHeaderTitle = 'ROXAS CITY SOLID MERCHANDISING';
+    $.get('../api/spareparts_inventory.php?action=get_user_info', function (res) {
+        try {
+            const data = typeof res === 'string' ? JSON.parse(res) : res;
+            if (data && data.success && data.data.report_header_title) {
+                window.reportHeaderTitle = data.data.report_header_title;
+            }
+        } catch (e) {}
+    }, 'json');
+
     // Utility Functions
     function formatCurrency(amount) { return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function formatDateTime(dateStr) { if (!dateStr) return 'N/A'; const d = new Date(dateStr); return d.toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
@@ -1576,7 +1597,7 @@ $(document).ready(function () {
             const transactionTypeVal = $('#out_transaction_type').val();
 
             // Credit Limit Validation
-            if (transactionTypeVal === 'charge' || transactionTypeVal === 'pdc') {
+            if ((transactionTypeVal === 'charge' || transactionTypeVal === 'pdc') && window.creditLimitEnabled) {
                 const limit = parseFloat(window.currentCustomerLimit || 0);
                 const balance = parseFloat(window.currentCustomerBalance || 0);
                 let currentTotal = 0;
@@ -1673,7 +1694,7 @@ $(document).ready(function () {
             const html = `
                 <div style="font-family: 'Courier New', Courier, monospace; color: #000;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <h4 style="margin: 0; font-weight: bold;">Roxas City Solid Merchandising</h4>
+                        <h4 style="margin: 0; font-weight: bold;">${window.reportHeaderTitle || 'Roxas City Solid Merchandising'}</h4>
                         <p style="margin: 5px 0; font-size: 0.9rem;">Sales Invoice</p>
                         <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
                     </div>
@@ -1739,7 +1760,7 @@ $(document).ready(function () {
             const html = `
                 <div style="font-family: 'Courier New', Courier, monospace; color: #000;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <h4 style="margin: 0; font-weight: bold;">Roxas City Solid Merchandising</h4>
+                        <h4 style="margin: 0; font-weight: bold;">${window.reportHeaderTitle || 'Roxas City Solid Merchandising'}</h4>
                         <p style="margin: 5px 0; font-size: 0.9rem;">Official Payment Receipt</p>
                         <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
                     </div>
@@ -4439,7 +4460,7 @@ $(document).ready(function () {
             </head>
             <body>
                 <div class="report-header-print">
-                    <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="company-name">${window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING'}</div>
                     <div class="system-name">Spareparts Management System</div>
                     <div class="report-title-container" style="margin-top: 15px;">
                         <h2 class="report-title">${title}</h2>
@@ -4585,6 +4606,113 @@ $(document).ready(function () {
         });
     });
 
+    // Bulk Price Upload & Preview Logic
+    $('#bulkPriceForm').on('submit', function (e) {
+        e.preventDefault();
+        
+        const fileInput = $('#bulkExcelFile')[0];
+        if (fileInput.files.length === 0) {
+            showErrorModal('Please select a file.');
+            return;
+        }
+
+        const formData = new FormData(this);
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        
+        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Parsing...');
+
+        $.ajax({
+            url: '../api/bulk_price_preview.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            success: function (res) {
+                submitBtn.prop('disabled', false).html(originalText);
+                if (res.success) {
+                    const tbody = $('#bulkPreviewTableBody');
+                    tbody.empty();
+                    
+                    if (res.data.length === 0) {
+                        tbody.append('<tr><td colspan="7" class="text-center text-muted py-3">No price or cost differences found in the uploaded file compared to active inventory.</td></tr>');
+                        $('#btnConfirmBulkUpdate').prop('disabled', true);
+                    } else {
+                        res.data.forEach(item => {
+                            const isNotFound = item.status === 'Not Found';
+                            const statusBadge = isNotFound 
+                                ? '<span class="badge bg-danger">Not Found</span>' 
+                                : '<span class="badge bg-success">Valid Match</span>';
+                                
+                            const costChangeClass = item.new_cost != item.current_cost ? 'text-primary fw-bold' : '';
+                            const priceChangeClass = item.new_price != item.current_price ? 'text-success fw-bold' : '';
+
+                            tbody.append(`
+                                <tr class="${isNotFound ? 'table-warning' : ''}">
+                                    <td>${escapeHtml(item.part_no)}</td>
+                                    <td>${escapeHtml(item.description)}</td>
+                                    <td class="text-end">₱${formatCurrency(item.current_cost)}</td>
+                                    <td class="text-end ${costChangeClass}">₱${formatCurrency(item.new_cost)}</td>
+                                    <td class="text-end">₱${formatCurrency(item.current_price)}</td>
+                                    <td class="text-end ${priceChangeClass}">₱${formatCurrency(item.new_price)}</td>
+                                    <td>${statusBadge}</td>
+                                </tr>
+                            `);
+                        });
+                        $('#btnConfirmBulkUpdate').prop('disabled', res.total_updates === 0);
+                    }
+                    
+                    $('#previewSummaryText').text(`${res.total_updates} item(s) will be updated. Unmatched items will be ignored.`);
+                    $('#uploadView').addClass('d-none');
+                    $('#previewView').removeClass('d-none');
+                } else {
+                    showErrorModal(res.message || 'Failed to parse Excel file.');
+                }
+            },
+            error: function () {
+                submitBtn.prop('disabled', false).html(originalText);
+                showErrorModal('A server error occurred while processing the file.');
+            }
+        });
+    });
+
+    $('#btnBackToUpload').on('click', function () {
+        $('#previewView').addClass('d-none');
+        $('#uploadView').removeClass('d-none');
+    });
+
+    $('#btnConfirmBulkUpdate').on('click', function () {
+        const confirmBtn = $(this);
+        const originalText = confirmBtn.html();
+        confirmBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Applying...');
+
+        $.ajax({
+            url: '../api/bulk_price_update.php',
+            type: 'POST',
+            dataType: 'json',
+            success: function (res) {
+                confirmBtn.prop('disabled', false).html(originalText);
+                if (res.success) {
+                    showSuccessModal(res.message || 'Prices updated successfully.');
+                    $('#bulkPriceUploadModal').modal('hide');
+                    $('#bulkPriceForm')[0].reset();
+                    $('#previewView').addClass('d-none');
+                    $('#uploadView').removeClass('d-none');
+                    if (typeof loadInventory === 'function') {
+                        loadInventory();
+                    }
+                } else {
+                    showErrorModal(res.message || 'Failed to update prices.');
+                }
+            },
+            error: function () {
+                confirmBtn.prop('disabled', false).html(originalText);
+                showErrorModal('A server error occurred while applying updates.');
+            }
+        });
+    });
+
     // If filterType is cash, ensure sales are loaded as cash only
     if (window.filterType === 'cash') {
         setTimeout(() => {
@@ -4702,7 +4830,7 @@ if (typeof window.printTransferSummaryUI !== 'function') {
             </head>
             <body>
                 <div class="report-header-print">
-                    <div class="company-name">ROXAS CITY SOLID MERCHANDISING</div>
+                    <div class="company-name">${window.reportHeaderTitle || 'ROXAS CITY SOLID MERCHANDISING'}</div>
                     <div class="system-name">Spareparts Management System</div>
                     <div class="report-title-container" style="margin-top: 15px;">
                         <div class="report-title">TRANSFER SUMMARY DOCUMENT</div>

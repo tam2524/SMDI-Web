@@ -781,19 +781,24 @@ endif; ?>
                                         <h6 class="fw-bold mb-3 text-dark d-flex align-items-center" style="font-size: 0.9rem;">
                                             <i class="bi bi-cash-coin me-2 text-warning"></i> Pricing
                                         </h6>
-                                        <div class="mb-3">
+                                        <div class="mb-2">
                                             <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Cost (Master Inventory)</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0 text-muted">₱</span>
-                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold" name="cost" id="edit_cost" required>
+                                                <span class="input-group-text bg-light border-end-0 text-muted">₱</span>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold bg-light" name="cost" id="edit_cost" readonly required>
                                             </div>
                                         </div>
-                                        <div>
+                                        <div class="mb-2">
                                             <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Store Selling Price</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0 text-success fw-bold">₱</span>
-                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold text-success" name="price" id="edit_price" required>
+                                                <span class="input-group-text bg-light border-end-0 text-success fw-bold">₱</span>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold text-success bg-light" name="price" id="edit_price" readonly required>
                                             </div>
+                                        </div>
+                                        <div class="mt-2 pt-1 border-top">
+                                            <span class="text-danger fw-bold d-block" style="font-size: 0.7rem; line-height: 1.25;">
+                                                <i class="bi bi-exclamation-circle-fill me-1"></i>To update pricing, please go to <a href="pricing_management.php" class="text-danger text-decoration-underline fw-bold">Price Management</a>.
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -814,9 +819,14 @@ endif; ?>
                                         <div class="mb-2">
                                             <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Current Branch</label>
                                             <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-building"></i></span>
-                                                <input type="text" class="form-control border-start-0 ps-0" name="branch" id="edit_branch" required>
+                                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-building"></i></span>
+                                                <input type="text" class="form-control border-start-0 ps-0 bg-light" name="branch" id="edit_branch" readonly required>
                                             </div>
+                                        </div>
+                                        <div class="mt-2 pt-1 border-top">
+                                            <span class="text-danger fw-bold d-block" style="font-size: 0.7rem; line-height: 1.25;">
+                                                <i class="bi bi-exclamation-circle-fill me-1"></i>To change branch, please use the transfer feature.
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -1135,6 +1145,9 @@ endif; ?>
                                                             <th class="ps-4 text-muted fw-bold small text-uppercase border-0 py-3">Receive Date</th>
                                                             <th class="text-muted fw-bold small text-uppercase border-0 py-3">Supplier Source</th>
                                                             <th class="text-end text-muted fw-bold small text-uppercase border-0 py-3">Cost</th>
+                                                            <th class="text-end text-muted fw-bold small text-uppercase border-0 py-3">Selling Price</th>
+                                                            <th class="text-muted fw-bold small text-uppercase border-0 py-3">Reason</th>
+                                                            <th class="text-muted fw-bold small text-uppercase border-0 py-3">Changed By</th>
                                                             <th class="pe-4 text-center text-muted fw-bold small text-uppercase border-0 py-3">Ref Invoice</th>
                                                         </tr>
                                                     </thead>
