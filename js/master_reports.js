@@ -208,6 +208,9 @@ $(document).ready(function () {
                 if (response.success) {
                     lastReportData = response.data;
                     lastReportConfig = response.config;
+                    if (response.report_header_title) {
+                        window.reportHeaderTitle = response.report_header_title;
+                    }
                     renderPreview(response.data, response.config, response.summary, response.customer_info);
                 } else {
                     showStatus('error', 'Failed to generate report', response.message);
@@ -598,6 +601,9 @@ $(document).ready(function () {
         };
 
         $.get('../api/reports_master.php', params, function (response) {
+            if (response.success && response.report_header_title) {
+                window.reportHeaderTitle = response.report_header_title;
+            }
             if (response.success && response.data.length > 0) {
                 let html = '';
                 let totalDebit = 0;

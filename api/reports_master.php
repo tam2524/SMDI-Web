@@ -13,6 +13,7 @@ $isAdmin = in_array(strtolower(trim($userRole)), array_map('strtolower', $adminR
 $currentBranch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
 
 $action = $_REQUEST['action'] ?? '';
+$chkBranch = 'all';
 
 if ($action === 'generate_master_report') {
     $category = $_GET['category'] ?? 'inventory';
@@ -30,6 +31,7 @@ if ($action === 'generate_master_report') {
         // Admin/Owner can pick any branch
         $branch = $_GET['branch'] ?? 'all';
     }
+    $chkBranch = $branch;
 
     $finalResponse = ['success' => false, 'message' => 'Report not implemented yet.'];
 
@@ -55,6 +57,8 @@ if ($action === 'generate_master_report') {
         $finalResponse = ['success' => false, 'message' => 'Internal Error: ' . $e->getMessage()];
     }
 
+    appendHeaderTitle($finalResponse, $chkBranch);
+
     echo json_encode($finalResponse);
     exit();
 }
@@ -63,6 +67,7 @@ if ($action === 'customer_ledger') {
     $customerName = trim($_GET['customer'] ?? $_GET['customer_name'] ?? '');
     $branchVal = trim($_GET['branch'] ?? 'all');
     if (!$isAdmin) $branchVal = $currentBranch;
+    $chkBranch = $branchVal;
     
     // For single customer view from Dashboard, we want full history since start of year by default
     $period = $_GET['period'] ?? 'custom';
@@ -73,10 +78,13 @@ if ($action === 'customer_ledger') {
     
     try {
         $finalResponse = handlePaymentReports('customer_ledger', $period, $dateVal, $branchVal, '');
-        echo json_encode($finalResponse);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        $finalResponse = ['success' => false, 'message' => $e->getMessage()];
     }
+
+    appendHeaderTitle($finalResponse, $chkBranch);
+
+    echo json_encode($finalResponse);
     exit();
 }
 
@@ -873,4 +881,40 @@ function parseDateRange($period, $dateVal) {
         $end = $parts[1] ?? date('Y-m-d');
     }
     return ['start' => $start, 'end' => $end];
+}
+
+function appendHeaderTitle(&$finalResponse, $chkBranch) {
+    global $conn;
+    $branchHeaderTitle = null;
+    if ($chkBranch !== 'all' && !empty($chkBranch)) {
+        $stmt = $conn->prepare("SELECT report_header_title FROM users WHERE (username = ? OR branch = ?) AND position IN ('Spareparts-Sales', 'Spareparts-Warehouse') LIMIT 1");
+        $stmt->bind_param("ss", $chkBranch, $chkBranch);
+        $stmt->execute();
+        $branchRes = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($branchRes && !empty($branchRes['report_header_title'])) {
+            $branchHeaderTitle = $branchRes['report_header_title'];
+        }
+    }
+    
+    if (empty($branchHeaderTitle)) {
+        if (isset($_SESSION['username'])) {
+            $stmt = $conn->prepare("SELECT report_header_title FROM users WHERE username = ? LIMIT 1");
+            $stmt->bind_param("s", $_SESSION['username']);
+            $stmt->execute();
+            $userRes = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if ($userRes && !empty($userRes['report_header_title'])) {
+                $branchHeaderTitle = $userRes['report_header_title'];
+            }
+        }
+    }
+    
+    if (empty($branchHeaderTitle)) {
+        $branchHeaderTitle = 'ROXAS CITY SOLID MERCHANDISING';
+    }
+
+    if (is_array($finalResponse)) {
+        $finalResponse['report_header_title'] = $branchHeaderTitle;
+    }
 }

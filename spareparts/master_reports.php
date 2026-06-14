@@ -608,9 +608,6 @@ if ($position === 'Spareparts-Owner') {
                         <h5 class="fw-bold mb-0"><i class="bi bi-eye me-2"></i>Report Preview</h5>
                         <div class="d-flex align-items-center gap-3">
                             <div class="small fw-bold text-success" id="recordsCount">Showing 0 records</div>
-                            <button class="btn btn-sm btn-primary text-white" onclick="window.print()">
-                                <i class="bi bi-printer me-1"></i> Print This Preview
-                            </button>
                         </div>
                     </div>
 
