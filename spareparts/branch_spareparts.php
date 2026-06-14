@@ -208,23 +208,28 @@
                         <textarea class="form-control" name="description" id="edit_description" rows="2"
                             required></textarea>
                     </div>
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label">Unit Cost</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" step="0.01" class="form-control" name="cost" id="edit_cost"
-                                    required>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label">Unit Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">₱</span>
+                                    <input type="number" step="0.01" class="form-control bg-light text-muted" name="cost" id="edit_cost"
+                                        readonly required>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Selling Price</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" step="0.01" class="form-control" name="price" id="edit_price"
-                                    required>
+                            <div class="col-6">
+                                <label class="form-label">Selling Price</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">₱</span>
+                                    <input type="number" step="0.01" class="form-control bg-light text-muted" name="price" id="edit_price"
+                                        readonly required>
+                                </div>
                             </div>
-                        </div>
+                            <div class="col-12 mt-1">
+                                <small class="text-danger fw-bold d-block">
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i>To update pricing, please go to <a href="pricing_management.php" class="text-danger text-decoration-underline fw-bold">Price Management</a>.
+                                </small>
+                            </div>
                         <div class="col-12 mt-2">
                             <label class="form-label">Thumbnail Image (Optional)</label>
                             <input type="file" class="form-control" name="part_image" id="edit_part_image"

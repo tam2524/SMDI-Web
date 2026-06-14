@@ -1126,18 +1126,23 @@ endif; ?>
                             <div class="col-6">
                                 <label class="form-label">Unit Cost</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">₱</span>
-                                    <input type="number" step="0.01" class="form-control" name="cost" id="edit_cost"
-                                        required>
+                                    <span class="input-group-text bg-light text-muted">₱</span>
+                                    <input type="number" step="0.01" class="form-control bg-light text-muted" name="cost" id="edit_cost"
+                                        readonly required>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <label class="form-label">Selling Price</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">₱</span>
-                                    <input type="number" step="0.01" class="form-control" name="price" id="edit_price"
-                                        required>
+                                    <span class="input-group-text bg-light text-muted">₱</span>
+                                    <input type="number" step="0.01" class="form-control bg-light text-muted" name="price" id="edit_price"
+                                        readonly required>
                                 </div>
+                            </div>
+                            <div class="col-12 mt-1">
+                                <small class="text-danger fw-bold d-block">
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i>To update pricing, please go to <a href="pricing_management.php" class="text-danger text-decoration-underline fw-bold">Price Management</a>.
+                                </small>
                             </div>
                             <div class="col-12 mt-2">
                                 <label class="form-label">Thumbnail Image (Optional)</label>
@@ -1722,16 +1727,21 @@ endif; ?>
                                             <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Cost (Master Inventory)</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-white border-end-0 text-muted">₱</span>
-                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold" name="cost" id="edit_cost" required>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold bg-light text-muted" name="cost" id="edit_cost" readonly required>
                                             </div>
                                         </div>
                                         <div>
                                             <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Store Selling Price</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-white border-end-0 text-success fw-bold">₱</span>
-                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold text-success" name="price" id="edit_price" required>
+                                                <input type="number" step="0.01" class="form-control border-start-0 ps-0 fw-bold text-success bg-light" name="price" id="edit_price" readonly required>
                                             </div>
                                         </div>
+                                         <div class="mt-2 pt-1 border-top">
+                                             <span class="text-danger fw-bold d-block" style="font-size: 0.7rem; line-height: 1.25;">
+                                                 <i class="bi bi-exclamation-circle-fill me-1"></i>To update pricing, please go to <a href="pricing_management.php" class="text-danger text-decoration-underline fw-bold">Price Management</a>.
+                                             </span>
+                                         </div>
                                     </div>
                                 </div>
                             </div>

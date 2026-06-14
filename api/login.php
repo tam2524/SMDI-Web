@@ -77,8 +77,7 @@ if ($result->num_rows > 0) {
             header("Location: " . $redirectUrl);
         }
         exit();
-    }
-    else {
+    } else {
         if ($isAjax) {
             echo json_encode(['success' => false, 'message' => 'Invalid password']);
         } else {
@@ -88,8 +87,7 @@ if ($result->num_rows > 0) {
             </script>';
         }
     }
-}
-else {
+} else {
     if ($isAjax) {
         echo json_encode(['success' => false, 'message' => 'User not found']);
     } else {

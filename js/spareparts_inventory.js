@@ -3692,6 +3692,8 @@ $(document).ready(function () {
         const page = salesCurrentPage;
         const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+        const hasBalanceCol = $('#salesTable thead th.col-balance').length > 0;
+
         paged.forEach(s => {
             const isPDC = s.payment_method === 'PDC';
             const typeBadge = s.transaction_type === 'charge' ? (isPDC ? 'bg-info text-dark' : 'bg-info text-dark') : 'bg-success text-white';
@@ -3710,6 +3712,10 @@ $(document).ready(function () {
                 <td><div class="small text-muted">${escapeHtml(s.sales_force || 'N/A')}</div></td>
                 <td class="text-end fw-bold">${formatCurrency(s.total_amount)}</td>
                 <td class="text-center"><span class="badge ${typeBadge}">${escapeHtml(typeText)}</span></td>
+                ${hasBalanceCol ? `
+                <td class="text-end fw-bold ${parseFloat(s.balance || 0) > 0 ? 'text-danger' : 'text-muted'}">
+                    ${formatCurrency(s.balance || 0)}
+                </td>` : ''}
                 <td class="text-center">
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-primary view-sale-btn" data-id="${s.id}" data-or="${s.or_number}" data-branch="${s.from_location}" title="View Sale">

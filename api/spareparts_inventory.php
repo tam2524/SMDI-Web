@@ -2811,6 +2811,10 @@ function editPart()
         $oldCost = $partRes ? (float) $partRes['cost'] : 0.00;
         $oldPrice = $partRes ? (float) $partRes['price'] : 0.00;
 
+        // Decouple pricing updates from metadata changes: force cost and price to remain unchanged
+        $cost = $oldCost;
+        $price = $oldPrice;
+
         // Build base SQL and params based on whether image is updated
         $imgSql = $image_url ? ", image_url = ?" : "";
         
