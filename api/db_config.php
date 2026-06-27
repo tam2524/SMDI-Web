@@ -37,11 +37,16 @@ try {
     $conn = new mysqli($servername, $dbusername, $dbpassword, $dbname, $dbport);
     $conn->set_charset("utf8mb4");
     
-    // Auto-patch missing report_header_title in users table
+    // Auto-patch missing report_header_title and plain_password in users table
     try {
         $check = $conn->query("SHOW COLUMNS FROM users LIKE 'report_header_title'");
         if ($check && $check->num_rows === 0) {
             $conn->query("ALTER TABLE users ADD COLUMN report_header_title VARCHAR(255) DEFAULT NULL");
+        }
+        
+        $checkPwd = $conn->query("SHOW COLUMNS FROM users LIKE 'plain_password'");
+        if ($checkPwd && $checkPwd->num_rows === 0) {
+            $conn->query("ALTER TABLE users ADD COLUMN plain_password VARCHAR(255) DEFAULT NULL");
         }
     } catch (Exception $e) {}
 } catch (mysqli_sql_exception $e) {

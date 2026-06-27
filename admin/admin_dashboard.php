@@ -272,6 +272,7 @@
                                     <th>Full Name</th>
                                     <th>Position</th>
                                     <th>Branch</th>
+                                    <th>Password</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -1253,6 +1254,12 @@
                             <label for="editPassword" class="form-label">New Password (leave blank to keep
                                 current)</label>
                             <input type="password" class="form-control" id="editPassword" name="password">
+                            <div class="mt-1 small text-muted" id="mainModalCurrentPasswordContainer" style="display:none;">
+                                Current: <span id="mainModalCurrentPassword" class="fw-bold">••••••••</span>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-muted ms-1" id="toggleMainModalPwdBtn" onclick="toggleMainModalPasswordVisibility()" style="text-decoration: none;">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary text-white">Save Changes</button>
                     </form>

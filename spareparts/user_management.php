@@ -132,11 +132,12 @@ $backLink = ($_SESSION['position'] === 'Spareparts-Owner') ? 'owner_dashboard.ph
                                 <th>Full Name</th>
                                 <th>Role / Position</th>
                                 <th>Branch</th>
+                                <th>Password</th>
                                 <th class="text-center pe-4">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <tr><td colspan="5" class="text-center py-5">Loading users...</td></tr>
+                            <tr><td colspan="6" class="text-center py-5">Loading users...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -195,6 +196,12 @@ $backLink = ($_SESSION['position'] === 'Spareparts-Owner') ? 'owner_dashboard.ph
                             <div class="col-6">
                                 <label class="form-label fw-bold text-muted small">Password</label>
                                 <input type="password" class="form-control" id="formPassword" name="password" placeholder="Leave empty to keep">
+                                <div class="mt-1 small text-muted" id="modalCurrentPasswordContainer" style="display:none;">
+                                    Current: <span id="modalCurrentPassword" class="fw-bold">••••••••</span>
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-muted ms-1" id="toggleModalPwdBtn" onclick="toggleModalPasswordVisibility()" style="text-decoration: none;">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-bold text-muted small">Confirm Password</label>

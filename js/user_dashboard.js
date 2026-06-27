@@ -95,6 +95,14 @@ $(document).ready(function() {
                                     <td>${user.position || 'N/A'}</td>
                                     <td>${user.branch || 'N/A'}</td>
                                     <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="password-display-text" data-pwd="${user.plain_password || ''}">••••••••</span>
+                                            <button class="btn btn-sm btn-link p-0 text-muted toggle-main-pwd" title="Toggle Password Visibility">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
                                         <button class="btn btn-sm btn-primary text-white edit-user" data-id="${user.id}">Edit</button>
                                         <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}">Delete</button>
                                     </td>
@@ -104,14 +112,14 @@ $(document).ready(function() {
                         
                         updateUserPagination(response.current_page, response.total_pages);
                     } else {
-                        $('#usersTableBody').append('<tr><td colspan="5" class="text-center">No users found</td></tr>');
+                        $('#usersTableBody').append('<tr><td colspan="6" class="text-center">No users found</td></tr>');
                     }
                 } else {
-                    $('#usersTableBody').append('<tr><td colspan="5" class="text-center">Error: ' + (response.message || 'Failed to load users') + '</td></tr>');
+                    $('#usersTableBody').append('<tr><td colspan="6" class="text-center">Error: ' + (response.message || 'Failed to load users') + '</td></tr>');
                 }
             },
             error: function(xhr) {
-                $('#usersTableBody').html('<tr><td colspan="5" class="text-center">Error loading users. Please try again.</td></tr>');
+                $('#usersTableBody').html('<tr><td colspan="6" class="text-center">Error loading users. Please try again.</td></tr>');
                 console.error('Error loading users:', xhr.responseText);
             }
         });
@@ -219,6 +227,16 @@ $(document).ready(function() {
                     $('#editFullName').val(response.user.fullName || '');
                     $('#editPosition').val(response.user.position || '');
                     $('#editUserBranch').val(response.user.branch || '');
+                    
+                    const container = $('#mainModalCurrentPasswordContainer');
+                    const passwordSpan = $('#mainModalCurrentPassword');
+                    const toggleIcon = $('#toggleMainModalPwdBtn').find('i');
+                    
+                    container.show();
+                    passwordSpan.text('••••••••');
+                    passwordSpan.attr('data-pwd', response.user.plain_password || '');
+                    toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
+                    
                     $('#editUserModal').modal('show');
                 } else {
                     $('#warningMessage').text(response.message || 'Failed to load user data');
@@ -294,4 +312,47 @@ $(document).ready(function() {
             }
         });
     });
+
+    $(document).on('click', '.toggle-main-pwd', function(e) {
+        e.preventDefault();
+        const span = $(this).siblings('.password-display-text');
+        const pwd = span.attr('data-pwd');
+        const icon = $(this).find('i');
+        
+        if (!pwd) {
+            $('#warningMessage').text('This user has a legacy password that was hashed. Please reset their password to view it.');
+            $('#warningModal').modal('show');
+            return;
+        }
+        
+        const isHidden = span.text().includes('••');
+        if (isHidden) {
+            span.text(pwd);
+            icon.removeClass('bi-eye').addClass('bi-eye-slash');
+        } else {
+            span.text('••••••••');
+            icon.removeClass('bi-eye-slash').addClass('bi-eye');
+        }
+    });
+
+    window.toggleMainModalPasswordVisibility = function() {
+        const span = $('#mainModalCurrentPassword');
+        const pwd = span.attr('data-pwd');
+        const icon = $('#toggleMainModalPwdBtn').find('i');
+        
+        if (!pwd) {
+            $('#warningMessage').text('This user has a legacy password that was hashed. Please reset their password to view it.');
+            $('#warningModal').modal('show');
+            return;
+        }
+        
+        const isHidden = span.text().includes('••');
+        if (isHidden) {
+            span.text(pwd);
+            icon.removeClass('bi-eye').addClass('bi-eye-slash');
+        } else {
+            span.text('••••••••');
+            icon.removeClass('bi-eye-slash').addClass('bi-eye');
+        }
+    };
 });

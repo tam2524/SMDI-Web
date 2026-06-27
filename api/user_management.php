@@ -54,7 +54,7 @@ function getUsers($conn)
 
     $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
 
-    $sql = "SELECT id, username, fullName, position, branch FROM users WHERE 1=1";
+    $sql = "SELECT id, username, fullName, position, branch, plain_password FROM users WHERE 1=1";
     $countSql = "SELECT COUNT(*) as total FROM users WHERE 1=1";
 
     if (!empty($search)) {
@@ -103,7 +103,7 @@ function getUser($conn)
     }
 
     $id = intval($_GET['id']);
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch FROM users WHERE id = ?");
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, plain_password FROM users WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -142,16 +142,18 @@ function addUser($conn, $data)
     $position = $data['position'] ?? null;
     $branch = $data['branch'] ?? null;
 
-    $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password) 
-                           VALUES (?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password, plain_password) 
+                           VALUES (?, ?, ?, ?, ?, ?)");
     $username = trim($data['username']);
+    $plainPassword = $data['password'];
     $stmt->bind_param(
-        "sssss",
+        "ssssss",
         $username,
         $fullName,
         $position,
         $branch,
-        $hashedPassword
+        $hashedPassword,
+        $plainPassword
     );
 
     if ($stmt->execute()) {
@@ -222,6 +224,9 @@ function editUser($conn, $data)
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
         $updates[] = "password = ?";
         $params[] = $hashedPassword;
+        $types .= "s";
+        $updates[] = "plain_password = ?";
+        $params[] = $data['password'];
         $types .= "s";
     }
 

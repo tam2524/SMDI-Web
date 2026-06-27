@@ -56,7 +56,7 @@ function renderUsersTable(users) {
     tbody.innerHTML = '';
     
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No users found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No users found</td></tr>';
         return;
     }
 
@@ -72,6 +72,14 @@ function renderUsersTable(users) {
             <td class="align-middle">${user.fullName || '<span class="text-muted small">N/A</span>'}</td>
             <td class="align-middle"><span class="badge ${badgeClass} bg-opacity-75">${user.position}</span></td>
             <td class="align-middle">${user.branch || 'HEADOFFICE'}</td>
+            <td class="align-middle">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="password-display-text" data-pwd="${user.plain_password || ''}">••••••••</span>
+                    <button class="btn btn-sm btn-link p-0 text-muted" onclick="togglePasswordVisibility(this)" title="Toggle Password Visibility">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </td>
             <td class="text-center pe-4 align-middle">
                 <button class="btn btn-sm btn-outline-primary shadow-sm" onclick="editUser(${user.id})" title="Edit User">
                     <i class="bi bi-pencil"></i>
@@ -89,6 +97,9 @@ function openAddUserModal() {
     document.getElementById('userForm').reset();
     document.getElementById('userId').value = '';
     document.getElementById('userModalTitle').innerHTML = '<i class="bi bi-person-plus me-2"></i>Add User';
+    
+    // Hide current password container for new user
+    document.getElementById('modalCurrentPasswordContainer').style.display = 'none';
     
     // Required fields for NEW users
     document.getElementById('formPassword').required = true;
@@ -112,6 +123,16 @@ function editUser(id) {
                 
                 document.getElementById('formPassword').value = '';
                 document.getElementById('formConfirmPassword').value = '';
+                
+                // Show current password container for editing
+                const container = document.getElementById('modalCurrentPasswordContainer');
+                const passwordSpan = document.getElementById('modalCurrentPassword');
+                const toggleIcon = document.getElementById('toggleModalPwdBtn').querySelector('i');
+                
+                container.style.display = 'block';
+                passwordSpan.textContent = '••••••••';
+                passwordSpan.setAttribute('data-pwd', u.plain_password || '');
+                toggleIcon.className = 'bi bi-eye';
                 
                 // NOT required for edit unless they type something
                 document.getElementById('formPassword').required = false;
@@ -290,3 +311,40 @@ function saveAllReportHeaders() {
         }
     });
 }
+
+window.togglePasswordVisibility = function(btn) {
+    const span = btn.previousElementSibling;
+    const pwd = span.getAttribute('data-pwd');
+    const icon = btn.querySelector('i');
+    if (!pwd) {
+        Swal.fire('Info', 'This user has a legacy password that was hashed. Please reset their password to view it.', 'info');
+        return;
+    }
+    const isHidden = span.textContent.includes('••');
+    if (isHidden) {
+        span.textContent = pwd;
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        span.textContent = '••••••••';
+        icon.className = 'bi bi-eye';
+    }
+};
+
+window.toggleModalPasswordVisibility = function() {
+    const span = document.getElementById('modalCurrentPassword');
+    const btn = document.getElementById('toggleModalPwdBtn');
+    const icon = btn.querySelector('i');
+    const pwd = span.getAttribute('data-pwd');
+    if (!pwd) {
+        Swal.fire('Info', 'This user has a legacy password that was hashed. Please reset their password to view it.', 'info');
+        return;
+    }
+    const isHidden = span.textContent.includes('••');
+    if (isHidden) {
+        span.textContent = pwd;
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        span.textContent = '••••••••';
+        icon.className = 'bi bi-eye';
+    }
+};

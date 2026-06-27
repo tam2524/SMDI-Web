@@ -70,7 +70,7 @@ function getUsers($conn)
     // STRICTLY ONLY SPAREPARTS USERS - Use parentheses for OR conditions to ensure AND search applies correctly
     $baseQuery = " FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f')";
     
-    $sql = "SELECT id, username, fullName, position, branch, report_header_title" . $baseQuery;
+    $sql = "SELECT id, username, fullName, position, branch, report_header_title, plain_password" . $baseQuery;
     $countSql = "SELECT COUNT(*) as total" . $baseQuery;
 
     if (!empty($search)) {
@@ -120,7 +120,7 @@ function getUser($conn)
 
     $id = intval($_GET['id']);
     // Ensure we only fetch spareparts users
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title, plain_password FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -169,17 +169,19 @@ function addUser($conn, $data)
 
     $reportHeaderTitle = !empty($data['report_header_title']) ? trim($data['report_header_title']) : null;
 
-    $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password, report_header_title) 
-                           VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO users (username, fullName, position, branch, password, report_header_title, plain_password) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?)");
     $username = trim($data['username']);
+    $plainPassword = $data['password'];
     $stmt->bind_param(
-        "ssssss",
+        "sssssss",
         $username,
         $fullName,
         $position,
         $branch,
         $hashedPassword,
-        $reportHeaderTitle
+        $reportHeaderTitle,
+        $plainPassword
     );
 
     if ($stmt->execute()) {
@@ -259,6 +261,9 @@ function editUser($conn, $data)
         $updates[] = "password = ?";
         $params[] = $hashedPassword;
         $types .= "s";
+        $updates[] = "plain_password = ?";
+        $params[] = $data['password'];
+        $types .= "s";
     }
 
     if (empty($updates)) {
@@ -310,7 +315,7 @@ function deleteUser($conn, $data)
 
 function getAllUsers($conn)
 {
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f') ORDER BY username ASC");
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title, plain_password FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f') ORDER BY username ASC");
     $stmt->execute();
     $result = $stmt->get_result();
     $users = [];
