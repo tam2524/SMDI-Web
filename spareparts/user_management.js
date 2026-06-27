@@ -74,7 +74,7 @@ function renderUsersTable(users) {
             <td class="align-middle">${user.branch || 'HEADOFFICE'}</td>
             <td class="align-middle">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="password-display-text" data-pwd="${user.plain_password || ''}">••••••••</span>
+                    <span class="password-display-text" data-pwd="${user.plain_password || ''}" data-hash="${user.password || ''}">••••••••</span>
                     <button class="btn btn-sm btn-link p-0 text-muted" onclick="togglePasswordVisibility(this)" title="Toggle Password Visibility">
                         <i class="bi bi-eye"></i>
                     </button>
@@ -132,6 +132,7 @@ function editUser(id) {
                 container.style.display = 'block';
                 passwordSpan.textContent = '••••••••';
                 passwordSpan.setAttribute('data-pwd', u.plain_password || '');
+                passwordSpan.setAttribute('data-hash', u.password || '');
                 toggleIcon.className = 'bi bi-eye';
                 
                 // NOT required for edit unless they type something
@@ -315,14 +316,18 @@ function saveAllReportHeaders() {
 window.togglePasswordVisibility = function(btn) {
     const span = btn.previousElementSibling;
     const pwd = span.getAttribute('data-pwd');
+    const hash = span.getAttribute('data-hash');
     const icon = btn.querySelector('i');
-    if (!pwd) {
-        Swal.fire('Info', 'This user has a legacy password that was hashed. Please reset their password to view it.', 'info');
+    
+    const revealText = pwd ? pwd : (hash ? hash : '');
+    if (!revealText) {
+        Swal.fire('Info', 'No password hash or plaintext password available.', 'info');
         return;
     }
+    
     const isHidden = span.textContent.includes('••');
     if (isHidden) {
-        span.textContent = pwd;
+        span.textContent = revealText;
         icon.className = 'bi bi-eye-slash';
     } else {
         span.textContent = '••••••••';
@@ -335,13 +340,17 @@ window.toggleModalPasswordVisibility = function() {
     const btn = document.getElementById('toggleModalPwdBtn');
     const icon = btn.querySelector('i');
     const pwd = span.getAttribute('data-pwd');
-    if (!pwd) {
-        Swal.fire('Info', 'This user has a legacy password that was hashed. Please reset their password to view it.', 'info');
+    const hash = span.getAttribute('data-hash');
+    
+    const revealText = pwd ? pwd : (hash ? hash : '');
+    if (!revealText) {
+        Swal.fire('Info', 'No password hash or plaintext password available.', 'info');
         return;
     }
+    
     const isHidden = span.textContent.includes('••');
     if (isHidden) {
-        span.textContent = pwd;
+        span.textContent = revealText;
         icon.className = 'bi bi-eye-slash';
     } else {
         span.textContent = '••••••••';
