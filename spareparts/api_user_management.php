@@ -70,7 +70,7 @@ function getUsers($conn)
     // STRICTLY ONLY SPAREPARTS USERS - Use parentheses for OR conditions to ensure AND search applies correctly
     $baseQuery = " FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f')";
     
-    $sql = "SELECT id, username, fullName, position, branch, report_header_title, plain_password, password" . $baseQuery;
+    $sql = "SELECT id, username, fullName, position, branch, report_header_title, plain_password" . $baseQuery;
     $countSql = "SELECT COUNT(*) as total" . $baseQuery;
 
     if (!empty($search)) {
@@ -120,7 +120,7 @@ function getUser($conn)
 
     $id = intval($_GET['id']);
     // Ensure we only fetch spareparts users
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title, plain_password, password FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title, plain_password FROM users WHERE id = ? AND (position LIKE 'Spareparts-%' OR position = 'f')");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -315,7 +315,7 @@ function deleteUser($conn, $data)
 
 function getAllUsers($conn)
 {
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title, plain_password, password FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f') ORDER BY username ASC");
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, report_header_title, plain_password FROM users WHERE (position LIKE 'Spareparts-%' OR position = 'f') ORDER BY username ASC");
     $stmt->execute();
     $result = $stmt->get_result();
     $users = [];

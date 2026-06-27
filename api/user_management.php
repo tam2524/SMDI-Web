@@ -54,7 +54,7 @@ function getUsers($conn)
 
     $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
 
-    $sql = "SELECT id, username, fullName, position, branch, plain_password, password FROM users WHERE 1=1";
+    $sql = "SELECT id, username, fullName, position, branch, plain_password FROM users WHERE 1=1";
     $countSql = "SELECT COUNT(*) as total FROM users WHERE 1=1";
 
     if (!empty($search)) {
@@ -103,7 +103,7 @@ function getUser($conn)
     }
 
     $id = intval($_GET['id']);
-    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, plain_password, password FROM users WHERE id = ?");
+    $stmt = $conn->prepare("SELECT id, username, fullName, position, branch, plain_password FROM users WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();

@@ -96,7 +96,7 @@ $(document).ready(function() {
                                     <td>${user.branch || 'N/A'}</td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            <span class="password-display-text" data-pwd="${user.plain_password || ''}" data-hash="${user.password || ''}">••••••••</span>
+                                            <span class="password-display-text" data-pwd="${user.plain_password || ''}">••••••••</span>
                                             <button class="btn btn-sm btn-link p-0 text-muted toggle-main-pwd" title="Toggle Password Visibility">
                                                 <i class="bi bi-eye"></i>
                                             </button>
@@ -235,7 +235,6 @@ $(document).ready(function() {
                     container.show();
                     passwordSpan.text('••••••••');
                     passwordSpan.attr('data-pwd', response.user.plain_password || '');
-                    passwordSpan.attr('data-hash', response.user.password || '');
                     toggleIcon.removeClass('bi-eye-slash').addClass('bi-eye');
                     
                     $('#editUserModal').modal('show');
@@ -318,19 +317,17 @@ $(document).ready(function() {
         e.preventDefault();
         const span = $(this).siblings('.password-display-text');
         const pwd = span.attr('data-pwd');
-        const hash = span.attr('data-hash');
         const icon = $(this).find('i');
         
-        const revealText = pwd ? pwd : (hash ? hash : '');
-        if (!revealText) {
-            $('#warningMessage').text('No password hash or plaintext password available.');
+        if (!pwd) {
+            $('#warningMessage').text('This user has a legacy password that was hashed. Please reset their password to view it.');
             $('#warningModal').modal('show');
             return;
         }
         
         const isHidden = span.text().includes('••');
         if (isHidden) {
-            span.text(revealText);
+            span.text(pwd);
             icon.removeClass('bi-eye').addClass('bi-eye-slash');
         } else {
             span.text('••••••••');
@@ -341,19 +338,17 @@ $(document).ready(function() {
     window.toggleMainModalPasswordVisibility = function() {
         const span = $('#mainModalCurrentPassword');
         const pwd = span.attr('data-pwd');
-        const hash = span.attr('data-hash');
         const icon = $('#toggleMainModalPwdBtn').find('i');
         
-        const revealText = pwd ? pwd : (hash ? hash : '');
-        if (!revealText) {
-            $('#warningMessage').text('No password hash or plaintext password available.');
+        if (!pwd) {
+            $('#warningMessage').text('This user has a legacy password that was hashed. Please reset their password to view it.');
             $('#warningModal').modal('show');
             return;
         }
         
         const isHidden = span.text().includes('••');
         if (isHidden) {
-            span.text(revealText);
+            span.text(pwd);
             icon.removeClass('bi-eye').addClass('bi-eye-slash');
         } else {
             span.text('••••••••');
