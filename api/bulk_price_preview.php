@@ -65,10 +65,14 @@ try {
     $costIdx = array_search('cost', $headerRow);
     if ($costIdx === false) $costIdx = array_search('suppliercost', $headerRow);
     if ($costIdx === false) $costIdx = array_search('purchaseprice', $headerRow);
+    if ($costIdx === false) $costIdx = array_search('buyingcost', $headerRow);
 
     $priceIdx = array_search('price', $headerRow);
     if ($priceIdx === false) $priceIdx = array_search('sellingprice', $headerRow);
     if ($priceIdx === false) $priceIdx = array_search('retailprice', $headerRow);
+
+    $branchIdx = array_search('branch', $headerRow);
+    if ($branchIdx === false) $branchIdx = array_search('currentbranch', $headerRow);
 
     if ($partNoIdx === false) {
         echo json_encode(['success' => false, 'message' => 'Could not find a column for "part_no" in the Excel header.']);
@@ -88,10 +92,11 @@ try {
 
         $newCost = $costIdx !== false ? (float)str_replace([',', '₱', ' '], '', $row[$costIdx] ?? 0) : null;
         $newPrice = $priceIdx !== false ? (float)str_replace([',', '₱', ' '], '', $row[$priceIdx] ?? 0) : null;
+        $rowBranch = ($branchIdx !== false && !empty(trim($row[$branchIdx] ?? ''))) ? trim($row[$branchIdx]) : $currentBranch;
 
-        // Find part in inventory for the logged-in user's branch
+        // Find part in inventory for the specified branch or logged-in user's branch
         $stmt = $conn->prepare("SELECT id, part_no, description, current_branch, cost, price FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
-        $stmt->bind_param('ss', $partNo, $currentBranch);
+        $stmt->bind_param('ss', $partNo, $rowBranch);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -129,7 +134,7 @@ try {
         } else {
             $previewData[] = [
                 'part_no' => $partNo,
-                'description' => "Part not found in branch ($currentBranch)",
+                'description' => "Part not found in branch ($rowBranch)",
                 'current_cost' => 0.00,
                 'new_cost' => $newCost ?? 0.00,
                 'current_price' => 0.00,

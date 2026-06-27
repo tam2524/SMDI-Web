@@ -34,9 +34,11 @@ try {
         $newCost = (float)$update['new_cost'];
         $newPrice = (float)$update['new_price'];
         
-        // Update inventory record - secure it to match the logged-in user's branch
+        $updateBranch = !empty($update['branch']) ? $update['branch'] : $currentBranch;
+        
+        // Update inventory record - secure it to match the specified branch
         $stmt = $conn->prepare("UPDATE spareparts_inventory SET cost = ?, price = ? WHERE id = ? AND current_branch = ?");
-        $stmt->bind_param('ddis', $newCost, $newPrice, $id, $currentBranch);
+        $stmt->bind_param('ddis', $newCost, $newPrice, $id, $updateBranch);
         if ($stmt->execute()) {
             $updatedCount++;
         }
@@ -45,7 +47,7 @@ try {
         // Log to spareparts_price_history
         $histStmt = $conn->prepare("INSERT INTO spareparts_price_history (part_no, cost, price, supplier, invoice_no, transaction_date, change_reason, changed_by) VALUES (?, ?, ?, ?, 'BULK', NOW(), ?, ?)");
         $supplierName = "Bulk Excel Upload";
-        $histStmt->bind_param('sddssss', $partNo, $newCost, $newPrice, $supplierName, $changeReason, $changedBy);
+        $histStmt->bind_param('sddsss', $partNo, $newCost, $newPrice, $supplierName, $changeReason, $changedBy);
         $histStmt->execute();
         $histStmt->close();
     }

@@ -271,7 +271,7 @@ $isAdminOrSales = in_array(strtolower(trim($role)), ['spareparts-admin', 'sparep
                             <h6 class="fw-bold text-success mb-2 d-flex align-items-center">
                                 <i class="bi bi-info-circle-fill me-2"></i> Excel Format Instructions:
                             </h6>
-                            <p class="mb-0 small text-dark">Your file must include a header row with at least these columns: <strong class="text-success">part_no</strong>, <strong class="text-success">cost</strong>, and <strong class="text-success">price</strong>. Existing items in your branch will be updated.</p>
+                            <p class="mb-0 small text-dark">Your file must include a header row with these columns: <strong class="text-success">Part No</strong>, <strong class="text-success">Brand</strong>, <strong class="text-success">Description</strong>, <strong class="text-success">Buying Cost</strong>, <strong class="text-success">Selling Price</strong>, and <strong class="text-success">Branch</strong>.</p>
                         </div>
                         <form id="bulkPriceForm" enctype="multipart/form-data">
                             <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">

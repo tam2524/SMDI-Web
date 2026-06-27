@@ -322,8 +322,8 @@ switch ($action) {
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="spareparts_price_template.csv"');
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['part_no', 'cost', 'price']);
-        fputcsv($out, ['SAMPLE-PART-001', '150.00', '250.00']);
+        fputcsv($out, ['Part No', 'Brand', 'Description', 'Buying Cost', 'Selling Price', 'Branch']);
+        fputcsv($out, ['SAMPLE-PART-001', 'Honda', 'Engine Oil', '150.00', '250.00', $currentBranch]);
         fclose($out);
         exit();
     case 'get_dashboard_stats':
