@@ -326,6 +326,14 @@ switch ($action) {
         fputcsv($out, ['SAMPLE-PART-001', 'Honda', 'Engine Oil', '150.00', '250.00', $currentBranch]);
         fclose($out);
         exit();
+    case 'download_beginning_inventory_template':
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="spareparts_beginning_inventory_template.csv"');
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Part Number', 'Brand Name', 'Description', 'Qty', 'Cost']);
+        fputcsv($out, ['SAMPLE-PART-001', 'Honda', 'Engine Oil', '10', '150.00']);
+        fclose($out);
+        exit();
     case 'get_dashboard_stats':
         getDashboardStats();
         break;

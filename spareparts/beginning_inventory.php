@@ -234,8 +234,13 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                     <p class="text-muted small">Enter your beginning stock levels here. All fields are required for each row.</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="../api/spareparts_inventory.php?action=download_beginning_inventory_template" class="btn btn-outline-premium d-flex align-items-center">
+                        <i class="bi bi-download me-2"></i>Download Template
+                    </a>
                     <button id="addRowBtn" class="btn btn-outline-premium"><i class="bi bi-plus-circle"></i> Add Row</button>
-                    <button id="importExcelBtn" class="btn btn-outline-premium"><i class="bi bi-file-earmark-excel"></i> Bulk Import</button>
+                    <button class="btn btn-premium d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#bulkInventoryUploadModal">
+                        <i class="bi bi-upload me-2"></i>Bulk Import
+                    </button>
                 </div>
             </div>
 
@@ -440,55 +445,178 @@ $branch = $_SESSION['user_branch'] ?? 'HEADOFFICE';
                 });
             });
 
-            $('#importExcelBtn').click(function() {
-                Swal.fire({
-                    title: 'Bulk Import (Excel Format)',
-                    html: `
-                        <div class="text-start">
-                            <p class="small">Paste your Excel data here (Copy columns from Excel: Part Number, Brand, Description, Qty, Cost):</p>
-                            <textarea id="excelPasteArea" class="form-control" rows="10" placeholder="Paste tab-separated data here..."></textarea>
-                        </div>
-                    `,
-                    width: '600px',
-                    showCancelButton: true,
-                    confirmButtonText: 'Process Data',
-                    confirmButtonColor: '#004d40',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const rawData = $('#excelPasteArea').val();
-                        const lines = rawData.split('\n');
-                        let count = 0;
-                        
-                        $('#inventoryBody').empty();
-                        
-                        lines.forEach(line => {
-                            if (line.trim()) {
-                                const cols = line.split('\t');
-                                if (cols.length >= 5) {
-                                    addRow({
-                                        part_no: cols[0].trim(),
-                                        brand: cols[1].trim(),
-                                        description: cols[2].trim(),
-                                        qty: cols[3].trim(),
-                                        cost: cols[4].trim()
-                                    });
-                                    count++;
-                                }
-                            }
-                        });
+            // Form submit for preview
+            $('#bulkInventoryForm').on('submit', function(e) {
+                e.preventDefault();
+                const fileInput = $('#bulkExcelFile')[0];
+                if (fileInput.files.length === 0) return;
 
-                        if (count > 0) {
-                            Swal.fire('Imported!', `Successfully processed ${count} rows.`, 'success');
-                            saveDraft();
+                const formData = new FormData();
+                formData.append('excel_file', fileInput.files[0]);
+
+                $('#btnPreviewBulk').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Loading...');
+
+                $.ajax({
+                    url: '../api/bulk_beginning_inventory_preview.php',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function(response) {
+                        $('#btnPreviewBulk').prop('disabled', false).html('<i class="bi bi-eye me-1"></i>Preview Changes');
+                        if (response.success) {
+                            const tbody = $('#bulkPreviewTbody');
+                            tbody.empty();
+                            
+                            if (response.data.length === 0) {
+                                tbody.append('<tr><td colspan="6" class="text-center py-4 text-muted">No valid items found to preview.</td></tr>');
+                            } else {
+                                response.data.forEach(item => {
+                                    let statusClass = 'bg-success';
+                                    if (item.status.includes('Existing')) {
+                                        statusClass = 'bg-primary';
+                                    } else if (item.status.includes('Invalid')) {
+                                        statusClass = 'bg-danger';
+                                    }
+                                    
+                                    const statusBadge = `<span class="badge ${statusClass}">${item.status}</span>`;
+                                    tbody.append(`
+                                        <tr>
+                                            <td class="fw-bold ps-3">${item.part_no}</td>
+                                            <td>${item.brand}</td>
+                                            <td>${item.description}</td>
+                                            <td class="text-end fw-semibold">${item.qty}</td>
+                                            <td class="text-end fw-semibold text-success">₱${parseFloat(item.cost).toFixed(2)}</td>
+                                            <td class="text-center pe-3">${statusBadge}</td>
+                                        </tr>
+                                    `);
+                                });
+                            }
+
+                            $('#uploadView').addClass('d-none');
+                            $('#previewView').removeClass('d-none');
                         } else {
-                            Swal.fire('Error', 'No valid tab-separated data found. Make sure you copy from an Excel table.', 'error');
-                            addRow();
-                            saveDraft();
+                            Swal.fire('Error', response.message, 'error');
                         }
+                    },
+                    error: function() {
+                        $('#btnPreviewBulk').prop('disabled', false).html('<i class="bi bi-eye me-1"></i>Preview Changes');
+                        Swal.fire('Error', 'Failed to upload/preview the file.', 'error');
+                    }
+                });
+            });
+
+            // Back button in preview
+            $('#btnBackToUpload').click(function() {
+                $('#previewView').addClass('d-none');
+                $('#uploadView').removeClass('d-none');
+            });
+
+            // Confirm bulk inventory save
+            $('#confirmBulkBtn').click(function() {
+                $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Applying...');
+
+                $.ajax({
+                    url: '../api/bulk_beginning_inventory_save.php',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(response) {
+                        $('#confirmBulkBtn').prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Apply Updates');
+                        if (response.success) {
+                            bootstrap.Modal.getOrCreateInstance(document.getElementById('bulkInventoryUploadModal')).hide();
+                            Swal.fire('Success!', response.message, 'success').then(() => {
+                                localStorage.removeItem('beginning_inventory_draft');
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        $('#confirmBulkBtn').prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Apply Updates');
+                        Swal.fire('Error', 'Connection failed.', 'error');
                     }
                 });
             });
         });
     </script>
+
+    <!-- Bulk Inventory Upload Modal -->
+    <div class="modal fade" id="bulkInventoryUploadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <div class="modal-header bg-success text-white border-0 py-3">
+                    <h5 class="modal-title text-white fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Bulk Beginning Inventory Import</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- Upload View -->
+                    <div id="uploadView">
+                        <div class="alert alert-success bg-success border-0 p-3 mb-4 text-white" style="border-radius: 10px;">
+                            <h6 class="fw-bold text-white mb-2 d-flex align-items-center">
+                                <i class="bi bi-info-circle-fill me-2 text-white"></i> Excel Format Instructions:
+                            </h6>
+                            <p class="mb-0 small text-white">Your file must include a header row with these columns: <strong class="text-white">Part Number</strong>, <strong class="text-white">Brand Name</strong>, <strong class="text-white">Description</strong>, <strong class="text-white">Qty</strong>, and <strong class="text-white">Cost</strong>.</p>
+                        </div>
+                        <form id="bulkInventoryForm" enctype="multipart/form-data">
+                            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                                <div class="card-body p-4">
+                                    <label for="bulkExcelFile" class="form-label fw-bold text-secondary small text-uppercase mb-2">Select Excel / CSV File</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-file-earmark-spreadsheet text-success"></i></span>
+                                        <input type="file" class="form-control border-start-0 ps-0" id="bulkExcelFile" name="excel_file" accept=".xlsx, .xls, .csv" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-success px-4 fw-bold text-white shadow-sm" id="btnPreviewBulk">
+                                    <i class="bi bi-eye me-1"></i>Preview Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Preview View (Hidden by default) -->
+                    <div id="previewView" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-1 text-success d-flex align-items-center">
+                                    <i class="bi bi-card-checklist me-2"></i>Updates Preview List
+                                </h6>
+                                <p class="small text-muted mb-0">Review the changes below before finalizing updates.</p>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary px-3 rounded-pill fw-semibold" id="btnBackToUpload">
+                                <i class="bi bi-arrow-left me-1"></i>Back
+                            </button>
+                        </div>
+                        <div class="table-responsive border-0 shadow-sm bg-white rounded-3 mb-4" style="max-height: 45vh; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th class="py-3 ps-3">Part Number</th>
+                                        <th class="py-3">Brand Name</th>
+                                        <th class="py-3">Description</th>
+                                        <th class="py-3 text-end">Qty</th>
+                                        <th class="py-3 text-end">Cost</th>
+                                        <th class="py-3 text-center pe-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkPreviewTbody"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-success px-4 fw-bold text-white shadow-sm" id="confirmBulkBtn">
+                                <i class="bi bi-check-circle me-1"></i>Apply Updates
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
