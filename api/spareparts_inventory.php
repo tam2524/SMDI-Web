@@ -2923,6 +2923,8 @@ function editSale()
     $sales_force = sanitizeInput($_POST['sales_force'] ?? '');
     $reason = sanitizeInput($_POST['reason'] ?? '');
     $items = json_decode($_POST['items'], true);
+    
+    $division = getCurrentDivision();
 
     if (empty($reason)) {
         echo json_encode(['success' => false, 'message' => 'A reason for revision is required.']);
@@ -2971,6 +2973,19 @@ function editSale()
             $desc = sanitizeInput($item['description'] ?? '');
             $subtotal = $qty * $price;
             $total_sale_amount += $subtotal;
+            
+            // Auto-insert customer into spareparts_customers if they don't exist
+            if ($item === reset($items) && !empty($customer_name)) {
+                $custCheck = $conn->prepare("SELECT id FROM spareparts_customers WHERE name = ? AND branch = ?");
+                $custCheck->bind_param('ss', $customer_name, $new_branch);
+                $custCheck->execute();
+                if ($custCheck->get_result()->num_rows === 0) {
+                    $custInsert = $conn->prepare("INSERT INTO spareparts_customers (name, branch, category) VALUES (?, ?, ?)");
+                    $custInsert->bind_param('sss', $customer_name, $new_branch, $division);
+                    $custInsert->execute();
+                }
+                $custCheck->close();
+            }
 
             // Fetch cost from inventory
             $costStmt = $conn->prepare("SELECT cost FROM spareparts_inventory WHERE part_no = ? AND current_branch = ? LIMIT 1");
@@ -2986,9 +3001,9 @@ function editSale()
             $deduct->execute();
 
             // Insert new transaction record
-            $ins = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, transaction_type, or_number, customer_name, part_no, description, quantity, price, cost, total_amount, from_location, sales_force, reason) 
-                                   VALUES (?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $ins->bind_param('ssssssidddsss', $sale_date, $transaction_type, $new_or, $customer_name, $pno, $desc, $qty, $price, $item_cost, $subtotal, $new_branch, $sales_force, $reason);
+            $ins = $conn->prepare("INSERT INTO spareparts_transactions (transaction_date, type, transaction_type, or_number, customer_name, part_no, description, quantity, price, cost, total_amount, from_location, sales_force, reason, category, status) 
+                                   VALUES (?, 'OUT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Completed')");
+            $ins->bind_param('ssssssidddssss', $sale_date, $transaction_type, $new_or, $customer_name, $pno, $desc, $qty, $price, $item_cost, $subtotal, $new_branch, $sales_force, $reason, $division);
             $ins->execute();
         }
 
@@ -3013,8 +3028,8 @@ function editSale()
             }
 
             $balance = $total_sale_amount - $total_paid;
-            $stmt = $conn->prepare("INSERT INTO spareparts_aging (or_number, branch, customer_name, sale_date, total_amount, balance) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param('ssssdd', $new_or, $new_branch, $customer_name, $sale_date, $total_sale_amount, $balance);
+            $stmt = $conn->prepare("INSERT INTO spareparts_aging (or_number, branch, customer_name, sale_date, total_amount, balance, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')");
+            $stmt->bind_param('ssssdds', $new_or, $new_branch, $customer_name, $sale_date, $total_sale_amount, $balance, $division);
             $stmt->execute();
         }
 

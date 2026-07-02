@@ -1812,9 +1812,10 @@ $showTabs = !isset($_GET['tab']);
 
                         <!-- Sales Force Row -->
                         <div class="row g-3 mb-4">
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-6 position-relative">
                                 <label class="form-label fw-bold">Sales Force</label>
-                                <input type="text" class="form-control" id="edit_sale_sales_force">
+                                <input type="text" class="form-control" id="edit_sale_sales_force" name="sales_force">
+                                <div id="editSaleForceResults" class="list-group border rounded shadow-sm mt-1 w-100" style="position: absolute; display: none; z-index: 1056; background: white; max-height: 200px; overflow-y: auto;"></div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-danger">Reason for Revision (REQUIRED)</label>
