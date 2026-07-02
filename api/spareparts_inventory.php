@@ -1183,12 +1183,7 @@ function getSalesList()
         $types .= "s";
     }
 
-    $division = getCurrentDivision();
-    if (!$seeAll && $division) {
-        $whereClauses[] = "t.category = ?";
-        $params[] = $division;
-        $types .= "s";
-    }
+
 
     if (!empty($dateFrom)) {
         $whereClauses[] = "t.transaction_date >= ?";
