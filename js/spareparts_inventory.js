@@ -238,7 +238,7 @@ $(document).ready(function () {
         });
 
         // Search Handlers
-        $('#salesSearch').on('input', e => { salesCurrentPage = 1; renderSales(filterData(salesData, $(e.target).val(), ['customer_name', 'or_number'])); });
+        $('#salesSearch').on('input', e => { salesCurrentPage = 1; renderSales(filterData(salesData, $(e.target).val(), ['customer_name', 'or_number']), salesCurrentTypeFilter); });
         $('#paymentsSearch').on('input', e => { paymentsCurrentPage = 1; renderPayments(filterData(paymentsData, $(e.target).val(), ['customer_name', 'or_number'])); });
         $('#transfersSearch').on('input', e => { 
             transfersCurrentPage = 1; 
@@ -3676,7 +3676,6 @@ $(document).ready(function () {
     let salesCurrentTypeFilter = 'all';
 
     function renderSales(data, typeFilter = 'all') {
-        salesData = data;
         salesCurrentTypeFilter = typeFilter;
         const tbody = $('#salesTableBody');
         tbody.empty();
