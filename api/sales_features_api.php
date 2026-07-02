@@ -84,10 +84,31 @@ switch ($action) {
         $params = [];
         $types = "";
         
+        $whereClauses = [];
+        
         if (!$isAdmin && $branch !== 'HEADOFFICE') {
-            $sql .= " WHERE branch = ?";
+            $whereClauses[] = "branch = ?";
             $params[] = $branch;
             $types .= "s";
+            
+            // Also filter by category if they are retail or sales
+            $userRoleLower = strtolower(trim($userRole));
+            $category = null;
+            if (strpos($userRoleLower, 'retail') !== false) {
+                $category = 'Retail';
+            } elseif (strpos($userRoleLower, 'sales') !== false) {
+                $category = 'Wholesale';
+            }
+            
+            if ($category !== null) {
+                $whereClauses[] = "(category = ? OR category IS NULL OR category = '')";
+                $params[] = $category;
+                $types .= "s";
+            }
+        }
+        
+        if (!empty($whereClauses)) {
+            $sql .= " WHERE " . implode(" AND ", $whereClauses);
         }
         
         $sql .= " ORDER BY name ASC";
@@ -122,8 +143,14 @@ switch ($action) {
         $term = $_POST['term'] ?? 0;
         $limit = $_POST['credit_limit'] ?? 0;
         
-        // Determine category (both sales and retail map to Wholesale in spareparts_inventory.php)
-        $category = (strpos(strtolower($userRole), 'retail') !== false || strpos(strtolower($userRole), 'sales') !== false) ? 'Wholesale' : null;
+        // Determine category
+        $userRoleLower = strtolower(trim($userRole));
+        $category = null;
+        if (strpos($userRoleLower, 'retail') !== false) {
+            $category = 'Retail';
+        } elseif (strpos($userRoleLower, 'sales') !== false) {
+            $category = 'Wholesale';
+        }
 
         $stmt = $conn->prepare("INSERT INTO spareparts_customers (name, contact_no, address, rank_level, term, credit_limit, branch, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssidss", $name, $contact, $address, $rank, $term, $limit, $branch, $category);
@@ -145,7 +172,13 @@ switch ($action) {
         $limit = $_POST['credit_limit'] ?? 0;
         
         // Determine category
-        $category = (strpos(strtolower($userRole), 'retail') !== false || strpos(strtolower($userRole), 'sales') !== false) ? 'Wholesale' : null;
+        $userRoleLower = strtolower(trim($userRole));
+        $category = null;
+        if (strpos($userRoleLower, 'retail') !== false) {
+            $category = 'Retail';
+        } elseif (strpos($userRoleLower, 'sales') !== false) {
+            $category = 'Wholesale';
+        }
         
         $ownerCheck = "";
         $params = [$name, $contact, $address, $rank, $term, $limit, $category, $id];

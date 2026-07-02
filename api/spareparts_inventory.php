@@ -39,7 +39,8 @@ function getCurrentDivision()
 {
     global $userRole;
     $pos = strtolower(trim($userRole));
-    if (strpos($pos, 'retail') !== false || strpos($pos, 'sales') !== false) return 'Wholesale'; 
+    if (strpos($pos, 'retail') !== false) return 'Retail'; 
+    if (strpos($pos, 'sales') !== false) return 'Wholesale'; 
     return null; // Admin/HO
 }
 
@@ -2201,6 +2202,21 @@ function sellMultiplePartsOut()
             $costRow = $costStmt->get_result()->fetch_assoc();
             $item_cost = $costRow ? (float)$costRow['cost'] : 0.00;
             $costStmt->close();
+
+            $division = getCurrentDivision();
+
+            // Auto-insert customer into spareparts_customers if they don't exist
+            if ($isFirstItem && !empty($customer_name)) {
+                $custCheck = $conn->prepare("SELECT id FROM spareparts_customers WHERE name = ? AND branch = ?");
+                $custCheck->bind_param('ss', $customer_name, $currentBranch);
+                $custCheck->execute();
+                if ($custCheck->get_result()->num_rows === 0) {
+                    $custInsert = $conn->prepare("INSERT INTO spareparts_customers (name, branch, category) VALUES (?, ?, ?)");
+                    $custInsert->bind_param('sss', $customer_name, $currentBranch, $division);
+                    $custInsert->execute();
+                }
+                $custCheck->close();
+            }
 
             // Log transaction - put the entire discount on the first item to avoid duplicating the discount across rows in sums
             $item_discount = $isFirstItem ? $discount : 0;
