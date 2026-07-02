@@ -120,10 +120,14 @@ function initSalesTable() {
     });
 
     
+    let mainSalesSearchTimer;
     $('#searchInput').on('input', function() {
+        clearTimeout(mainSalesSearchTimer);
         const query = $(this).val();
-        currentPage = 1; 
-        loadSales(query);
+        mainSalesSearchTimer = setTimeout(() => {
+            currentPage = 1; 
+            loadSales(query);
+        }, 300);
     });
 
     
@@ -428,17 +432,11 @@ function initQuotaManagement() {
         });
     });
 
-    
-    $('#quotaSearchBtn').on('click', function() {
-        const query = $('#quotaSearchInput').val();
-        loadQuotas(query);
-    });
-
-    $('#quotaSearchInput').on('keyup', function(e) {
-        if (e.key === 'Enter') {
-            const query = $(this).val();
-            loadQuotas(query);
-        }
+    let quotaSearchTimer;
+    $('#quotaSearchInput').on('input', function() {
+        clearTimeout(quotaSearchTimer);
+        const query = $(this).val();
+        quotaSearchTimer = setTimeout(() => loadQuotas(query), 300);
     });
 
     

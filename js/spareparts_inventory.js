@@ -2362,16 +2362,20 @@ $(document).ready(function () {
         searchGlobalParts();
     });
 
-    $('#searchPart').on('keypress', function (e) {
-        if (e.which == 13) {
-            searchGlobalParts();
+    let searchPartTimer;
+    $('#searchPart').on('input', function () {
+        clearTimeout(searchPartTimer);
+        const term = $(this).val().trim();
+        if (term.length >= 2) {
+            searchPartTimer = setTimeout(() => searchGlobalParts(), 300);
+        } else if (term.length === 0) {
+            $('#partList').empty();
         }
     });
 
     function searchGlobalParts() {
         const term = $('#searchPart').val().trim();
         if (term.length < 2) {
-            showErrorModal('Please enter at least 2 characters to search.');
             return;
         }
 
