@@ -1768,8 +1768,7 @@ $showTabs = !isset($_GET['tab']);
 
     <div class='modal fade' id='editSaleModal' tabindex='-1' aria-hidden='true'>
         <div class='modal-dialog modal-xl modal-dialog-centered'>
-            <div class='modal-content'>
-                <form id='editSaleForm'>
+            <form id='editSaleForm' class='modal-content'>
                     <div class='modal-header bg-dark text-white'>
                         <h5 class='modal-title'><i class="bi bi-pencil-square me-2"></i>REVISE SALES TRANSACTION</h5>
                         <button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>
@@ -1874,8 +1873,7 @@ $showTabs = !isset($_GET['tab']);
                         <button type='submit' class='btn btn-primary fw-bold px-4'><i
                                 class="bi bi-check2-circle me-1"></i>UPDATE TRANSACTION</button>
                     </div>
-                </form>
-            </div>
+            </form>
         </div>
     </div>
 

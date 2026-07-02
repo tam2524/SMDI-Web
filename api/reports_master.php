@@ -680,7 +680,7 @@ function handlePaymentReports($type, $period, $dateVal, $branch, $brand, $refNo 
                 // For returns: acts as a credit memo
                 $sql = "SELECT t.transaction_date as date, t.or_number, t.type, t.transaction_type, t.total_amount as amount, t.customer_name
                         FROM spareparts_transactions t 
-                        WHERE $whereL AND (t.type IN ('PAYMENT', 'RETURN') OR (t.type = 'OUT' AND t.transaction_type = 'charge'))
+                        WHERE $whereL AND (t.type IN ('PAYMENT', 'RETURN', 'OUT'))
                         ORDER BY t.transaction_date ASC, t.id ASC";
                 
                 $details = exe($sql, $lTypes, $lParams);
@@ -693,12 +693,36 @@ function handlePaymentReports($type, $period, $dateVal, $branch, $brand, $refNo 
                 
                 foreach ($details as $row) {
                     if ($row['type'] === 'OUT') {
-                        $runningBalance += (float) $row['amount'];
-                        $totalDebit += (float) $row['amount'];
-                        $row['ref'] = $row['or_number']; // SI #
-                        $row['debit_credit_type'] = "Sale SI# " . $row['or_number'];
-                        $row['debit'] = $row['amount'];
-                        $row['credit'] = null; // Render as '-'
+                        if (strtolower(trim($row['transaction_type'] ?? '')) === 'cash') {
+                            // For Cash Sales, we show the Invoice (Debit) followed instantly by the Payment (Credit)
+                            $runningBalance += (float) $row['amount'];
+                            $totalDebit += (float) $row['amount'];
+                            $invRow = $row;
+                            $invRow['ref'] = $row['or_number'];
+                            $invRow['debit_credit_type'] = "Cash Sale SI# " . $row['or_number'];
+                            $invRow['debit'] = $row['amount'];
+                            $invRow['credit'] = null;
+                            $invRow['balance'] = $runningBalance;
+                            $ledgerData[] = $invRow;
+                            
+                            $runningBalance -= (float) $row['amount'];
+                            $totalCredit += (float) $row['amount'];
+                            $payRow = $row;
+                            $payRow['ref'] = $row['or_number'];
+                            $payRow['debit_credit_type'] = "Cash Payment for SI# " . $row['or_number'];
+                            $payRow['debit'] = null;
+                            $payRow['credit'] = $row['amount'];
+                            $payRow['balance'] = $runningBalance;
+                            $ledgerData[] = $payRow;
+                            continue;
+                        } else {
+                            $runningBalance += (float) $row['amount'];
+                            $totalDebit += (float) $row['amount'];
+                            $row['ref'] = $row['or_number']; // SI #
+                            $row['debit_credit_type'] = "Charge Sale SI# " . $row['or_number'];
+                            $row['debit'] = $row['amount'];
+                            $row['credit'] = null; // Render as '-'
+                        }
                     } else {
                         $runningBalance -= (float) $row['amount'];
                         $totalCredit += (float) $row['amount'];
