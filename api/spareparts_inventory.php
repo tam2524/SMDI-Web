@@ -1119,12 +1119,20 @@ function getInventoryList()
 
     $stmt->execute();
     $result = $stmt->get_result();
-    $data = [];
+    
+    // Stream JSON output to save memory
+    header('Content-Type: application/json');
+    echo '{"success":true,"data":[';
+    $first = true;
     while ($row = $result->fetch_assoc()) {
+        if (!$first) {
+            echo ',';
+        }
         $row['invoice_no'] = $row['invoice_no'] ?? '';
-        $data[] = $row;
+        echo json_encode($row);
+        $first = false;
     }
-    echo json_encode(['success' => true, 'data' => $data]);
+    echo ']}';
 }
 
 function searchInventory()
