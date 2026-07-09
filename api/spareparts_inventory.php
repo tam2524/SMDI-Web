@@ -1112,23 +1112,30 @@ function getInventoryList()
 {
     global $conn, $currentBranch, $isAdmin;
     
-    // Increase memory limit to handle large inventory datasets
-    ini_set('memory_limit', '512M');
-    
     $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
-    $where = $seeAll ? "" : "WHERE current_branch = ?";
-    $stmt = $conn->prepare("SELECT * FROM spareparts_inventory $where ORDER BY part_no ASC");
-    if (!$seeAll)
-        $stmt->bind_param('s', $currentBranch);
+    
+    $branch_esc = $conn->real_escape_string($currentBranch);
+    $where = $seeAll ? "" : "WHERE current_branch = '$branch_esc'";
+    $query = "SELECT * FROM spareparts_inventory $where ORDER BY part_no ASC";
+    
+    // Execute unbuffered query to save memory
+    $result = $conn->query($query, MYSQLI_USE_RESULT);
 
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $data = [];
-    while ($row = $result->fetch_assoc()) {
-        $row['invoice_no'] = $row['invoice_no'] ?? '';
-        $data[] = $row;
+    // Stream JSON output
+    echo '{"success":true,"data":[';
+    if ($result) {
+        $first = true;
+        while ($row = $result->fetch_assoc()) {
+            if (!$first) {
+                echo ',';
+            }
+            $row['invoice_no'] = $row['invoice_no'] ?? '';
+            echo json_encode($row);
+            $first = false;
+        }
+        $result->free();
     }
-    echo json_encode(['success' => true, 'data' => $data]);
+    echo ']}';
 }
 
 function searchInventory()
