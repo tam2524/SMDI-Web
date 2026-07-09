@@ -402,6 +402,9 @@ function showStockCard(partNo, branch) {
 
                 if (t.type === 'IN') {
                     typeText = t.from_location === 'Initial Encoding' ? 'Initial Stock' : 'Delivered';
+                    if (window.canDelete && t.from_location !== 'Initial Encoding') {
+                        typeText += ` <button class="btn btn-sm btn-outline-danger ms-2 delete-in-btn py-0 px-1" style="font-size: 0.75rem;" data-id="${t.id}" data-part="${partNo}" data-qty="${qty}" data-branch="${branch}" title="Delete Receive In"><i class="bi bi-trash"></i></button>`;
+                    }
                     fromTo   = t.from_location;
                 } else if (t.type === 'OUT') {
                     typeText = 'Sold'; fromTo = t.customer_name;

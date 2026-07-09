@@ -644,7 +644,12 @@ $(document).ready(function () {
                         showSuccessModal('Receiving transaction deleted successfully.');
                         fetchInventory();
                         if (part) {
-                            showInventoryHistory(part, null); // refresh history modal
+                            if ($('#viewHistoryModal').hasClass('show') && typeof showInventoryHistory === 'function') {
+                                showInventoryHistory(part, null); // refresh old history modal
+                            }
+                            if ($('#stockCardModal').hasClass('show') && typeof showStockCard === 'function') {
+                                showStockCard(part, branch); // refresh detailed stock card
+                            }
                         }
                     } else {
                         showErrorModal(response.message);
