@@ -633,6 +633,26 @@ $(document).ready(function () {
             });
         });
 
+        // Delete 'IN' transaction
+        $(document).on('click', '.delete-in-btn', function () {
+            const id = $(this).data('id');
+            const branch = $(this).data('branch');
+            const part = $(this).data('part');
+            showConfirmModal('Are you sure you want to delete this receiving transaction? The inventory stock will be reduced.', function () {
+                $.post(`../api/spareparts_inventory.php?action=delete_receive_in`, { id: id, branch: branch }, response => {
+                    if (response.success) {
+                        showSuccessModal('Receiving transaction deleted successfully.');
+                        fetchInventory();
+                        if (part) {
+                            showInventoryHistory(part, null); // refresh history modal
+                        }
+                    } else {
+                        showErrorModal(response.message);
+                    }
+                }, 'json').fail(() => showErrorModal('Failed to delete transaction.'));
+            });
+        });
+
         // FORM SUBMISSIONS
         // ADD PART LOGIC
         $('#addPartForm').on('submit', function (e) {
@@ -3056,6 +3076,9 @@ $(document).ready(function () {
             switch (h.type) {
                 case 'IN':
                     eventText = 'Delivered';
+                    if (window.canDelete) {
+                        eventText += ` <button class="btn btn-sm btn-outline-danger ms-2 delete-in-btn py-0 px-1" style="font-size: 0.75rem;" data-id="${h.id}" data-part="${h.part_no}" data-qty="${h.quantity}" data-branch="${escapeHtml(h.to_location || h.from_location || '')}" title="Delete Receive In"><i class="bi bi-trash"></i></button>`;
+                    }
                     fromText = 'Supplier';
                     toText = escapeHtml(h.to_location || h.from_location || '-');
                     break;

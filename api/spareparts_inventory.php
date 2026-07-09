@@ -453,6 +453,9 @@ switch ($action) {
     case 'delete_payment':
         deleteItem('payment');
         break;
+    case 'delete_receive_in':
+        deleteItem('receive_in');
+        break;
     case 'delete_transfer':
         cancelTransfer();
         break;
@@ -1593,7 +1596,7 @@ function getInventoryHistory()
     $id = sanitizeInput($_GET['id'] ?? '');
     $part_no = sanitizeInput($_GET['part_no'] ?? '');
 
-    $sql = "SELECT transaction_date, or_number, transfer_no, part_no, description, customer_name, type, quantity, price, total_amount, from_location, to_location, status, reason 
+    $sql = "SELECT id, transaction_date, or_number, transfer_no, part_no, description, customer_name, type, quantity, price, total_amount, from_location, to_location, status, reason 
             FROM spareparts_transactions 
             WHERE 1=1 ";
 
@@ -3146,6 +3149,44 @@ function deleteItem($type)
                 $delAging = $conn->prepare("DELETE FROM spareparts_aging WHERE or_number = ? AND branch = ?");
                 $delAging->bind_param('ss', $id, $targetBranch);
                 $delAging->execute(); // It's okay if this fails (e.g., for cash sales)
+                break;
+
+            case 'receive_in': 
+                $findStmt = $conn->prepare("SELECT part_no, quantity, to_location, from_location, type FROM spareparts_transactions WHERE id = ?");
+                $findStmt->bind_param('i', $id);
+                $findStmt->execute();
+                $tx = $findStmt->get_result()->fetch_assoc();
+
+                if (!$tx)
+                    throw new Exception("Transaction not found.");
+
+                if ($tx['type'] !== 'IN') {
+                    throw new Exception("Only 'IN' transactions can be deleted here.");
+                }
+
+                $qty = (int) $tx['quantity'];
+                $part_no = $tx['part_no'];
+                $txBranch = $tx['to_location'] ?: ($tx['from_location'] ?: $targetBranch);
+
+                $invStmt = $conn->prepare("SELECT current_stock FROM spareparts_inventory WHERE part_no = ? AND current_branch = ?");
+                $invStmt->bind_param('ss', $part_no, $txBranch);
+                $invStmt->execute();
+                $invRes = $invStmt->get_result()->fetch_assoc();
+                if (!$invRes || $invRes['current_stock'] < $qty) {
+                    throw new Exception("Cannot delete receiving in: insufficient stock to revert this transaction.");
+                }
+
+                $updStmt = $conn->prepare("UPDATE spareparts_inventory SET current_stock = current_stock - ? WHERE part_no = ? AND current_branch = ?");
+                $updStmt->bind_param('iss', $qty, $part_no, $txBranch);
+                if (!$updStmt->execute())
+                    throw new Exception("Failed to reduce inventory.");
+
+                $delStmt = $conn->prepare("DELETE FROM spareparts_transactions WHERE id = ?");
+                $delStmt->bind_param('i', $id);
+                if (!$delStmt->execute())
+                    throw new Exception("Failed to delete transaction log.");
+
+                addAuditLog('DELETE', 'spareparts_transactions', $id, "Deleted 'IN' transaction for part: $part_no, Quantity: $qty reduced from $txBranch.");
                 break;
 
             case 'payment': // ID is the transaction ID
