@@ -66,15 +66,16 @@ $(document).ready(function () {
         autoFillDates(e.target);
     });
 
-    function renderPagination(pagId, infoId, totalItems, currentPage, onChangePage) {
-        const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    function renderPagination(pagId, infoId, totalItems, currentPage, onChangePage, pageSize = PAGE_SIZE) {
+        const size = parseInt(pageSize) || PAGE_SIZE;
+        const totalPages = Math.max(1, Math.ceil(totalItems / size));
         const pag = document.getElementById(pagId);
         const info = document.getElementById(infoId);
         if (!pag || !info) return;
 
-        const start = totalItems === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-        const end = Math.min(currentPage * PAGE_SIZE, totalItems);
-        info.textContent = totalItems === 0 ? 'No items found' : `Showing ${start}-${end} of ${totalItems} items`;
+        const start = totalItems === 0 ? 0 : (currentPage - 1) * size + 1;
+        const end = Math.min(currentPage * size, totalItems);
+        info.textContent = totalItems === 0 ? 'No items found' : `Showing ${start.toLocaleString()}-${end.toLocaleString()} of ${Number(totalItems).toLocaleString()} items`;
 
         pag.innerHTML = '';
         if (totalItems === 0) return;
@@ -3526,10 +3527,11 @@ $(document).ready(function () {
         const searchVal = ($('#inventorySearch').val() || '').trim();
         const filterVal = window._invFilter ? window._invFilter.type : '';
         const branchVal = $('#inventoryBranchFilter').val() || '';
+        const pageSize = parseInt($('#inventoryPageSize').val()) || 25;
 
         const params = {
             page: inventoryCurrentPage,
-            limit: PAGE_SIZE,
+            limit: pageSize,
             search: searchVal,
             filter: filterVal,
             branch: branchVal
@@ -3565,6 +3567,11 @@ $(document).ready(function () {
         loadInventory(1);
     });
 
+    $(document).on('change', '#inventoryPageSize', function () {
+        inventoryCurrentPage = 1;
+        loadInventory(1);
+    });
+
     // Wire up quick-filter buttons (delegated — works for dynamically injected HTML)
     $(document).on('click', '.inv-filter-btn', function () {
         const type = $(this).data('filter');
@@ -3589,10 +3596,11 @@ $(document).ready(function () {
         tbody.empty();
 
         const data = inventoryData;
+        const currentLimit = parseInt($('#inventoryPageSize').val()) || 25;
 
         if (!data || data.length === 0) {
             tbody.html('<tr><td colspan="10" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2"></i>No inventory items found.</td></tr>');
-            if ($('#inventoryPageInfo').length) renderPagination('inventoryPagination', 'inventoryPageInfo', 0, 1, () => { });
+            if ($('#inventoryPageInfo').length) renderPagination('inventoryPagination', 'inventoryPageInfo', 0, 1, () => { }, currentLimit);
             return;
         }
 
@@ -3659,7 +3667,7 @@ $(document).ready(function () {
                 inventoryCurrentPage = pg;
                 loadInventory(pg);
                 document.getElementById('inventoryTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
+            }, currentLimit);
         }
     }
 

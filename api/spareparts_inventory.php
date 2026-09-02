@@ -1105,7 +1105,7 @@ function getInventoryList()
     $page = max(1, intval($_REQUEST['page'] ?? 1));
     $limit = intval($_REQUEST['limit'] ?? 25);
     if ($limit <= 0) $limit = 25;
-    if ($limit > 500) $limit = 500;
+    if ($limit > 1000) $limit = 1000;
     
     $whereClauses = [];
     $params = [];

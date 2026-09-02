@@ -589,6 +589,18 @@ $reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_he
                                 <select id="inventoryBranchFilter" class="form-select form-select-sm shadow-sm" style="width: 170px;">
                                     <option value="all">All Branches</option>
                                 </select>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="text-muted small text-nowrap">Show:</span>
+                                    <select id="inventoryPageSize" class="form-select form-select-sm shadow-sm" style="width: 85px;">
+                                        <option value="10">10</option>
+                                        <option value="25" selected>25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                        <option value="250">250</option>
+                                        <option value="500">500</option>
+                                        <option value="1000">All</option>
+                                    </select>
+                                </div>
                                 <input type='text' id='inventorySearch' class='form-control form-control-sm shadow-sm'
                                     style="width: 220px;" placeholder='Search parts...' autocomplete="off">
                             </div>
