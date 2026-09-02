@@ -572,10 +572,11 @@ $reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_he
                 <div class='tab-content' id='mainTabContent'>
                     <!-- INVENTORY TAB -->
                     <div class="tab-pane fade" id="inventory" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom flex-wrap gap-2">
                             <h4 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Inventory Management</h4>
-                            <div class="d-flex gap-3 align-items-center">
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
                                 <div id="inventoryStats" class="small text-muted fw-bold border-end pe-3"></div>
+                                <div class="btn-group shadow-sm">
                                     <button class='btn btn-sm btn-primary text-white fw-bold px-3'
                                         data-bs-toggle='modal' data-bs-target='#addPartModal'>
                                         <i class='bi bi-plus-circle me-1'></i>Add New Part
@@ -584,8 +585,12 @@ $reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_he
                                         data-bs-target='#transferPartsModal'>
                                         <i class='bi bi-truck me-1'></i>Transfer
                                     </button>
-                                <input type='text' id='inventorySearch' class='form-control form-control-sm'
-                                    style="width: 250px;" placeholder='Search parts...' autocomplete="off">
+                                </div>
+                                <select id="inventoryBranchFilter" class="form-select form-select-sm shadow-sm" style="width: 170px;">
+                                    <option value="all">All Branches</option>
+                                </select>
+                                <input type='text' id='inventorySearch' class='form-control form-control-sm shadow-sm'
+                                    style="width: 220px;" placeholder='Search parts...' autocomplete="off">
                             </div>
                         </div>
 
@@ -611,8 +616,7 @@ $reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_he
                                 <thead>
                                     <tr>
                                         <!-- Removed checkbox headers -->
-                                        <th>Brand</th>
-                                        <th>Part No</th>
+                                        <th>Part No / Brand</th>
                                         <th>Part Name</th>
                                         <th class="text-center">Branch</th>
                                         <th class="text-center">Stock</th>
@@ -625,6 +629,12 @@ $reportHeaderTitle = !empty($dbUser['report_header_title']) ? $dbUser['report_he
                                 </thead>
                                 <tbody id='inventoryTableBody'></tbody>
                             </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top bg-white rounded-bottom shadow-sm">
+                            <div class="text-muted small fw-semibold" id="inventoryPageInfo"></div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0 gap-1" id="inventoryPagination"></ul>
+                            </nav>
                         </div>
                     </div>
 

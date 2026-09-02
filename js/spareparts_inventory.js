@@ -177,7 +177,7 @@ $(document).ready(function () {
             cache: false,
             success: response => {
                 if (response.success) {
-                    successCallback(response.data);
+                    successCallback(response.data, response);
                 } else {
                     showErrorModal(response.message || 'An unknown error occurred.');
                     if (tableBodyId) $(`#${tableBodyId}`).html(`<tr><td colspan="12" class="text-center text-muted">Failed to load data.</td></tr>`);
@@ -302,7 +302,7 @@ $(document).ready(function () {
                         reportHtml += `<option value="${branch}">${branch}</option>`;
                     });
 
-                    const reportSelectors = '#inv_report_branch, #sales_report_branch, #payment_report_branch, #t_report_branch, #salesFilterBranch';
+                    const reportSelectors = '#inv_report_branch, #sales_report_branch, #payment_report_branch, #t_report_branch, #salesFilterBranch, #inventoryBranchFilter';
                     $(reportSelectors).html(reportHtml);
 
                     // If branch page, lock the selection to the current branch
@@ -3516,61 +3516,53 @@ $(document).ready(function () {
     }
 
     // ——— INVENTORY PAGINATION —————————————————————————————————————————————————
-    function loadInventory(preservePage = false) {
-        loadApiData('get_inventory_list', data => {
-            inventoryData = data;
-            // Instead of resetting to page 1, we call applyInventorySearch 
-            // which will handle pagination preservation if requested.
-            applyInventorySearch($('#inventorySearch').val() || '', preservePage);
-        }, 'inventoryTableBody');
+    function loadInventory(page = 1, preservePage = false) {
+        if (preservePage) {
+            page = inventoryCurrentPage || 1;
+        } else {
+            inventoryCurrentPage = page || 1;
+        }
+
+        const searchVal = ($('#inventorySearch').val() || '').trim();
+        const filterVal = window._invFilter ? window._invFilter.type : '';
+        const branchVal = $('#inventoryBranchFilter').val() || '';
+
+        const params = {
+            page: inventoryCurrentPage,
+            limit: PAGE_SIZE,
+            search: searchVal,
+            filter: filterVal,
+            branch: branchVal
+        };
+
+        loadApiData('get_inventory_list', (data, res) => {
+            inventoryData = Array.isArray(data) ? data : (data?.data || []);
+            const totalItems = res && res.total !== undefined ? res.total : inventoryData.length;
+            
+            if ($('#inventoryStats').length) {
+                $('#inventoryStats').html(`Total Items: <span class="text-primary">${Number(totalItems).toLocaleString()}</span>`);
+            }
+            
+            renderInventory(totalItems);
+        }, 'inventoryTableBody', params);
     }
 
     // ─── Quick-Filter state for the inventory table ──────────────────────────
     window._invFilter = { type: '' };
 
-    function applyInventorySearch(query, preservePage = false) {
-        const q = query.trim().toLowerCase();
-        const f = window._invFilter;
-
-        let base = inventoryData || [];
-
-        // 1. Text search
-        if (q) {
-            base = base.filter(item =>
-                (item.part_no || '').toLowerCase().includes(q) ||
-                (item.description || '').toLowerCase().includes(q) ||
-                (item.brand || '').toLowerCase().includes(q) ||
-                (item.bin_location || '').toLowerCase().includes(q)
-            );
-        }
-
-        // 2. Quick filter
-        if (f.type === 'low_price') {
-            base = base.filter(item => Number(item.cost || 0) <= 5);
-        } else if (f.type === 'low_stock') {
-            base = base.filter(item => Number(item.current_stock) <= Math.max(Number(item.min_stock || 1), 1));
-        }
-
-        inventoryFilteredData = base;
-        
-        if (!preservePage) {
-            inventoryCurrentPage = 1;
-        } else {
-            // Ensure the current page is still valid after data refresh/filtering
-            const totalItems = inventoryFilteredData.length;
-            const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
-            if (inventoryCurrentPage > totalPages) inventoryCurrentPage = totalPages;
-            if (inventoryCurrentPage < 1) inventoryCurrentPage = 1;
-        }
-        
-        renderInventory();
-    }
-
     // Wire up the search input (live, debounced)
     let inventorySearchTimer;
     $(document).on('input', '#inventorySearch', function () {
         clearTimeout(inventorySearchTimer);
-        inventorySearchTimer = setTimeout(() => applyInventorySearch($(this).val()), 280);
+        inventorySearchTimer = setTimeout(() => {
+            inventoryCurrentPage = 1;
+            loadInventory(1);
+        }, 280);
+    });
+
+    $(document).on('change', '#inventoryBranchFilter', function () {
+        inventoryCurrentPage = 1;
+        loadInventory(1);
     });
 
     // Wire up quick-filter buttons (delegated — works for dynamically injected HTML)
@@ -3588,34 +3580,26 @@ $(document).ready(function () {
         $('.inv-filter-btn').removeClass('active');
         if (f.type) $(`.inv-filter-btn[data-filter="${f.type}"]`).addClass('active');
 
-        applyInventorySearch($('#inventorySearch').val() || '');
+        inventoryCurrentPage = 1;
+        loadInventory(1);
     });
 
-
-
-
-    function renderInventory() {
+    function renderInventory(totalItems) {
         const tbody = $('#inventoryTableBody');
         tbody.empty();
 
-        const data = inventoryFilteredData;
+        const data = inventoryData;
 
         if (!data || data.length === 0) {
-            tbody.html('<tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2"></i>No inventory items found.</td></tr>');
+            tbody.html('<tr><td colspan="10" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2"></i>No inventory items found.</td></tr>');
             if ($('#inventoryPageInfo').length) renderPagination('inventoryPagination', 'inventoryPageInfo', 0, 1, () => { });
             return;
         }
 
-        const totalItems = data.length;
-        const totalPages = Math.ceil(totalItems / PAGE_SIZE);
-        if (inventoryCurrentPage > totalPages) inventoryCurrentPage = totalPages;
-
-        const startIdx = (inventoryCurrentPage - 1) * PAGE_SIZE;
-        const endIdx = Math.min(startIdx + PAGE_SIZE, totalItems);
-        const pageData = data.slice(startIdx, endIdx);
+        if (totalItems === undefined) totalItems = data.length;
 
         // Render rows
-        pageData.forEach(item => {
+        data.forEach(item => {
             const stockLevel = Number(item.current_stock);
             const minStock = Number(item.min_stock || 0);
             const isLowStock = stockLevel <= minStock;
@@ -3657,7 +3641,7 @@ $(document).ready(function () {
                 <td class="text-center py-3">${statusBadge}</td>
                 <td class="text-center pe-4 py-3">
                     <div class="btn-group border rounded overflow-hidden" style="box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-                        <button class="btn btn-sm show-stock-card-btn" data-part-no="${item.part_no}" data-branch="${item.current_branch}" title="Stock Card" style="background:#fff;">
+                        <button class="btn btn-sm show-stock-card-btn" data-part-no="${escapeHtml(item.part_no)}" data-branch="${escapeHtml(item.current_branch)}" title="Stock Card" style="background:#fff;">
                             <i class="bi bi-card-list text-primary"></i>
                         </button>
                         <button class="btn btn-sm edit-part-btn border-start" data-id="${item.id}" title="Edit Part" style="background:#fff;">
@@ -3673,7 +3657,7 @@ $(document).ready(function () {
         if ($('#inventoryPageInfo').length) {
             renderPagination('inventoryPagination', 'inventoryPageInfo', totalItems, inventoryCurrentPage, (pg) => {
                 inventoryCurrentPage = pg;
-                renderInventory();
+                loadInventory(pg);
                 document.getElementById('inventoryTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         }

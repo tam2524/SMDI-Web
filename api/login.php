@@ -23,58 +23,56 @@ if ($result->num_rows > 0) {
         $_SESSION['report_header_title'] = $user['report_header_title'] ?? 'ROXAS CITY SOLID MERCHANDISING';
         $position = trim($user['position']);
 
-        $redirectUrl = "../login.html";
+        $redirectUrl = "login.html";
         switch ($position) {
             case 'IT Staff':
             case 'Admin':
-                $redirectUrl = "../admin/admin_dashboard.php";
+                $redirectUrl = "admin/admin_dashboard.php";
                 break;
             case 'Head':
             case 'Branch Manager':
-                $redirectUrl = "../staff/staff_dashboard.html";
+                $redirectUrl = "staff/staff_dashboard.html";
                 break;
             case 'Liaison':
-                $redirectUrl = "../liaison/liaison_dashboard.php";
+                $redirectUrl = "liaison/liaison_dashboard.php";
                 break;
             case 'Sales':
-                $redirectUrl = "../sales/sales_dashboard.php";
+                $redirectUrl = "sales/sales_dashboard.php";
                 break;
             case 'BM':
-                $redirectUrl = "../inventory/branch_inventory.php";
+                $redirectUrl = "inventory/branch_inventory.php";
                 break;
             case 'Inventory':
-                $redirectUrl = "../inventory/headoffice_inventory.php";
+                $redirectUrl = "inventory/headoffice_inventory.php";
                 break;
             case 'Admin Inventory':
-                $redirectUrl = "../inventory/admin_inventory.php";
+                $redirectUrl = "inventory/admin_inventory.php";
                 break;
             case 'Spareparts-Warehouse':
-                $redirectUrl = "../spareparts/warehouse_dashboard.php";
+                $redirectUrl = "spareparts/warehouse_dashboard.php";
                 break;
             case 'Spareparts-Sales':
-                $redirectUrl = "../spareparts/sales_dashboard.php";
-                break;
             case 'Spareparts-Retail':
-                $redirectUrl = "../spareparts/sales_dashboard.php";
+                $redirectUrl = "spareparts/sales_dashboard.php";
                 break;
             case 'Spareparts-Owner':
-                $redirectUrl = "../spareparts/owner_dashboard.php";
+                $redirectUrl = "spareparts/owner_dashboard.php";
                 break;
             case 'Spareparts-Admin':
-                $redirectUrl = "../spareparts/admin_dashboard.php";
+                $redirectUrl = "spareparts/admin_dashboard.php";
                 break;
             case 'Disable':
-                $redirectUrl = "../under_repair.html";
+                $redirectUrl = "under_repair.html";
                 break;
             default:
-                $redirectUrl = "../login.html";
+                $redirectUrl = "login.html";
                 break;
         }
 
         if ($isAjax) {
             echo json_encode(['success' => true, 'redirect' => $redirectUrl]);
         } else {
-            header("Location: " . $redirectUrl);
+            header("Location: ../" . $redirectUrl);
         }
         exit();
     } else {

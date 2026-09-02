@@ -1,0 +1,23 @@
+# =============================================================
+# SMDI-Web Apache Configuration (.htaccess)
+# =============================================================
+
+Options -Indexes +FollowSymLinks
+
+# -------------------------------------------------------------
+# Block direct browser access to .php files (show 403 instead of raw PHP)
+# API calls are excluded so AJAX still works normally
+# -------------------------------------------------------------
+RewriteEngine On
+
+# Allow Private Network Access (fixes Chrome PNA CORS policy for loopback origin)
+# Note: HTTPS is handled by Cloudflare — do NOT add HTTPS redirect here
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Private-Network "true"
+    Header always set Access-Control-Allow-Origin "*"
+</IfModule>
+
+# -------------------------------------------------------------
+# Custom 404 Error Page
+# -------------------------------------------------------------
+ErrorDocument 404 404_page.html

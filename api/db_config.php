@@ -2,8 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 
 // Load .env configuration
@@ -25,7 +25,7 @@ if (file_exists($envFile)) {
 
 // Assign configuration variables with generic development fallbacks.
 // Production credentials now exist ONLY inside the gitignored .env file.
-$servername = "p:" . ($_ENV['DB_HOST'] ?? '127.0.0.1');
+$servername = $_ENV['DB_HOST'] ?? '127.0.0.1';
 $dbusername = $_ENV['DB_USER'] ?? 'root';
 $dbpassword = $_ENV['DB_PASS'] ?? '';
 $dbname     = $_ENV['DB_NAME'] ?? 'smdi_db';

@@ -13,27 +13,7 @@ $adminRoles = ['Admin', 'Head', 'itsuperadmin', 'Admin Spareparts', 'Spareparts-
 $isAdmin = in_array(strtolower(trim($userRole)), array_map('strtolower', $adminRoles));
 $canDelete = $isAdmin;
 
-// Auto-repair tools removed to prevent PHP exceptions from halting script execution
-try {
-    $conn->query("ALTER TABLE spareparts_transfers ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER id");
-    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS transfer_no VARCHAR(100) DEFAULT NULL AFTER or_number");
-    $conn->query("ALTER TABLE spareparts_sales_force ADD COLUMN IF NOT EXISTS position VARCHAR(255) DEFAULT NULL AFTER employee_name");
-    $conn->query("ALTER TABLE spareparts_sales_force ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
-    $conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
-    $conn->query("ALTER TABLE spareparts_aging ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
-    // Attempt to add category to customers if table exists
-    @$conn->query("ALTER TABLE spareparts_customers ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT NULL");
-    
-    // Auto-update price history schema and core columns
-    @$conn->query("ALTER TABLE spareparts_price_history MODIFY COLUMN transaction_date DATETIME");
-    @$conn->query("ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS price DECIMAL(10, 2) DEFAULT 0.00 AFTER cost");
-    @$conn->query("ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS change_reason VARCHAR(255) DEFAULT NULL");
-    @$conn->query("ALTER TABLE spareparts_price_history ADD COLUMN IF NOT EXISTS changed_by VARCHAR(255) DEFAULT NULL");
-    @$conn->query("ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS bin_location VARCHAR(100) AFTER quantity");
-    @$conn->query("ALTER TABLE spareparts_inventory ADD COLUMN IF NOT EXISTS thumbnail_image VARCHAR(255) AFTER bin_location");
-    @$conn->query("ALTER TABLE spareparts_transactions ADD COLUMN IF NOT EXISTS cost DECIMAL(10, 2) DEFAULT 0.00 AFTER price");
-} catch (Exception $e) {
-}
+// Schema updates are run once during migrations, not on every API request
 
 function getCurrentDivision()
 {
@@ -1117,60 +1097,87 @@ function getInventoryList()
     
     $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
     
-    $branch_esc = $conn->real_escape_string($currentBranch);
-    $where = $seeAll ? "" : "WHERE current_branch = '$branch_esc'";
-    $query = "SELECT * FROM spareparts_inventory $where ORDER BY part_no ASC";
+    $branch = sanitizeInput($_REQUEST['branch'] ?? '');
+    $search = sanitizeInput($_REQUEST['search'] ?? $_REQUEST['query'] ?? '');
+    $filter = sanitizeInput($_REQUEST['filter'] ?? '');
+    $page = max(1, intval($_REQUEST['page'] ?? 1));
+    $limit = intval($_REQUEST['limit'] ?? 25);
+    if ($limit <= 0) $limit = 25;
+    if ($limit > 500) $limit = 500;
     
-    // Execute unbuffered query to save memory
-    $result = $conn->query($query, MYSQLI_USE_RESULT);
-
-    // Stream JSON output
-    echo '{"success":true,"data":[';
-    if ($result) {
-        $first = true;
-        while ($row = $result->fetch_assoc()) {
-            if (!$first) {
-                echo ',';
-            }
-            $row['invoice_no'] = $row['invoice_no'] ?? '';
-            echo json_encode($row);
-            $first = false;
-        }
-        $result->free();
+    $whereClauses = [];
+    $params = [];
+    $types = "";
+    
+    if (!$seeAll) {
+        $whereClauses[] = "current_branch = ?";
+        $params[] = $currentBranch;
+        $types .= "s";
+    } elseif (!empty($branch) && $branch !== 'ALL' && $branch !== 'all') {
+        $whereClauses[] = "current_branch = ?";
+        $params[] = $branch;
+        $types .= "s";
     }
-    echo ']}';
+    
+    if (!empty($search)) {
+        $searchTerm = "%$search%";
+        $whereClauses[] = "(part_no LIKE ? OR description LIKE ? OR brand LIKE ? OR bin_location LIKE ?)";
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $types .= "ssss";
+    }
+    
+    if ($filter === 'low_price') {
+        $whereClauses[] = "cost <= 5.00";
+    } elseif ($filter === 'low_stock') {
+        $whereClauses[] = "current_stock <= GREATEST(COALESCE(min_stock, 1), 1)";
+    }
+    
+    $whereSql = !empty($whereClauses) ? "WHERE " . implode(" AND ", $whereClauses) : "";
+    
+    // Total count query
+    $countSql = "SELECT COUNT(*) as total FROM spareparts_inventory $whereSql";
+    $stmtCount = $conn->prepare($countSql);
+    if (!empty($types)) {
+        $stmtCount->bind_param($types, ...$params);
+    }
+    $stmtCount->execute();
+    $total = intval($stmtCount->get_result()->fetch_assoc()['total'] ?? 0);
+    $stmtCount->close();
+    
+    $offset = ($page - 1) * $limit;
+    $dataSql = "SELECT * FROM spareparts_inventory $whereSql ORDER BY part_no ASC LIMIT ? OFFSET ?";
+    $stmt = $conn->prepare($dataSql);
+    $typesWithLimit = $types . "ii";
+    $paramsWithLimit = array_merge($params, [$limit, $offset]);
+    $stmt->bind_param($typesWithLimit, ...$paramsWithLimit);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $row['invoice_no'] = $row['invoice_no'] ?? '';
+        $data[] = $row;
+    }
+    $stmt->close();
+    
+    $totalPages = max(1, ceil($total / $limit));
+    
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'total' => $total,
+        'page' => $page,
+        'limit' => $limit,
+        'total_pages' => $totalPages
+    ]);
 }
 
 function searchInventory()
 {
-    global $conn, $currentBranch, $isAdmin;
-    $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
-    $query = isset($_GET['query']) ? sanitizeInput($_GET['query']) : '';
-
-    if (empty($query) || strlen($query) < 2) {
-        echo json_encode(['success' => true, 'data' => []]);
-        return;
-    }
-
-    $searchTerm = "%$query%";
-    $whereClause = $seeAll ? "WHERE part_no LIKE ? OR description LIKE ?" : "WHERE (part_no LIKE ? OR description LIKE ?) AND current_branch = ?";
-
-    $stmt = $conn->prepare("SELECT * FROM spareparts_inventory $whereClause ORDER BY part_no ASC LIMIT 50");
-
-    if ($seeAll) {
-        $stmt->bind_param('ss', $searchTerm, $searchTerm);
-    } else {
-        $stmt->bind_param('sss', $searchTerm, $searchTerm, $currentBranch);
-    }
-
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $data = [];
-    while ($row = $result->fetch_assoc()) {
-        $data[] = $row;
-    }
-    echo json_encode(['success' => true, 'data' => $data]);
+    searchInventoryParts();
 }
 
 function getSalesList()
@@ -3938,7 +3945,7 @@ function searchInventoryParts()
 {
     global $conn, $currentBranch, $isAdmin;
     $seeAll = $isAdmin || strtolower(trim($currentBranch)) === 'headoffice';
-    $term = sanitizeInput($_GET['term'] ?? '');
+    $term = sanitizeInput($_GET['term'] ?? $_GET['query'] ?? $_REQUEST['term'] ?? $_REQUEST['query'] ?? '');
     $searchTerm = "%{$term}%";
 
     // If Admin/HeadOffice, show parts from all branches

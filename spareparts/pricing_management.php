@@ -576,56 +576,44 @@ $isAdminOrSales = in_array(strtolower(trim($role)), ['spareparts-admin', 'sparep
             return isNaN(num) ? '0.00' : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        function loadPricingData() {
-            $.get('../api/spareparts_inventory.php?action=get_inventory_list', function(response) {
-                if (response.success) {
-                    inventoryData = response.data;
-                    
-                    // Extract unique branches for filter dropdown
-                    let branches = new Set();
-                    inventoryData.forEach(item => {
-                        if (item.current_branch) {
-                            branches.add(item.current_branch);
-                        }
-                    });
-                    
+        function loadBranches() {
+            $.get('../api/spareparts_inventory.php?action=get_branches', function(response) {
+                if (response.success && Array.isArray(response.data)) {
                     let branchFilter = $('#branchFilter');
                     branchFilter.html('<option value="ALL">All Branches</option>');
-                    branches.forEach(b => {
+                    response.data.forEach(b => {
                         branchFilter.append(`<option value="${b}">${b}</option>`);
                     });
+                }
+            }, 'json');
+        }
 
-                    applyFilters();
+        let totalPricingItems = 0;
+        function loadPricingData(page = 1) {
+            currentPage = page;
+            let searchTerm = ($('#pricingSearchInput').val() || '').trim();
+            let branchVal = $('#branchFilter').val() || 'ALL';
+
+            $('#pricingTableBody').html('<tr><td colspan="7" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading pricing data...</td></tr>');
+
+            $.get('../api/spareparts_inventory.php?action=get_inventory_list', {
+                page: currentPage,
+                limit: itemsPerPage,
+                search: searchTerm,
+                branch: branchVal
+            }, function(response) {
+                if (response.success) {
+                    inventoryData = response.data || [];
+                    totalPricingItems = response.total !== undefined ? response.total : inventoryData.length;
+                    renderPricingTable();
                 } else {
                     Swal.fire('Error', response.message || 'Failed to load pricing data.', 'error');
                 }
             }, 'json');
         }
 
-        function applyFilters() {
-            let searchTerm = $('#pricingSearchInput').val().toLowerCase().trim();
-            let branchVal = $('#branchFilter').val();
-
-            filteredData = inventoryData.filter(item => {
-                let matchesSearch = !searchTerm || 
-                    (item.part_no && item.part_no.toLowerCase().includes(searchTerm)) ||
-                    (item.description && item.description.toLowerCase().includes(searchTerm)) ||
-                    (item.brand && item.brand.toLowerCase().includes(searchTerm));
-                
-                let matchesBranch = branchVal === 'ALL' || item.current_branch === branchVal;
-
-                return matchesSearch && matchesBranch;
-            });
-
-            currentPage = 1;
-            renderPricingTable();
-        }
-
         function renderPricingTable() {
-            let start = (currentPage - 1) * itemsPerPage;
-            let end = start + itemsPerPage;
-            let pageItems = filteredData.slice(start, end);
-            
+            let pageItems = inventoryData;
             let tbody = $('#pricingTableBody');
             tbody.empty();
 
@@ -666,14 +654,15 @@ $isAdminOrSales = in_array(strtolower(trim($role)), ['spareparts-admin', 'sparep
             });
 
             // Update stats
-            let displayEnd = Math.min(end, filteredData.length);
-            $('#paginationStats').text(`Showing ${start + 1} to ${displayEnd} of ${filteredData.length} entries`);
+            let start = totalPricingItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+            let displayEnd = Math.min((currentPage - 1) * itemsPerPage + pageItems.length, totalPricingItems);
+            $('#paginationStats').text(`Showing ${start} to ${displayEnd} of ${totalPricingItems} entries`);
 
             renderPagination();
         }
 
         function renderPagination() {
-            let totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            let totalPages = Math.ceil(totalPricingItems / itemsPerPage);
             let pagination = $('#pricingPagination');
             pagination.empty();
 
@@ -708,8 +697,7 @@ $isAdminOrSales = in_array(strtolower(trim($role)), ['spareparts-admin', 'sparep
         }
 
         function changePage(page) {
-            currentPage = page;
-            renderPricingTable();
+            loadPricingData(page);
         }
 
         function openEditPriceModal(id, partNo, branch, cost, price) {
@@ -725,11 +713,20 @@ $isAdminOrSales = in_array(strtolower(trim($role)), ['spareparts-admin', 'sparep
             bootstrap.Modal.getOrCreateInstance(document.getElementById('editPriceModal')).show();
         }
 
+        let pricingSearchTimer;
         $(document).ready(function() {
+            loadBranches();
             loadPricingData();
 
-            $('#pricingSearchInput').on('input', applyFilters);
-            $('#branchFilter').on('change', applyFilters);
+            $('#pricingSearchInput').on('input', function() {
+                clearTimeout(pricingSearchTimer);
+                pricingSearchTimer = setTimeout(() => {
+                    loadPricingData(1);
+                }, 300);
+            });
+            $('#branchFilter').on('change', function() {
+                loadPricingData(1);
+            });
 
             // Form submit for specific part price edit
             $('#editPriceForm').on('submit', function(e) {
