@@ -1,8 +1,10 @@
 <?php
+ob_start(); // Buffer all output to prevent stray warnings/notices from corrupting JSON
 header('Content-Type: application/json');
 require_once 'db_config.php'; // Ensure you have session_start() in this file
 
 if (!isset($_SESSION['username'])) {
+    ob_end_clean();
     echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
     exit();
 }
@@ -1159,20 +1161,37 @@ function getInventoryList()
     $data = [];
     while ($row = $result->fetch_assoc()) {
         $row['invoice_no'] = $row['invoice_no'] ?? '';
+        // Ensure all string values are valid UTF-8 to prevent json_encode failures
+        foreach ($row as $key => $value) {
+            if (is_string($value)) {
+                $row[$key] = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+            }
+        }
         $data[] = $row;
     }
     $stmt->close();
     
     $totalPages = max(1, ceil($total / $limit));
     
-    echo json_encode([
+    $payload = [
         'success' => true,
         'data' => $data,
         'total' => $total,
         'page' => $page,
         'limit' => $limit,
         'total_pages' => $totalPages
-    ]);
+    ];
+
+    $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($encoded === false) {
+        // Fallback: strip non-UTF-8 characters and retry
+        array_walk_recursive($payload['data'], function (&$val) {
+            if (is_string($val)) $val = mb_convert_encoding($val, 'UTF-8', 'auto');
+        });
+        $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+
+    echo $encoded;
 }
 
 function searchInventory()
