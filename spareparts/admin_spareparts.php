@@ -674,8 +674,20 @@ endif; ?>
                                 <select id="inventoryBranchFilter" class="form-select form-select-sm shadow-sm" style="width: 170px;">
                                     <option value="all">All Branches</option>
                                 </select>
-                                <input type='text' id='inventorySearch' class='form-control form-control-sm shadow-sm'
-                                    style="width: 220px;" placeholder='Search parts...' autocomplete="off">
+                                <div class="input-group input-group-sm shadow-sm" style="width: 220px;">
+                                    <span class="input-group-text bg-white border-end-0 pe-1"><i class="bi bi-search text-muted"></i></span>
+                                    <input type='text' id='inventorySearch' class='form-control border-start-0 ps-1'
+                                        placeholder='Search parts...' autocomplete="off">
+                                </div>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="text-muted small text-nowrap">Show:</span>
+                                    <select id="inventoryPageSize" class="form-select form-select-sm shadow-sm" style="width: 80px;">
+                                        <option value="10">10</option>
+                                        <option value="25" selected>25</option>
+                                        <option value="50">50</option>
+                                        <option value="9999">All</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
